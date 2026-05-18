@@ -1,0 +1,384 @@
+openapi: 3.0.3
+info:
+  title: Delivery Marketplace MVP API
+  version: 0.1.0
+  description: MVP REST contract for the multi-tenant delivery marketplace.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /me:
+    get:
+      summary: Get current user profile and roles
+      tags: [Auth]
+      responses:
+        '200':
+          description: Current user profile
+  /tenants:
+    get:
+      summary: List tenants for platform administrators
+      tags: [Admin]
+      responses:
+        '200':
+          description: Tenant list
+    post:
+      summary: Create a tenant
+      tags: [Admin]
+      responses:
+        '201':
+          description: Tenant created
+  /vendors:
+    get:
+      summary: List vendors visible to the current user
+      tags: [Vendors]
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: available
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Vendor list
+    post:
+      summary: Register or create vendor profile
+      tags: [Vendors]
+      responses:
+        '201':
+          description: Vendor created
+  /vendors/{vendorId}:
+    get:
+      summary: Get vendor details
+      tags: [Vendors]
+      parameters:
+        - $ref: '#/components/parameters/VendorId'
+      responses:
+        '200':
+          description: Vendor details
+  /catalog/categories:
+    get:
+      summary: List catalog categories
+      tags: [Catalog]
+      responses:
+        '200':
+          description: Category list
+  /catalog/products:
+    get:
+      summary: List products by vendor or search criteria
+      tags: [Catalog]
+      parameters:
+        - name: vendorId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Product list
+    post:
+      summary: Create vendor product
+      tags: [Catalog]
+      responses:
+        '201':
+          description: Product created
+  /inventory/items:
+    get:
+      summary: List inventory items
+      tags: [Inventory]
+      responses:
+        '200':
+          description: Inventory list
+    patch:
+      summary: Update inventory quantity or availability
+      tags: [Inventory]
+      responses:
+        '200':
+          description: Inventory updated
+  /search/vendors:
+    get:
+      summary: Search nearby vendors
+      tags: [Search]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, format: double }
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, format: double }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: available
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Nearby vendors
+  /cart:
+    get:
+      summary: Get active customer cart
+      tags: [Cart]
+      responses:
+        '200':
+          description: Active cart
+    post:
+      summary: Create or replace active cart
+      tags: [Cart]
+      responses:
+        '200':
+          description: Cart saved
+  /cart/items:
+    post:
+      summary: Add item to active cart
+      tags: [Cart]
+      responses:
+        '200':
+          description: Cart item added
+  /checkout:
+    post:
+      summary: Checkout active cart and create order
+      tags: [Checkout]
+      responses:
+        '201':
+          description: Order created
+        '409':
+          description: Cart validation failed
+  /orders:
+    get:
+      summary: List orders visible to current user
+      tags: [Orders]
+      responses:
+        '200':
+          description: Order list
+  /orders/{orderId}:
+    get:
+      summary: Get order details
+      tags: [Orders]
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order details
+  /orders/{orderId}/accept:
+    post:
+      summary: Vendor accepts order
+      tags: [Orders]
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order accepted
+  /orders/{orderId}/reject:
+    post:
+      summary: Vendor rejects order with reason
+      tags: [Orders]
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order rejected
+  /orders/{orderId}/status:
+    patch:
+      summary: Update allowed order status
+      tags: [Orders]
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: Order status updated
+  /payments/{paymentId}/confirm:
+    post:
+      summary: Confirm payment idempotently
+      tags: [Payments]
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Payment confirmation result
+  /refunds:
+    post:
+      summary: Request or create refund
+      tags: [Refunds]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Refund recorded
+  /couriers:
+    get:
+      summary: List couriers for authorized users
+      tags: [Couriers]
+      responses:
+        '200':
+          description: Courier list
+  /couriers/me/availability:
+    patch:
+      summary: Set current courier availability
+      tags: [Couriers]
+      responses:
+        '200':
+          description: Availability updated
+  /dispatch-jobs:
+    get:
+      summary: List dispatch jobs visible to current user
+      tags: [Dispatch]
+      responses:
+        '200':
+          description: Dispatch job list
+  /dispatch-jobs/{jobId}/accept:
+    post:
+      summary: Courier accepts dispatch job
+      tags: [Dispatch]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Dispatch job accepted
+  /dispatch-jobs/{jobId}/reject:
+    post:
+      summary: Courier rejects dispatch job
+      tags: [Dispatch]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Dispatch job rejected and reassignable
+  /deliveries/{deliveryId}/status:
+    patch:
+      summary: Update allowed delivery status
+      tags: [Deliveries]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Delivery status updated
+  /deliveries/{deliveryId}/complete:
+    post:
+      summary: Complete delivery with 6-digit confirmation code
+      tags: [Deliveries]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Delivery completed
+        '400':
+          description: Invalid confirmation code
+  /notifications:
+    get:
+      summary: List current user's notifications
+      tags: [Notifications]
+      responses:
+        '200':
+          description: Notification list
+  /support/tickets:
+    get:
+      summary: List support tickets visible to current user
+      tags: [Support]
+      responses:
+        '200':
+          description: Support ticket list
+    post:
+      summary: Create support ticket
+      tags: [Support]
+      responses:
+        '201':
+          description: Support ticket created
+  /finance/transactions:
+    get:
+      summary: List finance transactions
+      tags: [Finance]
+      responses:
+        '200':
+          description: Transaction list
+  /finance/cash-reconciliation:
+    get:
+      summary: List cash-on-delivery reconciliation records
+      tags: [Finance]
+      responses:
+        '200':
+          description: Cash reconciliation records
+  /dashboards/admin:
+    get:
+      summary: Admin dashboard metrics
+      tags: [Dashboards]
+      responses:
+        '200':
+          description: Admin dashboard
+  /dashboards/vendor:
+    get:
+      summary: Vendor dashboard metrics
+      tags: [Dashboards]
+      responses:
+        '200':
+          description: Vendor dashboard
+  /dashboards/finance:
+    get:
+      summary: Finance dashboard metrics
+      tags: [Dashboards]
+      responses:
+        '200':
+          description: Finance dashboard
+  /dashboards/courier:
+    get:
+      summary: Courier dashboard metrics
+      tags: [Dashboards]
+      responses:
+        '200':
+          description: Courier dashboard
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    VendorId:
+      name: vendorId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlationId: { type: string }
+    OrderStatus:
+      type: string
+      enum: [PENDING, PAYMENT_PENDING, PAYMENT_CONFIRMED, ACCEPTED_BY_VENDOR, REJECTED_BY_VENDOR, PREPARING, READY_FOR_PICKUP, DISPATCH_PENDING, ASSIGNED_TO_COURIER, PICKED_UP, DELIVERING, DELIVERED, CANCELLED, REFUND_PENDING, REFUNDED]
+    DeliveryStatus:
+      type: string
+      enum: [DISPATCH_PENDING, ASSIGNED, ACCEPTED, REJECTED, ARRIVED_AT_VENDOR, PICKED_UP, ON_ROUTE_TO_CUSTOMER, ARRIVED_AT_CUSTOMER, DELIVERED, FAILED_DELIVERY, REASSIGNED, CANCELLED]
+    PaymentStatus:
+      type: string
+      enum: [INITIATED, PENDING_CONFIRMATION, CONFIRMED, FAILED, CANCELLED, REFUND_PENDING, PARTIALLY_REFUNDED, REFUNDED]

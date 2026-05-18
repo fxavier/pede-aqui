@@ -5,6 +5,15 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+## Constitution Alignment *(mandatory)*
+
+- **Affected roles**: [customers, vendors, couriers, administrators, operations users, finance users]
+- **Vertical/product scope**: [restaurants, grocery, pharmacy, convenience, electronics, florists, general retail, safe fuel-station convenience products, or N/A]
+- **Prohibited scope**: Fuel transport MUST NOT be included.
+- **Security and tenant isolation**: [roles, tenant data boundaries, sensitive data handled, rate limiting needs]
+- **Reliability rules**: [order state, payment idempotency, refunds, 6-digit delivery code, cash reconciliation, inventory concurrency, or N/A]
+- **Simplicity constraint**: Describe the direct layered implementation. Do not specify DDD, Clean Architecture, Hexagonal Architecture, ports, adapters, use cases, command buses, CQRS, event sourcing, or speculative abstractions.
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -74,6 +83,9 @@
 
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
+- How does the feature prevent prohibited fuel transport while allowing safe convenience products from fuel stations, if relevant?
+- How does the feature preserve tenant isolation when data belongs to a vendor, courier, customer, or operational tenant?
+- How does the feature behave on retries, duplicate callbacks, concurrent updates, or stale optimistic-lock versions?
 
 ## Requirements *(mandatory)*
 
@@ -89,11 +101,23 @@
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-006**: System MUST enforce role-based access for [roles allowed to use this feature]
+- **FR-007**: System MUST enforce tenant isolation for [tenant-owned data or N/A]
+- **FR-008**: System MUST validate all request inputs and return consistent errors
+- **FR-009**: System MUST document API endpoints with OpenAPI metadata when APIs are changed
 
 *Example of marking unclear requirements:*
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+- **FR-010**: System MUST authenticate users via Keycloak OAuth2/OIDC JWT unless [NEEDS CLARIFICATION: feature is not authenticated]
+- **FR-011**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+
+### Non-Functional Requirements
+
+- **NFR-001**: Implementation MUST follow simple controller/service/repository/entity/dto/mapper layering for backend work.
+- **NFR-002**: Implementation MUST use structured logs and correlation IDs for important business flows.
+- **NFR-003**: Sensitive data, including secrets, tokens, payment data, prescription files, and sensitive personal data, MUST NOT be logged.
+- **NFR-004**: Sensitive endpoints such as authentication, checkout, and payment confirmation MUST have rate limiting.
+- **NFR-005**: Tests MUST cover service business rules, critical persistence behavior, and API flows relevant to this feature.
 
 ### Key Entities *(include if feature involves data)*
 

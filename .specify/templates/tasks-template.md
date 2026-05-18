@@ -8,7 +8,10 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Tests are REQUIRED for production code. Include unit tests for service
+business rules, integration tests for repositories and critical flows, and API tests
+for checkout, payment confirmation, order lifecycle, delivery confirmation, or other
+critical endpoints touched by the feature. The project coverage target is 80%.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -20,10 +23,11 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Backend**: `backend/src/main/java/com/delivery/[feature]/`, `backend/src/main/resources/db/migration/`, `backend/src/test/`
+- **Web backoffice**: `frontend/src/features/[feature]/`
+- **Mobile**: `mobile/src/features/[feature]/`, `ios/`, or `android/` per selected platform
+- Backend feature packages MUST keep the simple layered structure: controller, service,
+  repository, entity, dto, mapper, config, exception, security as needed.
 
 <!-- 
   ============================================================================
@@ -68,6 +72,9 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T007 Create base models/entities that all stories depend on
 - [ ] T008 Configure error handling and logging infrastructure
 - [ ] T009 Setup environment configuration management
+- [ ] T010 Configure Keycloak/OAuth2 JWT security and role-based access checks
+- [ ] T011 Configure structured logging, correlation IDs, health checks, and metrics
+- [ ] T012 Configure test coverage reporting with 80% minimum target
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -79,21 +86,24 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> **NOTE: Write tests before implementation when the behavior is new or changed.**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T013 [P] [US1] Unit test for [service business rule] in backend/src/test/[path]
+- [ ] T014 [P] [US1] Repository or critical-flow integration test in backend/src/test/[path]
+- [ ] T015 [P] [US1] API test for [endpoint/user journey] in backend/src/test/[path]
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T016 [P] [US1] Create entity in backend/src/main/java/com/delivery/[feature]/entity/[Entity].java
+- [ ] T017 [P] [US1] Create DTOs in backend/src/main/java/com/delivery/[feature]/dto/
+- [ ] T018 [P] [US1] Create mapper in backend/src/main/java/com/delivery/[feature]/mapper/[Mapper].java
+- [ ] T019 [US1] Create repository in backend/src/main/java/com/delivery/[feature]/repository/[Repository].java
+- [ ] T020 [US1] Implement service in backend/src/main/java/com/delivery/[feature]/service/[Service].java
+- [ ] T021 [US1] Implement REST controller in backend/src/main/java/com/delivery/[feature]/controller/[Controller].java
+- [ ] T022 [US1] Add Flyway migration, constraints, indexes, and optimistic locking where needed
+- [ ] T023 [US1] Add validation, consistent errors, OpenAPI metadata, and useful business-flow logs
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -105,17 +115,17 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T024 [P] [US2] Unit test for [service business rule] in backend/src/test/[path]
+- [ ] T025 [P] [US2] Integration/API test for [user journey] in backend/src/test/[path]
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+- [ ] T026 [P] [US2] Create or update DTO/entity/mapper classes in backend/src/main/java/com/delivery/[feature]/
+- [ ] T027 [US2] Implement service method with clear transaction boundary
+- [ ] T028 [US2] Implement REST endpoint or UI/mobile screen for [feature]
+- [ ] T029 [US2] Add validation, security checks, and observability for user story 2
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -127,16 +137,16 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T030 [P] [US3] Unit test for [service business rule] in backend/src/test/[path]
+- [ ] T031 [P] [US3] Integration/API test for [user journey] in backend/src/test/[path]
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T032 [P] [US3] Create or update simple layered backend or feature-folder UI files
+- [ ] T033 [US3] Implement service/screen behavior for [feature]
+- [ ] T034 [US3] Add validation, security checks, and observability for user story 3
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -152,9 +162,12 @@ Examples of foundational tasks (adjust based on your project):
 
 - [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Remove any placeholder or fake implementation code
+- [ ] TXXX Verify public class and public service method comments are present
+- [ ] TXXX Verify OpenAPI metadata for changed endpoints
+- [ ] TXXX [P] Additional tests needed to maintain 80% minimum coverage
 - [ ] TXXX Security hardening
+- [ ] TXXX Validate structured logs do not expose secrets, tokens, payment data, prescription files, or sensitive personal data
 - [ ] TXXX Run quickstart.md validation
 
 ---
@@ -178,8 +191,8 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Within Each User Story
 
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
+- Tests MUST be written before or alongside implementation for changed behavior
+- Entities/DTOs/mappers before services
 - Services before endpoints
 - Core implementation before integration
 - Story complete before moving to next priority
@@ -198,13 +211,13 @@ Examples of foundational tasks (adjust based on your project):
 ## Parallel Example: User Story 1
 
 ```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
+# Launch all tests for User Story 1 together:
+Task: "Unit test for [service business rule] in backend/src/test/[path]"
+Task: "Integration/API test for [user journey] in backend/src/test/[path]"
 
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+# Launch simple layered files for User Story 1 together when they do not conflict:
+Task: "Create DTOs in backend/src/main/java/com/delivery/[feature]/dto/"
+Task: "Create mapper in backend/src/main/java/com/delivery/[feature]/mapper/[Mapper].java"
 ```
 
 ---
@@ -245,7 +258,8 @@ With multiple developers:
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
-- Verify tests fail before implementing
+- Verify new behavior is covered by unit, integration, or API tests as required
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence,
+  prohibited architecture patterns, and placeholder code that pretends to be complete
