@@ -1,0 +1,218 @@
+
+ TopNavBar 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm">
+<div class="flex items-center gap-md">
+<span class="text-headline-sm font-extrabold text-primary">Vendor Central</span>
+</div>
+<div class="hidden md:flex flex-1 max-w-md mx-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-xxl pr-md py-sm bg-surface-container rounded-full border-none text-body-md focus:ring-2 focus:ring-primary/20" placeholder="Search orders, products..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</button>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-outline-variant">
+<img alt="Vendor profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsvDnNbXJnLLvGKIPq9E1qdbm0wiHZ5j-XpOU6FL7SuAvdpO3uhLyJRPCHP2kLGecNlMPB1EsHbn6qMlwLmt5mg_-NpCcCQUp5A4a7H16ywudBNVDkMmVy0tOGbCuibmZEchnkDbL8ul5jHw2b36KMNj6tiNpw8mnqlUhw2yIqS7pMDlAahAPRds4np-a2qbOwjVhowppx4O9UouOVOYQUbgWCez9QQuthOoQI9gfAJgBP_Kksqm8xsjt8Qx5ULOn_berKSiDKaKs"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-64px)] w-64 py-lg gap-sm border-r border-outline-variant bg-surface-container-low">
+<div class="px-md mb-lg">
+<h2 class="text-headline-sm font-extrabold text-on-surface">Vendor Portal</h2>
+<p class="text-label-md text-on-surface-variant">Manage your shop</p>
+</div>
+<nav class="flex flex-col gap-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-md">
+<button class="w-full bg-secondary text-on-secondary font-label-md py-md rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                    New Listing
+                </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-lg md:p-xl max-w-5xl mx-auto">
+<!-- Header Section -->
+<div class="mb-xl flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<nav class="flex items-center gap-xs text-on-surface-variant text-label-md mb-xs">
+<a class="hover:text-primary transition-colors" href="#">Menu Management</a>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-on-surface">Add Product</span>
+</nav>
+<h1 class="text-headline-lg font-headline-lg text-on-surface">Product Listing Editor</h1>
+<p class="text-body-md text-on-surface-variant">Drafting a new vibrant item for your marketplace stall.</p>
+</div>
+<div class="flex items-center gap-md">
+<button class="px-xl py-md text-on-surface-variant font-label-md border-2 border-outline-variant rounded-xl hover:bg-surface-container-high transition-all">Cancel</button>
+<button class="px-xl py-md bg-primary text-on-primary font-label-md rounded-xl shadow-lg hover:translate-y-[-2px] transition-all">Save Changes</button>
+</div>
+</div>
+<!-- Form Content -->
+<div class="bento-grid">
+<!-- Basic Info Section -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-lg">
+<section class="form-card">
+<div class="flex items-center gap-sm mb-lg">
+<div class="p-xs bg-primary-fixed rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="edit_note">edit_note</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm">Basic Information</h3>
+</div>
+<div class="space-y-md">
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Product Name</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" placeholder="e.g. Traditional Spicy Jollof Rice" type="text"/>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Description</label>
+<textarea class="w-full px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" placeholder="Tell your customers about the ingredients, spices, and heritage of this dish..." rows="4"></textarea>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Category</label>
+<div class="relative">
+<select class="w-full appearance-none px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring bg-white">
+<option>Main Courses</option>
+<option>Sides &amp; Appetizers</option>
+<option>Beverages</option>
+<option>Desserts</option>
+<option>Seasonal Specials</option>
+</select>
+<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">SKU/ID</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring bg-surface-container-low font-code-otp text-secondary" type="text" value="PADE-JOL-001"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing & Inventory Section -->
+<section class="form-card">
+<div class="flex items-center gap-sm mb-lg">
+<div class="p-xs bg-secondary-container rounded-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm">Pricing &amp; Inventory</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-xl">
+<!-- Pricing -->
+<div class="space-y-md">
+<h4 class="text-label-md text-primary font-bold uppercase tracking-wider">Pricing</h4>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Base Price</label>
+<div class="relative">
+<span class="absolute left-md top-1/2 -translate-y-1/2 font-bold text-on-surface">₦</span>
+<input class="w-full pl-xl pr-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" placeholder="0.00" type="number"/>
+</div>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Discounted Price (Optional)</label>
+<div class="relative">
+<span class="absolute left-md top-1/2 -translate-y-1/2 font-bold text-on-surface">₦</span>
+<input class="w-full pl-xl pr-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" placeholder="0.00" type="number"/>
+</div>
+</div>
+</div>
+<!-- Inventory -->
+<div class="space-y-md">
+<h4 class="text-label-md text-secondary font-bold uppercase tracking-wider">Inventory</h4>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Current Stock</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" type="number" value="50"/>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-xs">Low Stock Threshold</label>
+<input class="w-full px-md py-sm border border-outline-variant rounded-xl text-body-md input-focus-ring" type="number" value="10"/>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Media Section -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-lg">
+<section class="form-card overflow-hidden">
+<div class="flex items-center gap-sm mb-lg">
+<div class="p-xs bg-tertiary-container rounded-lg">
+<span class="material-symbols-outlined text-white" data-icon="image">image</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm">Product Media</h3>
+</div>
+<div class="relative group cursor-pointer border-2 border-dashed border-outline-variant rounded-xxl p-sm hover:border-primary transition-all">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A vibrant, close-up shot of a steaming bowl of Jollof rice topped with grilled chicken and plantain, set against a warm, sun-drenched wooden tabletop. The lighting is soft and natural, emphasizing the rich coral-orange hues of the rice. The overall mood is appetizing, hospital, and culturally rich, echoing the Pede Aqui modern African energy aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVyfILxCuWsrhTh1GEMIHh-ND_UrciZTXDLKEz7ZK4ml709z6TrXZ8tKeNINEcb9sDQri_ChGTywK2ThlM6O9aTMrENh6vt0p6ot8ldT3m4Yyy3YxVPaln4JLH02r1X5FauTfYCudDS_IDttvEuiLJjbQS8Gzb5xsntxP6gn2oMtoCNWjy6NFGkq69Vpr18fG4_aEp6a3QKHX_BSjCNYnrBcHZaCAcZ3UGMAI3LXiqXc9herSYRrdAjKBstprAu1xTXiMV2UrLiLY"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+<button class="bg-white text-primary px-md py-sm rounded-lg font-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined" data-icon="cloud_upload">cloud_upload</span>
+                                        Change Photo
+                                    </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-sm mt-md">
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container flex items-center justify-center cursor-pointer hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-outline" data-icon="add">add</span>
+</div>
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container flex items-center justify-center cursor-pointer hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-outline" data-icon="add">add</span>
+</div>
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container flex items-center justify-center cursor-pointer hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-outline" data-icon="add">add</span>
+</div>
+</div>
+<p class="text-body-sm text-on-surface-variant mt-lg leading-relaxed">
+<span class="font-bold text-primary">Tip:</span> High-quality photos of your food increase sales by up to 40%. Use bright, natural lighting.
+                        </p>
+</section>
+<!-- Status Card -->
+<section class="form-card bg-surface-container-low border border-primary-fixed">
+<h4 class="text-label-md text-on-surface font-bold mb-md">Visibility Status</h4>
+<div class="flex items-center justify-between p-md bg-white rounded-xl border border-outline-variant">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-body-md font-medium">Active on Marketplace</span>
+</div>
+<div class="w-12 h-6 bg-secondary rounded-full relative cursor-pointer">
+<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+</div>
+</div>
+<p class="text-body-sm text-on-surface-variant mt-md">
+                            When active, this product will be immediately visible to customers in your delivery area.
+                        </p>
+</section>
+</div>
+</div>
+<!-- Footer Actions Mobile -->
+<div class="md:hidden mt-xl flex flex-col gap-md">
+<button class="w-full py-md bg-primary text-on-primary font-label-md rounded-xl shadow-lg">Save Changes</button>
+<button class="w-full py-md text-on-surface-variant font-label-md border-2 border-outline-variant rounded-xl">Cancel</button>
+</div>
+</main>
+</div>
+

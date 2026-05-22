@@ -1,0 +1,301 @@
+
+ Side Navigation Shell 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xl px-xs">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Energy Delivery</h1>
+<p class="font-label-md text-on-surface-variant text-xs opacity-70">Backoffice Suite</p>
+</div>
+<nav class="flex-1 space-y-base">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md">Finances</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-secondary font-bold border-r-4 border-secondary bg-secondary-container/20" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+<span class="font-label-md">Support</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-md">Governance</span>
+</a>
+</nav>
+<button class="mb-xl bg-primary-container text-on-primary-container py-md px-lg rounded-xl font-bold flex items-center justify-center gap-sm active:scale-95 transition-transform shadow-md">
+<span class="material-symbols-outlined">add</span>
+<span>New Dispatch</span>
+</button>
+<div class="pt-lg border-t border-outline-variant space-y-base">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors group" href="#">
+<span class="material-symbols-outlined">help_center</span>
+<span class="font-label-md">Support Hub</span>
+</a>
+</div>
+</aside>
+ Main Content Canvas 
+<main class="ml-64 min-h-screen">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface shadow-sm flex justify-between items-center px-lg z-40">
+<div class="flex items-center bg-surface-container rounded-full px-lg py-xs w-96">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full px-sm" placeholder="Search tickets, orders, or users..." type="text"/>
+</div>
+<div class="flex items-center gap-lg">
+<button class="relative text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="flex items-center gap-sm pl-lg border-l border-outline-variant">
+<div class="text-right">
+<p class="font-label-md text-xs">Admin User</p>
+<p class="text-[10px] text-on-surface-variant">Central Hub</p>
+</div>
+<img alt="Administrator Profile" class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZTpbEexQLi8dRlxOUByFds94UggpnWXYfYDHyhf3O4WFXHrzc5SjJAv9j6k0Vh-BPgwh6uemVPy9ifDY3iBc8jY1UJUgDtQ58fhIQsmgYOR4Al_EzcYxfP0jhQam7-cHCp3cMOingd4vjRFt7sbuDIE1PPG_lVGoAfRfqzEiwqA-eQJUM07qlT0lQeQKToWQokD1QLRcDP75g1UFV3487x0X5IFIGJxEe7_dOGW7F9IYb-DbjmUwo6tkgOTCFZd-xsiXuXWQCwj0"/>
+</div>
+</div>
+</header>
+<!-- Ticket View Layout -->
+<div class="pt-16 h-screen flex overflow-hidden">
+<!-- Left Panel: Ticket List -->
+<section class="w-[400px] border-r border-outline-variant flex flex-col bg-white">
+<div class="p-lg border-b border-outline-variant">
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-sm text-headline-sm">Support Queue</h2>
+<span class="bg-primary-fixed text-on-primary-fixed text-[10px] font-bold px-sm py-1 rounded-full uppercase tracking-wider">24 Active</span>
+</div>
+<div class="flex gap-xs overflow-x-auto pb-xs custom-scrollbar">
+<span class="px-md py-1 bg-secondary text-white rounded-full text-xs font-bold whitespace-nowrap cursor-pointer">All Tickets</span>
+<span class="px-md py-1 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold whitespace-nowrap cursor-pointer">Priority</span>
+<span class="px-md py-1 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold whitespace-nowrap cursor-pointer">Delayed</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Ticket Items -->
+<div class="ticket-card-active p-lg cursor-pointer border-b border-outline-variant transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-[10px] font-code-otp text-on-surface-variant">#TK-88294</span>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span>
+</div>
+<h3 class="font-label-md text-on-surface mb-xs">Late Delivery: Oxygen Tank Refill</h3>
+<p class="text-xs text-on-surface-variant line-clamp-2 mb-md">Customer reports delivery agent is 45 minutes late for a medical-grade oxygen refill at Lagos Island Hospital...</p>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<img alt="Support Agent" class="w-6 h-6 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyDbyY5iHP1WVdjvEEx4lzIg5UZ_1pamQNfVDYN4YTHUoOsS3pk98Ioa1FsMTYCA53GxULRPg0AYlBloA0NCLiQGbuzMuPPjGYQ1JgNiaK_fz6y2xOSeBf-W-Y18DSoWCDisirmerDE-zB2ZKs8PPcJIUuk-kbnw6jaEHp5KAotSGY5awonT3OKJACel0g42hJ6lL7up3mcHaQ2mNrCRoadZng6frFqzfu33iIz8ebui2BXkYC4Sf4lFR3mAUOxb7TUnwLBQcpLdo"/>
+</div>
+<span class="text-[10px] text-outline italic">Updated 4m ago</span>
+</div>
+</div>
+<div class="p-lg cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-[10px] font-code-otp text-on-surface-variant">#TK-88291</span>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+</div>
+<h3 class="font-label-md text-on-surface mb-xs">Invoice Discrepancy</h3>
+<p class="text-xs text-on-surface-variant line-clamp-2 mb-md">Merchant "SolarPower Hub" claims the surcharge for weekend delivery was applied incorrectly...</p>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<img alt="Support Agent" class="w-6 h-6 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqB3t2l01QCk2gsSWL4z9zSTG2Dfb2hHPhudZbTVx-O-iyKH19LBzIvKpq6Fp3nnppm5RM2Fl85iDANT1frVCA23pZI66q5AfjLNsZBjd4tSI73Lz9UqpUr9GfZ7iY_hIysGOWG_l-_2IHppkG_fhlnZ-JrBqduCkuZamAdXizyKsh8cWXt3lwC6QYrWuKCPnYIT4lPFdoV_sxj5jL0Fyozyc2QXTV3Eg5nJ9ueTCtrhyTSMrsHma_doeJVDfFYwOovLdSRU8Xo80"/>
+</div>
+<span class="text-[10px] text-outline italic">Updated 22m ago</span>
+</div>
+</div>
+<div class="p-lg cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-[10px] font-code-otp text-on-surface-variant">#TK-88285</span>
+<span class="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Low</span>
+</div>
+<h3 class="font-label-md text-on-surface mb-xs">Update Profile Picture</h3>
+<p class="text-xs text-on-surface-variant line-clamp-2 mb-md">Driver app keeps rejecting the KYC selfie. Requesting manual override or support...</p>
+<div class="flex justify-between items-center">
+<div class="flex -space-x-2">
+<span class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center text-[8px] font-bold">UN</span>
+</div>
+<span class="text-[10px] text-outline italic">Updated 1h ago</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: Ticket Details -->
+<section class="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-xl bg-background">
+<div class="max-w-4xl mx-auto w-full space-y-lg">
+<!-- Header Section -->
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-sm mb-xs">
+<span class="bg-surface-container-highest px-sm py-1 rounded text-[10px] font-code-otp">#TK-88294</span>
+<span class="text-outline text-xs">Incident • Logistics Delay</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Late Delivery: Oxygen Tank Refill</h2>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-sm rounded-lg border border-outline-variant hover:bg-white transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Layout: Two Columns for Detailed Info -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Left Column: Core Actions & Detail -->
+<div class="lg:col-span-2 space-y-lg">
+<!-- Status Toggle -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant">
+<label class="font-label-md text-xs mb-md block text-on-surface-variant uppercase tracking-tighter">Current Status</label>
+<div class="flex p-1 bg-surface-container rounded-lg gap-1">
+<button class="flex-1 py-sm rounded-md text-xs font-bold transition-all text-on-surface-variant hover:bg-white/50">Open</button>
+<button class="flex-1 py-sm rounded-md text-xs font-bold transition-all bg-primary text-white shadow-md">In Progress</button>
+<button class="flex-1 py-sm rounded-md text-xs font-bold transition-all text-on-surface-variant hover:bg-white/50">Resolved</button>
+</div>
+</div>
+<!-- Context Card: Order Reference -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant">
+<div class="flex justify-between items-center mb-md">
+<h4 class="font-headline-sm text-base">Order Reference</h4>
+<a class="text-primary font-bold text-xs flex items-center gap-1 hover:underline" href="#">
+                                        View Order <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<div class="flex items-center gap-lg bg-surface-container-low p-md rounded-lg">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-secondary">local_shipping</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<p class="font-code-otp text-sm">#ORD-2024-X99</p>
+<span class="text-xs font-bold text-secondary">In Transit</span>
+</div>
+<p class="text-xs text-on-surface-variant">Lagos Medical Supplies → Island General Hospital</p>
+</div>
+</div>
+</div>
+<!-- Internal Notes (Restricted Visibility) -->
+<div class="bg-on-tertiary-fixed text-on-tertiary-fixed-variant p-lg rounded-xl shadow-sm border-l-8 border-tertiary-container relative overflow-hidden">
+<div class="absolute -top-4 -right-4 opacity-10">
+<span class="material-symbols-outlined text-8xl">visibility_off</span>
+</div>
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-sm">lock</span>
+<h4 class="font-label-md uppercase tracking-widest text-[10px]">Internal Notes (Confidential)</h4>
+</div>
+<p class="text-xs mb-lg opacity-80 italic">These notes are strictly for backoffice staff and are never visible to the customer or delivery partner.</p>
+<textarea class="w-full bg-white/10 border border-white/20 rounded-lg p-md text-sm text-white placeholder-white/40 focus:ring-tertiary transition-all" placeholder="Enter confidential update..." rows="4"></textarea>
+<div class="flex justify-end mt-sm">
+<button class="bg-white text-on-tertiary-fixed px-lg py-sm rounded-lg text-xs font-bold hover:bg-tertiary-fixed transition-colors">Save Internal Note</button>
+</div>
+</div>
+<!-- Audit Trail -->
+<div class="space-y-md">
+<h4 class="font-headline-sm text-base">Audit Trail</h4>
+<div class="space-y-lg relative before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-outline-variant">
+<div class="relative pl-xl">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] bg-white border-2 border-primary rounded-full z-10 flex items-center justify-center">
+<div class="w-2 h-2 bg-primary rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-bold">Status changed to <span class="text-primary">In Progress</span></p>
+<p class="text-xs text-on-surface-variant">Admin (Felix) • 2 mins ago</p>
+</div>
+</div>
+<div class="relative pl-xl">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] bg-white border-2 border-outline-variant rounded-full z-10 flex items-center justify-center">
+<div class="w-2 h-2 bg-outline-variant rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-bold">Internal Note added</p>
+<p class="text-xs text-on-surface-variant">Admin (Felix) • 5 mins ago</p>
+<div class="mt-sm p-sm bg-surface-container rounded italic text-xs">"Called delivery partner. They mentioned heavy traffic on the 3rd Mainland Bridge due to construction."</div>
+</div>
+</div>
+<div class="relative pl-xl">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] bg-white border-2 border-outline-variant rounded-full z-10 flex items-center justify-center">
+<div class="w-2 h-2 bg-outline-variant rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-bold">Ticket Created via Web Widget</p>
+<p class="text-xs text-on-surface-variant">System • 1 hour ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Metadata & User -->
+<div class="space-y-lg">
+<!-- Customer Profile -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant">
+<h4 class="font-label-md text-xs mb-md block text-on-surface-variant uppercase tracking-tighter">Reporter</h4>
+<div class="flex items-center gap-md mb-md">
+<img alt="Customer Profile" class="w-12 h-12 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfnJr3NV8BCG85euFedoTTRwal-dsKThep52xOyoNeHD1ozPBSjkL9xQG74s_27Tpr42mxGridqGTcZ0thcB8r_xlagG4OlE9kQ3Gv8dxbzAc4dZdGIFLoXfBQb9PNCz0rC58l5DexonaraCwt1anT1ZgOIr43lAWNr4jKeM88-aoUxXFniN_FyQKq5UDAstHC6VSNmL4R8enpF1I3Hk1YWOdRPEr0qChz7Kaex2JtS1-iW3a7MIJwNHin2568XEb1BQOHxL4L1K0"/>
+<div>
+<p class="font-bold text-sm">Chidi Azikiwe</p>
+<p class="text-[10px] text-on-surface-variant">Logistics Manager, LGH</p>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex items-center gap-sm text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">mail</span>
+<span>chidi.a@hospital.org</span>
+</div>
+<div class="flex items-center gap-sm text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">call</span>
+<span>+234 801 234 5678</span>
+</div>
+</div>
+<button class="w-full mt-lg border border-primary text-primary py-sm rounded-lg text-xs font-bold hover:bg-primary-fixed transition-colors">
+                                    Contact Customer
+                                </button>
+</div>
+<!-- Assigned To -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant">
+<h4 class="font-label-md text-xs mb-md block text-on-surface-variant uppercase tracking-tighter">Assigned Agent</h4>
+<div class="flex items-center gap-md">
+<img alt="Support Agent" class="w-10 h-10 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvLuIRLMkgf0qDk8qiP9BBc3Z9AxlD4hh0-NqAK5SKmXurxl9c-CU2_wDc452xBzeTG-UP4VZ6YFqFlf_WzemfujxyKPaZy1HMg88iXBr6Ww45nI0Del3s_r473BHNgaGxOBKmQgAWmwUEZHZzLOgcBqbc5smKQGcWPQ1ekRJCdj18f-mlOtSbgJoivrJYhT1LuyZyl6nUnPW-GyVycuVLWGDKBduTAAugPvU2BjAe8YzJEc86JYIx5iG2EBOjf5BEtmjFFZtOI7o"/>
+<div class="flex-1">
+<p class="font-bold text-sm">Felix Admin (You)</p>
+<p class="text-[10px] text-on-surface-variant italic">Assigned 15m ago</p>
+</div>
+<button class="text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</div>
+<!-- SLAs -->
+<div class="bg-surface-container-high p-lg rounded-xl border border-outline-variant">
+<div class="flex justify-between items-center mb-md">
+<h4 class="font-label-md text-xs text-on-surface-variant uppercase tracking-tighter">SLA Compliance</h4>
+<span class="bg-error text-white text-[8px] font-bold px-2 py-0.5 rounded-full">At Risk</span>
+</div>
+<div class="space-y-md">
+<div>
+<div class="flex justify-between text-[10px] mb-1">
+<span>Resolution Target</span>
+<span class="font-bold">1h 12m left</span>
+</div>
+<div class="w-full bg-outline-variant h-1 rounded-full overflow-hidden">
+<div class="bg-error w-[85%] h-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+

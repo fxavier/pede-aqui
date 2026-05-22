@@ -1,0 +1,275 @@
+
+ Sidebar Navigation 
+<aside class="hidden md:flex flex-col h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-low fixed left-0 top-0 w-64 z-50">
+<div class="px-md mb-lg">
+<h1 class="text-headline-sm font-headline-sm font-extrabold text-on-surface">Vendor Portal</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">Manage your shop</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="text-label-md font-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-label-md font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md mt-auto">
+<button class="w-full bg-primary text-on-primary font-bold py-md px-lg rounded-xl flex items-center justify-center gap-xs active:scale-95 duration-100">
+<span class="material-symbols-outlined">add</span>
+<span>New Listing</span>
+</button>
+</div>
+</aside>
+ Main Content Area 
+<main class="md:ml-64 min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm">
+<div class="flex items-center gap-md">
+<div class="md:hidden">
+<span class="material-symbols-outlined text-primary">menu</span>
+</div>
+<h2 class="text-headline-sm font-headline-sm font-extrabold text-primary">Vendor Central</h2>
+</div>
+<div class="flex-1 max-w-md mx-xl hidden md:block">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface-container rounded-full border-none focus:ring-2 focus:ring-secondary text-body-md" placeholder="Search catalog..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">help</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="Vendor profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a smiling West African chef in clean white kitchen attire, set against a warm, sun-drenched studio background. The lighting is soft and high-key, emphasizing a modern African Energy aesthetic with vibrant yet professional tones of coral and earth. High-end portrait photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxQ9Xi9_go_7HxWLYcAn1zOv-8J0iC8j_mfC5ew1m-uMU7t8l5uJ2u3_YYDQb_cPMVN52cNQQoBah7Zs4Z-0U6xk1Y4SYYQTrYiKVPMHluIxqZFzNcDk_jWb_McLRw5atQBUXexpRF3xMi84u9y2kcCUJhXMdtXynCCAEhlDD8uoQVkGKHwPKQEat2CK-CEFpvAyCnX1dfUmOTkiivf09qwQ05v6sMBWzliMqFYjrqUic2OZFf7de82HcfyjguvhfbRhd-_hry-ak"/>
+</div>
+</div>
+</header>
+<div class="p-lg md:p-xl max-w-6xl mx-auto">
+<!-- Hero / Header Section -->
+<div class="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-lg">
+<div>
+<nav class="flex items-center gap-xs text-on-surface-variant mb-xs">
+<span class="text-label-md font-label-md">Menu Management</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-label-md font-label-md text-primary">Quick Price Editor</span>
+</nav>
+<h1 class="text-headline-lg font-headline-lg text-on-background">Quick Price Editor</h1>
+<p class="text-body-lg text-on-surface-variant mt-xs">Update your catalog pricing in real-time to match market fluctuations.</p>
+</div>
+<div class="flex gap-md">
+<button class="px-lg py-md border-2 border-outline-variant rounded-xl font-bold text-on-surface hover:bg-surface-container transition-all active:scale-95">
+                        Discard Changes
+                    </button>
+<button class="px-lg py-md bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95">
+                        Save All Updates
+                    </button>
+</div>
+</div>
+<!-- Bulk Actions Bento -->
+<section class="mb-xl">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Bulk Increase/Decrease -->
+<div class="md:col-span-2 p-lg bg-surface-container-high rounded-xl custom-shadow border border-primary-fixed-dim">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h3 class="text-headline-sm font-headline-sm text-on-background">Bulk Price Adjustments</h3>
+</div>
+<div class="flex flex-wrap items-center gap-md">
+<div class="flex items-center gap-xs">
+<button class="w-12 h-12 flex items-center justify-center bg-white rounded-lg border border-outline-variant hover:border-primary transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<div class="relative w-32">
+<input class="w-full text-center font-code-otp text-code-otp py-xs border-2 border-outline-variant rounded-lg focus:border-secondary focus:ring-0" type="text" value="5"/>
+<span class="absolute right-sm top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">%</span>
+</div>
+<button class="w-12 h-12 flex items-center justify-center bg-white rounded-lg border border-outline-variant hover:border-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-sm bg-on-secondary-fixed text-secondary-fixed rounded-lg font-bold hover:opacity-90 transition-opacity">Apply Increase</button>
+<button class="px-md py-sm border-2 border-on-secondary-fixed text-on-secondary-fixed rounded-lg font-bold hover:bg-on-secondary-fixed/5 transition-colors">Apply Decrease</button>
+</div>
+</div>
+</div>
+<!-- Toggle Control -->
+<div class="p-lg bg-white rounded-xl custom-shadow border border-outline-variant flex flex-col justify-between">
+<div>
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Sale Mode</h3>
+<p class="text-body-sm mt-xs">Auto-highlight items with active discounts in the app.</p>
+</div>
+<div class="flex items-center justify-between mt-md">
+<span class="text-headline-sm font-bold text-on-surface">Apply Sale Discount</span>
+<button class="w-14 h-8 bg-outline-variant rounded-full p-xs transition-colors duration-300 flex items-center" id="saleToggle">
+<div class="w-6 h-6 bg-white rounded-full shadow-sm transform transition-transform duration-300"></div>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Product High-Density Editor Table -->
+<section class="bg-white rounded-2xl custom-shadow overflow-hidden border border-outline-variant">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-md text-label-md font-label-md text-on-surface-variant uppercase">Product Details</th>
+<th class="px-lg py-md text-label-md font-label-md text-on-surface-variant uppercase">Current Price</th>
+<th class="px-lg py-md text-label-md font-label-md text-on-surface-variant uppercase">New Price</th>
+<th class="px-lg py-md text-label-md font-label-md text-on-surface-variant uppercase text-center">In Stock</th>
+<th class="px-lg py-md text-label-md font-label-md text-on-surface-variant uppercase">Margin %</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Item 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Product Image" class="w-full h-full object-cover" data-alt="A vibrant, close-up shot of steaming Jollof rice served with grilled chicken and plantain, captured in a modern African Energy style. The colors are high-contrast with saturated oranges and deep greens. Lighting is warm and appetizing, mimicking the glow of a bustling afternoon market. Professional food photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuHnFXRkwZQwByMF9_DzQkaqv1xjo1lO0NubKrwSemG3UypvktM_XogmwYRsEODR1o_JcenubyqkGkhM4YQ9uSDZc_ur7mX-xFgC0JVwJM5ez75_wN7F2wgW29NLvhEtv4LAOze_owT6y4NUG-IY2qCPSXd2a89wN0Ehuinxn2kljcCCNS_INFa4IqAZ7srmwlO4juXbSkf_3iJHTV3GiJNjoMQvFOXqtlSC1YWFfm6D8I3dO5Ppi68Biq8-B4lzuqlBH-VgR_HEQ"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Smoky Jollof Rice (Large)</p>
+<p class="text-body-sm text-on-surface-variant">SKU: JOL-L-001</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md font-code-otp text-on-surface-variant">₦4,500.00</td>
+<td class="px-lg py-md">
+<div class="relative w-36">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₦</span>
+<input class="w-full pl-lg pr-sm py-sm border border-outline-variant rounded-lg focus:border-secondary focus:ring-0 font-code-otp text-on-surface" placeholder="4,500" type="text"/>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<input checked="" class="w-5 h-5 rounded text-secondary focus:ring-secondary cursor-pointer border-outline-variant" type="checkbox"/>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-secondary-fixed text-on-secondary-fixed rounded-full text-label-md font-label-md">24%</span>
+</td>
+</tr>
+<!-- Item 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Product Image" class="w-full h-full object-cover" data-alt="A delicious bowl of Egusi soup with pounded yam, featuring rich textures and vibrant green vegetable flecks. The background is a clean white marble surface reflecting warm, high-contrast lighting. The mood is high-end and energetic, emphasizing fresh ingredients and professional preparation in a high-growth delivery marketplace setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSuIsmckXuTnqXZhioKzELvhtRgATi3TxuKTTd6Q0Ia-Ag5zLFpkCr0gBJKQFRclwsjBagC-1MgzSuAxWYfbqsQ1npiFivPq2MqE8NlhDkdhtln36xPxoYru011Y_5VOnWgBrStbwC7qX7acvkyKYCD6yVvzBeA3fR4psjWxPHBo0th5XEbrz3cQ3plmFxFX8TKzz3NTJBndgv8wgxSuVDG9kTtfj1qlq-qTTjwqq3z0dbXCd-7TuU54OvR-cnoTwB8EsNqdh2ozA"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Egusi Soup with Pounded Yam</p>
+<p class="text-body-sm text-on-surface-variant">SKU: EGU-P-004</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md font-code-otp text-on-surface-variant">₦5,200.00</td>
+<td class="px-lg py-md">
+<div class="relative w-36">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₦</span>
+<input class="w-full pl-lg pr-sm py-sm border-2 border-secondary bg-secondary-container/10 rounded-lg focus:ring-0 font-code-otp text-on-surface" type="text" value="5,200"/>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<input checked="" class="w-5 h-5 rounded text-secondary focus:ring-secondary cursor-pointer border-outline-variant" type="checkbox"/>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-secondary-fixed text-on-secondary-fixed rounded-full text-label-md font-label-md">18%</span>
+</td>
+</tr>
+<!-- Item 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Product Image" class="w-full h-full object-cover" data-alt="Glistening Suya skewers arranged on a wooden platter with sliced red onions and fresh tomatoes. The lighting captures the charred edges and oily sheen of the meat in a bold, tactile way. The palette is dominated by deep browns, vibrant reds, and sun-drenched yellows, evoking a sophisticated marketplace atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnrVkTXVKSxKsbHD6He6UMUIBSgymb2xRyuE4nl7csKdvPlXSfbTN081aHT_y-oGlpzF2EY02vtEm74ZsFR5HowePyk8JgKPsBl3VAemhlXwPf96eteUd-6Z9OG855VgCOlFa3t2okuULuDpurI6kd5Pxir7b3USTWsm4E3RaghiAtBbKXvMlYWtsArHVErLKITT4j7yrQ26NSw95uEqhn3jjR_nOvbElG9Z8ILSsUau0sJNIMF08W2Y0Z_Jt7cDJtjVpJ2CitYl0"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Spiced Beef Suya (6 Skewers)</p>
+<p class="text-body-sm text-on-surface-variant">SKU: SUY-B-012</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md font-code-otp text-on-surface-variant">₦3,800.00</td>
+<td class="px-lg py-md">
+<div class="relative w-36">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₦</span>
+<input class="w-full pl-lg pr-sm py-sm border border-outline-variant rounded-lg focus:border-secondary focus:ring-0 font-code-otp text-on-surface" placeholder="3,800" type="text"/>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<input class="w-5 h-5 rounded text-secondary focus:ring-secondary cursor-pointer border-outline-variant" type="checkbox"/>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-error-container text-on-error-container rounded-full text-label-md font-label-md">12%</span>
+</td>
+</tr>
+<!-- Item 4 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden">
+<img alt="Product Image" class="w-full h-full object-cover" data-alt="A refreshing, cold glass of Chapman cocktail with sliced fruit garnish, placed on a sun-drenched outdoor terrace. The vibrant orange drink and green mint leaves perfectly align with the Modern African Energy theme. The lighting is crisp and summery, creating a joyful and hospitable visual tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIMJhs4359KLBCrRJ6XKrNRITjbkbkn2-mvX-0dq9PD3XrNNXZNUU9-leRF7p1Y8vITDqXIr7KUH6Qs5jy76meoEnZ7iC6CU3c_SzyzUnXXm9mWCrGkpgnL453mahmBfpjNp1lOFNvHQo6f1RFzt5eQUqKyTD3U9d8tX_FrBxq-MsLFOyUQm-Z8uHu45Bw6_U9-MV98YECKsRXpcSf4x3xYInKL1qnfLcJpvI2hvcHGP1_bY4S72JgLXZawLisciNoxYeBc7NfVb4"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Classic Chapman Pitcher</p>
+<p class="text-body-sm text-on-surface-variant">SKU: DRN-C-099</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md font-code-otp text-on-surface-variant">₦2,500.00</td>
+<td class="px-lg py-md">
+<div class="relative w-36">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₦</span>
+<input class="w-full pl-lg pr-sm py-sm border border-outline-variant rounded-lg focus:border-secondary focus:ring-0 font-code-otp text-on-surface" placeholder="2,500" type="text"/>
+</div>
+</td>
+<td class="px-lg py-md text-center">
+<input checked="" class="w-5 h-5 rounded text-secondary focus:ring-secondary cursor-pointer border-outline-variant" type="checkbox"/>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-secondary-fixed text-on-secondary-fixed rounded-full text-label-md font-label-md">42%</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination / Table Footer -->
+<div class="px-lg py-md bg-surface-container-low flex flex-col md:flex-row items-center justify-between gap-md">
+<p class="text-body-sm text-on-surface-variant">Showing <span class="font-bold">1-4</span> of 52 products</p>
+<div class="flex items-center gap-xs">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-on-primary font-bold">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white transition-colors">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white transition-colors">3</button>
+<span class="px-xs">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white transition-colors">13</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-white transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+ Floating Action for Mobile (Contextual) 
+<button class="md:hidden fixed bottom-lg right-lg w-16 h-16 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 32px;">save</span>
+</button>
+

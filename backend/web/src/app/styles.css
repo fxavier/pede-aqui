@@ -1,0 +1,137 @@
+body {
+  margin: 0;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top right, #173b3f, #081b24 45%, #06131a 100%);
+  color: #e8f7f8;
+}
+
+.page-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.panel {
+  max-width: 42rem;
+  padding: 2rem;
+  border: 1px solid #2f6465;
+  border-radius: 1rem;
+  background: rgba(6, 20, 28, 0.86);
+  box-shadow: 0 20px 80px rgba(4, 11, 18, 0.55);
+}
+
+.eyebrow {
+  color: #8df4c6;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+}
+
+.home-links {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.home-links a {
+  text-decoration: none;
+  color: #061821;
+  background: #7ae8ba;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.bo-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.bo-sidebar {
+  border-right: 1px solid #245252;
+  background: rgba(3, 18, 24, 0.72);
+  padding: 1.5rem 1rem;
+}
+
+.bo-sidebar h1 {
+  margin: 0;
+}
+
+.bo-sidebar p {
+  margin-top: 0.3rem;
+  color: #9fd4d5;
+  font-size: 0.9rem;
+}
+
+.bo-sidebar nav {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bo-link {
+  color: #daf8f9;
+  text-decoration: none;
+  border: 1px solid #2c6468;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.65rem;
+}
+
+.bo-content {
+  padding: 1.2rem;
+}
+
+.bo-header h2 {
+  margin: 0;
+}
+
+.bo-header p {
+  margin-top: 0.35rem;
+  color: #afd7d8;
+}
+
+.bo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metric-card,
+.state-card {
+  border: 1px solid #2b6b71;
+  border-radius: 0.85rem;
+  background: rgba(7, 27, 35, 0.75);
+  padding: 1rem;
+}
+
+.metric-card p,
+.state-card p {
+  margin: 0;
+  color: #bbebec;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1.3rem;
+}
+
+.state-card h3 {
+  margin: 0 0 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .bo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bo-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #245252;
+  }
+}

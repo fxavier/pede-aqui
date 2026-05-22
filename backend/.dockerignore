@@ -1,0 +1,12 @@
+.git/
+.dockerignore
+.env
+.env.*
+*.log*
+backend/target/
+web/node_modules/
+web/.next/
+web/coverage/
+mobile/.dart_tool/
+mobile/build/
+coverage/

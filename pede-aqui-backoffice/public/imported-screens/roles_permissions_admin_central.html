@@ -1,0 +1,345 @@
+
+ Sidebar Navigation 
+<aside class="bg-surface-container-low dark:bg-surface-dim h-screen w-64 fixed left-0 top-0 flex flex-col border-r border-outline-variant z-50">
+<div class="px-lg py-xl">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed-dim">Marketplace HQ</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-70">Global Admin Panel</p>
+</div>
+<nav class="flex-1 px-sm space-y-base overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">business_center</span>
+<span class="font-label-md text-label-md">Tenants</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Configurations</span>
+</a>
+<!-- Active State: Roles & Permissions -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Roles &amp; Permissions</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Audit Logs</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-label-md text-label-md">System Health</span>
+</a>
+</nav>
+<div class="p-md mt-auto border-t border-outline-variant space-y-base">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+ Top App Bar 
+<header class="bg-surface dark:bg-on-background flex justify-between items-center h-16 px-lg sticky top-0 z-40 w-[calc(100%-16rem)] ml-64 border-b border-outline-variant">
+<div class="flex items-center gap-xl">
+<h2 class="text-headline-sm font-headline-sm font-extrabold text-secondary dark:text-secondary-fixed">Admin Central</h2>
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container border-none rounded-full pl-10 pr-4 py-2 focus:ring-2 focus:ring-secondary text-body-sm" placeholder="Search users or roles..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<nav class="hidden lg:flex gap-md">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md" href="#">Documentation</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md" href="#">Release Notes</a>
+</nav>
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all opacity-80 active:opacity-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all opacity-80 active:opacity-100">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<img alt="Admin Profile Avatar" class="h-8 w-8 rounded-full border border-outline-variant bg-surface-container-high" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfxFzxq3cHHVKzeF9EENyxtTIHZ5bwo9iqSUMRRaIRcudt5MUUaq1NxElMmYu1RTbIu3CscDWDdxMvwA6pAimQckTxixoH46WUghgVA5NaTYFyb6QjLthopvIZctmqNNX1WTU5RPvWzvdg8BbN0PGKKtU571MkD3Vh5KoUQX8hSDnNuh3iaQhY5gKXAQZbwpszLcD00vkjV0Jw7hBJrZbF1ws_7NGnTTiISEXiwmtwcqF30D-ll4wr_x3bVd-0dZDpAjmqZI6T4D4"/>
+</div>
+<button class="bg-primary text-on-primary px-md py-2 rounded-lg font-label-md text-label-md hover:shadow-lg transition-all active:scale-95">
+                New Tenant
+            </button>
+</div>
+</header>
+ Main Content 
+<main class="ml-64 p-lg">
+<div class="max-w-[1200px] mx-auto space-y-lg">
+<!-- Hero / Header Section -->
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-background">Roles &amp; Permissions</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Manage administrative access levels and granular module permissions for your marketplace operations team.</p>
+</div>
+<button class="bg-secondary text-on-secondary px-lg py-sm rounded-lg font-label-md text-label-md flex items-center gap-xs hover:shadow-md transition-all">
+<span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+                    Create New Role
+                </button>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Left Column: User Table (Bento Style) -->
+<div class="col-span-12 lg:col-span-8 space-y-lg">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border border-outline-variant overflow-hidden">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface">
+<h4 class="font-headline-sm text-headline-sm">Administrative Users</h4>
+<div class="flex gap-xs">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-xs font-bold">12 Active</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-label-md text-label-md">
+<th class="px-md py-sm">User</th>
+<th class="px-md py-sm">Role</th>
+<th class="px-md py-sm">Status</th>
+<th class="px-md py-sm">Last Active</th>
+<th class="px-md py-sm text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md flex items-center gap-md">
+<div class="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">JD</div>
+<div>
+<div class="font-bold text-on-surface">James Danladi</div>
+<div class="text-xs text-on-surface-variant">james@market-hq.com</div>
+</div>
+</td>
+<td class="px-md py-md">
+<span class="px-sm py-1 bg-surface-container-highest text-primary rounded-full text-xs font-bold">Super Admin</span>
+</td>
+<td class="px-md py-md">
+<div class="flex items-center gap-xs text-secondary">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="text-xs font-bold">Online</span>
+</div>
+</td>
+<td class="px-md py-md font-body-sm text-body-sm text-on-surface-variant">2 mins ago</td>
+<td class="px-md py-md text-right">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md flex items-center gap-md">
+<img alt="Finance Officer Avatar" class="h-10 w-10 rounded-full object-cover" data-alt="A professional headshot of a smiling finance professional in a brightly lit, modern office environment. The background features warm tones and minimalist furniture, reflecting a clean corporate but welcoming marketplace energy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_FityPbrc_i4P3IQtfEF67AXbWXhdR9iCDlbyRjgd4ckEPM77_xIZs2t8oDJl5s2fj3tqqBovefI3uIQwK6PJdbRiMJrdgANZGanmU9AtBiraPD_ZV1-zOEyeBoDLXgg3Wz66dP0OFp1Sj6rjTA7l1Dh2-mt8ulD9C4mgypsS5_gK4uTwyBvqnzQ2RjAxpaANSTXm3qnYQK6Y11jY25WdsehzbaO2ToEjZn6VwUoAriGipiHvw0Q7vDdZKBeCrBSEjAFKuOfUMq8"/>
+<div>
+<div class="font-bold text-on-surface">Sarah Afolayan</div>
+<div class="text-xs text-on-surface-variant">sarah.a@market-hq.com</div>
+</div>
+</td>
+<td class="px-md py-md">
+<span class="px-sm py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-xs font-bold">Finance</span>
+</td>
+<td class="px-md py-md">
+<div class="flex items-center gap-xs text-secondary">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="text-xs font-bold">Online</span>
+</div>
+</td>
+<td class="px-md py-md font-body-sm text-body-sm text-on-surface-variant">1 hour ago</td>
+<td class="px-md py-md text-right">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md flex items-center gap-md">
+<div class="h-10 w-10 rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-container font-bold">MK</div>
+<div>
+<div class="font-bold text-on-surface">Musa Keita</div>
+<div class="text-xs text-on-surface-variant">musa.k@market-hq.com</div>
+</div>
+</td>
+<td class="px-md py-md">
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold">Operations</span>
+</td>
+<td class="px-md py-md">
+<div class="flex items-center gap-xs text-outline">
+<div class="h-2 w-2 rounded-full bg-outline"></div>
+<span class="text-xs font-bold">Offline</span>
+</div>
+</td>
+<td class="px-md py-md font-body-sm text-body-sm text-on-surface-variant">Yesterday</td>
+<td class="px-md py-md text-right">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md flex items-center gap-md">
+<div class="h-10 w-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed font-bold">EB</div>
+<div>
+<div class="font-bold text-on-surface">Esther Bello</div>
+<div class="text-xs text-on-surface-variant">esther.b@market-hq.com</div>
+</div>
+</td>
+<td class="px-md py-md">
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold">Support</span>
+</td>
+<td class="px-md py-md">
+<div class="flex items-center gap-xs text-secondary">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="text-xs font-bold">Online</span>
+</div>
+</td>
+<td class="px-md py-md font-body-sm text-body-sm text-on-surface-variant">Just now</td>
+<td class="px-md py-md text-right">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-outline"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface flex justify-center border-t border-outline-variant">
+<button class="text-primary font-bold font-label-md text-label-md hover:underline">View All 24 Users</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Permission Matrix Preview (Asymmetric Layout) -->
+<div class="col-span-12 lg:col-span-4 space-y-lg">
+<div class="bg-white rounded-xl shadow-[0_8px_24px_rgba(44,44,58,0.12)] p-lg border-2 border-primary-container relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4">
+<span class="material-symbols-outlined text-primary-container opacity-20 text-6xl" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div class="mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<span class="px-sm py-1 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-bold uppercase tracking-wider">Active View</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Finance Role</h4>
+<p class="text-body-sm text-on-surface-variant">Permissions for sarah.a@market-hq.com</p>
+</div>
+<div class="space-y-sm">
+<!-- Matrix Header -->
+<div class="grid grid-cols-4 gap-xs text-center border-b border-outline-variant pb-xs">
+<div class="text-left text-[10px] font-bold text-outline uppercase col-span-1">Module</div>
+<div class="text-[10px] font-bold text-outline uppercase">View</div>
+<div class="text-[10px] font-bold text-outline uppercase">Edit</div>
+<div class="text-[10px] font-bold text-outline uppercase">Del</div>
+</div>
+<!-- Matrix Rows -->
+<div class="space-y-base">
+<div class="grid grid-cols-4 gap-xs items-center py-xs permission-matrix-row rounded transition-all">
+<div class="text-xs font-bold text-on-surface col-span-1">Inventory</div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+</div>
+<div class="grid grid-cols-4 gap-xs items-center py-xs permission-matrix-row rounded transition-all">
+<div class="text-xs font-bold text-on-surface col-span-1">Billing</div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+</div>
+<div class="grid grid-cols-4 gap-xs items-center py-xs permission-matrix-row rounded transition-all">
+<div class="text-xs font-bold text-on-surface col-span-1">Users</div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+</div>
+<div class="grid grid-cols-4 gap-xs items-center py-xs permission-matrix-row rounded transition-all">
+<div class="text-xs font-bold text-on-surface col-span-1">Logs</div>
+<div class="flex justify-center"><input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+<div class="flex justify-center"><input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/></div>
+</div>
+</div>
+</div>
+<div class="mt-lg pt-lg border-t border-outline-variant flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary py-2 rounded-lg font-label-md text-label-md active:scale-95 transition-transform">Update Matrix</button>
+<button class="p-2 border border-outline rounded-lg text-outline hover:bg-surface-container-low"><span class="material-symbols-outlined">history</span></button>
+</div>
+</div>
+<!-- Small Insight Card -->
+<div class="bg-surface-container-low rounded-xl p-md border border-outline-variant flex items-center gap-md">
+<div class="h-12 w-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">security_update_good</span>
+</div>
+<div>
+<div class="text-xs font-bold text-on-surface">Security Audit Passed</div>
+<div class="text-[10px] text-on-surface-variant">Last check: 4 hours ago by System</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Module Management -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">hub</span>
+<h4 class="font-headline-sm text-headline-sm">Module Granularity</h4>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+<!-- Inventory Module -->
+<div class="bg-white p-md rounded-xl border border-outline-variant hover:border-primary transition-all group">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-surface-container-high p-2 rounded-lg group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">inventory_2</span>
+</div>
+<span class="text-[10px] font-bold text-outline">v2.4.0</span>
+</div>
+<h5 class="font-bold text-on-surface mb-xs">Inventory</h5>
+<p class="text-xs text-on-surface-variant mb-md">Manage stock levels, supplier relations, and warehouse assignments.</p>
+<div class="flex justify-between items-center text-xs">
+<span class="text-secondary font-bold">4 Roles Accessing</span>
+<button class="text-primary material-symbols-outlined" style="font-size: 18px;">settings_suggest</button>
+</div>
+</div>
+<!-- Billing Module -->
+<div class="bg-white p-md rounded-xl border border-outline-variant hover:border-primary transition-all group">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-surface-container-high p-2 rounded-lg group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">payments</span>
+</div>
+<span class="text-[10px] font-bold text-outline">v1.8.2</span>
+</div>
+<h5 class="font-bold text-on-surface mb-xs">Billing</h5>
+<p class="text-xs text-on-surface-variant mb-md">Process transactions, generate invoices, and handle marketplace payouts.</p>
+<div class="flex justify-between items-center text-xs">
+<span class="text-secondary font-bold">2 Roles Accessing</span>
+<button class="text-primary material-symbols-outlined" style="font-size: 18px;">settings_suggest</button>
+</div>
+</div>
+<!-- User Management Module -->
+<div class="bg-white p-md rounded-xl border border-outline-variant hover:border-primary transition-all group">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-surface-container-high p-2 rounded-lg group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">group</span>
+</div>
+<span class="text-[10px] font-bold text-outline">v3.1.0</span>
+</div>
+<h5 class="font-bold text-on-surface mb-xs">User Management</h5>
+<p class="text-xs text-on-surface-variant mb-md">Administer customer accounts, driver profiles, and vendor access.</p>
+<div class="flex justify-between items-center text-xs">
+<span class="text-secondary font-bold">3 Roles Accessing</span>
+<button class="text-primary material-symbols-outlined" style="font-size: 18px;">settings_suggest</button>
+</div>
+</div>
+<!-- Logs Module -->
+<div class="bg-white p-md rounded-xl border border-outline-variant hover:border-primary transition-all group">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-surface-container-high p-2 rounded-lg group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">history_edu</span>
+</div>
+<span class="text-[10px] font-bold text-outline">v1.0.5</span>
+</div>
+<h5 class="font-bold text-on-surface mb-xs">Audit Logs</h5>
+<p class="text-xs text-on-surface-variant mb-md">System-wide event tracking and security compliance monitoring.</p>
+<div class="flex justify-between items-center text-xs">
+<span class="text-secondary font-bold">1 Role Accessing</span>
+<button class="text-primary material-symbols-outlined" style="font-size: 18px;">settings_suggest</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+

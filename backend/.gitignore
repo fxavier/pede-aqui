@@ -1,0 +1,42 @@
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+.env
+.env.*
+*.log
+
+# Java / Maven
+backend/target/
+*.class
+*.jar
+
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/dist/
+web/build/
+web/coverage/
+
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/coverage/
+
+# Local infrastructure
+data/
+minio-data/
+postgres-data/
+redis-data/
+
+### CSV files  #####
+*.csv
+*.xlsx
+
+### screens folder #####
+screens/

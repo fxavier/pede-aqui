@@ -1,0 +1,316 @@
+
+ Sidebar (Shared Component) 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface dark:bg-inverse-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xxl px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary leading-tight">Energy Delivery</h1>
+<p class="font-label-md text-on-surface-variant/70">Backoffice Suite</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<!-- Navigation Items Mapping -->
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-sm rounded-lg text-secondary dark:text-secondary-fixed font-bold border-r-4 border-secondary hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined filled-icon" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-label-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md">Finances</span>
+</a>
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-md">Governance</span>
+</a>
+</nav>
+<button class="my-lg w-full py-md bg-primary text-on-primary font-bold rounded-xl flex items-center justify-center gap-sm active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+            New Dispatch
+        </button>
+<div class="pt-lg border-t border-outline-variant/30 space-y-xs">
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-sm rounded-lg hover:bg-primary-container/10 transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<span class="material-symbols-outlined">help_center</span>
+<span class="font-label-md">Support</span>
+</a>
+</div>
+</aside>
+ Main Content Container 
+<main class="pl-64 min-h-screen">
+<!-- Top Nav Bar (Shared Component) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-container-low shadow-sm flex justify-between items-center px-lg z-40">
+<div class="flex items-center gap-md flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full pl-xl py-xs text-body-sm focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Search couriers, fleets, or IDs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-md">
+<button class="p-xs rounded-full hover:bg-primary-container/10 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-xs rounded-full hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined">apps</span>
+</button>
+</div>
+<div class="flex items-center gap-sm border-l border-outline-variant/30 pl-lg">
+<div class="text-right">
+<p class="font-label-md leading-none">Admin User</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Manager</p>
+</div>
+<img alt="Admin Profile" class="w-10 h-10 rounded-full border-2 border-primary-fixed" data-alt="A professional headshot of a modern corporate administrator in a bright office environment. The person has a friendly expression and is wearing smart-casual attire. The lighting is bright and high-contrast, fitting a modern energy marketplace brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHueX1328UwazrbdW6hjst2uSG1uKcMOzbiSKaIAVjvEkWBEgPgsSxnr_NLU1ik2DV2O7x8mGd_I6N8hJvvv2R0y05Y-v4NSU-VNNsThouWtpLQ39fu-gVC6MOgyk_Di9PJ-0V3pQtToN-ikKhtkT59Y_J0kJDcyIKB8NuOg8iTm6tnR3BU6Muy71KvG6m2FfciF3pbNMKEwUEc5b5UJng7VrfwYZEzhy0ZLhglBchrnqYd_aKZWnhU7A-9Y6WYRyxsHgaVd-deAk"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="mt-16 p-lg space-y-lg max-w-[1400px] mx-auto">
+<!-- Breadcrumb & Actions -->
+<div class="flex justify-between items-end mb-md">
+<div class="space-y-base">
+<div class="flex items-center gap-xs text-on-surface-variant">
+<a class="hover:text-primary transition-colors font-label-md" href="#">Fleet Manager</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-md text-primary">Mateus Tavares</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg">Courier Profile</h2>
+</div>
+<div class="flex gap-sm">
+<button class="px-lg py-md rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-colors active:scale-95">Send Message</button>
+<button class="px-lg py-md rounded-xl bg-primary text-on-primary font-bold shadow-sm hover:opacity-90 transition-all active:scale-95">Edit Profile</button>
+</div>
+</div>
+<!-- Header Profile Section -->
+<div class="bg-surface-container-lowest rounded-xxl p-xl card-shadow flex flex-col md:flex-row gap-xl items-center relative overflow-hidden">
+<!-- Background Decoration -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+<div class="relative">
+<img alt="Mateus Tavares Profile" class="w-32 h-32 md:w-40 md:h-40 rounded-xxl object-cover ring-4 ring-primary-fixed" data-alt="A detailed portrait of Mateus, a professional courier with a confident and warm smile. He is photographed outdoors in a vibrant, sun-drenched urban environment in Africa. The image reflects energy, hospitality, and reliability with high-contrast, bold colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoyMX0YTMvZHlQaKlIKm9Q23QMb4-jIw7LW-HOhJ8RXECCuC9aen16ddLjQu_gKjYiHWzwvE-MvkAQ-kUMXgsbLzr_lYA3Mt54c0lBAgCmjhlbk5TticreVCzcXfIC8TMi-nePTzWOvcrhQdx_ir-nmpHxZBMIOyTC0wXx5UIXNGrN4nAoFT3c5lsJTUp2aEKWQ3JSpHmnpQnGXIxt-6GiNSvwyskuFSJRoOUfNgF9_amZwTF7-KbJauMH9l7iPhfr1VAIp_WhOOc"/>
+<div class="absolute -bottom-2 -right-2 bg-secondary text-on-secondary px-sm py-xs rounded-full flex items-center gap-xs shadow-md">
+<span class="material-symbols-outlined text-[16px] filled-icon">verified</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Verified</span>
+</div>
+</div>
+<div class="flex-1 text-center md:text-left">
+<div class="flex flex-col md:flex-row md:items-center gap-sm md:gap-xl mb-sm">
+<h3 class="font-headline-md text-headline-md">Mateus Tavares</h3>
+<div class="bg-surface-container-high px-sm py-base rounded-lg border border-outline-variant/30 inline-block mx-auto md:mx-0">
+<span class="font-code-otp text-[14px]">ID: KUR-2024-0892</span>
+</div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-lg">
+<div>
+<p class="text-[11px] text-on-surface-variant uppercase font-bold tracking-widest mb-base">Status</p>
+<span class="flex items-center gap-xs font-bold text-secondary">
+<span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                                Active Now
+                            </span>
+</div>
+<div>
+<p class="text-[11px] text-on-surface-variant uppercase font-bold tracking-widest mb-base">Vehicle</p>
+<p class="font-bold">Honda PCX 150 (Motorcycle)</p>
+</div>
+<div>
+<p class="text-[11px] text-on-surface-variant uppercase font-bold tracking-widest mb-base">Location</p>
+<p class="font-bold">Luanda, AO</p>
+</div>
+<div>
+<p class="text-[11px] text-on-surface-variant uppercase font-bold tracking-widest mb-base">Joined</p>
+<p class="font-bold">March 12, 2023</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-sm">
+<button class="group flex items-center justify-center gap-sm px-xl py-md rounded-xl bg-error/10 text-error font-bold hover:bg-error hover:text-on-error transition-all duration-300">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">block</span>
+                        Suspend Account
+                    </button>
+</div>
+</div>
+<!-- Metrics Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- Total Earnings -->
+<div class="bg-surface-container-lowest p-lg rounded-xxl card-shadow border-l-4 border-secondary group hover:-translate-y-1 transition-transform">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-secondary-container rounded-xl text-on-secondary-container">
+<span class="material-symbols-outlined filled-icon">account_balance_wallet</span>
+</div>
+<span class="text-on-secondary-container bg-secondary-fixed px-xs py-base rounded-full text-[10px] font-bold">+12% MoM</span>
+</div>
+<p class="text-on-surface-variant font-label-md">Total Earnings</p>
+<h4 class="font-headline-md text-headline-md mt-base">Kz 1,240,500</h4>
+</div>
+<!-- Delivery Rating -->
+<div class="bg-surface-container-lowest p-lg rounded-xxl card-shadow border-l-4 border-primary group hover:-translate-y-1 transition-transform">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-primary-fixed rounded-xl text-primary">
+<span class="material-symbols-outlined filled-icon">star</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-md">Average Rating</p>
+<div class="flex items-end gap-xs mt-base">
+<h4 class="font-headline-md text-headline-md">4.92</h4>
+<span class="text-on-surface-variant mb-1 text-sm">/ 5.0</span>
+</div>
+</div>
+<!-- Completion Rate -->
+<div class="bg-surface-container-lowest p-lg rounded-xxl card-shadow border-l-4 border-tertiary group hover:-translate-y-1 transition-transform">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-tertiary-fixed rounded-xl text-tertiary">
+<span class="material-symbols-outlined filled-icon">task_alt</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-md">Completion Rate</p>
+<h4 class="font-headline-md text-headline-md mt-base">98.4%</h4>
+</div>
+<!-- Total Deliveries -->
+<div class="bg-surface-container-lowest p-lg rounded-xxl card-shadow border-l-4 border-inverse-surface group hover:-translate-y-1 transition-transform">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-surface-container-high rounded-xl text-on-surface">
+<span class="material-symbols-outlined filled-icon">package_2</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-md">Total Deliveries</p>
+<h4 class="font-headline-md text-headline-md mt-base">2,482</h4>
+</div>
+</div>
+<!-- Content Split: Verification & Recent Performance -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Verification Documents -->
+<section class="lg:col-span-5 space-y-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm">Verification Documents</h3>
+<span class="text-body-sm text-secondary font-bold">3 of 3 Verified</span>
+</div>
+<div class="space-y-sm">
+<!-- Doc 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow flex items-center gap-md border border-outline-variant/10">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<div class="flex-1">
+<p class="font-bold">Driver's License</p>
+<p class="text-body-sm text-on-surface-variant">Exp: Dec 2026 • Validated</p>
+</div>
+<button class="p-sm text-primary hover:bg-primary/5 rounded-full transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Doc 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow flex items-center gap-md border border-outline-variant/10">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">car_rental</span>
+</div>
+<div class="flex-1">
+<p class="font-bold">Vehicle Registration</p>
+<p class="text-body-sm text-on-surface-variant">HONDA-22-LX • Verified</p>
+</div>
+<button class="p-sm text-primary hover:bg-primary/5 rounded-full transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Doc 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow flex items-center gap-md border border-outline-variant/10">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">id_card</span>
+</div>
+<div class="flex-1">
+<p class="font-bold">Identity Card (Bilhete)</p>
+<p class="text-body-sm text-on-surface-variant">ID: 004289192LA041</p>
+</div>
+<button class="p-sm text-primary hover:bg-primary/5 rounded-full transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<div class="bg-secondary-container/20 p-md rounded-xl border border-secondary/20">
+<div class="flex items-center gap-sm text-secondary font-bold mb-xs">
+<span class="material-symbols-outlined">verified_user</span>
+<p class="font-label-md">Courier Background Check</p>
+</div>
+<p class="text-body-sm text-on-surface-variant leading-relaxed">
+                            Last automated background check completed on Oct 14, 2023. No violations found. Next scheduled check: Oct 2024.
+                        </p>
+</div>
+</section>
+<!-- Recent Performance -->
+<section class="lg:col-span-7 space-y-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm">Recent Performance</h3>
+<button class="text-primary font-bold hover:underline text-body-sm">View Full History</button>
+</div>
+<div class="bg-surface-container-lowest rounded-xxl card-shadow overflow-hidden border border-outline-variant/10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/30">
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">Order ID</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">Date &amp; Time</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">Distance</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">Amount</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-md font-bold text-primary group-hover:underline cursor-pointer">#ORD-9021</td>
+<td class="px-lg py-md text-body-sm">Today, 14:22</td>
+<td class="px-lg py-md text-body-sm">4.2 km</td>
+<td class="px-lg py-md font-bold">Kz 4,500</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center px-sm py-base rounded-full text-[10px] font-bold bg-secondary/10 text-secondary uppercase">Delivered</span>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-md font-bold text-primary group-hover:underline cursor-pointer">#ORD-8994</td>
+<td class="px-lg py-md text-body-sm">Today, 11:05</td>
+<td class="px-lg py-md text-body-sm">8.7 km</td>
+<td class="px-lg py-md font-bold">Kz 9,200</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center px-sm py-base rounded-full text-[10px] font-bold bg-secondary/10 text-secondary uppercase">Delivered</span>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-md font-bold text-primary group-hover:underline cursor-pointer">#ORD-8942</td>
+<td class="px-lg py-md text-body-sm">Yesterday, 19:45</td>
+<td class="px-lg py-md text-body-sm">2.1 km</td>
+<td class="px-lg py-md font-bold">Kz 3,100</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center px-sm py-base rounded-full text-[10px] font-bold bg-secondary/10 text-secondary uppercase">Delivered</span>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-md font-bold text-primary group-hover:underline cursor-pointer">#ORD-8911</td>
+<td class="px-lg py-md text-body-sm">Yesterday, 18:12</td>
+<td class="px-lg py-md text-body-sm">5.5 km</td>
+<td class="px-lg py-md font-bold">Kz 6,400</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center px-sm py-base rounded-full text-[10px] font-bold bg-error/10 text-error uppercase">Cancelled</span>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-md font-bold text-primary group-hover:underline cursor-pointer">#ORD-8876</td>
+<td class="px-lg py-md text-body-sm">Yesterday, 15:30</td>
+<td class="px-lg py-md text-body-sm">12.0 km</td>
+<td class="px-lg py-md font-bold">Kz 12,500</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center px-sm py-base rounded-full text-[10px] font-bold bg-secondary/10 text-secondary uppercase">Delivered</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+</main>
+ Micro-interaction: Sidebar Tooltips Simulation 
+

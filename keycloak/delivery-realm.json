@@ -1,0 +1,79 @@
+{
+  "realm": "delivery",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN",        "description": "Platform administrator" },
+      { "name": "CUSTOMER",     "description": "End customer" },
+      { "name": "VENDOR_ADMIN", "description": "Vendor account admin" },
+      { "name": "VENDOR_STAFF", "description": "Vendor staff member" },
+      { "name": "COURIER",      "description": "Delivery courier" },
+      { "name": "FINANCE",      "description": "Finance team" },
+      { "name": "OPS",          "description": "Operations team" },
+      { "name": "SUPPORT",      "description": "Support team" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "delivery-app",
+      "name": "Delivery App",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3001/*"
+      ],
+      "webOrigins": ["+"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@pede-aqui.com",
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "admin123", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "finance",
+      "email": "finance@pede-aqui.com",
+      "firstName": "Finance",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "finance123", "temporary": false }
+      ],
+      "realmRoles": ["FINANCE"]
+    },
+    {
+      "username": "support",
+      "email": "support@pede-aqui.com",
+      "firstName": "Support",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "support123", "temporary": false }
+      ],
+      "realmRoles": ["SUPPORT"]
+    },
+    {
+      "username": "ops",
+      "email": "ops@pede-aqui.com",
+      "firstName": "Operations",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "ops123", "temporary": false }
+      ],
+      "realmRoles": ["OPS"]
+    }
+  ]
+}

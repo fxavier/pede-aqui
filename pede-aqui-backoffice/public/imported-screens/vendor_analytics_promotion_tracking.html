@@ -1,0 +1,311 @@
+
+ Sidebar Navigation 
+<aside class="hidden md:flex flex-col h-screen w-64 left-0 top-0 bg-surface-container-low shadow-sm py-lg space-y-xs sticky">
+<div class="px-md mb-xl flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm text-primary leading-tight">Vendor Hub</h1>
+<p class="text-body-sm opacity-70">Marketplace Pro</p>
+</div>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm mx-sm transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm mx-sm transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm mx-sm transition-colors" href="#">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-label-md">Marketing</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container font-bold rounded-lg px-md py-sm mx-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm mx-sm transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md mt-auto pt-lg border-t border-outline-variant/30">
+<div class="flex items-center gap-sm p-sm bg-white rounded-xl shadow-sm">
+<img alt="Store Owner Profile Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="A portrait of a confident and smiling African woman store owner in her mid-30s, wearing traditional modern kente-inspired patterns, in a brightly lit professional setting. The lighting is warm and natural, suggesting a high-growth business environment. The photo is high-contrast with a clean, soft background that highlights her role as a successful entrepreneur in a vibrant marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrQ6QzWpAJlUCmhExZ9NylqSErDmFPv5fPP7xxNu3WC36vnFB9nuxKofYyCqRIW2inp1YTk0-At-nFL8y_DnAP0365mcGDUBjVUcKVSJzPAOVDDGjSfc0jGpNGCs4Hb8rzkIWFE6toc_wtRSkZ6KqYj5RFQYWTZfSZumkOWU3UaGRh6BtFSQEueVqg5RviLwaJUV2immyCVqgBK9kgV4WHBUh3j47SVWPgETVLI8oGgxnInZn8IUoHaThRh_kfv8OD6YfrRDrBDhs"/>
+<div class="overflow-hidden">
+<p class="font-label-md truncate">Jojo's Grill</p>
+<p class="text-body-sm opacity-60 truncate">Owner</p>
+</div>
+</div>
+</div>
+</aside>
+ Main Content Area 
+<main class="flex-1 h-screen overflow-y-auto relative">
+<!-- Top Navigation -->
+<header class="flex justify-between items-center w-full px-lg sticky top-0 z-40 bg-surface/95 backdrop-blur-sm h-16 shadow-sm">
+<div class="flex items-center gap-lg">
+<h2 class="text-headline-sm font-headline-sm font-bold text-primary">Vendor Dashboard</h2>
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full w-64 text-body-sm focus:ring-2 focus:ring-secondary transition-all" placeholder="Search analytics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant/30 mx-xs"></div>
+<button class="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-full font-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Campaign
+                </button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-lg space-y-lg max-w-[1400px] mx-auto">
+<!-- Hero Performance Overview Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="bento-card flex flex-col justify-between border-l-4 border-primary">
+<div>
+<p class="text-on-surface-variant font-label-md mb-xs">Total Marketing Revenue</p>
+<h3 class="text-headline-lg font-headline-lg text-on-surface">R$ 12.450,00</h3>
+</div>
+<div class="flex items-center gap-xs mt-md text-secondary font-bold">
+<span class="material-symbols-outlined text-[20px]">trending_up</span>
+<span class="text-body-sm">+18.5% this month</span>
+</div>
+</div>
+<div class="bento-card flex flex-col justify-between border-l-4 border-secondary">
+<div>
+<p class="text-on-surface-variant font-label-md mb-xs">Active Promotion ROI</p>
+<h3 class="text-headline-lg font-headline-lg text-on-surface">4.2x</h3>
+</div>
+<div class="flex items-center gap-xs mt-md text-secondary font-bold">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span class="text-body-sm">Optimal Performance</span>
+</div>
+</div>
+<div class="bento-card flex flex-col justify-between border-l-4 border-tertiary">
+<div>
+<p class="text-on-surface-variant font-label-md mb-xs">Customer Acquisition Cost (CAC)</p>
+<h3 class="text-headline-lg font-headline-lg text-on-surface">R$ 4,12</h3>
+</div>
+<div class="flex items-center gap-xs mt-md text-error font-bold">
+<span class="material-symbols-outlined text-[20px]">trending_down</span>
+<span class="text-body-sm">-2.4% vs last week</span>
+</div>
+</div>
+</div>
+<!-- Promotion Tracking and AI Insights Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Main Analytics Area -->
+<div class="lg:col-span-8 space-y-lg">
+<!-- Promotion Line Chart -->
+<div class="bento-card">
+<div class="flex justify-between items-center mb-lg">
+<h4 class="text-headline-sm font-headline-sm">Promotion Tracking</h4>
+<div class="flex gap-md">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-body-sm">WEEKENDJOLLOF</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<span class="text-body-sm">NEWVENDOR50</span>
+</div>
+</div>
+</div>
+<div class="chart-container flex items-end justify-between gap-2 border-b border-l border-outline-variant/20 pt-lg relative overflow-hidden">
+<!-- Faux Chart Bars/Lines with pure Tailwind -->
+<div class="absolute inset-0 flex flex-col justify-between opacity-10">
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+</div>
+<!-- Visualizing Data Points as stylized columns for high-end feel -->
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 40%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[40%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[25%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Mon</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 55%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[55%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[35%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Tue</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 45%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[45%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[60%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Wed</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 65%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[65%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[30%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Thu</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 85%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[85%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[40%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Fri</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 100%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[100%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[45%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Sat</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1 group relative h-full">
+<div class="w-full bg-primary/20 rounded-t-sm" style="height: 95%;"></div>
+<div class="w-full bg-primary rounded-t-sm h-[95%] absolute bottom-0 left-0"></div>
+<div class="w-full bg-secondary/80 rounded-t-sm h-[20%]"></div>
+<span class="text-[10px] text-on-surface-variant absolute -bottom-6 w-full text-center">Sun</span>
+</div>
+</div>
+<div class="mt-12 flex justify-center">
+<p class="text-body-sm text-on-surface-variant">Daily Redemption Rates (Last 7 Days)</p>
+</div>
+</div>
+<!-- Sales Attribution and Table Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Donut Chart Split -->
+<div class="bento-card flex flex-col items-center justify-center">
+<h4 class="text-label-md font-label-md mb-lg self-start">Sales Attribution</h4>
+<div class="relative w-48 h-48 rounded-full border-[16px] border-surface-container-high flex items-center justify-center">
+<!-- Simulated Donut Slices -->
+<div class="absolute inset-[-16px] rounded-full border-[16px] border-primary border-t-transparent border-l-transparent transform -rotate-12"></div>
+<div class="text-center">
+<p class="text-headline-md font-headline-md">64%</p>
+<p class="text-body-sm text-on-surface-variant">Promo-driven</p>
+</div>
+</div>
+<div class="mt-lg w-full space-y-sm">
+<div class="flex justify-between items-center text-body-sm">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span>Promotions</span>
+</div>
+<span class="font-bold">R$ 8.240</span>
+</div>
+<div class="flex justify-between items-center text-body-sm">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-surface-container-high"></div>
+<span>Organic Sales</span>
+</div>
+<span class="font-bold">R$ 4.210</span>
+</div>
+</div>
+</div>
+<!-- Top Coupons Table -->
+<div class="bento-card overflow-hidden">
+<h4 class="text-label-md font-label-md mb-md">Top Coupons</h4>
+<div class="space-y-md">
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low">
+<div>
+<p class="font-code-otp text-primary text-body-md">WEEKENDJOLLOF</p>
+<p class="text-[12px] opacity-60">452 redemptions</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-on-surface">R$ 4.810</p>
+<span class="inline-block px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">Top ROI</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-low transition-colors">
+<div>
+<p class="font-code-otp text-secondary text-body-md">NEWVENDOR50</p>
+<p class="text-[12px] opacity-60">210 redemptions</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-on-surface">R$ 2.150</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-low transition-colors">
+<div>
+<p class="font-code-otp text-tertiary text-body-md">FREESHIP24</p>
+<p class="text-[12px] opacity-60">188 redemptions</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-on-surface">R$ 1.280</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-md py-sm text-primary font-label-md hover:underline">View All Coupons</button>
+</div>
+</div>
+</div>
+<!-- AI Growth Engine Sidebar -->
+<div class="lg:col-span-4 flex flex-col gap-lg">
+<div class="bento-card bg-secondary/5 border border-secondary/20 h-full relative overflow-hidden group">
+<!-- Decorative Abstract Background Pattern -->
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-secondary/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-xs mb-lg">
+<div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+</div>
+<h4 class="text-headline-sm font-headline-sm text-secondary">AI Growth Engine</h4>
+</div>
+<div class="space-y-lg">
+<div class="p-md rounded-xl bg-white border border-secondary-container shadow-sm">
+<div class="flex gap-sm items-start">
+<span class="material-symbols-outlined text-secondary">lightbulb</span>
+<div>
+<p class="font-bold text-body-md mb-xs">Promotion Expansion</p>
+<p class="text-body-sm text-on-surface-variant">Your <span class="font-bold text-primary">Jollof Rice</span> promotion is performing 20% better than the average. Consider extending it to weekdays.</p>
+<button class="mt-md text-secondary font-bold text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                                                Apply suggestion <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-md rounded-xl bg-white border border-outline-variant/30 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex gap-sm items-start">
+<span class="material-symbols-outlined text-tertiary">group</span>
+<div>
+<p class="font-bold text-body-md mb-xs">Customer Loyalty</p>
+<p class="text-body-sm text-on-surface-variant">Lapsed customers from July are browsing. Send a 'We Miss You' 15% discount to 240 users.</p>
+<button class="mt-md text-tertiary font-bold text-sm flex items-center gap-1">
+                                                Schedule Email
+                                            </button>
+</div>
+</div>
+</div>
+<div class="p-md rounded-xl bg-white border border-outline-variant/30 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex gap-sm items-start">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<div>
+<p class="font-bold text-body-md mb-xs">Peak Hour Warning</p>
+<p class="text-body-sm text-on-surface-variant">Demand spike predicted for Friday 19:00. Ensure extra kitchen staff for 'WEEKENDJOLLOF' surge.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-xl p-md rounded-2xl bg-primary text-on-primary">
+<p class="text-headline-sm font-headline-sm mb-xs">Ready for more?</p>
+<p class="text-body-sm opacity-90 mb-md">Upgrade to Pro to unlock advanced cohorts and basket analysis.</p>
+<button class="w-full py-sm bg-white text-primary rounded-xl font-bold hover:scale-105 transition-transform">
+                                    Explore Pro Features
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+ Floating Action Button - Mobile/Contextual Only 
+<button class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-50">
+<span class="material-symbols-outlined">add</span>
+</button>
+

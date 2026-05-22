@@ -1,0 +1,341 @@
+
+ Sidebar (Shared Component) 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xl px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Energy Delivery</h1>
+<p class="text-body-sm text-on-surface-variant">Backoffice Suite</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-md px-sm py-md font-label-md text-label-md text-on-surface-variant hover:bg-primary-container/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-md px-sm py-md font-label-md text-label-md text-on-surface-variant hover:bg-primary-container/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+                Fleet Manager
+            </a>
+<!-- Active Tab: Finances -->
+<a class="flex items-center gap-md px-sm py-md font-label-md text-label-md text-secondary font-bold border-r-4 border-secondary bg-secondary-container/20 transition-colors rounded-l-lg" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+                Finances
+            </a>
+<a class="flex items-center gap-md px-sm py-md font-label-md text-label-md text-on-surface-variant hover:bg-primary-container/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-md px-sm py-md font-label-md text-label-md text-on-surface-variant hover:bg-primary-container/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+                Governance
+            </a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-lg space-y-xs">
+<button class="w-full bg-primary-container text-on-primary-container font-label-md py-md px-lg rounded-xl mb-md active:scale-95 transition-transform flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                New Dispatch
+            </button>
+<a class="flex items-center gap-md px-sm py-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-md px-sm py-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help_center">help_center</span>
+                Support
+            </a>
+</div>
+</aside>
+ Header (Shared Component) 
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface shadow-sm flex justify-between items-center px-lg z-40">
+<div class="flex items-center gap-md flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-xs bg-surface-container-low border border-outline-variant rounded-xl text-body-sm focus:border-secondary focus:ring-0" placeholder="Search transactions, riders or IDs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex gap-md">
+<button class="p-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+</div>
+<div class="flex items-center gap-sm">
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface">Admin User</p>
+<p class="text-[10px] text-outline font-bold">FINANCE DEPT</p>
+</div>
+<img alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-secondary-container" data-alt="Close-up professional portrait of a confident African financial administrator wearing a crisp white shirt. The background is a clean, minimalist corporate environment with warm, soft sunlight streaming through a large window, creating a high-contrast, modern aesthetic in line with the brand's optimistic energy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjZlL0rr8vL7-Ywf7PUrRXhjtkG7vz70NbpdcaNZJKqIHIXkExRCn-_cRzm01kwDSUciKFNzWfroYqQHHtNiFSSEqySEA9rMyq8c1UUVg5Oh7ZUTl1czwq1dvlRsOKll8W4HZA3K6YO0zMNt0ed35C9yhDk22SXsQ7dpwYFV_XC0kzx0AoKK-4Qxvhoy_3kRGoAxDdK1iG9FrTulVKkrJFpaXRgKGcwjtPfbA9fRbPYDEmCEVY3-dbxrvlyJ9Mo1ScqSakW0HpPE8"/>
+</div>
+</div>
+</header>
+ Main Content 
+<main class="ml-64 pt-24 px-lg pb-xl bg-background">
+<!-- Page Title & Actions -->
+<div class="flex justify-between items-end mb-xl">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Refunds &amp; Reconciliation</h2>
+<p class="text-body-lg text-on-surface-variant">Manage liquidity, settle disputes, and reconcile cash holdings.</p>
+</div>
+<div class="flex gap-md">
+<div class="relative group">
+<button class="flex items-center gap-xs bg-surface-container-lowest border border-outline-variant text-on-surface px-lg py-md rounded-xl font-label-md hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="ios_share">ios_share</span>
+                        Export Financial Report
+                        <span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+<!-- Dropdown -->
+<div class="absolute right-0 top-full mt-xs w-48 bg-surface border border-outline-variant rounded-xl shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-10">
+<button class="w-full text-left px-md py-sm hover:bg-surface-container-low rounded-t-xl text-body-sm">Download as CSV</button>
+<button class="w-full text-left px-md py-sm hover:bg-surface-container-low text-body-sm">Download as PDF</button>
+<button class="w-full text-left px-md py-sm hover:bg-surface-container-low rounded-b-xl text-body-sm">Audit Log (Excel)</button>
+</div>
+</div>
+<button class="bg-secondary text-on-secondary px-lg py-md rounded-xl font-label-md flex items-center gap-xs active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+                    Reconcile COD
+                </button>
+</div>
+</div>
+<!-- Metric Bento Grid -->
+<div class="grid grid-cols-12 gap-lg mb-xl">
+<!-- Total Commissions -->
+<div class="col-span-12 md:col-span-4 bg-surface p-xl rounded-[24px] shadow-sm relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+<div class="flex justify-between items-start mb-md">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]" data-icon="payments">payments</span>
+</div>
+<span class="text-secondary font-bold text-body-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+                        +12.5%
+                    </span>
+</div>
+<p class="text-body-sm text-on-surface-variant font-medium">Total Commissions (MTD)</p>
+<p class="font-headline-lg text-headline-lg mt-xs">₦ 4,820,500</p>
+<div class="mt-md h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[78%]"></div>
+</div>
+<p class="mt-xs text-[12px] text-outline">Goal: ₦ 6,000,000</p>
+</div>
+<!-- Refunds Processed -->
+<div class="col-span-12 md:col-span-4 bg-surface p-xl rounded-[24px] shadow-sm border-l-4 border-error">
+<div class="flex justify-between items-start mb-md">
+<div class="w-12 h-12 rounded-xl bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[28px]" data-icon="assignment_return">assignment_return</span>
+</div>
+<span class="text-outline text-body-sm">Last 30 days</span>
+</div>
+<p class="text-body-sm text-on-surface-variant font-medium">Refunds Processed</p>
+<p class="font-headline-lg text-headline-lg mt-xs text-error">₦ 342,100</p>
+<div class="mt-md flex gap-xs">
+<span class="bg-error-container/50 text-error px-sm py-1 rounded-full text-[12px] font-bold">18 Full</span>
+<span class="bg-surface-container text-on-surface-variant px-sm py-1 rounded-full text-[12px] font-bold">42 Partial</span>
+</div>
+</div>
+<!-- COD Reconciliation -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-high p-xl rounded-[24px] shadow-sm">
+<div class="flex justify-between items-start mb-md">
+<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[28px]" data-icon="delivery_dining">delivery_dining</span>
+</div>
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-surface object-cover" data-alt="Portrait of a friendly male delivery rider." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfv9cB5EowU_v3fmAxds9oPw2EjVezdIL8bTkQ0RBLXtUTjU88Dd1Cm1NB13nKxhVaM0z6aAe_628kKmb004Dz-KXQdVMgOfM_O4xjXT57y-uVO1nypmEPWSf3CMfG_kjDdEFqR-zP1JVgplPFd6Qc9qQ8H65mG9OwdOy4vRfoECL31iCUXdJkVC_R4kENZy9xyLbkHk02fx9xxIYiNmfnvclwMEw0o8Z0zxfI-X2YvKGKTDfMuaPfP0uxQk1uJP7JfiVMcu1T6_s"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface object-cover" data-alt="Portrait of a professional female delivery courier." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKSBs2cyxrs4C48MZsOX_xDGmkWmkVpzcE38l76tmUuEDkzL5T_jXRKplNkN6H-EDYLAtiDvjdMN9FNk3vHB4g-Rt5XHAMRVqRTJZJTSzk-Wdjhpam5YgUg2pBU4onaM-29uFtFL0I7wRKt7a3BKxDcDlcBWUmucvovm0WEJ1_XWqJY4DntBRrLnl1gsWvozOuAR0s5tMfoTXSs5Fxh90nsKQDF6bq73DsGQdrLYta2bEEvA8errl4kjRCpBQ2UGedElH3no12rtE"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface bg-on-surface flex items-center justify-center text-[10px] text-surface font-bold">+12</div>
+</div>
+</div>
+<p class="text-body-sm text-on-surface-variant font-medium">COD Reconciliation Status</p>
+<div class="flex items-center gap-sm mt-xs">
+<p class="font-headline-lg text-headline-lg">₦ 1,120,400</p>
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+</div>
+<p class="mt-md text-body-sm font-bold text-on-surface">94% of fleet reconciled</p>
+</div>
+</div>
+<!-- Tables & Main View -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Refund Requests Table -->
+<div class="col-span-12 xl:col-span-8 bg-surface rounded-[24px] shadow-sm overflow-hidden border border-outline-variant/30">
+<div class="p-lg flex justify-between items-center border-b border-outline-variant/20">
+<h3 class="font-headline-sm text-headline-sm">Refund Requests</h3>
+<div class="flex gap-sm">
+<button class="bg-surface-container px-md py-xs rounded-lg text-body-sm font-bold hover:bg-surface-container-high">All</button>
+<button class="text-body-sm font-bold text-outline hover:text-primary px-md">Pending</button>
+<button class="text-body-sm font-bold text-outline hover:text-primary px-md">Completed</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-outline uppercase text-[11px] font-bold tracking-wider">
+<th class="px-lg py-md">Request ID</th>
+<th class="px-lg py-md">Customer</th>
+<th class="px-lg py-md">Amount</th>
+<th class="px-lg py-md">Type</th>
+<th class="px-lg py-md">Status</th>
+<th class="px-lg py-md">Audit</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-lg font-code-otp text-[14px]">REF-90210</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center font-bold text-secondary text-[12px]">JD</div>
+<span class="text-body-sm font-bold">John Doe</span>
+</div>
+</td>
+<td class="px-lg py-lg font-bold">₦ 12,500</td>
+<td class="px-lg py-lg"><span class="bg-surface-container-high px-sm py-1 rounded-full text-[12px]">Full Refund</span></td>
+<td class="px-lg py-lg">
+<span class="flex items-center gap-xs text-secondary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                        COMPLETED
+                                    </span>
+</td>
+<td class="px-lg py-lg text-outline">
+<button class="material-symbols-outlined hover:text-primary" data-icon="description">description</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-lg font-code-otp text-[14px]">REF-90211</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-bold text-primary text-[12px]">AS</div>
+<span class="text-body-sm font-bold">Amara Smith</span>
+</div>
+</td>
+<td class="px-lg py-lg font-bold">₦ 4,200</td>
+<td class="px-lg py-lg"><span class="bg-surface-container-high px-sm py-1 rounded-full text-[12px]">Partial</span></td>
+<td class="px-lg py-lg">
+<span class="flex items-center gap-xs text-tertiary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                                        PENDING
+                                    </span>
+</td>
+<td class="px-lg py-lg text-outline">
+<button class="material-symbols-outlined hover:text-primary" data-icon="description">description</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-lg font-code-otp text-[14px]">REF-90212</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-dim flex items-center justify-center font-bold text-outline text-[12px]">BO</div>
+<span class="text-body-sm font-bold">Bayo Ojo</span>
+</div>
+</td>
+<td class="px-lg py-lg font-bold">₦ 25,000</td>
+<td class="px-lg py-lg"><span class="bg-surface-container-high px-sm py-1 rounded-full text-[12px]">Full Refund</span></td>
+<td class="px-lg py-lg">
+<span class="flex items-center gap-xs text-error font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                                        DISPUTED
+                                    </span>
+</td>
+<td class="px-lg py-lg text-outline">
+<button class="material-symbols-outlined hover:text-primary" data-icon="description">description</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-lg font-code-otp text-[14px]">REF-90215</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center font-bold text-tertiary text-[12px]">EK</div>
+<span class="text-body-sm font-bold">Emeka Kalu</span>
+</div>
+</td>
+<td class="px-lg py-lg font-bold">₦ 1,500</td>
+<td class="px-lg py-lg"><span class="bg-surface-container-high px-sm py-1 rounded-full text-[12px]">Partial</span></td>
+<td class="px-lg py-lg">
+<span class="flex items-center gap-xs text-secondary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                        COMPLETED
+                                    </span>
+</td>
+<td class="px-lg py-lg text-outline">
+<button class="material-symbols-outlined hover:text-primary" data-icon="description">description</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-lg bg-surface-container-low/30 border-t border-outline-variant/10 flex justify-center">
+<button class="text-primary font-bold text-body-sm flex items-center gap-xs hover:underline">
+                        View All Requests
+                        <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Reconciliation Heatmap / Summary -->
+<div class="col-span-12 xl:col-span-4 space-y-lg">
+<!-- Fleet Cash Holding -->
+<div class="bg-surface p-lg rounded-[24px] shadow-sm border border-outline-variant/30">
+<h3 class="font-headline-sm text-headline-sm mb-lg">Fleet Cash Flow</h3>
+<div class="space-y-md">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[12px] text-outline font-bold">OUTSTANDING COD</p>
+<p class="text-headline-sm font-bold">₦ 284,000</p>
+</div>
+<div class="text-right">
+<p class="text-[12px] text-outline font-bold">OVERDUE (48h+)</p>
+<p class="text-headline-sm font-bold text-error">₦ 42,500</p>
+</div>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full flex overflow-hidden">
+<div class="h-full bg-secondary" style="width: 70%"></div>
+<div class="h-full bg-primary" style="width: 20%"></div>
+<div class="h-full bg-error" style="width: 10%"></div>
+</div>
+<div class="grid grid-cols-3 gap-xs">
+<div class="text-[10px] text-outline flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> In-Transit
+                            </div>
+<div class="text-[10px] text-outline flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Pending Bank
+                            </div>
+<div class="text-[10px] text-outline flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error"></span> Delayed
+                            </div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Feed -->
+<div class="bg-inverse-surface text-inverse-on-surface p-lg rounded-[24px] shadow-lg relative overflow-hidden">
+<!-- Texture Overlay -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+<h3 class="font-headline-sm text-headline-sm mb-lg relative z-10">Audit Log</h3>
+<div class="space-y-lg relative z-10">
+<div class="flex gap-md">
+<div class="mt-1 w-2 h-2 rounded-full bg-secondary shrink-0"></div>
+<div>
+<p class="text-body-sm font-bold">Refund Approved: #REF-90210</p>
+<p class="text-[12px] opacity-70">Processed by Sarah K. • 2m ago</p>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="mt-1 w-2 h-2 rounded-full bg-primary shrink-0"></div>
+<div>
+<p class="text-body-sm font-bold">COD Reconciled: Rider-049</p>
+<p class="text-[12px] opacity-70">Batch Settle • 45m ago</p>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="mt-1 w-2 h-2 rounded-full bg-tertiary shrink-0"></div>
+<div>
+<p class="text-body-sm font-bold">Partial Refund Initiated: #REF-90211</p>
+<p class="text-[12px] opacity-70">System Trigger • 1h ago</p>
+</div>
+</div>
+</div>
+<button class="mt-xl w-full border border-surface/30 py-md rounded-xl font-label-md hover:bg-surface/10 transition-colors">
+                        View All Logs
+                    </button>
+</div>
+</div>
+</div>
+</main>
+ Contextual FAB (Suppressed based on logic for finance screens, but adding for interaction showcase if needed, though strictly we prioritize content here) 
+

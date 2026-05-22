@@ -1,0 +1,332 @@
+
+ Sidebar Navigation 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface dark:bg-inverse-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary leading-tight">Energy Delivery</h1>
+<p class="text-on-surface-variant text-body-sm opacity-70">Backoffice Suite</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<!-- Navigation Items Mapping -->
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-body-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md">Finances</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<!-- Active State for Governance -->
+<a class="flex items-center gap-md p-md rounded-lg text-secondary dark:text-secondary-fixed font-bold border-r-4 border-secondary bg-secondary-container/20 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="gavel" style="font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="font-body-md">Governance</span>
+</a>
+</nav>
+<button class="bg-primary-container text-on-primary-container font-bold py-md px-lg rounded-xl mb-lg shadow-sm hover:opacity-90 transition-opacity active:scale-95 transition-transform">
+            New Dispatch
+        </button>
+<footer class="pt-lg border-t border-outline-variant/30 space-y-xs">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help_center">help_center</span>
+<span class="font-body-md">Support</span>
+</a>
+</footer>
+</aside>
+ Top Navigation Bar 
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-container-low shadow-sm flex justify-between items-center px-lg z-40">
+<div class="flex items-center bg-surface-container-high rounded-full px-lg py-xs w-96 border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface-variant mr-xs" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md w-full placeholder-on-surface-variant/50" placeholder="Search marketplace assets..." type="text"/>
+</div>
+<div class="flex items-center gap-lg">
+<button class="text-on-surface-variant hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border-2 border-primary ring-2 ring-primary-fixed">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="A professional portrait of a senior tech administrator in a modern office environment. He wears a sharp linen shirt reflecting a high-end African corporate aesthetic. The background is softly blurred with warm lighting and minimalist mahogany office decor. The overall mood is authoritative yet approachable, featuring a crisp, high-contrast visual style with a focus on reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHkQhqQegndVmzTPL9_Fkc-7RC87S1wlW8j6y-QzWG-LBEFFRwa4U8xpmKpb8CJKavYvbNq0YfEhsOnf5Dxv0RW7WtcOEh4K4OufKPltiFizUx4I-5dtKGWEyQ2ntNyS4w40ADMFTdjgNC4x6e36WMy5ZPY9tbBoRAMlo6mBWM_G3OhvoTkjRY6utg2xHSAEmiT17sjZPj-DVBKVLQryAK4ptECSZx4dYIVFX-BN-hvkdnmQtCdJmYnS8RF7cxhBgUWqAs1iCfFPA"/>
+</div>
+</div>
+</header>
+ Main Content Canvas 
+<main class="pl-64 pt-16 min-h-screen">
+<div class="p-lg max-w-[1400px] mx-auto space-y-lg">
+<!-- Page Header & Internal Nav -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-outline-variant/30 pb-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">System Configuration</h2>
+<p class="text-on-surface-variant font-body-md">Global governance and instance management for regional hubs.</p>
+</div>
+<div class="flex bg-surface-container rounded-xl p-xs gap-xs">
+<button class="px-lg py-xs bg-surface-container-lowest rounded-lg shadow-sm font-label-md text-primary">Tenants</button>
+<button class="px-lg py-xs hover:bg-surface-container-highest rounded-lg transition-colors font-label-md text-on-surface-variant">Users &amp; Roles</button>
+<button class="px-lg py-xs hover:bg-surface-container-highest rounded-lg transition-colors font-label-md text-on-surface-variant">Zones &amp; Fees</button>
+<button class="px-lg py-xs hover:bg-surface-container-highest rounded-lg transition-colors font-label-md text-on-surface-variant">Policies</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Section: Tenant Management (Large Card) -->
+<section class="col-span-12 lg:col-span-8 space-y-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" data-icon="hub">hub</span>
+                            Tenant Instances
+                        </h3>
+<button class="flex items-center gap-xs text-secondary font-label-md hover:underline">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+                            Register New Tenant
+                        </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Tenant Card 1 -->
+<div class="bg-surface-container-lowest custom-shadow rounded-xl p-md border border-outline-variant/20 hover:border-primary/40 transition-all group">
+<div class="flex justify-between items-start mb-md">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container" data-icon="location_on">location_on</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[12px] font-bold">ACTIVE</span>
+</div>
+<h4 class="font-headline-sm text-on-background mb-xs">Lagos Central Hub</h4>
+<p class="text-body-sm text-on-surface-variant mb-lg">Serving 12,400+ active deliveries across Victoria Island and Ikoyi sectors.</p>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-outline">48 Active Couriers</span>
+<button class="p-xs hover:bg-primary/5 rounded-full text-primary group-hover:translate-x-1 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Tenant Card 2 -->
+<div class="bg-surface-container-lowest custom-shadow rounded-xl p-md border border-outline-variant/20 hover:border-primary/40 transition-all group">
+<div class="flex justify-between items-start mb-md">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="apartment">apartment</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant px-sm py-1 rounded-full text-[12px] font-bold">STAGING</span>
+</div>
+<h4 class="font-headline-sm text-on-background mb-xs">Accra Metro Grid</h4>
+<p class="text-body-sm text-on-surface-variant mb-lg">Integration phase for Greater Accra region. Commission scaling set to 8.5%.</p>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-outline">Pending Go-Live: Oct 24</span>
+<button class="p-xs hover:bg-primary/5 rounded-full text-primary group-hover:translate-x-1 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Quick Stats / Health (Side Column) -->
+<section class="col-span-12 lg:col-span-4 bg-primary-container text-on-primary-container rounded-xl p-lg flex flex-col justify-between shadow-xl relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-headline-sm text-headline-sm mb-sm">Governance Health</h3>
+<p class="opacity-90 text-body-sm mb-xl">All system policies are currently synchronized across 12 regional tenants.</p>
+<div class="space-y-md">
+<div class="flex items-center justify-between bg-white/10 p-md rounded-lg">
+<div>
+<p class="text-[12px] font-bold uppercase tracking-wider opacity-70">Uptime</p>
+<p class="text-headline-sm">99.98%</p>
+</div>
+<span class="material-symbols-outlined text-on-secondary-fixed-variant" data-icon="check_circle">check_circle</span>
+</div>
+<div class="flex items-center justify-between bg-white/10 p-md rounded-lg">
+<div>
+<p class="text-[12px] font-bold uppercase tracking-wider opacity-70">Policies Enforced</p>
+<p class="text-headline-sm">14</p>
+</div>
+<span class="material-symbols-outlined text-tertiary-fixed" data-icon="gavel">gavel</span>
+</div>
+</div>
+</div>
+<!-- Abstract Background Pattern -->
+<div class="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl"></div>
+</section>
+<!-- Section: Zones & Fees Table (Full Width Content) -->
+<section class="col-span-12 bg-surface-container-lowest custom-shadow rounded-xl overflow-hidden border border-outline-variant/20">
+<div class="p-lg border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h3 class="font-headline-sm text-headline-sm">Zones &amp; Fee Management</h3>
+<p class="text-body-sm text-on-surface-variant">Configure pricing models for specific geographical boundaries.</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-outline text-white px-lg py-xs rounded-lg font-label-md hover:bg-on-surface-variant transition-colors">Export CSV</button>
+<button class="bg-secondary text-white px-lg py-xs rounded-lg font-label-md flex items-center gap-xs hover:opacity-90">
+<span class="material-symbols-outlined text-[18px]" data-icon="map">map</span>
+                                Add New Zone
+                            </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low text-on-surface-variant font-label-md">
+<tr>
+<th class="px-lg py-md">Zone Name</th>
+<th class="px-lg py-md">Base Fee</th>
+<th class="px-lg py-md">Per KM Rate</th>
+<th class="px-lg py-md">Commission %</th>
+<th class="px-lg py-md">Status</th>
+<th class="px-lg py-md">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-primary-fixed/10 transition-colors">
+<td class="px-lg py-lg font-bold">Lagos Mainland East</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background" type="text" value="1,200"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background" type="text" value="150"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<input class="w-12 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background text-right" type="text" value="12.0"/>
+<span class="text-outline text-body-sm">%</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[12px] font-bold">ACTIVE</span>
+</td>
+<td class="px-lg py-lg text-primary">
+<button class="p-xs hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span></button>
+</td>
+</tr>
+<tr class="hover:bg-primary-fixed/10 transition-colors">
+<td class="px-lg py-lg font-bold">Victoria Island Prime</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background" type="text" value="2,500"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background" type="text" value="300"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<input class="w-12 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 p-0 text-on-background text-right" type="text" value="15.0"/>
+<span class="text-outline text-body-sm">%</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[12px] font-bold">ACTIVE</span>
+</td>
+<td class="px-lg py-lg text-primary">
+<button class="p-xs hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span></button>
+</td>
+</tr>
+<tr class="hover:bg-primary-fixed/10 transition-colors opacity-60 bg-surface-container-low">
+<td class="px-lg py-lg font-bold">Abuja Outer Rim</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-none p-0 text-on-background" disabled="" type="text" value="800"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="text-outline text-body-sm">₦</span>
+<input class="w-20 bg-transparent border-none p-0 text-on-background" disabled="" type="text" value="100"/>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<input class="w-12 bg-transparent border-none p-0 text-on-background text-right" disabled="" type="text" value="10.0"/>
+<span class="text-outline text-body-sm">%</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-outline-variant text-on-surface-variant px-sm py-1 rounded-full text-[12px] font-bold">DISABLED</span>
+</td>
+<td class="px-lg py-lg text-primary">
+<button class="p-xs hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-lowest text-right">
+<button class="bg-primary text-white px-xl py-md rounded-xl font-bold hover:opacity-90 shadow-sm active:scale-95 transition-all">Save Changes</button>
+</div>
+</section>
+<!-- Section: Roles & Permissions -->
+<section class="col-span-12 lg:col-span-7 space-y-md">
+<h3 class="font-headline-sm text-headline-sm">Global Roles &amp; Permissions</h3>
+<div class="space-y-sm">
+<!-- Role Row -->
+<div class="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-outline-variant/30">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="admin_panel_settings">admin_panel_settings</span>
+</div>
+<div>
+<p class="font-bold text-on-background">Regional Administrator</p>
+<p class="text-body-sm text-on-surface-variant">Full access to tenant settings, fees, and courier onboarding.</p>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<span class="bg-surface-container-lowest px-sm py-1 rounded-full border border-outline-variant/50 text-[12px] font-medium">12 Users</span>
+<button class="p-xs text-outline hover:text-primary"><span class="material-symbols-outlined" data-icon="edit">edit</span></button>
+</div>
+</div>
+<!-- Role Row -->
+<div class="bg-surface-container-low p-lg rounded-xl flex items-center justify-between border border-outline-variant/30">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="monitoring">monitoring</span>
+</div>
+<div>
+<p class="font-bold text-on-background">Fleet Dispatcher</p>
+<p class="text-body-sm text-on-surface-variant">Monitoring active trips and courier coordination. No billing access.</p>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<span class="bg-surface-container-lowest px-sm py-1 rounded-full border border-outline-variant/50 text-[12px] font-medium">45 Users</span>
+<button class="p-xs text-outline hover:text-primary"><span class="material-symbols-outlined" data-icon="edit">edit</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Marketplace Instance Visualization -->
+<section class="col-span-12 lg:col-span-5 bg-surface-container-high rounded-xl p-lg relative overflow-hidden flex flex-col justify-center">
+<div class="flex items-center gap-md mb-lg">
+<span class="material-symbols-outlined text-secondary text-display" data-icon="public">public</span>
+<div>
+<h4 class="font-headline-sm">Global Distribution</h4>
+<p class="text-body-sm opacity-80">Real-time instance propagation across data centers.</p>
+</div>
+</div>
+<!-- Decorative Map Mockup -->
+<div class="h-40 w-full bg-surface-container rounded-lg border border-outline-variant/40 flex items-center justify-center relative bg-[radial-gradient(#e4beb5_1px,transparent_1px)] [background-size:20px_20px]">
+<div class="absolute top-10 left-20 w-3 h-3 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(176,39,0,0.5)]"></div>
+<div class="absolute bottom-12 right-16 w-3 h-3 bg-secondary rounded-full animate-pulse shadow-[0_0_10px_rgba(0,109,63,0.5)]"></div>
+<div class="absolute top-20 right-32 w-3 h-3 bg-tertiary rounded-full animate-pulse shadow-[0_0_10px_rgba(0,95,158,0.5)]"></div>
+<p class="text-[10px] font-bold text-outline opacity-40 uppercase tracking-widest">Africa Regional Mesh Network</p>
+</div>
+<button class="mt-lg w-full py-md border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary hover:text-white transition-all">View All Hub Connectivity</button>
+</section>
+</div>
+</div>
+</main>
+

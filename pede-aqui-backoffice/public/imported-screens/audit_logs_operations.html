@@ -1,0 +1,383 @@
+
+ Side Navigation Bar 
+<nav class="fixed left-0 top-0 h-screen w-64 bg-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xl px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Energy Delivery</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Backoffice Suite</p>
+</div>
+<div class="flex-1 space-y-base overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-body-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md">Finances</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-secondary font-bold border-r-4 border-secondary bg-primary-container/10 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="font-body-md">Governance</span>
+</a>
+</div>
+<div class="pt-lg border-t border-outline-variant space-y-base">
+<button class="w-full flex items-center justify-center gap-xs bg-primary-container text-on-primary-container py-md rounded-xl font-label-md active:scale-95 transition-transform shadow-sm mb-md">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Dispatch
+            </button>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help_center">help_center</span>
+<span class="font-body-md">Support</span>
+</a>
+</div>
+</nav>
+ Main Content Shell 
+<main class="ml-64 min-h-screen relative flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 left-64 h-16 glass-header flex justify-between items-center px-lg z-40 border-b border-surface-container shadow-sm">
+<div class="flex items-center gap-md flex-1 max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-xs pl-10 pr-md text-body-sm focus:ring-2 focus:ring-secondary/20 transition-all" placeholder="Search logs, actors, or actions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-md">
+<button class="relative p-xs hover:bg-surface-variant rounded-full transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full border-2 border-surface"></span>
+</button>
+<button class="p-xs hover:bg-surface-variant rounded-full transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="apps">apps</span>
+</button>
+</div>
+<div class="flex items-center gap-sm border-l border-outline-variant pl-lg">
+<div class="text-right hidden xl:block">
+<p class="font-label-md text-on-surface">Admin Console</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Level 4 Access</p>
+</div>
+<img alt="Administrator Profile" class="w-10 h-10 rounded-full object-cover border-2 border-secondary" data-alt="A professional headshot of a middle-aged man with a friendly expression, styled as a corporate administrator for a high-growth tech platform. The background is a clean, softly blurred office environment with warm natural sunlight. He is wearing a crisp white shirt, representing reliability and high-level marketplace governance. The lighting is high-key and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeEgjbXGy0khxPtcBsgoHLKCFD6n5aeo3NX3I5tJELnDt4rY-HswjDpVKcdAwxA30Kwfmemxe723VVN8n4TOAA5lqqkjtb7viLLp5KQxb2biTzY2uNP93wDIkW6qjEhhJbTTYb91KK-lIihZ92LTb470tHbz_qqjKqdgKvU3ac1R897376SAim9mk6odl1LqRh8Xg0-EwXpcNq0HLHlTXWz08gdBWxYYRhfrqMXqDam8kAIl-xfPOhDMUmEOogMHbmXhd05d741_M"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="mt-16 p-lg flex-1 overflow-y-auto custom-scrollbar">
+<!-- Page Title & Quick Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-xl gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Audit &amp; Activity Logs</h2>
+<p class="font-body-md text-on-surface-variant">Real-time oversight of all marketplace operations and system changes.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-white border border-outline-variant rounded-xl font-label-md hover:bg-surface-container-low transition-colors shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="file_download">file_download</span>
+                        Export CSV
+                    </button>
+<button class="flex items-center gap-xs px-md py-sm bg-secondary text-on-secondary rounded-xl font-label-md hover:opacity-90 transition-all shadow-sm active:scale-95">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+                        Live Refresh
+                    </button>
+</div>
+</div>
+<!-- Advanced Filter Bar -->
+<div class="bg-white rounded-2xl shadow-sm border border-surface-container-high p-md mb-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+<div class="space-y-base">
+<label class="font-label-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="calendar_today">calendar_today</span>
+                            Date Range
+                        </label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-xs text-body-sm focus:border-secondary outline-none">
+<option>Last 24 Hours</option>
+<option>Last 7 Days</option>
+<option>Last 30 Days</option>
+<option>Custom Range...</option>
+</select>
+</div>
+<div class="space-y-base">
+<label class="font-label-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="category">category</span>
+                            Event Category
+                        </label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-xs text-body-sm focus:border-secondary outline-none">
+<option>All Events</option>
+<option>Marketplace Pricing</option>
+<option>Courier Verification</option>
+<option>Order Management</option>
+<option>System Maintenance</option>
+</select>
+</div>
+<div class="space-y-base">
+<label class="font-label-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="person">person</span>
+                            Actor Role
+                        </label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-xs text-body-sm focus:border-secondary outline-none">
+<option>All Actors</option>
+<option>Super Admin</option>
+<option>Fleet Manager</option>
+<option>System (Automated)</option>
+<option>Support Staff</option>
+</select>
+</div>
+<div class="flex items-end">
+<button class="w-full py-xs bg-surface-variant text-on-surface-variant rounded-lg font-label-md hover:bg-outline-variant transition-colors">
+                            Clear All Filters
+                        </button>
+</div>
+</div>
+</div>
+<!-- Bento-style Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
+<div class="bg-white p-lg rounded-2xl shadow-sm border border-surface-container-high flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="p-xs bg-secondary-container/30 text-secondary rounded-lg">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+</span>
+<span class="text-secondary text-[12px] font-bold">+12% vs yesterday</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md">Security Critical Actions</p>
+<h3 class="font-headline-md text-headline-md text-on-background">42 Events</h3>
+</div>
+</div>
+<div class="bg-white p-lg rounded-2xl shadow-sm border border-surface-container-high flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="p-xs bg-tertiary-container/10 text-tertiary rounded-lg">
+<span class="material-symbols-outlined" data-icon="auto_settings">rule_settings</span>
+</span>
+<span class="text-tertiary text-[12px] font-bold">Optimal Speed</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md">System Automations</p>
+<h3 class="font-headline-md text-headline-md text-on-background">1,284 Events</h3>
+</div>
+</div>
+<div class="bg-white p-lg rounded-2xl shadow-sm border border-surface-container-high flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined !text-[80px]" data-icon="monitoring">monitoring</span>
+</div>
+<div class="flex justify-between items-start mb-md">
+<span class="p-xs bg-primary-container/10 text-primary rounded-lg">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</span>
+<span class="text-primary text-[12px] font-bold">Live Monitoring</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md">Avg Action Frequency</p>
+<h3 class="font-headline-md text-headline-md text-on-background">15 / min</h3>
+</div>
+</div>
+</div>
+<!-- Activity Logs Table Container -->
+<div class="bg-white rounded-2xl shadow-sm border border-surface-container-high overflow-hidden flex flex-col">
+<div class="p-md border-b border-surface-container flex justify-between items-center">
+<div class="flex gap-sm">
+<span class="px-sm py-xs bg-secondary-fixed text-on-secondary-fixed-variant rounded-full text-[12px] font-bold">Real-time Stream</span>
+<span class="text-on-surface-variant text-[12px] flex items-center gap-xs">
+<span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+                            34 users active
+                        </span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant">
+<button class="p-xs hover:bg-surface-variant rounded-lg transition-colors"><span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span></button>
+<span class="font-label-md px-sm">Page 1 of 42</span>
+<button class="p-xs hover:bg-surface-variant rounded-lg transition-colors"><span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low">
+<tr>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">Timestamp</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">Actor</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">Action</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">Target</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">Result</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- Row 1 -->
+<tr class="hover:bg-background transition-colors">
+<td class="px-lg py-md">
+<p class="font-code-otp !text-[14px] text-on-surface">14:02:11</p>
+<p class="text-[12px] text-on-surface-variant">Oct 24, 2023</p>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[12px]">AK</div>
+<div>
+<p class="font-label-md text-on-surface">Adebayo K.</p>
+<p class="text-[12px] text-on-surface-variant">Fleet Manager</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="local_shipping">local_shipping</span>
+<span class="font-body-md text-on-surface">Courier Verified</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-body-sm text-on-surface">ID: #CR-9920</p>
+<p class="text-[12px] text-tertiary">Musa Mohammed</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-secondary/10 text-secondary rounded-full text-[12px] font-bold">Success</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-background transition-colors">
+<td class="px-lg py-md">
+<p class="font-code-otp !text-[14px] text-on-surface">13:58:45</p>
+<p class="text-[12px] text-on-surface-variant">Oct 24, 2023</p>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings_suggest">settings_suggest</span>
+</div>
+<div>
+<p class="font-label-md text-on-surface">System</p>
+<p class="text-[12px] text-on-surface-variant">Automated Task</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="request_quote">request_quote</span>
+<span class="font-body-md text-on-surface">Fee Updated</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-body-sm text-on-surface">Lagos Base Fare</p>
+<p class="text-[12px] text-on-surface-variant">Region: SW-1</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-outline-variant/30 text-on-surface-variant rounded-full text-[12px] font-bold">Modified</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-background transition-colors">
+<td class="px-lg py-md">
+<p class="font-code-otp !text-[14px] text-on-surface">13:55:02</p>
+<p class="text-[12px] text-on-surface-variant">Oct 24, 2023</p>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold text-[12px]">EM</div>
+<div>
+<p class="font-label-md text-on-surface">Elena M.</p>
+<p class="text-[12px] text-on-surface-variant">Super Admin</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-tertiary text-[18px]" data-icon="assignment_late">assignment_late</span>
+<span class="font-body-md text-on-surface">Order Reassigned</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-body-sm text-on-surface">#ORD-5521</p>
+<p class="text-[12px] text-on-error-container">Critical Status</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-error-container text-on-error-container rounded-full text-[12px] font-bold">Failure</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-background transition-colors">
+<td class="px-lg py-md">
+<p class="font-code-otp !text-[14px] text-on-surface">13:42:19</p>
+<p class="text-[12px] text-on-surface-variant">Oct 24, 2023</p>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[12px]">JO</div>
+<div>
+<p class="font-label-md text-on-surface">John O.</p>
+<p class="text-[12px] text-on-surface-variant">Support Staff</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="check_circle">check_circle</span>
+<span class="font-body-md text-on-surface">Refund Processed</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-body-sm text-on-surface">#TX-11029</p>
+<p class="text-[12px] text-on-surface-variant">Amount: ₦4,500</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-secondary/10 text-secondary rounded-full text-[12px] font-bold">Success</span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-low flex justify-between items-center">
+<div class="flex items-center gap-sm">
+<select class="bg-white border border-outline-variant rounded-lg p-xs text-[12px] focus:ring-0">
+<option>10 Rows</option>
+<option selected="">25 Rows</option>
+<option>50 Rows</option>
+</select>
+<span class="text-[12px] text-on-surface-variant">Showing 1-25 of 1,042 events</span>
+</div>
+<div class="flex items-center gap-base">
+<button class="px-md py-xs rounded-lg border border-outline-variant text-[12px] hover:bg-white transition-colors">Previous</button>
+<button class="px-md py-xs rounded-lg border border-outline-variant text-[12px] hover:bg-white transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Contextual Insight (Asymmetric Element) -->
+<div class="mt-xl grid grid-cols-1 lg:grid-cols-4 gap-lg">
+<div class="lg:col-span-3 bg-surface-container-lowest border border-dashed border-outline-variant rounded-2xl p-lg flex items-center justify-between group">
+<div class="flex items-center gap-lg">
+<div class="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center rotate-3 group-hover:rotate-0 transition-transform">
+<span class="material-symbols-outlined text-primary !text-[32px]" data-icon="security_update_good">security_update_good</span>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-background">Audit Integrity Check</h4>
+<p class="text-on-surface-variant font-body-sm">Last system-wide cryptographic signature verified 12 minutes ago. All logs are immutable.</p>
+</div>
+</div>
+<button class="px-lg py-md bg-white border border-secondary text-secondary rounded-xl font-label-md hover:bg-secondary-container transition-colors">View Certificate</button>
+</div>
+<div class="bg-primary-container text-on-primary-container p-lg rounded-2xl shadow-lg relative overflow-hidden flex flex-col justify-end min-h-[160px]">
+<span class="material-symbols-outlined absolute top-4 right-4 opacity-30 !text-[48px]" data-icon="bolt">bolt</span>
+<p class="font-label-md opacity-80 uppercase tracking-widest text-[10px]">Operations Pro-Tip</p>
+<p class="font-headline-sm text-headline-sm leading-tight">Use 'Role' filters to isolate system-triggered anomalies.</p>
+</div>
+</div>
+</div>
+</main>
+ Micro-interaction Script 
+

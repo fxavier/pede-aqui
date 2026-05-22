@@ -1,0 +1,224 @@
+
+ Background Mock Canvas (Menu Management Screen) 
+<div class="fixed inset-0 z-0 flex">
+<!-- SideNav (Shared Component Simulation) -->
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container shadow-sm flex flex-col py-lg px-md gap-lg border-r border-outline-variant">
+<div class="px-md">
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary">MarketEnergy</h1>
+<p class="text-on-surface-variant font-body-sm">Marketing Portal</p>
+</div>
+<nav class="flex flex-col gap-xs flex-1">
+<div class="flex items-center gap-md text-on-surface-variant px-md py-sm rounded-lg hover:bg-surface-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</div>
+<div class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-sm cursor-pointer">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-label-md">Campaigns</span>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant px-md py-sm rounded-lg hover:bg-surface-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Segments</span>
+</div>
+</nav>
+</aside>
+<!-- Main Content Area Mock -->
+<main class="ml-64 flex-1 p-xl">
+<header class="flex justify-between items-center mb-xl">
+<div>
+<h2 class="font-headline-lg text-on-surface">Menu Management</h2>
+<p class="text-on-surface-variant">Update your restaurant's digital menu</p>
+</div>
+<button class="bg-primary text-on-primary-container h-[48px] px-lg rounded-xl font-label-md shadow-md">Add New Item</button>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant/30 card-shadow opacity-60">
+<div class="h-40 rounded-lg bg-surface-container mb-md"></div>
+<div class="h-6 bg-surface-container w-3/4 mb-xs rounded"></div>
+<div class="h-4 bg-surface-container w-1/2 rounded"></div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant/30 card-shadow opacity-60">
+<div class="h-40 rounded-lg bg-surface-container mb-md"></div>
+<div class="h-6 bg-surface-container w-3/4 mb-xs rounded"></div>
+<div class="h-4 bg-surface-container w-1/2 rounded"></div>
+</div>
+</div>
+</main>
+</div>
+ Overlay Backdrop 
+<div class="fixed inset-0 bg-on-background/20 backdrop-blur-sm z-40 transition-opacity duration-300"></div>
+ Edit Item Side Panel 
+<div class="fixed right-0 top-0 h-full w-full md:w-[640px] bg-background z-50 shadow-2xl flex flex-col transform transition-transform duration-500 ease-out" id="editItemPanel">
+<!-- Panel Header -->
+<div class="px-xl py-lg flex justify-between items-center bg-surface-bright border-b border-outline-variant">
+<div>
+<h3 class="font-headline-md text-primary">Edit Item Details</h3>
+<p class="text-on-surface-variant font-body-sm">Customize your product information and variants</p>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">close</span>
+</button>
+</div>
+<!-- Panel Body (Scrollable) -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-xl space-y-xl">
+<!-- Section: Product Media -->
+<section class="space-y-md">
+<h4 class="font-headline-sm flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined text-primary">image</span>
+                    Product Media
+                </h4>
+<div class="grid grid-cols-3 gap-md">
+<div class="relative group aspect-square rounded-xl overflow-hidden bg-surface-container border-2 border-dashed border-outline-variant hover:border-primary transition-colors cursor-pointer flex flex-col items-center justify-center text-on-surface-variant">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A professional high-angle food photograph of a vibrant, spicy Jollof rice dish with grilled chicken and plantains, presented on a rustic ceramic plate. The lighting is warm and golden, emphasizing the rich textures and red hues of the dish. The overall aesthetic is modern, high-contrast, and appetizing, perfectly aligned with a premium African marketplace brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCydS6wxzuzGU2_VbVtGoqZpFK54jBldTxf5HJFQakQEvhYN0Kwe7mAGIrGzCKVh9StOkX3j3mxROe9RaWOruMVBmHld3PPiXHOU50upc95iEFfJC6jJEkDk2UV4Vn3jrLppp3NkiQWJ40LGd5FcAQf7ZxBTgtibTR_-vAWoweGIJLbFIPdqXLaUTWkvUPo9P3J5SkHgOjnf0d-K99Xb23fBlBq2YRY3hEWp1l7uh52yA6KmdZOPtIjFHf45vOgR8UfPI3GIAVjeks"/>
+<div class="absolute inset-0 bg-on-background/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-white">delete</span>
+<span class="material-symbols-outlined text-white">edit</span>
+</div>
+</div>
+<div class="aspect-square rounded-xl bg-surface-container-low border-2 border-dashed border-outline-variant hover:border-primary transition-colors cursor-pointer flex flex-col items-center justify-center text-on-surface-variant group">
+<span class="material-symbols-outlined text-3xl group-hover:text-primary mb-xs">add_a_photo</span>
+<span class="font-label-md">Add Image</span>
+</div>
+</div>
+</section>
+<!-- Section: Basic Information -->
+<section class="space-y-md">
+<h4 class="font-headline-sm flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined text-primary">info</span>
+                    Basic Information
+                </h4>
+<div class="grid grid-cols-1 gap-md">
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Product Name</label>
+<input class="w-full h-12 px-md rounded-xl border-outline-variant bg-surface focus:border-secondary focus:ring-secondary transition-all font-body-md text-on-surface" type="text" value="Smoky Firewood Jollof (Family Size)"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Description</label>
+<textarea class="w-full px-md py-sm rounded-xl border-outline-variant bg-surface focus:border-secondary focus:ring-secondary transition-all font-body-md text-on-surface min-h-[100px]">Slow-cooked over traditional firewood for that authentic smoky aroma, served with grilled chicken, sweet fried plantains, and a side of crisp coleslaw. Perfect for sharing.</textarea>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Category</label>
+<select class="w-full h-12 px-md rounded-xl border-outline-variant bg-surface focus:border-secondary focus:ring-secondary transition-all font-body-md text-on-surface appearance-none">
+<option>Main Courses</option>
+<option>Sides</option>
+<option>Drinks</option>
+<option>Desserts</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Base Price (₦)</label>
+<div class="relative">
+<span class="absolute left-md top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₦</span>
+<input class="w-full h-12 pl-10 pr-md rounded-xl border-outline-variant bg-surface focus:border-secondary focus:ring-secondary transition-all font-body-md text-on-surface" type="number" value="12500"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Inventory Control -->
+<section class="p-lg bg-surface-container-low rounded-xl space-y-md border border-outline-variant/50">
+<h4 class="font-headline-sm flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined text-secondary">inventory_2</span>
+                    Inventory Control
+                </h4>
+<div class="grid grid-cols-3 gap-md">
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">SKU</label>
+<input class="w-full h-12 px-md rounded-xl border-outline-variant bg-surface focus:border-secondary transition-all font-code-otp text-body-md" type="text" value="JOL-FAM-001"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Stock Quantity</label>
+<input class="w-full h-12 px-md rounded-xl border-outline-variant bg-surface focus:border-secondary transition-all font-body-md" type="number" value="45"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-on-surface-variant">Low Threshold</label>
+<input class="w-full h-12 px-md rounded-xl border-outline-variant bg-surface focus:border-secondary transition-all font-body-md" type="number" value="10"/>
+</div>
+</div>
+<div class="flex items-center gap-sm mt-sm">
+<input checked="" class="rounded-sm border-outline-variant text-secondary focus:ring-secondary w-5 h-5" id="stock-alert" type="checkbox"/>
+<label class="font-body-sm text-on-surface" for="stock-alert">Send me a notification when stock hits threshold</label>
+</div>
+</section>
+<!-- Section: Product Options & Add-ons -->
+<section class="space-y-md">
+<div class="flex justify-between items-center">
+<h4 class="font-headline-sm flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined text-primary">add_box</span>
+                        Options &amp; Add-ons
+                    </h4>
+<button class="text-secondary font-label-md flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined text-sm">add</span> Add New Variant
+                    </button>
+</div>
+<div class="space-y-sm">
+<!-- Variant Row 1 -->
+<div class="flex items-center gap-md p-md bg-surface border border-outline-variant rounded-xl group transition-all hover:border-secondary/30">
+<span class="material-symbols-outlined text-on-surface-variant cursor-grab">drag_indicator</span>
+<div class="flex-1 grid grid-cols-12 gap-sm">
+<div class="col-span-6">
+<input class="w-full h-10 px-sm border-none bg-transparent focus:ring-0 font-body-md" placeholder="Option Name" type="text" value="Extra Large Portion"/>
+</div>
+<div class="col-span-4 relative">
+<span class="absolute left-1 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">+₦</span>
+<input class="w-full h-10 pl-8 pr-2 border-none bg-transparent focus:ring-0 font-body-md" placeholder="Price" type="number" value="3500"/>
+</div>
+<div class="col-span-2 flex justify-end">
+<button class="text-error opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">delete_outline</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Variant Row 2 -->
+<div class="flex items-center gap-md p-md bg-surface border border-outline-variant rounded-xl group transition-all hover:border-secondary/30">
+<span class="material-symbols-outlined text-on-surface-variant cursor-grab">drag_indicator</span>
+<div class="flex-1 grid grid-cols-12 gap-sm">
+<div class="col-span-6">
+<input class="w-full h-10 px-sm border-none bg-transparent focus:ring-0 font-body-md" placeholder="Option Name" type="text" value="Spicy Fried Snail (2pcs)"/>
+</div>
+<div class="col-span-4 relative">
+<span class="absolute left-1 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">+₦</span>
+<input class="w-full h-10 pl-8 pr-2 border-none bg-transparent focus:ring-0 font-body-md" placeholder="Price" type="number" value="4200"/>
+</div>
+<div class="col-span-2 flex justify-end">
+<button class="text-error opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">delete_outline</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Variant Row 3 -->
+<div class="flex items-center gap-md p-md bg-surface border border-outline-variant rounded-xl group transition-all hover:border-secondary/30">
+<span class="material-symbols-outlined text-on-surface-variant cursor-grab">drag_indicator</span>
+<div class="flex-1 grid grid-cols-12 gap-sm">
+<div class="col-span-6">
+<input class="w-full h-10 px-sm border-none bg-transparent focus:ring-0 font-body-md" placeholder="Option Name" type="text" value="Cold Sobo Drink (50cl)"/>
+</div>
+<div class="col-span-4 relative">
+<span class="absolute left-1 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">+₦</span>
+<input class="w-full h-10 pl-8 pr-2 border-none bg-transparent focus:ring-0 font-body-md" placeholder="Price" type="number" value="1500"/>
+</div>
+<div class="col-span-2 flex justify-end">
+<button class="text-error opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">delete_outline</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Panel Footer -->
+<div class="px-xl py-lg bg-surface-bright border-t border-outline-variant flex items-center justify-between shadow-[0_-4px_24px_rgba(0,0,0,0.05)]">
+<button class="px-lg h-12 border-2 border-outline-variant text-on-surface-variant rounded-xl font-label-md hover:bg-surface-variant transition-all">Cancel Changes</button>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant font-label-md flex items-center gap-xs px-md hover:text-primary transition-colors">
+<span class="material-symbols-outlined">archive</span> Archive Item
+                </button>
+<button class="px-xl h-12 bg-primary text-on-primary-container rounded-xl font-label-md shadow-lg active:scale-95 transition-all">Save Changes</button>
+</div>
+</div>
+</div>
+

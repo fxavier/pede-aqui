@@ -1,0 +1,225 @@
+
+ Top AppBar (Mobile/Global Shell) 
+<header class="flex justify-between items-center px-margin-mobile py-sm w-full bg-surface dark:bg-inverse-surface shadow-[0_2px_12px_rgba(44,44,58,0.08)] sticky top-0 z-50">
+<div class="flex items-center gap-xs">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim font-bold tracking-tight">SwiftCourier</span>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Vendor</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="relative p-2 rounded-full hover:bg-surface-variant/50 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface"></span>
+</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden">
+<img alt="Courier profile picture" class="w-full h-full object-cover" data-alt="A professional studio portrait of a friendly West African chef in a clean white uniform. The background is a vibrant coral-orange gradient that complements the warm lighting on the subject's face. The overall aesthetic is modern, energetic, and conveys high-quality hospitality and reliability in a marketplace setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8qLcXV0Mpb7rPAY5ZDk_bm4E26mFYgeBVvWRs12cLYrz_QFwwN8MI8IOjLZ7r8fCp6TRrLJIF6wFGRdBERPBB9Lq08zaERnwlwSiuMA04ZesshdHyQgMuMIGkoE2UHoQnPmx7SfmDEzFX9FwnIGt4A4ojnxzgyy0FY--tDfjI5hWD3_SC84Pi7AiwtK3r0462c8czAaohShGMGuioHPABAIKf4e0d4qt5hixSBO6ssXMdLIM0Bu7akxxgNSYQu4ygDvYElO-J344"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-[calc(100vh-64px)]">
+<!-- Sidebar Navigation (Desktop Only) -->
+<aside class="hidden md:flex flex-col w-64 bg-surface-container border-r border-outline-variant p-md gap-sm">
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-md px-md py-sm rounded-xl bg-secondary-container text-on-secondary-container font-bold transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-label-md text-label-md">Menu Manager</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Earnings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-variant/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Store Profile</span>
+</a>
+</nav>
+<!-- Mini Menu Manager Preview -->
+<div class="mt-auto p-md bg-surface border border-outline-variant rounded-xl shadow-sm">
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-sm">Active Menu</h4>
+<div class="space-y-xs">
+<div class="flex items-center justify-between text-body-sm">
+<span>Jollof Rice</span>
+<span class="text-secondary font-bold">● Live</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span>Plantain</span>
+<span class="text-secondary font-bold">● Live</span>
+</div>
+<div class="flex items-center justify-between text-body-sm opacity-50">
+<span>Suya Mix</span>
+<span class="text-error font-bold">Out</span>
+</div>
+</div>
+<button class="w-full mt-md py-2 border border-primary text-primary font-bold rounded-lg text-body-sm hover:bg-primary/5 transition-colors">
+                    Quick Edit
+                </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-x-hidden">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xl">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface tracking-tight">Active Orders</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Process high-volume orders with rhythmic efficiency.</p>
+</div>
+<!-- Payout Summary Card (Integrated into header area) -->
+<div class="bg-primary-container text-on-primary-container p-md rounded-xl shadow-[0_4px_16px_rgba(216,57,14,0.15)] flex items-center gap-lg">
+<div>
+<p class="text-[10px] uppercase font-bold tracking-wider opacity-80">Weekly Payout</p>
+<p class="font-headline-sm text-headline-sm">₦142,500.00</p>
+</div>
+<div class="h-10 w-[1px] bg-white/20"></div>
+<div class="text-right">
+<p class="text-[10px] uppercase font-bold tracking-wider opacity-80">Status</p>
+<p class="font-label-md text-label-md text-secondary-fixed">Pending</p>
+</div>
+</div>
+</div>
+<!-- Kanban View -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg h-full">
+<!-- NEW Column -->
+<section class="flex flex-col gap-md">
+<div class="flex items-center justify-between px-xs">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">New</h3>
+</div>
+<span class="bg-surface-container-high px-2 py-0.5 rounded-full font-bold text-label-md">3</span>
+</div>
+<div class="order-kanban-column flex flex-col gap-md overflow-y-auto max-h-[716px] pb-xxl">
+<!-- Order Card -->
+<div class="bg-white p-md rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border-l-4 border-primary group hover:shadow-lg transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-code-otp text-body-sm text-on-surface-variant">#4921</span>
+<span class="text-body-sm text-on-surface-variant">2m ago</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm mb-xs">Family Feast Jollof</h4>
+<p class="text-body-sm text-on-surface-variant mb-md">3x Large Jollof, 1x Suya, 4x Malt</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-sm">payments</span>
+<span class="font-bold text-label-md">₦12,400</span>
+</div>
+<button class="bg-primary text-white px-md py-2 rounded-lg font-bold text-body-sm active:scale-95 transition-all">Accept Order</button>
+</div>
+</div>
+<div class="bg-white p-md rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border-l-4 border-primary group hover:shadow-lg transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-code-otp text-body-sm text-on-surface-variant">#4923</span>
+<span class="text-body-sm text-on-surface-variant">5m ago</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm mb-xs">Pounded Yam Special</h4>
+<p class="text-body-sm text-on-surface-variant mb-md">1x Yam, 1x Egusi Soup, Extra Beef</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-sm">payments</span>
+<span class="font-bold text-label-md">₦4,200</span>
+</div>
+<button class="bg-primary text-white px-md py-2 rounded-lg font-bold text-body-sm active:scale-95 transition-all">Accept Order</button>
+</div>
+</div>
+</div>
+</section>
+<!-- PREPARING Column -->
+<section class="flex flex-col gap-md">
+<div class="flex items-center justify-between px-xs">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Preparing</h3>
+</div>
+<span class="bg-surface-container-high px-2 py-0.5 rounded-full font-bold text-label-md">2</span>
+</div>
+<div class="order-kanban-column flex flex-col gap-md overflow-y-auto max-h-[716px] pb-xxl">
+<div class="bg-white p-md rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border-l-4 border-tertiary">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-code-otp text-body-sm text-on-surface-variant">#4918</span>
+<span class="text-body-sm text-tertiary font-bold">EST: 8m</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm mb-xs">Plantain Boat</h4>
+<p class="text-body-sm text-on-surface-variant mb-md">2x Sweet Plantain, Spicy Dip</p>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full mb-md overflow-hidden">
+<div class="bg-tertiary h-full w-2/3"></div>
+</div>
+<button class="w-full bg-secondary text-white py-2 rounded-lg font-bold text-body-sm active:scale-95 transition-all">Ready for Pickup</button>
+</div>
+</div>
+</section>
+<!-- READY Column -->
+<section class="flex flex-col gap-md">
+<div class="flex items-center justify-between px-xs">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Ready for Pickup</h3>
+</div>
+<span class="bg-surface-container-high px-2 py-0.5 rounded-full font-bold text-label-md">5</span>
+</div>
+<div class="order-kanban-column flex flex-col gap-md overflow-y-auto max-h-[716px] pb-xxl">
+<!-- Driver Assigning Card -->
+<div class="bg-secondary-container/30 p-md rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border-2 border-dashed border-secondary">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-code-otp text-body-sm text-on-surface-variant">#4915</span>
+<span class="text-[10px] bg-secondary text-white px-2 py-0.5 rounded-full uppercase font-bold">Waiting for Driver</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm mb-xs">Spicy Suya Platter</h4>
+<div class="flex items-center gap-sm mt-md p-sm bg-white/50 rounded-lg">
+<div class="animate-bounce">
+<span class="material-symbols-outlined text-secondary">motorcycle</span>
+</div>
+<p class="text-body-sm font-medium">Finding nearest courier...</p>
+</div>
+</div>
+<!-- Driver Found Card -->
+<div class="bg-white p-md rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border-l-4 border-secondary">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-code-otp text-body-sm text-on-surface-variant">#4912</span>
+<span class="text-body-sm text-secondary font-bold">Arrived</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm mb-xs">Beef Suya Burger</h4>
+<div class="flex items-center gap-md mt-md">
+<img class="w-10 h-10 rounded-full bg-surface-container" data-alt="A detailed digital illustration of a motorcycle delivery courier wearing a professional green jacket and helmet. The courier has a friendly expression and is seen against a backdrop of a bustling African city market with warm, hazy afternoon sunlight. The art style is crisp, clean, and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg50OjZA77EJMHOE4GNqc7ab2wnbB9e_LiYPqg_1LkDArI6Bern3wkZrAru29Cn60JgVLSs11gB3o9gRwxpk2dCq_x_Y-azeO6uvspM8dXmTB2fw3JkCxQXIO3EqW8aBsxjOmRQAZdQvjdfIsPwHGaOr-ddBWsRk_P1hsTINkZdxKCYdbiHFS6WRzUHBJmkMAGJtHCJkzBFpK0jX3TUJymMV36xBxzqLs1xFhZUFk-tZT5omdFN_J4KE5mTvJmfd5_RnR9TXujiQQ"/>
+<div class="flex-1">
+<p class="text-label-md font-bold">Tunde A.</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Courier Assigned</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-container p-2 rounded-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined">handshake</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+ Bottom Navigation (Mobile Only) 
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container dark:bg-surface-container-highest shadow-[0_-4px_16px_rgba(44,44,58,0.06)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-5 py-1.5 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Earnings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</nav>
+ FAB for Quick Actions (Mobile Only) 
+<button class="md:hidden fixed bottom-24 right-margin-mobile w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-all z-40">
+<span class="material-symbols-outlined">add</span>
+</button>
+

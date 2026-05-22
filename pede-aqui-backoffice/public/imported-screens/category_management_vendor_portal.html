@@ -1,0 +1,307 @@
+
+ SIDEBAR NAVIGATION 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container shadow-sm flex flex-col py-lg px-md gap-lg">
+<div class="flex items-center gap-md mb-lg">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">energy_savings_leaf</span>
+<div>
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary">MarketEnergy</h1>
+<p class="text-xs font-label-md text-on-surface-variant">Marketing Portal</p>
+</div>
+</div>
+<nav class="flex flex-col gap-xs flex-grow">
+<!-- Dashboard (Inactive) -->
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<!-- Campaigns (Active - Logic: Management page maps to primary operational area) -->
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-sm transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+<span class="font-label-md">Campaigns</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Segments</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">local_offer</span>
+<span class="font-label-md">Promotions</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-lg">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-md">Support</span>
+</a>
+<div class="flex items-center gap-sm mt-md px-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed overflow-hidden">
+<img alt="Marketing Admin" data-alt="A professional studio portrait of a confident West African marketing executive wearing contemporary business attire. The lighting is warm and golden, highlighting friendly features and a sharp, clean professional aesthetic against a soft-focus office background with lush green plants." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3M3NoP4QY-Uq3LfU8uUWtIG9M1ucmpdtBq6Nwzq8sHoYcQaJ4ioeY_ZesSdlODPcl00V4XQ2WKb8YGQ-ccHXUZ0Ykry0Pg1LuIuEYl2Chw5433V_A7dhAcBL348UkZ8XaIbUNtzucvLg7TVfF3PF2s9BWqtz6PyTM-Q9DOk2pzEMtPjR_gq4dKZKoxYdybOFLSQlL5Bxy1OedyrXk1jZepcdYRUbLg_h9OEZwTreHllrXIZRWxfLBFxTk2mAxpWZzH2O1Nr8t1M4"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-on-surface leading-none">Marketing Admin</span>
+<span class="text-[10px] text-on-surface-variant">Store Owner</span>
+</div>
+</div>
+</div>
+</aside>
+ TOP NAVIGATION BAR 
+<header class="fixed top-0 right-0 left-64 h-20 bg-surface border-b border-outline-variant flex justify-between items-center px-xl z-10">
+<div class="flex items-center gap-lg w-1/2">
+<div class="relative flex-grow max-w-md">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl pl-[48px] pr-md py-sm focus:ring-2 focus:ring-secondary text-body-md transition-all" placeholder="Search categories or products..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex gap-md">
+<button class="relative p-xs hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-xs hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">apps</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<button class="bg-primary text-white px-lg py-sm rounded-xl font-label-md shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                Create Campaign
+            </button>
+</div>
+</header>
+ MAIN CONTENT AREA 
+<main class="ml-64 mt-20 p-xl h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar">
+<div class="max-w-6xl mx-auto flex flex-col gap-xl">
+<!-- HEADER SECTION -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Storefront Organization</h2>
+<p class="text-body-lg text-on-surface-variant">Organize how customers see your menu and optimize for peak performance.</p>
+</div>
+<button class="bg-secondary text-white px-xl py-md rounded-xl font-headline-sm flex items-center gap-sm shadow-lg hover:shadow-xl transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+                    Add New Category
+                </button>
+</div>
+<!-- ASYMMETRIC BENTO GRID -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- CATEGORY INSIGHTS (Large Card) -->
+<div class="col-span-12 lg:col-span-8 bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-xs text-on-surface">
+<span class="material-symbols-outlined text-tertiary">insights</span>
+                            Category Performance Insights
+                        </h3>
+<span class="bg-surface-container-high px-md py-xs rounded-full text-xs font-label-md text-on-surface-variant">Last 30 Days</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="bg-surface-container-low p-md rounded-lg border border-outline-variant">
+<p class="text-body-sm text-on-surface-variant">Top Revenue Driver</p>
+<p class="text-headline-md font-extrabold text-secondary mt-xs">Daily Specials</p>
+<p class="text-[12px] font-label-md text-secondary mt-base">+12.4% vs last mo</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-lg border border-outline-variant">
+<p class="text-body-sm text-on-surface-variant">Highest Conversion</p>
+<p class="text-headline-md font-extrabold text-tertiary mt-xs">Desserts</p>
+<p class="text-[12px] font-label-md text-tertiary mt-base">84% view-to-order</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-lg border border-error/10">
+<p class="text-body-sm text-on-surface-variant">High Cancellation Risk</p>
+<p class="text-headline-md font-extrabold text-error mt-xs">Beverages</p>
+<p class="text-[12px] font-label-md text-error mt-base">15% cancellation rate</p>
+</div>
+</div>
+<div class="mt-lg h-32 w-full flex items-end gap-xs px-md">
+<!-- Simplified Visualization -->
+<div class="flex-grow bg-secondary-fixed h-[40%] rounded-t-md relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-xs py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity">Specials</div>
+</div>
+<div class="flex-grow bg-secondary h-[70%] rounded-t-md relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-xs py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity">Mains</div>
+</div>
+<div class="flex-grow bg-secondary-fixed-dim h-[55%] rounded-t-md relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-xs py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity">Sides</div>
+</div>
+<div class="flex-grow bg-tertiary-fixed-dim h-[90%] rounded-t-md relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-xs py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity">Desserts</div>
+</div>
+<div class="flex-grow bg-surface-container-highest h-[30%] rounded-t-md relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[10px] px-xs py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity">Drinks</div>
+</div>
+</div>
+</div>
+<!-- AVAILABILITY QUICK STATUS (Small Card) -->
+<div class="col-span-12 lg:col-span-4 bg-tertiary-container text-white rounded-xl p-lg shadow-lg relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-headline-sm text-headline-sm mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined">schedule</span>
+                            Active Now
+                        </h3>
+<div class="space-y-sm">
+<div class="flex items-center justify-between bg-white/10 p-sm rounded-lg backdrop-blur-sm">
+<span class="font-label-md">Lunch Menu</span>
+<span class="text-[10px] bg-secondary-container text-on-secondary-container px-xs py-[2px] rounded-full">ACTIVE</span>
+</div>
+<div class="flex items-center justify-between bg-white/10 p-sm rounded-lg backdrop-blur-sm opacity-60">
+<span class="font-label-md">Breakfast</span>
+<span class="text-[10px] bg-surface-variant text-on-surface-variant px-xs py-[2px] rounded-full">HIDDEN</span>
+</div>
+</div>
+<button class="mt-lg w-full py-sm bg-white text-tertiary-container font-label-md rounded-lg hover:bg-surface-bright transition-colors">
+                            Manage All Schedules
+                        </button>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+</div>
+<!-- DRAG-AND-DROP REORDERING INTERFACE -->
+<div class="col-span-12 lg:col-span-7 bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex justify-between items-center mb-lg">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Menu Categories</h3>
+<p class="text-body-sm text-on-surface-variant">Drag handles to reorder items for customers.</p>
+</div>
+</div>
+<div class="flex flex-col gap-sm" id="category-list">
+<!-- Category Item 1 -->
+<div class="flex items-center gap-md p-md bg-surface-container-low border border-outline-variant rounded-xl group hover:border-secondary transition-all">
+<div class="drag-handle text-on-surface-variant opacity-40 group-hover:opacity-100">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Daily Specials</h4>
+<p class="text-body-sm text-on-surface-variant">Chef's curated daily market finds.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-[2px] rounded-full text-[10px] font-bold">12 ITEMS</span>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-variant rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-xs hover:bg-error-container rounded-full text-error"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</div>
+</div>
+<!-- Category Item 2 -->
+<div class="flex items-center gap-md p-md bg-surface-container-low border border-outline-variant rounded-xl group hover:border-secondary transition-all">
+<div class="drag-handle text-on-surface-variant opacity-40 group-hover:opacity-100">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Main Courses</h4>
+<p class="text-body-sm text-on-surface-variant">Hearty African stews and grilled delicacies.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-[2px] rounded-full text-[10px] font-bold">24 ITEMS</span>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-variant rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-xs hover:bg-error-container rounded-full text-error"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</div>
+</div>
+<!-- Category Item 3 -->
+<div class="flex items-center gap-md p-md bg-surface-container-low border border-outline-variant rounded-xl group hover:border-secondary transition-all border-dashed border-2">
+<div class="drag-handle text-on-surface-variant opacity-40 group-hover:opacity-100">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Breakfast</h4>
+<p class="text-body-sm text-on-surface-variant">Scheduled: 7:00 AM - 11:00 AM daily.</p>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="bg-tertiary text-white px-sm py-[2px] rounded-full text-[10px] font-bold flex items-center gap-base">
+<span class="material-symbols-outlined text-[12px]">schedule</span> SCHEDULED
+                                </span>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-variant rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-xs hover:bg-error-container rounded-full text-error"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AVAILABILITY SCHEDULES MANAGEMENT -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-lg">
+<div class="bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)] flex-grow">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Category Schedules</h3>
+<div class="space-y-md">
+<div class="p-md bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-label-md text-on-surface">Breakfast Category</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="flex gap-sm items-center text-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Daily, 07:00 - 11:00</span>
+</div>
+</div>
+<div class="p-md bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-label-md text-on-surface">Late Night Deals</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="flex gap-sm items-center text-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Fri-Sat, 22:00 - 02:00</span>
+</div>
+</div>
+<button class="w-full py-md border-2 border-dashed border-outline-variant rounded-xl text-on-surface-variant font-label-md hover:bg-surface-container-low transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">timer</span>
+                                Add Availability Window
+                            </button>
+</div>
+</div>
+<!-- PROMOTIONAL TILE -->
+<div class="bg-primary rounded-xl p-lg shadow-lg relative overflow-hidden h-40">
+<img alt="Fresh market produce" class="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay" data-alt="A macro close-up of vibrant, fresh organic bell peppers and tomatoes in a bustling African open-air market. The colors are highly saturated—intense oranges and deep greens—evoking vitality and energy. Soft sunlight filters through, creating high-contrast highlights and warm, earthy shadows, reflecting the Modern African Energy design theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAPHoNn4QTN8dj1W3Xx87yR7zHZrmhTiaCCX_Pdp02ZRDFosmgm6Q10JTESZAVWbauDz4WF-eF1U7VN0ptnKOO-zVlQardy0In8YD0_cmzfUY2Aqd9dEinnNbpJlHpn-otcEbvz2U5HeSgsc4vI9XVhHmJZsQx99ld2rpY80g4YmmqNxeqIJAAN--Enc9ltvhiLr-_BQL-41_67IcBw_hLSpyPWIj8hw1QiqqFFKPmGcXu-x3FTWkTiAhGNWtruQ-6exed5s-fvuI"/>
+<div class="relative z-10">
+<h4 class="font-headline-sm text-white">Smart Sort™</h4>
+<p class="text-body-sm text-white/90 mt-xs">Let our AI reorder your menu based on real-time buying trends.</p>
+<button class="mt-md px-md py-xs bg-white text-primary font-bold rounded-lg text-xs hover:scale-105 transition-transform">ENABLE AI SORTING</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+ MODAL: ADD NEW CATEGORY 
+<div class="fixed inset-0 bg-on-background/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300" id="categoryModal">
+<div class="bg-white w-full max-w-md rounded-2xl p-xl shadow-[0_8px_24px_rgba(44,44,58,0.12)] transform scale-95 transition-transform duration-300">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-lg text-headline-lg-mobile text-on-surface">New Category</h3>
+<button class="p-xs hover:bg-surface-variant rounded-full"><span class="material-symbols-outlined">close</span></button>
+</div>
+<form class="flex flex-col gap-lg">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface-variant">Category Name</label>
+<input class="w-full rounded-xl border-outline-variant focus:border-secondary focus:ring-secondary py-md" placeholder="e.g. Traditional Soups" type="text"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface-variant">Description (Optional)</label>
+<textarea class="w-full rounded-xl border-outline-variant focus:border-secondary focus:ring-secondary p-md" placeholder="Tell customers what's special about this section..." rows="3"></textarea>
+</div>
+<div class="p-md bg-surface-container rounded-xl flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary">info</span>
+<p class="text-body-sm text-on-surface-variant">New categories are hidden from customers by default until you add items.</p>
+</div>
+<div class="flex gap-md pt-md">
+<button class="flex-grow py-md font-headline-sm text-on-surface-variant border border-outline-variant rounded-xl hover:bg-surface-variant transition-colors" type="button">Cancel</button>
+<button class="flex-grow py-md font-headline-sm bg-secondary text-white rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all" type="submit">Create Category</button>
+</div>
+</form>
+</div>
+</div>
+ FLOATING ACTION BUTTON (SUPPRESSED AS PER TASK: TASK FOCUSED PAGE) 
+

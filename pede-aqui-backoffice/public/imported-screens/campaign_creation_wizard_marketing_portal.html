@@ -1,0 +1,308 @@
+
+ Shell Layout Wrapper (Matches SideNav logic) 
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar Navigation (Mandatory Shared Component) -->
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container shadow-sm flex flex-col py-lg px-md gap-lg z-50" id="SideNavBar">
+<div class="flex flex-col gap-xs">
+<span class="text-headline-md font-headline-md font-extrabold text-primary">MarketEnergy</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Marketing Portal</span>
+</div>
+<button class="bg-primary text-on-primary rounded-lg py-sm px-md font-label-md text-label-md flex items-center justify-center gap-sm shadow-md hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+<span>Create Campaign</span>
+</button>
+<nav class="flex flex-col gap-base mt-md">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<!-- Active State for Campaign Creation -->
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-sm" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span class="font-body-md">Campaigns</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md">Segments</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="local_offer">local_offer</span>
+<span class="font-body-md">Promotions</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-base border-t border-outline-variant pt-lg">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="font-body-md">Support</span>
+</a>
+<div class="flex items-center gap-md px-md py-sm mt-md">
+<img alt="Marketing Admin" class="w-8 h-8 rounded-full bg-primary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzEg39z7PMxkfja0rS1lx9NdvVYFJOiLu5odLvEw-VFtjUpFLr-H-Jw-9JdGypv42jzl1rF3zOPb3O2NPrG9VgO2n3DnkMhD2mcPESDIpY37lZERIP66ci0nXe5Y7s9E203wAwD3i99cWzSLolg9_7u-TJWTWZ5VrKAaefpYRU4voPXb1S5-DmLnzNGD_QnRuHPuOE34VlohtEzKuyLlSeBFyZf6KswxUXU-D3hXWwl0El2BTMvYsMLGyNjgyDTMIP5h84MNmBt_w"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Marketing Admin</span>
+<span class="text-xs text-on-surface-variant">Admin Access</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col h-full bg-[#FAFAF7]">
+<!-- Top App Bar (Mandatory Shared Component) -->
+<header class="fixed top-0 right-0 left-64 h-20 bg-surface border-b border-outline-variant flex justify-between items-center px-xl z-40" id="TopNavBar">
+<div class="flex items-center gap-lg">
+<span class="text-headline-sm font-headline-sm font-semibold text-primary">Marketing Backoffice</span>
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-xs pl-xxl pr-md font-body-sm text-on-surface focus:ring-2 focus:ring-secondary" placeholder="Search resources..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<div class="w-[1px] h-6 bg-outline-variant mx-sm"></div>
+<img alt="Admin User" class="w-8 h-8 rounded-full bg-secondary-fixed-dim" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2OF9i1E2j7woyIcU96Nga0kI2VYoTGanSVICh3uVreGorkNZjIYloqAHD4yAD1Gf7zgzsvAwU7d1X6L12jrpyHyLsjRt1BVCJwyYFa71MWF8zLMW6XpZORs1qDbK-dXvsE1beRtz-9E9GGAKNHNNcPXOubYRhjHrbj1kjAzAyqpb9-eHvGv028-eHW1W1xyKVM2VZhhvwZs39ykrerLzoCokf1umIHRR50YtE2lU3U9hIUmFu3qBwhu2o44ac4MRSCTJU99I5c3c"/>
+</div>
+</header>
+<!-- Campaign Wizard Container -->
+<div class="mt-20 flex-1 overflow-y-auto pb-xxl">
+<div class="max-w-4xl mx-auto py-xl px-lg">
+<!-- Header Section -->
+<div class="mb-xl">
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-base">Create New Campaign</h1>
+<p class="font-body-md text-on-surface-variant">Follow the steps below to design and launch your next marketing initiative.</p>
+</div>
+<!-- Stepper Component -->
+<div class="flex items-center justify-between mb-xxl relative">
+<!-- Connector Line -->
+<div class="absolute top-5 left-0 w-full h-[2px] bg-surface-container -z-10"></div>
+<div class="absolute top-5 left-0 h-[2px] bg-secondary transition-all duration-500 -z-10" id="progress-line" style="width: 0%;"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold step-active transition-all duration-300" id="step-dot-1">1</div>
+<span class="font-label-md text-label-md text-on-background">Basic Info</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold step-inactive transition-all duration-300" id="step-dot-2">2</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Targeting</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold step-inactive transition-all duration-300" id="step-dot-3">3</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Schedule</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold step-inactive transition-all duration-300" id="step-dot-4">4</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Launch</span>
+</div>
+</div>
+<!-- Step Contents -->
+<div class="min-h-[400px]" id="wizard-form-container">
+<!-- STEP 1: BASIC INFO -->
+<div class="step-transition" id="step-1">
+<div class="bg-white rounded-xl shadow-sm p-lg border border-outline-variant/30 flex flex-col gap-lg">
+<div class="grid grid-cols-1 gap-lg">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">Campaign Name</label>
+<input class="border border-outline-variant rounded-xl p-md font-body-md" placeholder="e.g. Summer Weekend Rush" type="text"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">Description</label>
+<textarea class="border border-outline-variant rounded-xl p-md font-body-md" placeholder="Describe the goals of this campaign..." rows="3"></textarea>
+</div>
+</div>
+<div class="flex flex-col gap-md">
+<label class="font-label-md text-on-surface">Campaign Type</label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<label class="relative group cursor-pointer">
+<input checked="" class="peer sr-only" name="campaign_type" type="radio"/>
+<div class="p-md border-2 border-outline-variant rounded-xl peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-secondary block mb-xs">local_shipping</span>
+<div class="font-bold text-on-surface">Free Delivery</div>
+<p class="text-xs text-on-surface-variant">Cover delivery costs for customers.</p>
+</div>
+</label>
+<label class="relative group cursor-pointer">
+<input class="peer sr-only" name="campaign_type" type="radio"/>
+<div class="p-md border-2 border-outline-variant rounded-xl peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-primary block mb-xs">percent</span>
+<div class="font-bold text-on-surface">Flat Discount</div>
+<p class="text-xs text-on-surface-variant">Apply a fixed % or $ amount off.</p>
+</div>
+</label></div>
+<label class="relative group cursor-pointer">
+<input class="peer sr-only" name="campaign_type" type="radio"/>
+<div class="p-md border-2 border-outline-variant rounded-xl peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-tertiary block mb-xs">add_shopping_cart</span>
+<div class="font-bold text-on-surface">BOGO Offer</div>
+<p class="text-xs text-on-surface-variant">Buy one get one free deals.</p>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- STEP 2: TARGETING (Hidden by default) -->
+<div class="step-transition hidden opacity-0 translate-x-8" id="step-2">
+<div class="bg-white rounded-xl shadow-sm p-lg border border-outline-variant/30 flex flex-col gap-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Select Target Segments</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex items-center justify-between p-md border border-outline-variant rounded-xl hover:border-secondary transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 bg-secondary-container rounded-lg flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div>
+<div class="font-bold">High Value</div>
+<div class="text-xs text-on-surface-variant">Top 5% by spend</div>
+</div>
+</div>
+<input class="rounded text-secondary focus:ring-secondary" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-md border border-outline-variant rounded-xl hover:border-secondary transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 bg-error-container rounded-lg flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<div class="font-bold">At Risk</div>
+<div class="text-xs text-on-surface-variant">Inactive for 30+ days</div>
+</div>
+</div>
+<input class="rounded text-secondary focus:ring-secondary" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-md border border-outline-variant rounded-xl hover:border-secondary transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 bg-primary-fixed rounded-lg flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined">person_add</span>
+</div>
+<div>
+<div class="font-bold">New Joinees</div>
+<div class="text-xs text-on-surface-variant">Joined in last 7 days</div>
+</div>
+</div>
+<input class="rounded text-secondary focus:ring-secondary" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-md border border-outline-variant rounded-xl hover:border-secondary transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 bg-tertiary-fixed rounded-lg flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined">group</span>
+</div>
+<div>
+<div class="font-bold">All Customers</div>
+<div class="text-xs text-on-surface-variant">Total active user base</div>
+</div>
+</div>
+<input class="rounded text-secondary focus:ring-secondary" type="checkbox"/>
+</div>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl border border-dashed border-outline">
+<p class="text-sm text-center text-on-surface-variant">Estimated Reach: <span class="font-bold text-secondary">24,500 active users</span></p>
+</div>
+</div>
+</div>
+<!-- STEP 3: SCHEDULE & BUDGET (Hidden by default) -->
+<div class="step-transition hidden opacity-0 translate-x-8" id="step-3">
+<div class="bg-white rounded-xl shadow-sm p-lg border border-outline-variant/30 flex flex-col gap-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">Start Date</label>
+<input class="border border-outline-variant rounded-xl p-md font-body-md" type="date"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">End Date</label>
+<input class="border border-outline-variant rounded-xl p-md font-body-md" type="date"/>
+</div>
+</div>
+<hr class="border-outline-variant"/>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">Daily Budget ($)</label>
+<input class="border border-outline-variant rounded-xl p-md font-body-md" placeholder="50.00" type="number"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-on-surface">Total Campaign Cap ($)</label>
+<input class="border border-outline-variant rounded-xl p-md font-body-md" placeholder="1000.00" type="number"/>
+</div>
+</div>
+<div class="flex items-center gap-md p-md bg-secondary-container/20 rounded-xl">
+<span class="material-symbols-outlined text-secondary">info</span>
+<p class="text-sm text-on-secondary-container">Your campaign will automatically pause once the daily budget or total cap is reached.</p>
+</div>
+</div>
+</div>
+<!-- STEP 4: PREVIEW & LAUNCH (Hidden by default) -->
+<div class="step-transition hidden opacity-0 translate-x-8" id="step-4">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="md:col-span-2 flex flex-col gap-lg">
+<div class="bg-white rounded-xl shadow-sm p-lg border border-outline-variant/30">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Campaign Summary</h3>
+<dl class="grid grid-cols-2 gap-y-md text-body-md">
+<dt class="text-on-surface-variant">Name:</dt>
+<dd class="font-bold text-right" id="summary-name">Summer Weekend Rush</dd>
+<dt class="text-on-surface-variant">Type:</dt>
+<dd class="font-bold text-right">Free Delivery</dd>
+<dt class="text-on-surface-variant">Audience:</dt>
+<dd class="font-bold text-right">High Value, At Risk</dd>
+<dt class="text-on-surface-variant">Total Cap:</dt>
+<dd class="font-bold text-right text-primary">$1,000.00</dd>
+</dl>
+</div>
+</div>
+<div class="md:col-span-1">
+<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-outline-variant/30 sticky top-4">
+<img alt="Campaign Preview Image" class="w-full h-40 object-cover" data-alt="A lush and vibrant display of fresh African vegetables and spices in a bustling open-air market, illuminated by golden hour sunlight. The colors are deeply saturated with rich forest greens, fiery oranges, and earthy browns. The visual style is crisp and commercial, emphasizing hospitality and energy with a narrow depth of field focus on the colorful textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_142rclkkKcySDU4ehDI6QXTbLCjQ-nL_CxVFIQ20TThdGmH_Jpsg9PkbNN5zSsytQcuBVWwzqAVssO-1dVHUkwH1iQWWvMMl5WEyuXF4rNW7E5bTXblW17IjjRkVkoNTbEKCipPrWU_RyB8zJm-TKiF1bdpNNQhHjulMswTvtE3bXG8ea4CYK_By65Z3TaNpTMYpFQBEWqst499fXpN7NCHjywZH3A53Beut9y3aDwl28VqqHhwmdJXVWjhlMlK3tO5aG_AjMs0"/>
+<div class="p-md">
+<div class="bg-secondary text-on-secondary text-[10px] uppercase tracking-widest font-bold px-xs py-[2px] rounded-full inline-block mb-xs">Live Preview</div>
+<h4 class="font-bold text-on-surface">Summer Weekend Rush</h4>
+<p class="text-xs text-on-surface-variant mt-xs">Get free delivery on all orders over $25 this weekend only! Use code SUMMERDRIVE.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main></div>
+ Sticky Footer Actions 
+<footer class="fixed bottom-0 right-0 left-64 h-24 bg-white border-t border-outline-variant/30 flex items-center justify-between px-xl z-40">
+<button class="px-xl py-md rounded-xl font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-xs opacity-50 cursor-not-allowed" disabled="" id="btn-back">
+<span class="material-symbols-outlined">arrow_back</span>
+                    Back
+                </button>
+<div class="flex items-center gap-lg">
+<button class="px-xl py-md rounded-xl font-label-md text-label-md text-on-surface-variant hover:text-error transition-colors" id="btn-cancel">
+                        Save as Draft
+                    </button>
+<button class="px-xxl py-md bg-primary text-on-primary rounded-xl font-label-md text-label-md flex items-center gap-xs shadow-lg hover:brightness-110 active:scale-95 transition-all" id="btn-next">
+<span id="next-text">Next Step</span>
+<span class="material-symbols-outlined" id="next-icon">arrow_forward</span>
+</button>
+</div>
+</footer>
+ Success Modal (Hidden) 
+<div class="fixed inset-0 bg-on-background/40 backdrop-blur-sm z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300" id="success-modal">
+<div class="bg-white rounded-xxl p-xxl max-w-md w-full shadow-2xl scale-95 transition-transform duration-300 flex flex-col items-center text-center">
+<div class="w-20 h-20 bg-secondary rounded-full flex items-center justify-center text-on-secondary mb-lg">
+<span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-md">Campaign Launched!</h2>
+<p class="font-body-md text-on-surface-variant mb-xl">Your 'Summer Weekend Rush' campaign is now active and reaching your selected segments.</p>
+<button class="w-full bg-secondary text-on-secondary py-md rounded-xl font-label-md text-label-md shadow-lg hover:brightness-110 transition-all">
+                Go to Dashboard
+            </button>
+</div>
+</div>
+

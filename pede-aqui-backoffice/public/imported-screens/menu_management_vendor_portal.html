@@ -1,0 +1,296 @@
+
+ Sidebar Navigation 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container shadow-sm flex flex-col py-lg px-md gap-lg">
+<div class="flex flex-col gap-xs mb-lg">
+<span class="text-headline-md font-extrabold text-primary">MarketEnergy</span>
+<span class="text-body-md text-on-surface-variant">Marketing Portal</span>
+</div>
+<nav class="flex flex-col gap-sm flex-grow">
+<!-- Active State: Inventory (mapped from request) -->
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-label-md">Campaigns</span>
+</a>
+<!-- Active Inventory mapping -->
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-sm" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Segments</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">local_offer</span>
+<span class="font-label-md">Promotions</span>
+</a>
+</nav>
+<button class="bg-primary text-white py-md px-lg rounded-xl font-label-md flex items-center justify-center gap-sm Active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">add</span>
+            Create Campaign
+        </button>
+<div class="mt-auto flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-md">Support</span>
+</a>
+</div>
+</aside>
+ Main Content Canvas 
+<main class="ml-64 h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 left-64 h-20 bg-surface border-b border-outline-variant flex justify-between items-center px-xl z-10">
+<div class="flex items-center gap-xl">
+<h1 class="text-headline-sm font-bold text-primary">Marketing Backoffice</h1>
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl py-sm pl-xxl pr-md focus:ring-2 focus:ring-secondary text-body-sm transition-soft" placeholder="Search menu items..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-soft">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-soft">apps</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="Admin User" data-alt="A professional headshot of a smiling West African man in a modern business-casual studio setting. The lighting is warm and bright, emphasizing a light-mode aesthetic with soft shadows. He is wearing a crisp linen shirt against a minimalist, warm off-white background. The photo conveys confidence, reliability, and high-growth energy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBntMzL9VtsPwZZNOjBdZT0Pmh4nCvE2XIqC4pMOxKCwzHED3n7AEv2XyLh7cpgofGl4xIb4Sk6BlpvtP8LV-hOh_saMk9Q9vBetdZmvGq9UXXQqgS4-8p88HP9WMmcdNyxIF4tTTeH6xpqGiRKAzGA5O1yzsFA76XM7vUITBu1DTq90zDrOp1o4C0tQnF4Ifjv-9pwpMOpEcRucKNDLMpOO5IgLJhwaOhmMAawrDlnNvvKh4Gx3qlK0rOABmbxCpp4tpZ9_L1OkMQ"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Dashboard Content -->
+<div class="mt-20 flex-grow overflow-y-auto p-xl space-y-xl bg-background">
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Menu Orchestration (Bento Column) -->
+<section class="col-span-12 lg:col-span-8 space-y-lg">
+<div class="flex items-center justify-between">
+<h2 class="text-headline-md font-bold text-on-surface">Menu Orchestration</h2>
+<div class="flex gap-sm">
+<span class="bg-secondary-container text-on-secondary-container px-md py-xs rounded-full font-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">restaurant_menu</span>
+                                24 Active Items
+                            </span>
+</div>
+</div>
+<!-- Category Tabs -->
+<div class="flex gap-md overflow-x-auto pb-xs">
+<button class="whitespace-nowrap px-lg py-sm rounded-xl bg-primary text-white font-label-md">All Items</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-xl bg-white border border-outline-variant text-on-surface-variant font-label-md hover:border-primary transition-soft">Starters</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-xl bg-white border border-outline-variant text-on-surface-variant font-label-md hover:border-primary transition-soft">Main Course</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-xl bg-white border border-outline-variant text-on-surface-variant font-label-md hover:border-primary transition-soft">Drinks</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-xl bg-white border border-outline-variant text-on-surface-variant font-label-md hover:border-primary transition-soft">Desserts</button>
+</div>
+<!-- Item List Card -->
+<div class="bg-white rounded-xl card-shadow overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="px-lg py-md font-label-md text-on-surface-variant"><input class="rounded border-outline" type="checkbox"/></th>
+<th class="px-lg py-md font-label-md text-on-surface-variant">Item Details</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant text-center">Price</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant">Stock Status</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant text-center">Status</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Item Row -->
+<tr class="hover:bg-surface-bright transition-soft group">
+<td class="px-lg py-md"><input class="rounded border-outline" type="checkbox"/></td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-angle shot of a vibrant bowl of Jollof rice with grilled chicken and plantain, styled for a modern food delivery app. The lighting is warm and golden, reminiscent of late afternoon sun in a bustling African city. The colors are high-contrast, emphasizing the deep reds and oranges of the rice. The setting is clean and minimalist on a white ceramic plate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6njQkPqPd7pOer1wpEpzJRH-JGBYUl1FFzyv0qPAjVWFcS4ZBdxbCvPDr7_QTJ2dBba-XpnQmmTwIj1RxLyR6VccRgRSScrP7uGTepU-c9B1jevR4uWEgWFn1R68K46Ra9RD5bY0waqDKGIBXqct9VJ95i-lWKX5z4ewUEsejjvG9KUcEkIG3hnLFYYNjFIDtHUl2Pw83m-MxI2oennlzTb9QuyVQ9y3_lKpxJFVXypHgbA8Qwk4V0tMRdga2scvBt5h-H41LtlA"/>
+</div>
+<div>
+<div class="font-bold text-on-surface">Spicy Jollof Feast</div>
+<div class="text-body-sm text-on-surface-variant">Main Course • Popular</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-bold text-secondary">R$ 42.50</td>
+<td class="px-lg py-md">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-xs rounded-full text-[12px] font-bold">In Stock</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-end gap-sm opacity-0 group-hover:opacity-100 transition-soft">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Edit">edit</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Duplicate">content_copy</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Delete">delete</button>
+</div>
+</td>
+</tr>
+<!-- Item Row -->
+<tr class="hover:bg-surface-bright transition-soft group">
+<td class="px-lg py-md"><input class="rounded border-outline" type="checkbox"/></td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A beautifully presented iced hibiscus tea in a tall glass with fresh mint leaves and a slice of orange. The photograph is shot with a shallow depth of field, highlighting the condensation on the glass. The color palette features deep ruby reds and vibrant forest greens, reflecting the Modern African Energy theme. The mood is refreshing and hospitable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCj9bVXNw1o2RNPPpivMhSvKlpE9U1lddGZHE2_dhIeGp1rlm_X3tesnI_Bc-wUgBsNzGW-6e4cNpi6RZkFQYv9hgRwZNC29Nq1Yt8XtSQbG-PWC6pE2WaBlsme3q--fO581rxe8-3Sg_4pUoHiOnDunF-ArOgloXA8qc74yM0sq1m8nbrblo6xw36_JZZc8XFMu0I1phtdsMr2as67YmPWpH_PyDxwumUtnVkiwL2j755S28lU0Teb5xcNHRSRSGNS5r4O1MXwVQI"/>
+</div>
+<div>
+<div class="font-bold text-on-surface">Zesty Bissap Cooler</div>
+<div class="text-body-sm text-on-surface-variant">Drinks • Seasonal</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-bold text-secondary">R$ 15.00</td>
+<td class="px-lg py-md">
+<span class="bg-error-container text-on-error-container px-sm py-xs rounded-full text-[12px] font-bold">Low Stock (8)</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-end gap-sm opacity-0 group-hover:opacity-100 transition-soft">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Edit">edit</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Duplicate">content_copy</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Delete">delete</button>
+</div>
+</td>
+</tr>
+<!-- Item Row -->
+<tr class="hover:bg-surface-bright transition-soft group">
+<td class="px-lg py-md"><input class="rounded border-outline" type="checkbox"/></td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">image</span>
+</div>
+<div>
+<div class="font-bold text-on-surface">Plantain Chips</div>
+<div class="text-body-sm text-on-surface-variant">Starters • Snack</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-bold text-secondary">R$ 12.00</td>
+<td class="px-lg py-md">
+<span class="bg-surface-container-highest text-on-surface-variant px-sm py-xs rounded-full text-[12px] font-bold">Out of Stock</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</td>
+<td class="px-lg py-md">
+<div class="flex justify-end gap-sm opacity-0 group-hover:opacity-100 transition-soft">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Edit">edit</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Duplicate">content_copy</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Delete">delete</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Bulk Actions Bar -->
+<div class="bg-primary-container p-md flex items-center justify-between border-t border-primary-fixed">
+<div class="flex items-center gap-md text-on-primary-container font-label-md">
+<span class="material-symbols-outlined">check_circle</span>
+                                3 Items Selected
+                            </div>
+<div class="flex gap-md">
+<button class="bg-white/20 hover:bg-white/30 text-white px-lg py-sm rounded-lg font-label-md transition-soft">Update Stock</button>
+<button class="bg-white/20 hover:bg-white/30 text-white px-lg py-sm rounded-lg font-label-md transition-soft">Modify Price</button>
+<button class="bg-white text-primary px-lg py-sm rounded-lg font-label-md hover:bg-surface-bright transition-soft">Activate All</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Stock Alerts & Insights (Right Column) -->
+<aside class="col-span-12 lg:col-span-4 space-y-lg">
+<!-- Stock Alerts Panel -->
+<div class="bg-white rounded-xl card-shadow p-lg space-y-md border-l-4 border-error">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h3 class="font-headline-sm text-on-surface">Stock Alerts</h3>
+</div>
+<p class="text-body-sm text-on-surface-variant">3 items require immediate attention to prevent sales interruption.</p>
+<div class="space-y-sm">
+<div class="flex items-center justify-between p-md bg-error-container rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-on-error-container">Cassava Pone</span>
+<span class="text-[12px] text-on-error-container opacity-80">2 units left</span>
+</div>
+<button class="text-on-error-container underline font-label-md">Restock</button>
+</div>
+<div class="flex items-center justify-between p-md bg-surface-container-high rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-on-surface">Ginger Soda</span>
+<span class="text-[12px] text-on-surface-variant">Out of Stock</span>
+</div>
+<button class="text-primary underline font-label-md">Update</button>
+</div>
+</div>
+</div>
+<!-- Quick Insights -->
+<div class="bg-secondary-container rounded-xl card-shadow p-lg space-y-md">
+<div class="flex items-center gap-md text-on-secondary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h3 class="font-headline-sm font-bold">Today's Performance</h3>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-white/40 p-md rounded-lg">
+<span class="block text-[12px] text-on-secondary-fixed-variant uppercase font-bold">Top Seller</span>
+<span class="text-body-lg font-bold text-on-secondary-fixed">Jollof Feast</span>
+</div>
+<div class="bg-white/40 p-md rounded-lg">
+<span class="block text-[12px] text-on-secondary-fixed-variant uppercase font-bold">Conversion</span>
+<span class="text-body-lg font-bold text-on-secondary-fixed">12.4%</span>
+</div>
+</div>
+<button class="w-full py-sm bg-secondary text-white rounded-lg font-label-md flex items-center justify-center gap-sm">
+                            View Detailed Reports
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Quick Action Card -->
+<div class="bg-white rounded-xl card-shadow p-lg space-y-md">
+<h3 class="font-label-md text-on-surface-variant">Quick Shortcuts</h3>
+<div class="grid grid-cols-1 gap-sm">
+<button class="flex items-center gap-md p-md hover:bg-surface-container-low rounded-lg transition-soft text-left group">
+<span class="material-symbols-outlined text-primary bg-primary-fixed p-sm rounded-lg group-hover:scale-110 transition-soft">category</span>
+<div>
+<span class="block font-bold">New Category</span>
+<span class="text-[12px] text-on-surface-variant">Group your products</span>
+</div>
+</button>
+<button class="flex items-center gap-md p-md hover:bg-surface-container-low rounded-lg transition-soft text-left group">
+<span class="material-symbols-outlined text-secondary bg-secondary-fixed p-sm rounded-lg group-hover:scale-110 transition-soft">history</span>
+<div>
+<span class="block font-bold">Stock History</span>
+<span class="text-[12px] text-on-surface-variant">Review past changes</span>
+</div>
+</button>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</main>
+ Floating Action Button 
+<button class="fixed bottom-lg right-lg w-16 h-16 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-150 z-50">
+<span class="material-symbols-outlined" style="font-size: 32px;">add</span>
+</button>
+

@@ -1,0 +1,268 @@
+
+ TopNavBar Shell 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface dark:bg-inverse-surface shadow-sm">
+<div class="flex items-center gap-md">
+<h1 class="text-headline-sm font-headline-sm font-extrabold text-primary dark:text-inverse-primary">Vendor Central</h1>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden md:block">
+<input class="pl-xl pr-md py-xs rounded-lg border border-outline-variant bg-surface-container-lowest focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all" placeholder="Search menu..." type="text"/>
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+</div>
+<button class="material-symbols-outlined p-xs rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">notifications</button>
+<button class="material-symbols-outlined p-xs rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">help</button>
+<img alt="Vendor profile avatar" class="w-xl h-xl rounded-full object-cover ring-2 ring-primary-fixed" data-alt="A professional headshot of a friendly business owner in a vibrant, sun-drenched outdoor market setting. The lighting is warm and golden, reflecting a modern African Energy aesthetic. The subject is wearing colorful, textured local attire, against a soft-focus background of bustling activity and verdant greenery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXf7VW7Fo_6Owp0iz8JcOBR0jssLE2_hCoA-9Aj29c5EGwbQPVqh8hxHb9MUXW6w0WJ1O9BYMf1fQhjIdhKv2BphvzPOLKqwPK3nSF8ULKQHY0WrrXGqRme8fis6h7dMej5V-yUS9S3wS3ICdqI0iimc8j-887uCGyogMcbwzYx0m-nmdxO-j73xwUhG-OFcULbAP7Ux9sp8BdqJgWc9mjGHrm3q7Tuhyx32oR5Cxz_VylSgAhV5X8VXexgsOj7RfzAaDzLsJzIyw"/>
+</div>
+</header>
+ SideNavBar Shell 
+<nav class="hidden md:flex flex-col h-screen py-lg gap-sm border-r border-outline-variant w-64 fixed left-0 top-0 bg-surface-container-low dark:bg-inverse-surface z-50">
+<div class="px-md mb-lg">
+<h2 class="text-headline-sm font-headline-sm font-extrabold text-on-surface dark:text-inverse-on-surface">Vendor Portal</h2>
+<p class="text-label-md font-label-md text-on-surface-variant opacity-70">Manage your shop</p>
+</div>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-outline-variant px-md py-sm mx-sm hover:bg-primary-fixed dark:hover:bg-on-primary-fixed-variant hover:text-on-primary-fixed transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-outline-variant px-md py-sm mx-sm hover:bg-primary-fixed transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-outline-variant px-md py-sm mx-sm hover:bg-primary-fixed transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<div class="mt-auto px-md">
+<button class="w-full flex items-center justify-center gap-xs bg-primary text-on-primary py-md rounded-lg font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+<span>New Listing</span>
+</button>
+</div>
+</nav>
+ Main Content Canvas 
+<main class="md:ml-64 p-lg lg:p-xxl">
+<div class="max-w-6xl mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-lg mb-xxl">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Category Management</h2>
+<p class="text-body-md text-on-surface-variant mt-xs">Organize your menu items into intuitive groups for your customers.</p>
+</div>
+<button class="bg-coral-orange text-white px-xl py-md rounded-lg font-bold flex items-center justify-center gap-sm shadow-lg hover:shadow-xl hover:brightness-110 active:scale-95 transition-all group">
+<span class="material-symbols-outlined group-hover:rotate-90 transition-transform">add_circle</span>
+                    Add New Category
+                </button>
+</div>
+<!-- Dashboard Stats / Highlights (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xxl">
+<div class="bg-white p-lg rounded-xl shadow-sm border-l-4 border-forest-green flex items-center gap-lg">
+<div class="bg-secondary-container p-md rounded-full text-secondary">
+<span class="material-symbols-outlined">category</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Total Categories</p>
+<p class="text-headline-md">12</p>
+</div>
+</div>
+<div class="bg-white p-lg rounded-xl shadow-sm border-l-4 border-coral-orange flex items-center gap-lg">
+<div class="bg-primary-fixed p-md rounded-full text-primary">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Live Items</p>
+<p class="text-headline-md">84</p>
+</div>
+</div>
+<div class="bg-white p-lg rounded-xl shadow-sm border-l-4 border-golden-yellow flex items-center gap-lg">
+<div class="bg-surface-container-high p-md rounded-full text-on-surface">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Public View</p>
+<p class="text-headline-md">Active</p>
+</div>
+</div>
+</div>
+<!-- Categories Table / List -->
+<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-md text-label-md text-on-surface-variant uppercase tracking-wider w-16"></th>
+<th class="px-lg py-md text-label-md text-on-surface-variant uppercase tracking-wider">Category Name</th>
+<th class="px-lg py-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Items</th>
+<th class="px-lg py-md text-label-md text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="px-lg py-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Category Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-lg">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant opacity-30 hover:opacity-100">drag_indicator</span>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A vibrant, close-up photograph of steaming Jollof rice served in a traditional clay pot, surrounded by fresh herbs and colorful peppers. The lighting is soft and warm, capturing the rich, spicy textures and inviting colors typical of Nigerian culinary high-energy style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ05wbTfcM02OoNmfNaI_7LtvPitVryi3kPOr1qGl-Tyv5iRBmzW3-LgItsu_GGGMv9W1NECmsNiAQyb5BYsHEoDifSiSLnIK9taTk47cj63tRjFcNLDw5decU_CgW6OZw6-Mbgd510_i8_qWTRecVkRnWc9f8MkCC3uRhPLtovgAO58ESCxNV3ZlZ-1qH02KDfJBIKwaQE2CANgSttvzle3VaGG4s5kObN7NnRUb1bBLLh_poJa2IjixKiYHRpM3GDrDGRUhj7QI"/>
+</div>
+<span class="font-bold text-on-surface">Jollof &amp; Rice Dishes</span>
+</div>
+</td>
+<td class="px-lg py-lg text-center font-code-otp text-secondary">14</td>
+<td class="px-lg py-lg">
+<span class="px-sm py-xs bg-secondary-fixed text-on-secondary-container rounded-full text-xs font-bold flex items-center gap-xs w-max">
+<span class="w-2 h-2 rounded-full bg-forest-green animate-pulse"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-lg py-lg text-right">
+<div class="flex items-center justify-end gap-sm">
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all" title="Edit">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all" title="Delete">
+<span class="material-symbols-outlined">delete</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-secondary hover:bg-secondary-container rounded-lg transition-all" title="Duplicate">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Category Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-lg">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant opacity-30 hover:opacity-100">drag_indicator</span>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A high-contrast food photography shot of skewered Suya meat, glowing with vibrant spices and oil under bright, directional market lighting. The meat is presented on a minimalist wooden board with sliced onions and tomatoes, embodying the rustic yet rhythmic energy of African street food culture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5SlZy8o5uRy8Yy2XIBwJJt_rWXWN_SzggTVCD0toUmMhDFF46Lmu7AcIfSnsN1-rK7QO7Gim4UrUrVf3bQ1wpXEsPwi0yJmbsWyZ84AuxdHsHcBjSjS7naJzYkWMt-3ssNUjh-bo_90sR5y9809P7F4c3IuEZcU0NRhzUirasclwVWVTUy6d_tSgqz71fFx3qcfwuuyfDPEH8tIRlMh8-xKaGctuLwiSkXqksA9CyRa-MUjBiAGVsCF2cSNRR9y0pQABjXnpr3UQ"/>
+</div>
+<span class="font-bold text-on-surface">Grills &amp; Suya</span>
+</div>
+</td>
+<td class="px-lg py-lg text-center font-code-otp text-secondary">8</td>
+<td class="px-lg py-lg">
+<span class="px-sm py-xs bg-secondary-fixed text-on-secondary-container rounded-full text-xs font-bold flex items-center gap-xs w-max">
+<span class="w-2 h-2 rounded-full bg-forest-green animate-pulse"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-lg py-lg text-right">
+<div class="flex items-center justify-end gap-sm">
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-secondary hover:bg-secondary-container rounded-lg transition-all">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Category Row 3 (Inactive) -->
+<tr class="hover:bg-surface-container-lowest transition-colors group opacity-75">
+<td class="px-lg py-lg">
+<span class="material-symbols-outlined drag-handle text-on-surface-variant opacity-30 hover:opacity-100">drag_indicator</span>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden flex-shrink-0 grayscale">
+<img class="w-full h-full object-cover" data-alt="Refreshing tropical drinks with condensation on glass, featuring vibrant slices of citrus and mint. The scene is bright and airy, with soft shadows and a high-key aesthetic that suggests a cooling beverage on a hot, energetic afternoon in a lush garden setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2oLRrakKMr8-mbT3piM6xZFWI7PDvOYVV5xCLmCDnjz8ZTB5HMCuUi32-ITWUi9ZkCUXd06LyXAGXunk8BFDCXHkxjkrnKt7KxDoytUPF3nonsCFmZacTDaCzC8C1fSsnKymD881tYYfu2e-cwu9rJD9D27Qj550SF0Gt2G8jscXy9XxMucnZSrqZLXeSkzxzgXwOoIO4O2vNQwVz5Jge4M-BAYt9smHa07BzpowRy7j1InX67-sXhaLZli6ky-GpCsSg76m5edI"/>
+</div>
+<span class="font-bold text-on-surface">Seasonal Drinks</span>
+</div>
+</td>
+<td class="px-lg py-lg text-center font-code-otp text-on-surface-variant">0</td>
+<td class="px-lg py-lg">
+<span class="px-sm py-xs bg-surface-variant text-on-surface-variant rounded-full text-xs font-bold flex items-center gap-xs w-max">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+                                        Inactive
+                                    </span>
+</td>
+<td class="px-lg py-lg text-right">
+<div class="flex items-center justify-end gap-sm">
+<button class="p-xs text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all">
+<span class="material-symbols-outlined">delete</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-secondary hover:bg-secondary-container rounded-lg transition-all">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination / Footer -->
+<div class="px-lg py-md bg-surface-container-lowest flex flex-col md:flex-row items-center justify-between gap-md border-t border-outline-variant">
+<p class="text-body-sm text-on-surface-variant">Showing 1-3 of 12 categories</p>
+<div class="flex items-center gap-xs">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-on-primary font-bold">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors">3</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contextual Help / Info Section -->
+<div class="mt-xxl grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="bg-surface-container-high p-lg rounded-xl flex items-start gap-md">
+<span class="material-symbols-outlined text-forest-green">tips_and_updates</span>
+<div>
+<h4 class="font-bold text-on-surface">Pro-Tip: Reordering</h4>
+<p class="text-body-sm text-on-surface-variant mt-xs">Use the drag handles on the left of each category to change the order your customers see on the app.</p>
+</div>
+</div>
+<div class="bg-surface-container p-lg rounded-xl flex items-start gap-md">
+<span class="material-symbols-outlined text-coral-orange">info</span>
+<div>
+<h4 class="font-bold text-on-surface">Empty Categories</h4>
+<p class="text-body-sm text-on-surface-variant mt-xs">Categories with zero items are automatically hidden from your public storefront to ensure a clean customer experience.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+ Mobile Navigation Shell 
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface dark:bg-inverse-surface shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-md py-sm flex justify-around items-center z-50">
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-primary" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="text-[10px] font-bold">Menu</span>
+</a>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-coral-orange text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold">Orders</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold">Settings</span>
+</a>
+</nav>
+

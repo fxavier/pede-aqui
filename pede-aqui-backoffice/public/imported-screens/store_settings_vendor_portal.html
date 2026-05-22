@@ -1,0 +1,269 @@
+
+ SideNavBar Shell 
+<aside class="hidden md:flex flex-col h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-low fixed left-0 top-0 w-64 z-50">
+<div class="px-md mb-xl">
+<h2 class="text-headline-sm font-headline-sm font-extrabold text-on-surface">Vendor Portal</h2>
+<p class="text-body-sm text-on-surface-variant">Manage your shop</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200 px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200 px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-label-md text-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all duration-200 px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md mt-auto">
+<button class="w-full bg-primary-container text-on-primary-container py-sm rounded-xl font-label-md text-label-md flex items-center justify-center gap-xs hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Listing
+            </button>
+</div>
+</aside>
+ Main Content Area 
+<main class="md:ml-64 min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm h-16">
+<div class="flex items-center gap-md">
+<button class="md:hidden p-xs">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-extrabold text-primary">Vendor Central</h1>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden sm:flex items-center bg-surface-container rounded-full px-md py-xs gap-sm border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-48" placeholder="Search settings..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="help">help</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img alt="Vendor profile avatar" data-alt="A professional headshot of a smiling West African male chef in a clean white uniform, captured with soft natural studio lighting. The background is a warm, minimalist ochre tone, reflecting a modern and welcoming culinary brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG5R7KphwTJQqKoRBwDhgIpHAMUWp5zsppXuTtKncMr9h187-l4fatbl5OfjMzdxUVh9LSjTwr2YbpVFRyDtRADr4fRlv4ORaxGf1ab45i0dl6yyaO2E6ooQSfxkYztM7CBiKdXoQT_MNJqBW2ukcCqfuqsVqskgxcot8rVt6OhOQsQ3w82xhhQhfbUG2HB4fRboJVp-gMEA0tGccZ1n-z3f2RaSPaf_e93dx-Zv-DD8S0gh6pBlecbtKi9azHsHLlh0xjRozWKMk"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-lg max-w-6xl mx-auto space-y-lg">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-on-background">Store Settings</h2>
+<p class="text-body-lg text-on-surface-variant">Configure your operating hours, delivery parameters, and closures.</p>
+</div>
+<button class="bg-primary text-on-primary px-xl py-sm rounded-xl font-label-md text-label-md hover:scale-[1.02] active:scale-95 transition-all shadow-sm">
+                    Save Changes
+                </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Section 1: Operating Hours -->
+<div class="lg:col-span-7 bg-surface rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border border-outline-variant overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="schedule" style="font-variation-settings: 'FILL' 1;">schedule</span>
+<h3 class="font-headline-sm text-headline-sm">Operating Hours</h3>
+</div>
+<button class="text-primary font-label-md text-label-md hover:underline">Apply to all days</button>
+</div>
+<div class="divide-y divide-outline-variant">
+<!-- Monday -->
+<div class="p-md flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div class="flex items-center gap-md w-32">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="font-label-md text-label-md">Monday</span>
+</div>
+<div class="flex-1 space-y-sm">
+<div class="flex items-center gap-sm">
+<div class="flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs">
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="11:00"/>
+<span class="mx-xs text-on-surface-variant">—</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="15:00"/>
+</div>
+<span class="text-body-sm text-on-surface-variant font-medium">Lunch</span>
+<button class="material-symbols-outlined text-error text-sm" data-icon="delete">delete</button>
+</div>
+<div class="flex items-center gap-sm">
+<div class="flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs">
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="18:00"/>
+<span class="mx-xs text-on-surface-variant">—</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="23:00"/>
+</div>
+<span class="text-body-sm text-on-surface-variant font-medium">Dinner</span>
+<button class="material-symbols-outlined text-error text-sm" data-icon="delete">delete</button>
+</div>
+</div>
+<button class="flex items-center gap-xs text-primary font-label-md text-label-md bg-surface-container rounded-lg px-sm py-xs hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Slot
+                            </button>
+</div>
+<!-- Tuesday -->
+<div class="p-md flex flex-col md:flex-row md:items-center justify-between gap-md opacity-60 bg-surface-container-lowest">
+<div class="flex items-center gap-md w-32">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="font-label-md text-label-md">Tuesday</span>
+</div>
+<div class="flex-1 text-on-surface-variant font-label-md">Store Closed</div>
+<button class="flex items-center gap-xs text-outline font-label-md text-label-md px-sm py-xs cursor-not-allowed">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Slot
+                            </button>
+</div>
+<!-- More days (Condensed for brevity) -->
+<div class="p-md flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div class="flex items-center gap-md w-32">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="font-label-md text-label-md">Wednesday</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-sm">
+<div class="flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs">
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="09:00"/>
+<span class="mx-xs text-on-surface-variant">—</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md font-code-otp p-0 w-16" type="time" value="21:00"/>
+</div>
+<button class="material-symbols-outlined text-error text-sm" data-icon="delete">delete</button>
+</div>
+</div>
+<button class="flex items-center gap-xs text-primary font-label-md text-label-md bg-surface-container rounded-lg px-sm py-xs hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Slot
+                            </button>
+</div>
+</div>
+</div>
+<!-- Section 2: Delivery Radius & Zone -->
+<div class="lg:col-span-5 flex flex-col gap-lg">
+<div class="bg-surface rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border border-outline-variant overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="map" style="font-variation-settings: 'FILL' 1;">map</span>
+<h3 class="font-headline-sm text-headline-sm">Delivery Zone</h3>
+</div>
+<div class="relative h-64 bg-surface-container-highest">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover grayscale contrast-125 opacity-40" data-alt="A stylized, top-down satellite map view of a modern urban neighborhood with clean, high-contrast roads and blocks. The map is overlaid with a semi-transparent, vibrant orange circle representing a delivery zone, with a prominent pin at the center. The aesthetic is clean, technical, and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1aO4YrYPKI1_c-joycxzc2o9MwnadaUMpAhEYcwajbb0AlNRy0CYiFC3AQyZMUIfyJcZKVcOTR9N9tBHtzWWpOnOu4DZYSggWGcjrGXj226-TSbcDKmlnpBavaJgODtphsnkEYg6SYiGZMae3mbP7JbTBREHif-HO6OW1zHxI4DqN7jbTqAiNhOlRvDHY_TtLWWQKXJNckUvT9Luvzum0w6YHvsxyMZtinolyka_GyZChjVAxZY4c7kkafA8wjGcKnCpvLDBY_PA"/>
+<!-- Marker Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="relative">
+<div class="absolute -top-10 -left-5 text-primary">
+<span class="material-symbols-outlined text-4xl" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<!-- Delivery Radius Circle -->
+<div class="w-48 h-48 bg-primary/10 border-2 border-primary rounded-full flex items-center justify-center transition-all duration-300" id="radius-circle">
+<div class="bg-white px-xs py-base rounded shadow-sm text-[10px] font-bold text-primary">8.0 km</div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-md left-md right-md z-10 glass-panel p-sm rounded-lg border border-outline-variant/30 flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="text-label-md font-label-md text-on-surface">Radius: <span id="radius-value">8.0</span> km</span>
+<span class="text-xs text-on-surface-variant">Max 20 km</span>
+</div>
+<input class="w-full accent-primary h-1.5 bg-outline-variant rounded-lg cursor-pointer" id="radius-slider" max="20" min="0" step="0.5" type="range" value="8"/>
+</div>
+</div>
+<div class="p-md space-y-md">
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Min. Order Value</label>
+<div class="relative">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-label-md">₦</span>
+<input class="w-full pl-lg pr-md py-sm border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none text-body-md font-code-otp" type="number" value="2500"/>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Est. Delivery Time</label>
+<div class="relative">
+<input class="w-full pr-xl pl-md py-sm border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none text-body-md font-code-otp" type="text" value="35-45"/>
+<span class="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-xs font-label-md">min</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Holiday & Emergency Closures -->
+<div class="bg-surface rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] border border-outline-variant overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-error" data-icon="event_busy" style="font-variation-settings: 'FILL' 1;">event_busy</span>
+<h3 class="font-headline-sm text-headline-sm">Closures</h3>
+</div>
+<button class="bg-secondary text-on-secondary px-md py-xs rounded-lg font-label-md text-label-md flex items-center gap-xs hover:opacity-90">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add
+                            </button>
+</div>
+<div class="p-md space-y-sm">
+<div class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="bg-error-container text-on-error-container w-10 h-10 rounded flex flex-col items-center justify-center">
+<span class="text-[10px] uppercase font-bold leading-none">Oct</span>
+<span class="text-lg font-bold leading-none">01</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md">Independence Day</h4>
+<p class="text-xs text-on-surface-variant">All day closure</p>
+</div>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors" data-icon="more_vert">more_vert</button>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="bg-error-container text-on-error-container w-10 h-10 rounded flex flex-col items-center justify-center">
+<span class="text-[10px] uppercase font-bold leading-none">Dec</span>
+<span class="text-lg font-bold leading-none">25</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md">Christmas Break</h4>
+<p class="text-xs text-on-surface-variant">Dec 25 - Dec 27</p>
+</div>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors" data-icon="more_vert">more_vert</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+ BottomNavBar (Mobile Only) 
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface shadow-[0_-2px_12px_rgba(44,44,58,0.08)] flex justify-around items-center px-md py-sm z-50">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="text-[10px] font-label-md">Menu</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-[10px] font-label-md">Orders</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-[10px] font-label-md font-bold">Settings</span>
+</a>
+</nav>
+

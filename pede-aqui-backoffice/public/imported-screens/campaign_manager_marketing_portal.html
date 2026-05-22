@@ -1,0 +1,424 @@
+
+ Side Navigation Shell 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container dark:bg-surface-container-high shadow-sm flex flex-col py-lg px-md gap-lg z-50">
+<div class="px-md">
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">MarketEnergy</h1>
+<p class="text-body-sm text-on-surface-variant">Marketing Portal</p>
+</div>
+<nav class="flex-1 space-y-xs overflow-y-auto custom-scrollbar">
+<!-- Dashboard Tab (Inactive) -->
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<!-- Campaigns Tab (Active) -->
+<a class="flex items-center gap-md bg-secondary-container dark:bg-secondary-fixed-dim text-on-secondary-container dark:text-on-secondary-fixed rounded-lg px-md py-sm active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+<span class="font-label-md">Campaigns</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Segments</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">local_offer</span>
+<span class="font-label-md">Promotions</span>
+</a>
+</nav>
+<div class="pt-lg border-t border-outline-variant space-y-xs">
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant px-md py-sm hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-md">Support</span>
+</a>
+</div>
+<div class="mt-md flex items-center gap-md p-sm bg-surface-container-low rounded-xl">
+<div class="h-10 w-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<p class="text-label-md leading-tight">Admin User</p>
+<p class="text-xs text-on-surface-variant">Marketing Admin</p>
+</div>
+</div>
+</aside>
+ Top Navigation Shell 
+<header class="fixed top-0 right-0 left-64 h-20 bg-surface dark:bg-background border-b border-outline-variant flex justify-between items-center px-xl z-40">
+<div class="flex items-center gap-xl w-full max-w-4xl">
+<h2 class="font-headline-sm text-headline-sm text-primary dark:text-primary-fixed-dim whitespace-nowrap">Marketing Backoffice</h2>
+<div class="relative w-full max-w-md focus-within:ring-2 focus-within:ring-secondary rounded-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-12 pr-4 py-2.5 bg-surface-container-low border-none rounded-full focus:ring-0 text-body-md placeholder:text-on-surface-variant/50" placeholder="Search campaigns, tags, or IDs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">apps</span>
+</button>
+</div>
+</header>
+ Main Content Canvas 
+<main class="ml-64 pt-20 p-xl relative min-h-screen">
+<div class="absolute inset-0 africa-pattern pointer-events-none"></div>
+<!-- Dashboard Header & Hero Summary -->
+<section class="mb-xxl relative">
+<div class="flex items-end justify-between mb-lg">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Campaign Overview</h3>
+<p class="text-body-lg text-on-surface-variant mt-xs">Optimize your reach and track real-time engagement across the network.</p>
+</div>
+<button class="h-14 px-xl bg-primary text-on-primary rounded-xl font-label-md flex items-center gap-md shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+                    Create New Campaign
+                </button>
+</div>
+<!-- Bento Summary Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- ROI Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] flex flex-col justify-between overflow-hidden relative group">
+<div class="flex items-center justify-between mb-md">
+<div class="p-xs bg-secondary-container rounded-lg">
+<span class="material-symbols-outlined text-on-secondary-container">trending_up</span>
+</div>
+<span class="text-xs font-bold text-secondary">+12.5% vs last month</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md uppercase tracking-wider text-xs">Total ROI</p>
+<h4 class="text-display font-display text-primary mt-xs">4.2<span class="text-headline-md">x</span></h4>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-8xl">account_balance_wallet</span>
+</div>
+</div>
+<!-- Active Campaigns Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] flex flex-col justify-between overflow-hidden relative group">
+<div class="flex items-center justify-between mb-md">
+<div class="p-xs bg-tertiary-fixed rounded-lg">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant">rocket_launch</span>
+</div>
+<span class="text-xs font-bold text-tertiary">8 live currently</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md uppercase tracking-wider text-xs">Active Campaigns</p>
+<h4 class="text-display font-display text-on-surface mt-xs">24</h4>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-8xl">campaign</span>
+</div>
+</div>
+<!-- Redeemed Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] flex flex-col justify-between overflow-hidden relative group">
+<div class="flex items-center justify-between mb-md">
+<div class="p-xs bg-surface-container-high rounded-lg">
+<span class="material-symbols-outlined text-primary">redeem</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">89% redemption rate</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-label-md uppercase tracking-wider text-xs">Total Redeemed</p>
+<h4 class="text-display font-display text-on-surface mt-xs">12.8<span class="text-headline-md">k</span></h4>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-8xl">confirmation_number</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Campaigns Table Section -->
+<section class="bg-white rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] overflow-hidden">
+<!-- Table Header / Filters -->
+<div class="p-lg border-b border-outline-variant flex flex-wrap items-center justify-between gap-md">
+<div class="flex items-center gap-md">
+<button class="flex items-center gap-xs px-md py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                        Filters
+                    </button>
+<div class="flex gap-xs">
+<span class="px-sm py-1 bg-secondary/10 text-secondary rounded-full text-xs font-bold border border-secondary/20">Active</span>
+<span class="px-sm py-1 bg-surface-container text-on-surface-variant rounded-full text-xs font-medium cursor-pointer hover:bg-surface-variant">Scheduled</span>
+<span class="px-sm py-1 bg-surface-container text-on-surface-variant rounded-full text-xs font-medium cursor-pointer hover:bg-surface-variant">Ended</span>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<p class="text-body-sm text-on-surface-variant">Showing 1-10 of 124 campaigns</p>
+<div class="flex border border-outline-variant rounded-lg overflow-hidden">
+<button class="p-xs hover:bg-surface-container border-r border-outline-variant transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-xs hover:bg-surface-container transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant uppercase text-[11px] tracking-widest font-bold">
+<th class="px-lg py-md">Campaign Name</th>
+<th class="px-lg py-md">Type</th>
+<th class="px-lg py-md">Status</th>
+<th class="px-lg py-md">Duration</th>
+<th class="px-lg py-md">Usage/Limit</th>
+<th class="px-lg py-md text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1: Active -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A overhead high-quality shot of a colorful traditional West African meal with grilled fish and seasoned rice, served on a crisp white plate. The lighting is warm and natural, creating a welcoming and appetizing market-day hospitality mood with bold coral and forest green visual accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV7BY-ZCtxSBrSvM3qhXHOZCLDFyw2jqmVE-tdQfAM_xA0i-dbtcP0X_n1MtqDl4sF9OP4mT8zoAkfBKMoJ26gk5Ig3u2rC03-4SFxuJ-Kg6jZbeLvO9v2BI_XcpTBp3hgayYPcDcuWCrnNam9XnK_bd36nUJosQbVg4M2UKFejxquixfa53b4GMAo-dZ-Cb1fQK_Qgpy9kR6QNb-JIJUY96rBSkx7QZrWkm8hIDXzXWjPtuC3Kt4GT47yutdroqvsqa93DPxKJ7U"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Summer Jollof Fest</p>
+<p class="text-xs text-on-surface-variant">ID: CAM-7821</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-lg">local_shipping</span>
+<span class="text-body-sm">Free Delivery</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="px-md py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold flex items-center gap-xs w-fit">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                    Active
+                                </span>
+</td>
+<td class="px-lg py-lg">
+<p class="text-body-sm font-medium">Jun 12 - Aug 30</p>
+<p class="text-xs text-on-surface-variant">78 days remaining</p>
+</td>
+<td class="px-lg py-lg">
+<div class="w-full max-w-[120px]">
+<div class="flex justify-between text-xs mb-1">
+<span class="font-bold">4.2k</span>
+<span class="text-on-surface-variant">/ 5k</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 84%"></div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-full hover:bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Scheduled -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close-up detail of street food being prepared in a bustling open-air market, featuring vibrant vegetables and authentic spices. The photography is clean and high-contrast, utilizing a shallow depth of field to emphasize fresh ingredients, set against a bright, sun-drenched background that conveys high-energy commerce and hospitality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBz4FI3g6sjLuVad6fxm3cAKBKrevcVwVRtIe1eTwcFRkjSxqlh0mSaIiKGlW37CM05cDOMEpc665LwqmtUU437cERNywPUk8zYcQ9qYsqwFRarM_CGBL3OGCfgriEhmG2S_jk_cyR--UgQUGBU0eSpK_smteyqxICS_Rca_UhcJ4aoe4kbIzARnEPfw3aBrhrHC6emOMsZmTsbiPgP7bpvfWkmC9C6bGBGM0OfO2hkT3MdqC3mKH7o4WGxKcy0kibOwJzUnz7t6mA"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Weekend Flash Sale</p>
+<p class="text-xs text-on-surface-variant">ID: CAM-9043</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-lg">percent</span>
+<span class="text-body-sm">Flat Discount</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="px-md py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold flex items-center gap-xs w-fit">
+<span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                    Scheduled
+                                </span>
+</td>
+<td class="px-lg py-lg">
+<p class="text-body-sm font-medium">Sep 01 - Sep 03</p>
+<p class="text-xs text-on-surface-variant">Starts in 3 days</p>
+</td>
+<td class="px-lg py-lg">
+<div class="w-full max-w-[120px]">
+<div class="flex justify-between text-xs mb-1">
+<span class="font-bold">0</span>
+<span class="text-on-surface-variant">/ 1k</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-amber-400 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-full hover:bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Ended -->
+<tr class="hover:bg-surface-container-lowest transition-colors group opacity-75">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0 grayscale">
+<img class="w-full h-full object-cover" data-alt="A professional culinary presentation of grilled meats and fresh side dishes arranged neatly on a dark wooden surface, illuminated by focused warm light that highlights textures and rich colors. The image mood is sophisticated and established, reflecting a successful business heritage with a modern, high-contrast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhJzRUOjDCDCRQwlnXKiI3ROo0GmLp--4AYL0i4_029QenM2bY50ykgIYvO3cRIwp5Q6FLdlKnr9ZJpQ8qD18FUEUotQv3l7ngzY2EHg4kob2qPTOtyYx_9bOuiIOyPdHymxH7onaflelAAWV_WZhiNP_VxFSLueoCXIPfRQE8JDSmYW5iky8nJR0GQF4tZ_i2e-Z8jt6EOFPFsrUfkhdFBxijBBw2FKTG5816wsY4rB-OFwyzwNWr6CI4klQ5BTuiGzFOTFzfw4Q"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">May Morning Coffee</p>
+<p class="text-xs text-on-surface-variant">ID: CAM-5512</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">redeem</span>
+<span class="text-body-sm">Buy 1 Get 1</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="px-md py-1 bg-surface-container text-on-surface-variant rounded-full text-xs font-bold flex items-center gap-xs w-fit">
+<span class="h-1.5 w-1.5 rounded-full bg-on-surface-variant"></span>
+                                    Ended
+                                </span>
+</td>
+<td class="px-lg py-lg">
+<p class="text-body-sm font-medium">May 01 - May 31</p>
+<p class="text-xs text-error">Closed 14 days ago</p>
+</td>
+<td class="px-lg py-lg">
+<div class="w-full max-w-[120px]">
+<div class="flex justify-between text-xs mb-1">
+<span class="font-bold">2.5k</span>
+<span class="text-on-surface-variant">/ 2.5k</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-on-surface-variant rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-full hover:bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Active -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A vibrant, health-focused bowl of fresh fruits and nuts, styled with rhythmic precision and sun-drenched lighting. The color palette features intense oranges and deep greens, mirroring a high-growth delivery marketplace aesthetic. The scene is bright and airy, suggesting vitality and reliability in a professional food service environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSxuLU2upWFZa1-CnmEGWGsiQY4HveCmHGJ94Z0UJmtZYuD9Grjy5MJvHYeHhwe1KxqsXXCXjYbMGlybq6g5GtBDUSyEcFAXswNP5AmKVPOqSMVfxbZyQXwx2Hj2ykgDt9ba79Uygvej2Lgxp2_bfDEcPqRHGjwMkbvt1sakKk3yKaKwpEzXuNF5hQn2Ex672Rg-Qi1XWRGvRiYisy-BhsIii9hA_P6r0RDaqrjCXUtY-fxIx7rA2eRqeTwxp6qTAnW4nlt6RFKzQ"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Health Week Promo</p>
+<p class="text-xs text-on-surface-variant">ID: CAM-6623</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-lg">local_offer</span>
+<span class="text-body-sm">Reward Points</span>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="px-md py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold flex items-center gap-xs w-fit">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                    Active
+                                </span>
+</td>
+<td class="px-lg py-lg">
+<p class="text-body-sm font-medium">Aug 01 - Aug 30</p>
+<p class="text-xs text-on-surface-variant">25 days remaining</p>
+</td>
+<td class="px-lg py-lg">
+<div class="w-full max-w-[120px]">
+<div class="flex justify-between text-xs mb-1">
+<span class="font-bold">1.2k</span>
+<span class="text-on-surface-variant">/ 10k</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 12%"></div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-full hover:bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer -->
+<div class="p-lg bg-surface-container-low/50 flex items-center justify-between">
+<button class="text-label-md text-primary font-bold hover:underline flex items-center gap-xs">
+<span class="material-symbols-outlined">download</span>
+                    Export Campaign Data (CSV)
+                </button>
+<div class="flex items-center gap-xs">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-white border border-outline-variant text-on-surface font-bold">1</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-white transition-colors">2</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-white transition-colors">3</button>
+<span class="px-sm text-on-surface-variant">...</span>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-white transition-colors">12</button>
+</div>
+</div>
+</section>
+<!-- Insights / Asymmetric Section -->
+<section class="mt-xxl grid grid-cols-1 lg:grid-cols-12 gap-lg pb-xl">
+<div class="lg:col-span-8 bg-surface-container text-on-surface p-xl rounded-2xl relative overflow-hidden flex flex-col justify-center min-h-[240px]">
+<div class="relative z-10">
+<h3 class="text-headline-md font-headline-md mb-md">Campaign Health Alert</h3>
+<p class="text-body-lg max-w-lg mb-lg opacity-90">"Summer Jollof Fest" is performing 45% better than forecasted. Consider increasing the redemption limit to capture high weekend traffic.</p>
+<button class="px-lg py-3 bg-white text-primary rounded-lg font-label-md shadow-sm hover:shadow-md transition-shadow">Optimize Now</button>
+</div>
+<div class="absolute right-0 top-0 h-full w-1/3 bg-primary/10 rotate-12 translate-x-12 translate-y-8 blur-3xl"></div>
+<span class="material-symbols-outlined absolute right-12 top-1/2 -translate-y-1/2 text-[160px] opacity-10 pointer-events-none">auto_awesome</span>
+</div>
+<div class="lg:col-span-4 bg-white p-lg rounded-2xl shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<h3 class="text-label-md font-bold text-on-surface-variant uppercase tracking-widest mb-lg">Top Channels</h3>
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center text-primary font-bold">IG</div>
+<span class="text-body-md font-medium">Instagram Ads</span>
+</div>
+<span class="font-code-otp text-sm">54%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 54%"></div>
+</div>
+<div class="flex items-center justify-between mt-lg">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-secondary-container/20 flex items-center justify-center text-secondary font-bold">WA</div>
+<span class="text-body-md font-medium">WhatsApp Biz</span>
+</div>
+<span class="font-code-otp text-sm">32%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 32%"></div>
+</div>
+<div class="flex items-center justify-between mt-lg">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-tertiary-container/10 flex items-center justify-center text-tertiary font-bold">PN</div>
+<span class="text-body-md font-medium">Push Notifs</span>
+</div>
+<span class="font-code-otp text-sm">14%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 14%"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+

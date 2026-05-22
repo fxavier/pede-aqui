@@ -1,0 +1,329 @@
+
+ TopAppBar Shell 
+<header class="flex justify-between items-center px-margin-mobile py-sm w-full bg-surface shadow-[0_2px_12px_rgba(44,44,58,0.08)] sticky top-0 z-50 md:px-margin-desktop">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md text-primary font-bold tracking-tight">SwiftCourier</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-variant/50 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant/50 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border-2 border-primary-fixed">
+<img alt="Admin" data-alt="A professional headshot of a senior platform administrator in a bright, modern office. High-key lighting highlights the warm skin tones and crisp, clean business attire. The background is a soft-focus corporate environment with hints of Forest Green plants and Coral-Orange accents, reflecting the Pede Aqui brand identity. The overall mood is authoritative yet approachable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKw82kzEDu_VsPZ4FcOmmCcx3m9kiZuicaESvhGLpExv5ZvQAkIU_GR4BysWTxh4qIyansTthXTLeHCvM2Blzb1aOqrzhEmq6I2cvcGYmh0K0S6VxT3U_CJZmx7ExDnr5BggNcfOjNylX-_c0Jid6AJNrTBgJ25ZpOPD_nKd4VaeAtp9rTcgoRuQADg1J0_RNj9EE2-joaR9D_AM34DvaJhaFs2UcQgI_ojaHK0w1yweoaywbsb_ZsT39eet7WHAbglvEVKankWpo"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- Sidebar Navigation (Desktop) -->
+<aside class="hidden md:flex flex-col w-64 h-[calc(100vh-64px)] sticky top-16 bg-surface-container-low border-r border-outline-variant p-md gap-xs">
+<nav class="flex flex-col gap-xs flex-1">
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill">dashboard</span>
+<span class="font-label-md text-label-md">Overview</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Finances</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+<span class="font-label-md text-label-md">Governance</span>
+</a>
+</nav>
+<div class="pt-md border-t border-outline-variant">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop space-y-xl">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div class="space-y-xs">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Platform Governance</h1>
+<p class="text-on-surface-variant max-w-2xl">Monitor real-time fleet performance and financial health across the Pede Aqui network.</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface border border-outline px-lg py-sm rounded-xl font-label-md text-label-md text-on-surface hover:bg-surface-container transition-all active:scale-95">
+                        Export Report
+                    </button>
+<button class="bg-primary text-on-primary px-lg py-sm rounded-xl font-label-md text-label-md shadow-sm hover:brightness-110 transition-all active:scale-95">
+                        System Sync
+                    </button>
+</div>
+</div>
+<!-- Financial Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Main Metric -->
+<div class="md:col-span-2 bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)] relative overflow-hidden">
+<div class="flex justify-between items-start mb-xl relative z-10">
+<div>
+<p class="text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">Net Platform Revenue</p>
+<h2 class="font-display text-display text-primary mt-xs">R$ 142,805</h2>
+<span class="flex items-center gap-xs text-secondary font-bold text-label-md mt-base">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                                +12.4% this month
+                            </span>
+</div>
+<div class="flex gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold uppercase">Live</span>
+</div>
+</div>
+<!-- Chart Placeholder with CSS Pattern -->
+<div class="h-48 w-full bg-surface-container-low rounded-lg relative overflow-hidden">
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, #E8441A 1px, transparent 0); background-size: 24px 24px;"></div>
+<div class="absolute bottom-0 left-0 w-full h-3/4 flex items-end justify-between px-md gap-base">
+<div class="w-full bg-primary-container/20 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-primary-container/30 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-primary-container/20 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-primary-container/40 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-primary h-full rounded-t-sm relative">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-on-tertiary-container text-[10px] px-2 py-1 rounded">R$ 24k</div>
+</div>
+<div class="w-full bg-primary-container/30 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-primary-container/10 h-1/4 rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Secondary Metrics Column -->
+<div class="space-y-lg">
+<div class="bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex items-center gap-md">
+<div class="p-sm bg-tertiary-fixed rounded-xl">
+<span class="material-symbols-outlined text-tertiary" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-label-md">Tax Collections</p>
+<p class="font-headline-sm text-headline-sm">R$ 12,400</p>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex items-center gap-md">
+<div class="p-sm bg-secondary-fixed rounded-xl">
+<span class="material-symbols-outlined text-secondary" data-icon="percent">percent</span>
+</div>
+<div>
+<p class="text-on-surface-variant text-label-md">Avg. Commission</p>
+<p class="font-headline-sm text-headline-sm">18.5%</p>
+</div>
+</div>
+</div>
+<div class="bg-primary rounded-xl p-lg shadow-[0_2px_12px_rgba(44,44,58,0.08)] text-on-primary">
+<p class="font-label-md text-label-md opacity-90">Pending Settlements</p>
+<p class="font-display text-headline-lg mt-base">482 <span class="text-lg opacity-70">Payouts</span></p>
+<button class="mt-md w-full py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors text-xs font-bold uppercase tracking-widest">Process All</button>
+</div>
+</div>
+</section>
+<!-- Fleet Management High-Density Table -->
+<section class="bg-white rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] overflow-hidden">
+<div class="p-lg border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div class="flex items-center gap-md">
+<h3 class="font-headline-sm text-headline-sm">Courier Governance</h3>
+<div class="flex gap-xs">
+<span class="px-sm py-1 bg-surface-container rounded-full text-xs font-bold text-on-surface-variant">1,240 Total</span>
+<span class="px-sm py-1 bg-secondary-container rounded-full text-xs font-bold text-on-secondary-container">842 Active</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-sm">
+<div class="relative min-w-[240px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-body-sm focus:ring-2 focus:ring-secondary focus:outline-none transition-all" placeholder="Search by name or ID..." type="text"/>
+</div>
+<button class="flex items-center gap-xs px-md py-2 border border-outline-variant rounded-xl hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+<span class="font-label-md">Filters</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto scrollbar-hide">
+<table class="w-full border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest">
+<th class="text-left px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Courier</th>
+<th class="text-left px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Verification</th>
+<th class="text-left px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Performance</th>
+<th class="text-left px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Earnings (M)</th>
+<th class="text-left px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Health</th>
+<th class="text-right px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-outline-variant overflow-hidden">
+<img alt="Courier" data-alt="A close-up portrait of a cheerful African delivery courier wearing a professional Forest Green polo shirt. The courier is smiling warmly, conveying hospitality and reliability. The lighting is natural and vibrant, suggesting a successful day of high-growth marketplace activity. The background shows a modern city street in soft focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBULv_MI26pLcCsrg3mKeAESvDqc88BAvbD1mrz1Nyb4N9ubv8XFC2o6879FL7oq9FKY45aczA07r_F6VBIwM_EjjSmrP3cgHKxrg8IsKkzLIe1YNFvuQGpF118dTjc6V3jUS8RG7q72ZbxO0VlUVg3u01AP7d6j0KKIxT1Q49w-Vpy1V5E1vYyYa2IGdPLhTkUPB4YQ0qBzCacLcFISvcvKIdPuc4JR93FYzXDL31XFg7EajbBzV0OI3Vy717WgNhp0dmIxnYGjXo"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Mateus Tavares</p>
+<p class="text-xs text-on-surface-variant">ID: PC-8829</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center gap-xs px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle" data-weight="fill">check_circle</span>
+                                        Verified
+                                    </span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-bold">4.92</span>
+<span class="text-xs text-on-surface-variant ml-xs">(128 deliveries)</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-bold">R$ 4,240.00</p>
+</td>
+<td class="px-lg py-md">
+<div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[94%]"></div>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-2 rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-outline-variant overflow-hidden">
+<img alt="Courier" data-alt="A professional studio portrait of a female delivery partner for Pede Aqui. She wears a vibrant Coral-Orange jacket and a friendly, confident expression. The lighting is high-key and clean, emphasizing a modern light-mode UI aesthetic. The overall mood is focused and efficient, representing the rhythmic precision of a delivery marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ94mGY9oLnkyw1ELM35OebnkNaLisPzKS8YtprpAH8LQvPFtjOAghNs9xs9gK9mFmgkZ3W7Yz6WxkhrkGadqykeAqQs5KZ9FGHdnS27adUoleBxaWwe-7i8iRv0t2bCxgyxYIfJ-lgEOzDgDnQjvTmPoUUodyBoKKv7L5T7Bu47ajhZsz6n_TLB0Jk67xh8KYYtSKtuWe_QgYwQ2TlQXiL4OjRRvcow0YTiGH8YLaECAoPUVzLPgBfzL0563D6A3OTc4JxczjxXc"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Lúcia Almeida</p>
+<p class="text-xs text-on-surface-variant">ID: PC-9104</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center gap-xs px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="pending">pending</span>
+                                        Document Audit
+                                    </span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-bold">4.75</span>
+<span class="text-xs text-on-surface-variant ml-xs">(312 deliveries)</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-bold">R$ 8,110.50</p>
+</td>
+<td class="px-lg py-md">
+<div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-2 rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-outline-variant overflow-hidden">
+<img alt="Courier" data-alt="Portrait of a young male delivery courier with a helmet resting on his arm. He looks determined and professional, set against a warm sunrise sky that mimics the brand's 'African Energy' sun-drenched warmth. The visual style is crisp and tactile, with high contrast. He is part of a high-growth delivery platform fleet." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT_ejad4DYKmBWxAXasp-rUWdgylHR1wU1kZR5nz4hFXuX4abtegtdwsMLDu2PPaq0OSXCFchaFP5M7EGotB_RgDuJ9rLZ-jgMp64vMQ_6k_9YkrZ_kSrrwTot1VDcQHZct-sN8XoMcYg4QpI9QteKUEQ-tdTquJyOQ1S5_Hch4JrgwqVByNbCkGDbRD7sZmLAEjFZxebDc6tG66p-gT-WD0zmqJ6oLC4TDJ_7zdJS8Cx7d87Ou4pi24asGO-9UlAK11Kl4PGfntQ"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Ricardo Jota</p>
+<p class="text-xs text-on-surface-variant">ID: PC-4432</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="inline-flex items-center gap-xs px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle" data-weight="fill">check_circle</span>
+                                        Verified
+                                    </span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-bold">4.98</span>
+<span class="text-xs text-on-surface-variant ml-xs">(45 deliveries)</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="font-bold">R$ 1,890.20</p>
+</td>
+<td class="px-lg py-md">
+<div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[99%]"></div>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<button class="p-2 rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-lg bg-surface-container-low flex items-center justify-between">
+<p class="text-xs text-on-surface-variant">Showing 1-10 of 1,240 couriers</p>
+<div class="flex items-center gap-base">
+<button class="p-1 rounded bg-white border border-outline-variant hover:bg-surface-container transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="px-3 py-1 bg-primary text-on-primary rounded text-xs font-bold">1</span>
+<button class="px-3 py-1 bg-white border border-outline-variant hover:bg-surface-container transition-colors rounded text-xs font-bold">2</button>
+<button class="px-3 py-1 bg-white border border-outline-variant hover:bg-surface-container transition-colors rounded text-xs font-bold">3</button>
+<button class="p-1 rounded bg-white border border-outline-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+ Bottom Navigation Bar (Mobile only) 
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container shadow-[0_-4px_16px_rgba(44,44,58,0.06)] rounded-t-xl md:hidden">
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1.5 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 active:scale-90 transition-transform duration-150 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 active:scale-90 transition-transform duration-150 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-1.5 active:scale-90 transition-transform duration-150 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+ Floating Action Button Contextual Logic 
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:brightness-110 active:scale-90 transition-all md:bottom-10 md:right-10 z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+

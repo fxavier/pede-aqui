@@ -1,0 +1,31 @@
+name: pede_aqui_mobile
+version: 1.0.0+1
+publish_to: "none"
+description: Pede Aqui mobile Flutter app generated from provided screens.
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_bloc: ^8.1.6
+  provider: ^6.1.2
+  get_it: ^7.7.0
+  dio: ^5.7.0
+  equatable: ^2.0.5
+  intl: ^0.19.0
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/reference_screens/

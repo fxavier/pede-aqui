@@ -1,0 +1,182 @@
+
+ Sidebar Navigation (Hidden on Mobile) 
+<aside class="hidden md:flex flex-col h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-low w-64 fixed left-0 top-0 z-50">
+<div class="px-md mb-xl">
+<h1 class="text-headline-sm font-headline-sm font-extrabold text-on-surface">Vendor Portal</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">Manage your shop</p>
+</div>
+<nav class="flex-grow space-y-base">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md pt-lg">
+<button class="w-full bg-secondary text-on-secondary font-label-md py-sm rounded-lg flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Listing
+            </button>
+</div>
+</aside>
+ Top AppBar 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm md:pl-72">
+<div class="flex items-center gap-md">
+<span class="md:hidden material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary">Vendor Central</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden sm:flex items-center bg-surface-container h-10 px-md rounded-full">
+<span class="material-symbols-outlined text-on-surface-variant mr-xs" data-icon="search">search</span>
+<input class="bg-transparent border-none text-body-md focus:ring-0" placeholder="Search menu..." type="text"/>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-outline-variant">
+<img alt="Vendor profile avatar" data-alt="A professional headshot of a smiling West African chef in a modern white culinary uniform. The lighting is warm and natural, suggesting a bright kitchen environment. The aesthetic is clean, professional, and friendly, mirroring the energetic hospitality of a high-end marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFKQUIDcg_hiCZ-jgDB7oIS0xs9v8el0A5bucZsllIFWxoVPZNqdu5Pi7glbP8TuzC6E0iQj5WWK8Wtxv-jHZNDjd4v4DsblTeJuQtII1KQflhkaYTf75C4-jNKVrIO5uWy8m25hNXsnB0EJJ4fE_ihjSynjpJVASSfqfTCwlM51SCjHo74_S4U258hQDL9KqnDg5KZmvmG-uv1YPBI8U3XApmMX36vQmmaD8qbYQ5lYiXOCRFJGW8v5v1vGyXcjJTeXohE7L9Eqg"/>
+</div>
+</div>
+</header>
+ Main Content Canvas 
+<main class="md:ml-64 p-lg min-h-screen">
+<div class="max-w-4xl mx-auto">
+<!-- Breadcrumb -->
+<div class="flex items-center gap-xs text-label-md text-on-surface-variant mb-md">
+<span>Menu Management</span>
+<span class="material-symbols-outlined text-sm" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-bold">New Category</span>
+</div>
+<!-- Focused Form View -->
+<div class="bg-surface-container-lowest rounded-xl warm-shadow overflow-hidden border border-outline-variant">
+<!-- Header -->
+<div class="p-lg bg-surface-container-high border-b border-outline-variant flex justify-between items-center">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface">Create Menu Category</h2>
+<p class="text-body-md text-on-surface-variant">Organize your dishes into customer-friendly sections.</p>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-variant p-xs rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<form class="p-lg space-y-xl">
+<!-- General Info Section -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="col-span-1">
+<h3 class="text-headline-sm font-headline-sm text-primary mb-xs">Category Identity</h3>
+<p class="text-body-sm text-on-surface-variant">Define how this category appears to your hungry customers.</p>
+</div>
+<div class="col-span-2 space-y-lg">
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface">Category Name</label>
+<input class="w-full h-12 px-md rounded-xl border-outline-variant text-body-md focus:border-secondary" placeholder="e.g. Signature Jollof &amp; Grills" type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface">Description (Optional)</label>
+<textarea class="w-full p-md rounded-xl border-outline-variant text-body-md focus:border-secondary" placeholder="Briefly describe what makes this section special..." rows="3"></textarea>
+</div>
+</div>
+</section>
+<hr class="border-outline-variant"/>
+<!-- Visibility Toggle -->
+<section class="flex items-center justify-between p-md bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</div>
+<div>
+<h3 class="text-label-md font-bold text-on-surface">Active &amp; Visible</h3>
+<p class="text-body-sm text-on-surface-variant">Turn this off to temporarily hide the category from your storefront.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-8 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</section>
+<hr class="border-outline-variant"/>
+<!-- Availability Schedule -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="col-span-1">
+<h3 class="text-headline-sm font-headline-sm text-primary mb-xs">Availability</h3>
+<p class="text-body-sm text-on-surface-variant">Set specific times when this menu is served (e.g. Breakfast hours).</p>
+</div>
+<div class="col-span-2 space-y-md">
+<div class="flex flex-wrap gap-sm">
+<button class="px-md py-xs rounded-full border border-secondary bg-secondary-container text-on-secondary-container text-label-md font-bold flex items-center gap-xs" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="check">check</span>
+                                    All Day
+                                </button>
+<button class="px-md py-xs rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant text-label-md hover:bg-surface-variant transition-colors" type="button">
+                                    Breakfast Only
+                                </button>
+<button class="px-md py-xs rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant text-label-md hover:bg-surface-variant transition-colors" type="button">
+                                    Lunch Special
+                                </button>
+<button class="px-md py-xs rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant text-label-md hover:bg-surface-variant transition-colors" type="button">
+                                    Dinner Only
+                                </button>
+</div>
+<div class="bg-surface-container-high p-md rounded-xl border border-outline-variant space-y-md">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-bold text-on-surface">Time Window</span>
+<button class="text-secondary text-label-md flex items-center gap-xs" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                        Add Specific Slot
+                                    </button>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-md">
+<div class="flex-1 w-full space-y-xs">
+<label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">From</label>
+<div class="flex items-center bg-white border border-outline-variant rounded-lg px-md h-12">
+<input class="border-none bg-transparent w-full focus:ring-0" type="time" value="11:00"/>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="schedule">schedule</span>
+</div>
+</div>
+<div class="hidden sm:block pt-xl">
+<span class="material-symbols-outlined text-outline" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<div class="flex-1 w-full space-y-xs">
+<label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">To</label>
+<div class="flex items-center bg-white border border-outline-variant rounded-lg px-md h-12">
+<input class="border-none bg-transparent w-full focus:ring-0" type="time" value="15:00"/>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="schedule">schedule</span>
+</div>
+</div>
+</div>
+<p class="text-body-sm text-secondary italic">This category will automatically hide from the app outside these hours.</p>
+</div>
+</div>
+</section>
+<!-- Form Actions -->
+<div class="flex flex-col sm:flex-row justify-end items-center gap-md pt-lg">
+<button class="w-full sm:w-auto px-xl h-14 rounded-xl border-2 border-outline text-on-surface-variant font-bold hover:bg-surface-container transition-colors" type="button">
+                            Discard Changes
+                        </button>
+<button class="w-full sm:w-auto px-xxl h-14 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary-container/20 active:scale-95 duration-100 ease-in-out" type="submit">
+                            Create Category
+                        </button>
+</div>
+</form>
+</div>
+</div>
+</main>
+ Success Feedback Overlay (Hidden by default) 
+<div class="fixed bottom-lg right-lg z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none" id="success-toast">
+<div class="bg-secondary text-on-secondary px-lg py-md rounded-xl shadow-xl flex items-center gap-md">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+<span class="font-bold">Menu category created successfully!</span>
+</div>
+</div>
+ Script for Micro-interactions 
+

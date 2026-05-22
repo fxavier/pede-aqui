@@ -1,0 +1,11 @@
+{
+  "name": "Pede Aqui",
+  "short_name": "Pede Aqui",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFF6F3",
+  "theme_color": "#C9280A",
+  "description": "Pede Aqui mobile marketplace app",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}

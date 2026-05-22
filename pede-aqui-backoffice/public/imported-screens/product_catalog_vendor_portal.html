@@ -1,0 +1,327 @@
+
+ TopNavBar 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface dark:bg-inverse-surface shadow-sm">
+<div class="flex items-center gap-md">
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary dark:text-inverse-primary">Vendor Central</span>
+<div class="hidden md:flex ml-xl gap-lg">
+<a class="text-on-surface-variant dark:text-outline-variant font-label-md text-label-md hover:bg-surface-container transition-colors px-md py-xs rounded-lg" href="#">Dashboard</a>
+<a class="text-primary dark:text-inverse-primary font-bold border-b-2 border-primary font-label-md text-label-md px-md py-xs" href="#">Menu Management</a>
+<a class="text-on-surface-variant dark:text-outline-variant font-label-md text-label-md hover:bg-surface-container transition-colors px-md py-xs rounded-lg" href="#">Orders</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border-2 border-primary">
+<img alt="Vendor profile avatar" data-alt="A professional headshot of a smiling West African chef in a modern white kitchen. The lighting is warm and golden, reflecting a vibrant market energy. The chef wears a neat uniform, suggesting expertise and hospitality within a high-growth delivery marketplace context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQaZOFwkQc5BTKH9WW3uEsUXZ2v4qfaGPT8aTq83CGE3tqOy6RDikWjnWaBMHE477yWOpSyUu_RHIyUn7v9WTUvPENfwTLjex-1te7jONrz200BoRgXF8m743mBB53jURfzLCQIk5M5s5rFdUpHatAETCdrvisRXBN8cilnb2eJi4mweSBX5WN2FQqb7oHd2AR8O73aRj5u-a7yLrVdylKKg6gXnvp9KpUYHQmIG-JfWCRs9SXBARUeJZ__Rxcm2Oo6-d8piwHnow"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-64px)] w-64 py-lg gap-sm border-r border-outline-variant bg-surface-container-low sticky top-16">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+</div>
+<div>
+<h2 class="text-label-md font-label-md text-on-surface">Vendor Portal</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Manage your shop</p>
+</div>
+</div>
+</div>
+<nav class="flex-grow flex flex-col gap-xs">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-label-md text-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-sm pt-lg mt-auto">
+<button class="w-full flex items-center justify-center gap-sm bg-secondary text-on-secondary font-label-md text-label-md py-md rounded-xl hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                    New Listing
+                </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-grow px-lg py-xl max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-lg">
+<div>
+<h1 class="text-headline-lg font-headline-lg text-on-background mb-base">Product Catalog</h1>
+<p class="text-body-md font-body-md text-on-surface-variant">Update and manage your restaurant menu items and inventory availability.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-sm px-md py-sm border-2 border-secondary text-secondary font-label-md text-label-md rounded-xl hover:bg-secondary-container transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="sell">sell</span>
+                        Update Prices
+                    </button>
+<button class="flex items-center gap-sm px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="add_circle">add_circle</span>
+                        Add New Product
+                    </button>
+</div>
+</div>
+<!-- Stats Overview - Bento Style -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-xl">
+<div class="card-shadow bg-surface-container-lowest p-md rounded-xl border border-outline-variant flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="inventory">inventory</span>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Total Items</p>
+<p class="text-headline-sm font-headline-sm">48</p>
+</div>
+</div>
+<div class="card-shadow bg-surface-container-lowest p-md rounded-xl border border-outline-variant flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Low Stock</p>
+<p class="text-headline-sm font-headline-sm">12</p>
+</div>
+</div>
+<div class="card-shadow bg-surface-container-lowest p-md rounded-xl border border-outline-variant flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-error-container text-error flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="block">block</span>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Out of Stock</p>
+<p class="text-headline-sm font-headline-sm">3</p>
+</div>
+</div>
+<div class="card-shadow bg-surface-container-lowest p-md rounded-xl border border-outline-variant flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="category">category</span>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Categories</p>
+<p class="text-headline-sm font-headline-sm">6</p>
+</div>
+</div>
+</div>
+<!-- Filters & Search -->
+<div class="bg-surface-container-lowest card-shadow rounded-t-xl border-x border-t border-outline-variant p-md flex flex-col md:flex-row gap-md items-center">
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface border-outline-variant rounded-xl focus:ring-2 focus:ring-secondary focus:border-secondary text-body-md transition-all" placeholder="Search menu items..." type="text"/>
+</div>
+<div class="flex gap-sm w-full md:w-auto">
+<select class="flex-grow md:flex-grow-0 px-md py-sm bg-surface border-outline-variant rounded-xl text-body-md focus:ring-2 focus:ring-secondary">
+<option>All Categories</option>
+<option>Main Courses</option>
+<option>Sides</option>
+<option>Drinks</option>
+<option>Desserts</option>
+</select>
+<button class="p-sm bg-surface border border-outline-variant rounded-xl hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="filter_list">filter_list</span>
+</button>
+<button class="p-sm bg-surface border border-outline-variant rounded-xl hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="download">download</span>
+</button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto bg-surface-container-lowest card-shadow rounded-b-xl border border-outline-variant">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</th>
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant">Product</th>
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant">Category</th>
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant text-right">Price</th>
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant">Status</th>
+<th class="px-md py-md font-label-md text-label-md text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-md py-md"><input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/></td>
+<td class="px-md py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Jollof Rice with Chicken" data-alt="A vibrant, close-up photograph of steaming hot Jollof rice topped with perfectly grilled golden chicken. The dish is garnished with fresh green herbs and red pepper slivers, presented on a rustic ceramic plate. The lighting is bright and appetizing, highlighting the rich textures and bold African colors in a high-quality food photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCueNBvCA09H2KBIz6vQIszBtVcJH0itgBT3kx8SV-xqA1Re_Q1qkMnYfw69FREAQi1eudWv_W4yxKqmHsuH_SqiF5dSJEpXljgxDjrd46xgyvovWTfAsKfBBezPK_ga0-fIOZD0RjfiinDosH_fOtieZAbP0wrBs0DsRWoBBKEQPN3ijobQ0K-cZ8m7HnkGSgtH85_rsJykRFnbqcJSFJmzSeFQeyYUILKJtlR_9r4WoOFYbWIauYkErTIticpdMXLJvpZHMh10bo"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Classic Jollof Rice</p>
+<p class="text-body-sm text-on-surface-variant">SKU: PD-2023-001</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md"><span class="px-sm py-base bg-tertiary-fixed text-on-tertiary-fixed rounded-full text-[12px] font-bold">Main Courses</span></td>
+<td class="px-md py-md text-right font-code-otp text-[16px] text-on-surface">₦4,500.00</td>
+<td class="px-md py-md">
+<span class="px-md py-base bg-secondary-container text-on-secondary-container rounded-full text-[12px] font-bold flex items-center gap-xs w-fit">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    In Stock
+                                </span>
+</td>
+<td class="px-md py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-md py-md"><input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/></td>
+<td class="px-md py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Plantain Sides" data-alt="Golden fried plantain slices served in a minimalist white bowl, glistening under warm, soft light. The photography is high-contrast, emphasizing the crispy edges and soft centers of the plantains. The background is a clean, neutral off-white, maintaining a modern and sophisticated culinary aesthetic that feels warm and inviting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrrC4WYg3HsrCcV4PyqsiFWIkkMdNZDAThi7UlMqg5ckMIwXwvzR7XT6iMqicZhmXcP6CZqCN82-DXoP0lhq4Qn8RX4hztGhLEH981MM1fOd05BiZwOF7JFFQJYHXJrcryT-_yVZxxbe39_Hh55tNoC2sWP5AMDE2rRDSpB1PECTbsyLuSMA3hUSNpELWDUUurfEh-f1oHAh_S-wdXluAhuItmACpMmb7xGWYiZaEnFx5ykravc3FaM2aryUXnBt_aToXlTlj7zFI"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Sweet Fried Plantain</p>
+<p class="text-body-sm text-on-surface-variant">SKU: PD-2023-012</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md"><span class="px-sm py-base bg-tertiary-fixed text-on-tertiary-fixed rounded-full text-[12px] font-bold">Sides</span></td>
+<td class="px-md py-md text-right font-code-otp text-[16px] text-on-surface">₦1,200.00</td>
+<td class="px-md py-md">
+<span class="px-md py-base bg-surface-container-high text-primary rounded-full text-[12px] font-bold flex items-center gap-xs w-fit">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                                    Low Stock
+                                </span>
+</td>
+<td class="px-md py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-md py-md"><input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/></td>
+<td class="px-md py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Zobo Drink" data-alt="A refreshing, deep ruby-red Zobo hibiscus drink in a tall glass, garnished with a slice of orange and a sprig of mint. Frosty condensation clings to the glass, suggesting a chilled temperature. The scene is lit with bright, natural sunlight, creating vibrant shadows and a high-energy, modern marketplace feel. Bold colors and clean lines dominate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoo5vmcSHp2AMwdM4GlMCY102zB7sHcgo7ES_Goy-c-PvaqKULSD_Acxvbq4t7bEFUuaOz0P3wGmF1fnobb0Bvyf30FRmGXU5EYOFBC2NqFMCWbENyoxmahbKaPTPgJZACfoAL2Mtrnfao65Ma8PDEJZqUswoTlfLUt2bquKUiLJc0fmxH46AcPGZzP-rtD_lBAQpo5J86Zdj4SWWIgYof8YF_-OmHLFrSUkHe3G28WNpiE80riCCD4NvnuB5qYzlgLyEKi94CO1E"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Zobo Special Blend</p>
+<p class="text-body-sm text-on-surface-variant">SKU: PD-2023-045</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md"><span class="px-sm py-base bg-tertiary-fixed text-on-tertiary-fixed rounded-full text-[12px] font-bold">Drinks</span></td>
+<td class="px-md py-md text-right font-code-otp text-[16px] text-on-surface">₦850.00</td>
+<td class="px-md py-md">
+<span class="px-md py-base bg-error-container text-error rounded-full text-[12px] font-bold flex items-center gap-xs w-fit">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                                    Out of Stock
+                                </span>
+</td>
+<td class="px-md py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-md py-md"><input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/></td>
+<td class="px-md py-md">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden">
+<img alt="Egusi Soup" data-alt="A luxurious bowl of rich Egusi soup served with fufu on the side. The soup is thick with melon seeds, spinach, and tender chunks of protein. The plating is contemporary, utilizing a sleek dark bowl against a warm wooden surface. Soft, professional food lighting highlights the steam and vibrant green of the vegetables, reflecting premium quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEkWZAZ0_4JkfnYhL8UuX9-AWRItWhNpndktDgl_hodDVqtl1WDHm1LcOxra6d81P43zo7dfF-WT9GfIUQGbRDBOsyQQxJVVAXseVgGh4H2A5bvtP5ccm-uVhhtH7KFr4GJ_4B9n86wT1btgzm7TYx_Az9gZwlZmDGrd7v7eRJPeLsWaoiNqbwd2ILZlCAlaoTQuN6DD3FxeTc44tAaF6HEwcWWA_cfh5YxxZRbCI6N0CJ9pThV7WsHI3Jhb38ZygEJE1geCaFGPI"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Egusi Soup with Fufu</p>
+<p class="text-body-sm text-on-surface-variant">SKU: PD-2023-005</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md"><span class="px-sm py-base bg-tertiary-fixed text-on-tertiary-fixed rounded-full text-[12px] font-bold">Main Courses</span></td>
+<td class="px-md py-md text-right font-code-otp text-[16px] text-on-surface">₦5,200.00</td>
+<td class="px-md py-md">
+<span class="px-md py-base bg-secondary-container text-on-secondary-container rounded-full text-[12px] font-bold flex items-center gap-xs w-fit">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    In Stock
+                                </span>
+</td>
+<td class="px-md py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-xs hover:bg-surface-container rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="mt-md flex flex-col md:flex-row items-center justify-between gap-md">
+<p class="text-body-sm text-on-surface-variant">Showing 1 to 4 of 48 products</p>
+<div class="flex items-center gap-xs">
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-primary text-on-primary rounded-lg font-label-md text-label-md">1</button>
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-label-md text-label-md">2</button>
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-label-md text-label-md">3</button>
+<span class="px-xs text-on-surface-variant">...</span>
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all font-label-md text-label-md">12</button>
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+ Bulk Action Toast (Hidden by default) 
+<div class="fixed bottom-lg left-1/2 -translate-x-1/2 glass-effect card-shadow border border-primary px-lg py-md rounded-2xl flex items-center gap-lg z-50 transform translate-y-32 transition-all duration-300" id="bulk-actions">
+<span class="text-body-md font-bold text-primary"><span id="selected-count">2</span> items selected</span>
+<div class="h-6 w-px bg-outline-variant"></div>
+<div class="flex gap-md">
+<button class="flex items-center gap-xs text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="category">category</span>
+                Change Category
+            </button>
+<button class="flex items-center gap-xs text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit_calendar">edit_calendar</span>
+                Bulk Price
+            </button>
+<button class="flex items-center gap-xs text-label-md font-label-md text-error hover:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+                Delete
+            </button>
+</div>
+<button class="ml-xl p-xs hover:bg-surface-container-high rounded-full" id="close-bulk">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+

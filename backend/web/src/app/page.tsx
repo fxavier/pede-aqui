@@ -1,0 +1,20 @@
+import Link from "next/link";
+
+export default function HomePage() {
+  return (
+    <main className="page-shell">
+      <section className="panel">
+        <p className="eyebrow">Pede Aqui</p>
+        <h1>Plataforma de Entregas - Mocambique</h1>
+        <p>Backoffice, app do cliente e app do estafeta alinhados com o backend MVP.</p>
+        <div className="home-links">
+          <Link href="/admin">Admin</Link>
+          <Link href="/vendor">Fornecedor</Link>
+          <Link href="/operations">Operacoes</Link>
+          <Link href="/finance">Financeiro</Link>
+          <Link href="/support">Suporte</Link>
+        </div>
+      </section>
+    </main>
+  );
+}

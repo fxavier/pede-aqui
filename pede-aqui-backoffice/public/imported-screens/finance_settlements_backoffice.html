@@ -1,0 +1,404 @@
+
+ Side Navigation 
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface dark:bg-inverse-surface shadow-sm flex flex-col py-lg px-md z-50">
+<div class="mb-xxl">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Energy Delivery</h1>
+<p class="font-body-sm text-on-surface-variant opacity-70">Backoffice Suite</p>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-body-md">Fleet Manager</span>
+</a>
+<a class="flex items-center gap-sm p-sm rounded-lg text-secondary font-bold border-r-4 border-secondary bg-secondary-container/10" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-body-md">Finances</span>
+</a>
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-primary-container/10 transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-body-md">Governance</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant/30 space-y-xs">
+<button class="w-full bg-primary text-on-primary py-sm rounded-xl font-bold flex items-center justify-center gap-xs hover:opacity-90 active:scale-95 transition-all mb-lg">
+<span class="material-symbols-outlined">add</span>
+<span>New Dispatch</span>
+</button>
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">help_center</span>
+<span class="font-body-md">Support</span>
+</a>
+</div>
+</aside>
+ Top Navigation 
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-container-low shadow-sm flex justify-between items-center px-lg z-40">
+<div class="flex items-center flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-xl focus:ring-2 focus:ring-secondary focus:border-secondary outline-none font-body-sm transition-all" placeholder="Search transactions, vendors..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-surface"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="flex items-center gap-sm ml-sm cursor-pointer hover:opacity-80 transition-opacity">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-outline-variant">
+<img alt="Admin" class="w-full h-full object-cover" data-alt="A professional portrait of a tech executive in a brightly lit, modern architectural setting. The lighting is warm and sun-drenched, emphasizing high contrast and a vibrant, energetic mood. The executive is wearing a clean, contemporary white linen shirt, reflecting the high-growth marketplace's reliability and hospitality. The background features blurred lush greenery and clean, off-white concrete textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs7nQAr0IaiosnqinUeX4ZUIuxRUqH6YV1bw8sTk2AQSqtboJdFX_tP0I0ox_uJQXey4SP07CsscfGarPgWTSXODhKQhy5xZHr07n_--cE9su2BNw50BOBaiim6sH_PfndsBPlFxygHeiUNS4Wk7YcmpfqGVp33Xk-jskYeg7ZUNZLGZ4uQPBE2ZQqFiVp3bfYWKMoJgaa0iETcsBZTLukJOFgncYWFyMPvm7t9Vee_HtjH4sUGbDDroYg4JfXDhBCZLEp1Hp8YOc"/>
+</div>
+<div class="hidden lg:block">
+<p class="font-label-md text-label-md leading-tight">Admin Central</p>
+<p class="text-xs text-on-surface-variant">Settlements Lead</p>
+</div>
+</div>
+</div>
+</header>
+ Main Content 
+<main class="pt-24 pl-64 pr-lg pb-lg min-h-screen">
+<div class="max-w-[1400px] mx-auto space-y-lg">
+<!-- Page Header & Global Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Financial Reconciliation</h2>
+<p class="font-body-md text-on-surface-variant">Manage platform liquidity, payouts, and fiscal compliance.</p>
+</div>
+<div class="flex items-center gap-sm">
+<button class="px-md py-sm bg-surface border border-outline-variant rounded-xl font-label-md flex items-center gap-xs hover:bg-surface-container-low transition-colors custom-shadow">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Export CSV</span>
+</button>
+<button class="px-md py-sm bg-surface border border-outline-variant rounded-xl font-label-md flex items-center gap-xs hover:bg-surface-container-low transition-colors custom-shadow">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span>Monthly Report</span>
+</button>
+<button class="px-md py-sm bg-secondary text-on-secondary rounded-xl font-label-md flex items-center gap-xs hover:opacity-90 active:scale-95 transition-all custom-shadow">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<span>Process Batch Payouts</span>
+</button>
+</div>
+</div>
+<!-- Financial Overview Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- Total Revenue -->
+<div class="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/10 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-center gap-sm mb-md">
+<div class="p-xs bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary">payments</span>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase tracking-wider">Total Revenue</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg">₦12,450,200</span>
+<div class="flex items-center gap-xs mt-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="text-xs font-bold">+12.4% vs last month</span>
+</div>
+</div>
+</div>
+<!-- Net Commissions -->
+<div class="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/10 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-colors"></div>
+<div class="flex items-center gap-sm mb-md">
+<div class="p-xs bg-secondary/10 rounded-lg">
+<span class="material-symbols-outlined text-secondary">percent</span>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase tracking-wider">Net Commissions</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg">₦2,180,450</span>
+<div class="flex items-center gap-xs mt-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="text-xs font-bold">+5.2% vs last month</span>
+</div>
+</div>
+</div>
+<!-- Pending Payouts -->
+<div class="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/10 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-tertiary-container/5 rounded-full blur-2xl group-hover:bg-tertiary-container/10 transition-colors"></div>
+<div class="flex items-center gap-sm mb-md">
+<div class="p-xs bg-tertiary-container/10 rounded-lg">
+<span class="material-symbols-outlined text-tertiary">schedule</span>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase tracking-wider">Pending Payouts</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg">₦4,920,000</span>
+<div class="flex items-center gap-xs mt-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span class="text-xs">Next batch in 2h 45m</span>
+</div>
+</div>
+</div>
+<!-- Tax Liability -->
+<div class="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/10 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-error/5 rounded-full blur-2xl group-hover:bg-error/10 transition-colors"></div>
+<div class="flex items-center gap-sm mb-md">
+<div class="p-xs bg-error/10 rounded-lg">
+<span class="material-symbols-outlined text-error">gavel</span>
+</div>
+<span class="font-label-md text-on-surface-variant uppercase tracking-wider">Tax Liability</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg text-error">₦842,300</span>
+<div class="flex items-center gap-xs mt-xs text-error">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="text-xs font-bold">Payment due in 4 days</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Middle Section: Calendar & Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Settlement Calendar -->
+<section class="lg:col-span-2 bg-white rounded-xl custom-shadow overflow-hidden border border-outline-variant/10">
+<div class="p-lg border-b border-outline-variant/30 flex justify-between items-center">
+<div>
+<h3 class="font-headline-sm text-headline-sm">Settlement Calendar</h3>
+<p class="font-body-sm text-on-surface-variant">Scheduled payouts for vendors and couriers.</p>
+</div>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-surface-container transition-colors rounded-lg"><span class="material-symbols-outlined">chevron_left</span></button>
+<span class="font-label-md py-1">October 2024</span>
+<button class="p-xs hover:bg-surface-container transition-colors rounded-lg"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+<div class="p-lg">
+<div class="grid grid-cols-7 mb-sm text-center">
+<span class="text-xs font-bold text-on-surface-variant">MON</span>
+<span class="text-xs font-bold text-on-surface-variant">TUE</span>
+<span class="text-xs font-bold text-on-surface-variant">WED</span>
+<span class="text-xs font-bold text-on-surface-variant">THU</span>
+<span class="text-xs font-bold text-on-surface-variant">FRI</span>
+<span class="text-xs font-bold text-on-surface-variant">SAT</span>
+<span class="text-xs font-bold text-on-surface-variant">SUN</span>
+</div>
+<div class="grid grid-cols-7 gap-2">
+<!-- Simple calendar viz -->
+<div class="h-24 bg-surface-container-low rounded-lg p-xs opacity-40 flex flex-col justify-between">
+<span class="text-xs">28</span>
+</div>
+<div class="h-24 bg-surface-container-low rounded-lg p-xs opacity-40 flex flex-col justify-between">
+<span class="text-xs">29</span>
+</div>
+<div class="h-24 bg-surface-container-low rounded-lg p-xs opacity-40 flex flex-col justify-between">
+<span class="text-xs">30</span>
+</div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs flex flex-col justify-between hover:bg-primary-fixed/20 cursor-pointer transition-colors">
+<span class="text-xs font-bold">1</span>
+<div class="bg-primary/10 text-primary text-[10px] px-1 rounded font-bold">₦1.2M Vendors</div>
+</div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs flex flex-col justify-between">
+<span class="text-xs">2</span>
+</div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs flex flex-col justify-between bg-secondary-container/20">
+<span class="text-xs">3</span>
+<div class="bg-secondary/10 text-secondary text-[10px] px-1 rounded font-bold">₦400k Couriers</div>
+</div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs flex flex-col justify-between">
+<span class="text-xs">4</span>
+</div>
+<!-- Today row -->
+<div class="h-24 bg-white border-2 border-secondary rounded-lg p-xs flex flex-col justify-between relative shadow-lg">
+<span class="text-xs font-bold text-secondary">5 (Today)</span>
+<div class="flex flex-col gap-1">
+<div class="bg-primary/10 text-primary text-[10px] px-1 rounded font-bold">Batch #429</div>
+<div class="bg-secondary/10 text-secondary text-[10px] px-1 rounded font-bold">Processed</div>
+</div>
+</div>
+<!-- Empty rest of calendar -->
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs"><span class="text-xs">6</span></div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs"><span class="text-xs">7</span></div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs"><span class="text-xs">8</span></div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs"><span class="text-xs">9</span></div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs bg-primary-fixed/20"><span class="text-xs font-bold">10</span><div class="bg-primary/10 text-primary text-[10px] px-1 mt-1 rounded font-bold">Settlement</div></div>
+<div class="h-24 bg-white border border-outline-variant/30 rounded-lg p-xs"><span class="text-xs">11</span></div>
+</div>
+</div>
+</section>
+<!-- Snapshot Summary & Quick Tasks -->
+<aside class="space-y-lg">
+<div class="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/10">
+<h4 class="font-label-md text-on-surface-variant uppercase mb-md">System Health</h4>
+<div class="space-y-md">
+<div class="flex justify-between items-center">
+<span class="font-body-sm">API Gateway</span>
+<span class="flex items-center gap-xs text-secondary font-bold text-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span> Operational</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm">Bank Switches</span>
+<span class="flex items-center gap-xs text-secondary font-bold text-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span> 100% Up</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm">Reconciliation</span>
+<span class="flex items-center gap-xs text-primary font-bold text-xs"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Processing</span>
+</div>
+</div>
+</div>
+<div class="bg-secondary-container/20 p-lg rounded-xl border border-secondary/20 relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="font-headline-sm text-secondary mb-sm">Courier Trust Fund</h4>
+<p class="font-body-sm text-on-secondary-fixed-variant mb-md leading-relaxed">Ensure statutory reserves are maintained before the 15th of the month.</p>
+<div class="h-2 w-full bg-white/50 rounded-full mb-2 overflow-hidden">
+<div class="h-full bg-secondary w-3/4 rounded-full"></div>
+</div>
+<div class="flex justify-between text-xs font-bold text-secondary">
+<span>₦1,500,000 / ₦2,000,000</span>
+<span>75%</span>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Transaction Log -->
+<section class="bg-white rounded-xl custom-shadow overflow-hidden border border-outline-variant/10">
+<div class="p-lg border-b border-outline-variant/30 flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h3 class="font-headline-sm text-headline-sm">Transaction Log</h3>
+<p class="font-body-sm text-on-surface-variant">Real-time audit of orders, payouts, and adjustments.</p>
+</div>
+<div class="flex items-center gap-sm overflow-x-auto pb-2 md:pb-0">
+<button class="px-md py-1.5 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold whitespace-nowrap">All Activities</button>
+<button class="px-md py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-xs font-medium hover:bg-surface-container whitespace-nowrap">Order Sales</button>
+<button class="px-md py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-xs font-medium hover:bg-surface-container whitespace-nowrap">Vendor Payouts</button>
+<button class="px-md py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-xs font-medium hover:bg-surface-container whitespace-nowrap">Adjustments</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low/50">
+<tr>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Reference ID</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Transaction Type</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Entity</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Amount</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Status</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter">Date</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant border-b border-outline-variant/30 uppercase tracking-tighter text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-lg py-md font-body-sm font-bold">#TRX-89021</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px] text-secondary">shopping_cart</span>
+<span class="font-body-sm">Order Sale</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Mama Cass Kitchen</td>
+<td class="px-lg py-md font-bold text-on-surface">+₦14,500.00</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-secondary/10 text-secondary text-[11px] font-bold rounded-full">Delivered</span>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Oct 5, 2024 · 14:22</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-lg py-md font-body-sm font-bold">#PAY-77213</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px] text-primary">account_balance_wallet</span>
+<span class="font-body-sm">Vendor Payout</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Spice Route Hub</td>
+<td class="px-lg py-md font-bold text-error">-₦850,000.00</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-full">Successful</span>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Oct 5, 2024 · 10:15</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-lg py-md font-body-sm font-bold">#ADJ-11002</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary">tune</span>
+<span class="font-body-sm">Correction</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Courier #092 (Tunde)</td>
+<td class="px-lg py-md font-bold text-on-surface">+₦2,500.00</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-surface-container-high text-on-surface-variant text-[11px] font-bold rounded-full">Adjustment</span>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Oct 4, 2024 · 18:30</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-lg py-md font-body-sm font-bold">#TRX-89020</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px] text-secondary">shopping_cart</span>
+<span class="font-body-sm">Order Sale</span>
+</div>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Global Logistics Inc.</td>
+<td class="px-lg py-md font-bold text-on-surface">+₦45,200.00</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-tertiary-container/10 text-tertiary-container text-[11px] font-bold rounded-full">Pending</span>
+</td>
+<td class="px-lg py-md font-body-sm text-on-surface-variant">Oct 4, 2024 · 17:45</td>
+<td class="px-lg py-md text-right">
+<button class="p-xs hover:bg-surface-container rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-lg bg-surface-container-low/30 flex items-center justify-between">
+<p class="font-body-sm text-on-surface-variant">Showing 4 of 24,192 results</p>
+<div class="flex items-center gap-sm">
+<button class="px-md py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white hover:bg-surface transition-colors">Previous</button>
+<div class="flex gap-1">
+<button class="w-8 h-8 rounded bg-secondary text-on-secondary text-xs font-bold">1</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container text-xs font-bold transition-colors">2</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container text-xs font-bold transition-colors">3</button>
+</div>
+<button class="px-md py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white hover:bg-surface transition-colors">Next</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+ Success Toast Notification (Hidden by default) 
+<div class="fixed bottom-lg right-lg bg-inverse-surface text-inverse-on-surface px-lg py-md rounded-xl shadow-2xl flex items-center gap-md transform translate-y-32 transition-transform duration-500 z-[100]" id="payout-toast">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<div>
+<p class="font-bold text-sm">Batch Payouts Initiated</p>
+<p class="text-xs opacity-70">142 transactions are being processed.</p>
+</div>
+<button class="ml-sm hover:opacity-50">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+

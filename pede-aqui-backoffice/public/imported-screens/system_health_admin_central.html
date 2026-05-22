@@ -1,0 +1,381 @@
+
+ SideNavBar 
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low dark:bg-surface-dim shadow-sm flex flex-col border-r border-outline-variant z-50">
+<div class="p-lg">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed-dim">Marketplace HQ</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Global Admin Panel</p>
+</div>
+<nav class="flex-1 px-sm space-y-base">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">business_center</span>
+<span class="font-label-md text-label-md">Tenants</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Configurations</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Roles &amp; Permissions</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Audit Logs</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">monitor_heart</span>
+<span class="font-label-md text-label-md">System Health</span>
+</a>
+</nav>
+<div class="p-md mt-auto border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-xs bg-primary text-on-primary py-sm rounded-xl font-bold active:scale-95 transition-transform mb-md">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+                Support Ticket
+            </button>
+<div class="space-y-base">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+ Main Content Shell 
+<main class="ml-64 min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-lg sticky top-0 z-40 bg-surface dark:bg-on-background border-b border-outline-variant">
+<div class="flex items-center gap-xl">
+<span class="text-headline-sm font-headline-sm font-extrabold text-secondary">Admin Central</span>
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full w-64 focus:ring-2 focus:ring-secondary text-body-sm" placeholder="Search infrastructure..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<nav class="hidden md:flex gap-lg">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" href="#">Documentation</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" href="#">Release Notes</a>
+</nav>
+<div class="h-6 w-[1px] bg-outline-variant mx-xs"></div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-all">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-all">help_outline</button>
+<div class="flex items-center gap-sm ml-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Admin Profile Avatar" data-alt="A professional close-up portrait of a technology administrator in a modern office. Soft cinematic lighting highlights a friendly expression. The background features blurred data screens with coral and forest green accents, maintaining a high-contrast yet warm marketplace energy aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpncKLa7poBh-3O76Vmxz6OXEsvWMlwytBr9txDxys1hXv2o5Fy1ACsQi45cqRifX0RSu3slHRdGtRu16niHFZALDP8Ny95RW55gnZ2e39czS61CQAaQ3VVtXZ75qBZeLf_4VwNIWLYUahXNZ6G3ZJGmADMfRKbDLvVyM5cJHlYXGbwnnnSqJpVLmJx6ltAi6LImzBLChm6gi8CTYxGam4tyRLu6DfngG99t0Wmeku4c9KpEH-9b5b9haCh_iJN0NCQOh8KgTy1UY"/>
+</div>
+<button class="bg-primary text-on-primary px-md py-xs rounded-full font-label-md text-label-md hover:opacity-90 active:opacity-80 transition-all">New Tenant</button>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-lg max-w-[1400px] mx-auto space-y-lg">
+<!-- Hero Stats / Bento Grid Start -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-lg">
+<!-- System Status Summary -->
+<div class="md:col-span-2 p-xl rounded-xl bg-white shadow-[0_2px_12px_rgba(44,44,58,0.08)] flex flex-col justify-between relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-xs mb-sm">
+<span class="w-3 h-3 rounded-full bg-secondary status-pulse"></span>
+<span class="font-label-md text-secondary uppercase tracking-wider">All Systems Operational</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg mb-xs">99.98% Uptime</h2>
+<p class="text-on-surface-variant font-body-md max-w-md">Global infrastructure is performing within nominal parameters. No active incidents detected in the last 24 hours.</p>
+</div>
+<div class="mt-lg flex gap-lg">
+<div>
+<span class="block text-body-sm text-on-surface-variant">Active Instances</span>
+<span class="font-headline-sm text-headline-sm">124</span>
+</div>
+<div class="w-[1px] bg-outline-variant"></div>
+<div>
+<span class="block text-body-sm text-on-surface-variant">Avg. Response</span>
+<span class="font-headline-sm text-headline-sm">42ms</span>
+</div>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -right-12 -bottom-12 opacity-5">
+<span class="material-symbols-outlined text-[180px]">security</span>
+</div>
+</div>
+<!-- Database Latency -->
+<div class="p-lg rounded-xl bg-white shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">database</span>
+</div>
+<span class="text-secondary font-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_down</span> 2%
+                        </span>
+</div>
+<h3 class="font-label-md text-on-surface-variant uppercase mb-xs">DB Latency</h3>
+<div class="text-headline-md font-headline-md">12.4ms</div>
+<div class="mt-md h-12 flex items-end gap-[2px]">
+<div class="flex-1 bg-tertiary-fixed-dim h-[40%] rounded-t-sm"></div>
+<div class="flex-1 bg-tertiary-fixed-dim h-[60%] rounded-t-sm"></div>
+<div class="flex-1 bg-tertiary-fixed-dim h-[55%] rounded-t-sm"></div>
+<div class="flex-1 bg-tertiary-fixed-dim h-[80%] rounded-t-sm"></div>
+<div class="flex-1 bg-tertiary-fixed-dim h-[45%] rounded-t-sm"></div>
+<div class="flex-1 bg-tertiary h-[30%] rounded-t-sm"></div>
+</div>
+</div>
+<!-- Error Rate -->
+<div class="p-lg rounded-xl bg-white shadow-[0_2px_12px_rgba(44,44,58,0.08)]">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 rounded-lg bg-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-error">report_problem</span>
+</div>
+<span class="text-error font-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 0.01%
+                        </span>
+</div>
+<h3 class="font-label-md text-on-surface-variant uppercase mb-xs">Global Error Rate</h3>
+<div class="text-headline-md font-headline-md">0.042%</div>
+<div class="mt-md h-12 flex items-end gap-[2px]">
+<div class="flex-1 bg-error-container h-[20%] rounded-t-sm"></div>
+<div class="flex-1 bg-error-container h-[15%] rounded-t-sm"></div>
+<div class="flex-1 bg-error-container h-[25%] rounded-t-sm"></div>
+<div class="flex-1 bg-error-container h-[10%] rounded-t-sm"></div>
+<div class="flex-1 bg-error-container h-[12%] rounded-t-sm"></div>
+<div class="flex-1 bg-error h-[18%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Detailed Status Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Core API Services -->
+<div class="lg:col-span-2 space-y-md">
+<h3 class="font-headline-sm text-headline-sm flex items-center gap-sm">
+                        Core API Services
+                        <span class="px-md py-1 bg-secondary-fixed text-on-secondary-fixed text-[12px] font-bold rounded-full">8 ONLINE</span>
+</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Service Card -->
+<div class="p-md rounded-xl bg-white border border-outline-variant hover:border-secondary transition-all group">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-bold text-body-md">Authentication API</span>
+<span class="px-xs py-[2px] bg-secondary-container text-on-secondary-container text-[11px] font-bold rounded-sm uppercase">Operational</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-outline-variant opacity-30"></div>
+</div>
+<div class="mt-sm flex justify-between text-[12px] text-on-surface-variant">
+<span>32ms avg</span>
+<span>99.99% uptime</span>
+</div>
+</div>
+<!-- Service Card (Degraded) -->
+<div class="p-md rounded-xl bg-white border border-outline-variant hover:border-primary-container transition-all">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-bold text-body-md">Media Processing</span>
+<span class="px-xs py-[2px] bg-primary-fixed text-on-primary-fixed-variant text-[11px] font-bold rounded-sm uppercase">Degraded</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-primary-container"></div>
+<div class="flex-1 h-1.5 rounded-full bg-primary-container"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-outline-variant opacity-30"></div>
+</div>
+<div class="mt-sm flex justify-between text-[12px] text-on-surface-variant">
+<span class="text-primary font-bold">1420ms avg</span>
+<span>94.20% uptime</span>
+</div>
+</div>
+<!-- Service Card -->
+<div class="p-md rounded-xl bg-white border border-outline-variant hover:border-secondary transition-all">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-bold text-body-md">Search Indexer</span>
+<span class="px-xs py-[2px] bg-secondary-container text-on-secondary-container text-[11px] font-bold rounded-sm uppercase">Operational</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-outline-variant opacity-30"></div>
+</div>
+<div class="mt-sm flex justify-between text-[12px] text-on-surface-variant">
+<span>18ms avg</span>
+<span>100.0% uptime</span>
+</div>
+</div>
+<!-- Service Card -->
+<div class="p-md rounded-xl bg-white border border-outline-variant hover:border-secondary transition-all">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-bold text-body-md">Notification Hub</span>
+<span class="px-xs py-[2px] bg-secondary-container text-on-secondary-container text-[11px] font-bold rounded-sm uppercase">Operational</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-secondary"></div>
+<div class="flex-1 h-1.5 rounded-full bg-outline-variant opacity-30"></div>
+</div>
+<div class="mt-sm flex justify-between text-[12px] text-on-surface-variant">
+<span>5ms avg</span>
+<span>99.98% uptime</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Third-Party Integrations -->
+<div class="space-y-md">
+<h3 class="font-headline-sm text-headline-sm">External Mesh</h3>
+<div class="bg-white rounded-xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] overflow-hidden">
+<div class="divide-y divide-outline-variant">
+<!-- Integration Row -->
+<div class="p-md flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</div>
+<div>
+<div class="font-bold text-body-sm">Stripe Gateway</div>
+<div class="text-[11px] text-on-surface-variant">Europe/US-East</div>
+</div>
+</div>
+<span class="flex items-center gap-1 text-secondary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Operational
+                                </span>
+</div>
+<!-- Integration Row -->
+<div class="p-md flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">sms</span>
+</div>
+<div>
+<div class="font-bold text-body-sm">Twilio SMS</div>
+<div class="text-[11px] text-on-surface-variant">Global Router</div>
+</div>
+</div>
+<span class="flex items-center gap-1 text-secondary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Operational
+                                </span>
+</div>
+<!-- Integration Row (Down) -->
+<div class="p-md flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">map</span>
+</div>
+<div>
+<div class="font-bold text-body-sm">Google Maps API</div>
+<div class="text-[11px] text-on-surface-variant">Geocoding Service</div>
+</div>
+</div>
+<span class="flex items-center gap-1 text-error font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-error status-pulse"></span> Down
+                                </span>
+</div>
+<!-- Integration Row -->
+<div class="p-md flex items-center justify-between hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+</div>
+<div>
+<div class="font-bold text-body-sm">AWS S3 Storage</div>
+<div class="text-[11px] text-on-surface-variant">Bucket: marketplace-prod</div>
+</div>
+</div>
+<span class="flex items-center gap-1 text-secondary font-bold text-[12px]">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Operational
+                                </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Incidents & Error Logs -->
+<div class="bg-white rounded-2xl shadow-[0_2px_12px_rgba(44,44,58,0.08)] overflow-hidden">
+<div class="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<h3 class="font-headline-sm text-headline-sm">Recent Infrastructure Events</h3>
+<button class="text-primary font-bold text-label-md hover:underline">View All Logs</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-outline-variant">
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase text-[12px]">Timestamp</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase text-[12px]">Component</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase text-[12px]">Status</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase text-[12px]">Message</th>
+<th class="px-lg py-md font-label-md text-on-surface-variant uppercase text-[12px]">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-code-otp text-[14px]">14:20:05 UTC</td>
+<td class="px-lg py-md font-bold text-body-sm">Media Processing</td>
+<td class="px-lg py-md">
+<span class="px-md py-1 bg-primary-fixed text-on-primary-fixed-variant rounded-full text-[11px] font-bold">DEGRADED</span>
+</td>
+<td class="px-lg py-md text-body-sm">High latency detected in image resizing worker queue.</td>
+<td class="px-lg py-md">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-all">
+<span class="material-symbols-outlined">analytics</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-code-otp text-[14px]">13:45:12 UTC</td>
+<td class="px-lg py-md font-bold text-body-sm">Database Node 4</td>
+<td class="px-lg py-md">
+<span class="px-md py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-[11px] font-bold">RECOVERED</span>
+</td>
+<td class="px-lg py-md text-body-sm">Automatic failover completed successfully.</td>
+<td class="px-lg py-md">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-all">
+<span class="material-symbols-outlined">analytics</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-code-otp text-[14px]">12:01:59 UTC</td>
+<td class="px-lg py-md font-bold text-body-sm">Google Maps API</td>
+<td class="px-lg py-md">
+<span class="px-md py-1 bg-error-container text-on-error-container rounded-full text-[11px] font-bold">DOWN</span>
+</td>
+<td class="px-lg py-md text-body-sm">Upstream provider reporting service outage in West-2.</td>
+<td class="px-lg py-md">
+<button class="p-2 hover:bg-surface-container-high rounded-lg text-primary transition-all">
+<span class="material-symbols-outlined">analytics</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+ Floating Action Button (Supressed as per logic for Monitoring/Detail page, but defined here for context) 
+ <button class="fixed bottom-lg right-lg w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+        <span class="material-symbols-outlined">add</span>
+    </button> 
+

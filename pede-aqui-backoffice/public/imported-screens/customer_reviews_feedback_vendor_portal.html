@@ -1,0 +1,329 @@
+
+ TopNavBar 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm">
+<div class="flex items-center gap-xl">
+<span class="text-headline-sm font-headline-sm font-extrabold text-primary">Vendor Central</span>
+<div class="hidden md:flex items-center gap-md">
+<nav class="flex gap-lg">
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors px-md py-xs rounded-lg text-label-md font-label-md" href="#">Overview</a>
+<a class="text-primary font-bold border-b-2 border-primary px-md py-xs text-label-md font-label-md" href="#">Customer Reviews</a>
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors px-md py-xs rounded-lg text-label-md font-label-md" href="#">Performance</a>
+</nav>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center bg-surface-container px-md py-xs rounded-full">
+<span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-48" placeholder="Search feedback..." type="text"/>
+</div>
+<button class="material-symbols-outlined p-xs text-on-surface-variant hover:bg-surface-container rounded-full" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined p-xs text-on-surface-variant hover:bg-surface-container rounded-full" data-icon="help">help</button>
+<img alt="Vendor profile avatar" class="w-10 h-10 rounded-full object-cover border-2 border-surface-container-high" data-alt="A professional headshot of a smiling West African business owner in a clean, modern office environment. The lighting is warm and natural, reflecting a hospitable and reliable brand image. He wears a contemporary blazer over a traditional patterned shirt, blending modern corporate style with local cultural identity. The background is softly blurred to keep focus on the person." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6fIM7brp__TyYYOMOryR65s-YrFZUu-dHq_751-BUE7G7NwQI80ni1mnXAVAIz_ekqO0_puRAz_HH2VhwIv-8kzcg-Jox7vUB7Qhn5Dk59-arNdvW0DfqLeUgkDkhCZO-rFWTgIPpJ4xYYDJsM0hjqa3WrkecI754AMeRsPAjTtGtNOZGfGa5nfpTDb6yhPLSRJjjDhAbxmRTdP32yjHORjj4mf4PX1yb0hETJfdsuVmibaFqug4DwPldXDj-ttDlQVroPOP27Vc"/>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-64px)] w-64 sticky top-16 py-lg gap-sm border-r border-outline-variant bg-surface-container-low">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+</div>
+<div>
+<h2 class="text-label-md font-label-md text-on-surface leading-tight">Vendor Portal</h2>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Manage your shop</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-xs grow">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="text-label-md font-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-label-md font-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary px-md py-sm mx-sm rounded-lg shadow-sm" href="#">
+<span class="material-symbols-outlined" data-icon="star" data-weight="fill" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-label-md font-label-md">Reviews &amp; Feedback</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm mx-sm hover:bg-primary-fixed hover:text-on-primary-fixed rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md mt-auto">
+<button class="w-full bg-secondary text-on-secondary font-bold py-md rounded-xl flex items-center justify-center gap-sm shadow-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span>New Listing</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-lg max-w-[1200px] mx-auto bg-pattern">
+<!-- Dashboard Header -->
+<div class="mb-xl">
+<h1 class="text-headline-lg font-headline-lg text-on-surface mb-lg">Customer Reviews &amp; Feedback</h1>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-lg">
+<!-- Rating Card -->
+<div class="bg-white p-lg rounded-xl card-shadow flex flex-col justify-between border-b-4 border-primary">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wide">Average Rating</p>
+<div class="flex items-end gap-xs my-sm">
+<span class="text-display font-display text-primary">4.8</span>
+<div class="pb-base">
+<div class="flex text-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="star_half">star_half</span>
+</div>
+<p class="text-body-sm text-on-surface-variant">Top 5% in Lagos</p>
+</div>
+</div>
+</div>
+<!-- Volume Card -->
+<div class="bg-white p-lg rounded-xl card-shadow flex flex-col justify-between">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wide">Total Reviews</p>
+<div class="my-sm">
+<span class="text-headline-lg font-headline-lg text-on-surface">1,284</span>
+<p class="text-body-sm text-secondary font-bold flex items-center gap-xs mt-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+                                +12% this month
+                            </p>
+</div>
+</div>
+<!-- Sentiment Breakdown -->
+<div class="md:col-span-2 bg-white p-lg rounded-xl card-shadow">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wide mb-md">Sentiment Analysis</p>
+<div class="space-y-sm">
+<div>
+<div class="flex justify-between text-body-sm mb-xs">
+<span class="font-bold text-secondary">Positive</span>
+<span class="text-on-surface-variant">88%</span>
+</div>
+<div class="h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[88%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm mb-xs">
+<span class="font-bold text-tertiary">Neutral</span>
+<span class="text-on-surface-variant">8%</span>
+</div>
+<div class="h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[8%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm mb-xs">
+<span class="font-bold text-error">Negative</span>
+<span class="text-on-surface-variant">4%</span>
+</div>
+<div class="h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-error w-[4%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Interactive Area -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Review List Column -->
+<div class="lg:col-span-8 space-y-md">
+<!-- Filters & Search -->
+<div class="bg-white p-md rounded-xl card-shadow flex flex-wrap items-center justify-between gap-md">
+<div class="flex gap-xs">
+<button class="bg-secondary text-on-secondary px-md py-xs rounded-full text-label-md">All Reviews</button>
+<button class="bg-surface-container text-on-surface-variant px-md py-xs rounded-full text-label-md hover:bg-surface-container-high transition-colors">Pending Reply</button>
+<button class="bg-surface-container text-on-surface-variant px-md py-xs rounded-full text-label-md hover:bg-surface-container-high transition-colors">Negative Only</button>
+</div>
+<div class="flex items-center gap-sm border-l border-outline-variant pl-md">
+<span class="text-body-sm text-on-surface-variant">Sort by:</span>
+<select class="border-none bg-transparent text-label-md font-bold text-on-surface focus:ring-0 cursor-pointer">
+<option>Newest First</option>
+<option>Highest Rating</option>
+<option>Lowest Rating</option>
+</select>
+</div>
+</div>
+<!-- Review Entries -->
+<!-- Review Item 1 -->
+<div class="bg-white p-lg rounded-xl card-shadow relative overflow-hidden">
+<!-- Reply Status Tag -->
+<div class="absolute top-0 right-0 bg-secondary-container text-on-secondary-container px-md py-xs text-[10px] font-bold rounded-bl-xl uppercase tracking-widest">
+                            Replied
+                        </div>
+<div class="flex gap-md">
+<img alt="Customer avatar" class="w-12 h-12 rounded-full object-cover" data-alt="A close-up, high-quality portrait of a stylish young African woman with a warm, satisfied smile. She is outdoors in a vibrant urban setting during the golden hour, with soft, warm sunlight illuminating her face. The image conveys happiness and customer satisfaction, reflecting the bold and energetic vibe of the Pede Aqui brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVZA3x1it2nKZUoz3PGvem9yiSe83i1h7r1UcsYV5rVCr4_rhyPRtBb3XlNJXS0d7-JergVEQCn6SyZJ_B3NrsSWnqmaW5DVtWWR5oSZzoicGiE9RMNE0W0kcDXe7ObcC42GyHHOlJmZt_VvdNKmi0mfuhOT2qawGMV0CZZwlfcev72OTJ5l1CYmCf2aMjJemp4426BgmKKgRBZdKPS2MxBB6TFZVJpr1gC5YGJXcDZ-XsD1LihyI7wr3i-6fsMHyQy6VbjGF6GpE"/>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Amara Okafor</h3>
+<div class="flex text-primary">
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<span class="text-body-sm text-outline">Oct 24, 2023 • Order #PA-8821</span>
+</div>
+<p class="text-body-md text-on-surface-variant my-md leading-relaxed italic">
+                                    "The Jollof rice was absolutely incredible! Perfectly smoky and the spice level was just right. The plantain was sweet and soft. Best meal I've had all week, and it arrived hot!"
+                                </p>
+<!-- Ordered Items -->
+<div class="flex flex-wrap gap-xs mb-lg">
+<span class="bg-surface-container px-sm py-xs rounded-lg text-[12px] font-bold text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="restaurant">restaurant</span>
+                                        Party Jollof Rice (Large)
+                                    </span>
+<span class="bg-surface-container px-sm py-xs rounded-lg text-[12px] font-bold text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="restaurant">restaurant</span>
+                                        Fried Plantain Side
+                                    </span>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between pt-md border-t border-outline-variant">
+<div class="flex gap-md">
+<button class="text-primary font-bold flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+                                            Edit Reply
+                                        </button>
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined" data-icon="report">report</span>
+                                            Report
+                                        </button>
+</div>
+<button class="p-xs text-outline hover:bg-surface-container rounded-full">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Review Item 2 (Pending) -->
+<div class="bg-white p-lg rounded-xl card-shadow border-l-4 border-error relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-error-container text-on-error-container px-md py-xs text-[10px] font-bold rounded-bl-xl uppercase tracking-widest">
+                            Pending Reply
+                        </div>
+<div class="flex gap-md">
+<img alt="Customer avatar" class="w-12 h-12 rounded-full object-cover" data-alt="A portrait of a middle-aged African man with a concerned but fair expression. He is photographed in a well-lit home office with warm wooden accents. The professional lighting and sharp focus emphasize authenticity and the importance of customer feedback. The color palette remains warm and vibrant, consistent with the brand energy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCU29g6jTZ5V7phUxeqyYIpLk0FQHi8WARqitzZXehZtrSwoH9XYS8f18uCKoiZ3iwsMgL9m5CRb_PTmwmiSA3cIwQQ2xeQeveDE6ix5_Ez6KtobFDIdG8-hcBDdHKRgbIv6MVVOvmWINldWvzHzXzOZNlp4X_pVczD6ZTeE2RstYgWaoUwAHIOihUR_4LjfcBU7dANbboDtYhdBTxYK26HcnnHkBBLeYQioRkzjt4AVS3RmJZXEWvnHqoDOMZ3WO_ZaMmUycta7eo"/>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Tunde Adeyemi</h3>
+<div class="flex text-primary">
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star">star</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="star">star</span>
+</div>
+</div>
+<span class="text-body-sm text-outline">Oct 23, 2023 • Order #PA-8755</span>
+</div>
+<p class="text-body-md text-on-surface-variant my-md leading-relaxed">
+                                    "Food tasted good as always, but the delivery took over an hour and the package was slightly crushed. I hope you guys can fix the packaging for long-distance deliveries."
+                                </p>
+<div class="flex flex-wrap gap-xs mb-lg">
+<span class="bg-surface-container px-sm py-xs rounded-lg text-[12px] font-bold text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="restaurant">restaurant</span>
+                                        Egusi Soup &amp; Pounded Yam
+                                    </span>
+</div>
+<div class="flex items-center justify-between pt-md border-t border-outline-variant">
+<button class="bg-primary text-on-primary px-lg py-sm rounded-lg font-bold flex items-center gap-xs shadow-md active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="reply">reply</span>
+                                        Reply Now
+                                    </button>
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined" data-icon="report">report</span>
+                                        Report
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Sidebar Column -->
+<div class="lg:col-span-4 space-y-lg">
+<!-- AI Insights Panel -->
+<div class="bg-inverse-surface text-inverse-on-surface p-lg rounded-2xl shadow-xl overflow-hidden relative">
+<!-- Decorative glow -->
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary opacity-20 blur-3xl rounded-full"></div>
+<div class="flex items-center gap-sm mb-lg relative">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="auto_awesome">auto_awesome</span>
+<h2 class="text-headline-sm font-headline-sm">AI Pulse Insights</h2>
+</div>
+<div class="space-y-xl relative">
+<!-- Praise -->
+<section>
+<div class="flex items-center gap-xs text-secondary-fixed mb-sm">
+<span class="material-symbols-outlined" data-icon="thumb_up">thumb_up</span>
+<h3 class="text-label-md uppercase tracking-widest font-bold">Frequent Praises</h3>
+</div>
+<div class="flex flex-wrap gap-sm">
+<span class="bg-on-secondary-fixed-variant px-md py-xs rounded-lg border border-secondary/30 text-body-sm">"Smoky flavor" (42)</span>
+<span class="bg-on-secondary-fixed-variant px-md py-xs rounded-lg border border-secondary/30 text-body-sm">"Fast delivery" (28)</span>
+<span class="bg-on-secondary-fixed-variant px-md py-xs rounded-lg border border-secondary/30 text-body-sm">"Authentic taste" (19)</span>
+</div>
+</section>
+<!-- Complaints -->
+<section>
+<div class="flex items-center gap-xs text-primary-fixed mb-sm">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<h3 class="text-label-md uppercase tracking-widest font-bold">Top Complaints</h3>
+</div>
+<div class="space-y-sm">
+<div class="bg-white/5 p-md rounded-xl border border-white/10">
+<div class="flex justify-between mb-xs">
+<span class="text-body-sm font-bold text-white">Packaging durability</span>
+<span class="text-primary-fixed text-body-sm font-bold">High Impact</span>
+</div>
+<p class="text-xs text-outline-variant">8 reviews mentioned sauce leaking or crushed containers this week.</p>
+</div>
+<div class="bg-white/5 p-md rounded-xl border border-white/10">
+<div class="flex justify-between mb-xs">
+<span class="text-body-sm font-bold text-white">Wait times (Peak)</span>
+<span class="text-tertiary-fixed text-body-sm font-bold">Medium</span>
+</div>
+<p class="text-xs text-outline-variant">Friday 6pm-8pm orders are 15% more likely to mention delays.</p>
+</div>
+</div>
+</section>
+<button class="w-full border-2 border-primary-fixed text-primary-fixed py-md rounded-xl font-bold hover:bg-primary-fixed hover:text-on-primary-fixed transition-all">
+                                View Full Sentiment Report
+                            </button>
+</div>
+</div>
+<!-- Loyalty Stats -->
+<div class="bg-white p-lg rounded-xl card-shadow">
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase mb-md">Reviewer Loyalty</h3>
+<div class="flex items-center gap-lg">
+<div class="relative w-20 h-20">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213.6" stroke-dashoffset="64" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-bold text-headline-sm">70%</div>
+</div>
+<div>
+<p class="text-body-md font-bold text-on-surface">Repeat Reviewers</p>
+<p class="text-body-sm text-on-surface-variant">7 out of 10 customers have reviewed more than twice.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+ Micro-interaction Script 
+

@@ -1,0 +1,283 @@
+
+ TopNavBar 
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface shadow-sm">
+<div class="flex items-center gap-md">
+<h1 class="text-headline-sm font-extrabold text-primary">Vendor Central</h1>
+<div class="hidden md:flex gap-md ml-xl">
+<a class="text-primary font-bold border-b-2 border-primary text-label-md py-xs" href="#">Orders</a>
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors text-label-md py-xs px-sm rounded-lg" href="#">Inventory</a>
+<a class="text-on-surface-variant hover:bg-surface-container transition-colors text-label-md py-xs px-sm rounded-lg" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-xl pr-md py-xs bg-surface-container-low border-none rounded-full text-body-sm focus:ring-2 focus:ring-secondary w-64" placeholder="Search Order ID..." type="text"/>
+</div>
+<button class="material-symbols-outlined p-xs rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">notifications</button>
+<button class="material-symbols-outlined p-xs rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">help</button>
+<div class="w-10 h-10 rounded-full bg-primary-fixed overflow-hidden border-2 border-surface shadow-sm">
+<img alt="Vendor profile avatar" class="w-full h-full object-cover" data-alt="A professional and friendly headshot of a restaurant owner with a warm smile, wearing a clean, modern apron. The lighting is soft and warm, reflecting the vibrant energy of a high-end delivery marketplace. The background is a blurred, organized commercial kitchen with hints of coral-orange and forest-green decor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnuXop_6Xm0vUvt_BPmhzk_Jcrc9dx29qsgB6clUSFYlzSaZVWSBl5ZaCR6LzKJmxqMnEIQ50_cMfojWjX4rO8gvE8piXHsCmV329AOYOY0kcaVhem_yRrDM2rrZyOB1s5M2cT_8JMfhLzU9idwcp3A6Zv9FruPxdyrvTkuHFY0f2WfcJPLld9dUOC-aY6C9ATXnnmjvhpx9IPjO81J3dK-g40d0kV4rtza52qq_OyrebvvNgDwtUwDLGnouaaD7dVFtNOyWOxH9M"/>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-lg gap-sm border-r border-outline-variant bg-surface-container-low w-64 flex-shrink-0">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]">restaurant</span>
+</div>
+<span class="text-headline-sm font-extrabold text-on-surface">Vendor Portal</span>
+</div>
+<p class="text-body-sm text-on-surface-variant px-base">Manage your shop</p>
+</div>
+<nav class="flex-grow space-y-xs">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="text-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-md bg-primary text-on-primary rounded-lg px-md py-sm mx-sm" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-primary-fixed hover:text-on-primary-fixed transition-all px-md py-sm mx-sm rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md">Settings</span>
+</a>
+</nav>
+<div class="px-md mt-auto">
+<button class="w-full bg-secondary text-on-secondary font-label-md py-sm rounded-xl flex items-center justify-center gap-sm shadow-sm active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+                    New Listing
+                </button>
+</div>
+</aside>
+<!-- Main Dashboard Canvas -->
+<main class="flex-grow overflow-x-auto bg-background p-lg relative">
+<!-- Kanban Board Container -->
+<div class="flex gap-lg h-full min-w-[1000px]">
+<!-- NEW Column -->
+<div class="flex-1 flex flex-col min-w-[280px]">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+<h3 class="font-headline-sm text-on-surface">New</h3>
+<span class="bg-surface-container-highest text-on-surface-variant px-xs py-base rounded-full text-body-sm font-bold">3</span>
+</div>
+</div>
+<div class="kanban-column flex-grow overflow-y-auto space-y-md pr-xs">
+<!-- Order Card 1 -->
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer group">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7241</span>
+<span class="text-body-sm text-on-surface-variant bg-surface-container px-xs py-base rounded-lg">2m ago</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">Lamine Yamal</p>
+<p class="text-body-sm text-on-surface-variant mb-md">2x Grilled Tilapia, 1x Jollof Rice</p>
+<div class="flex gap-xs">
+<button class="flex-1 py-xs bg-primary text-on-primary rounded-lg text-label-md active:scale-95 transition-transform">Accept</button>
+<button class="p-xs border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Order Card 2 -->
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer group">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7242</span>
+<span class="text-body-sm text-on-surface-variant bg-surface-container px-xs py-base rounded-lg">5m ago</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">Amara Chimezie</p>
+<p class="text-body-sm text-on-surface-variant mb-md">1x Egusi Soup, 2x Pounded Yam</p>
+<div class="flex gap-xs">
+<button class="flex-1 py-xs bg-primary text-on-primary rounded-lg text-label-md active:scale-95 transition-transform">Accept</button>
+<button class="p-xs border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- PREPARING Column -->
+<div class="flex-1 flex flex-col min-w-[280px]">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<h3 class="font-headline-sm text-on-surface">Preparing</h3>
+<span class="bg-surface-container-highest text-on-surface-variant px-xs py-base rounded-full text-body-sm font-bold">5</span>
+</div>
+</div>
+<div class="kanban-column flex-grow overflow-y-auto space-y-md pr-xs">
+<!-- Preparing Order -->
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7238</span>
+<span class="text-body-sm text-tertiary-container font-bold">12:40 left</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">Kofi Anan</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mb-md overflow-hidden">
+<div class="bg-tertiary-container h-full w-[65%] rounded-full"></div>
+</div>
+<button class="w-full py-xs border-2 border-secondary text-secondary rounded-lg text-label-md hover:bg-secondary-container transition-colors">Ready to Pick</button>
+</div>
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7239</span>
+<span class="text-body-sm text-error font-bold">Overdue!</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">Nia Tolliver</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mb-md overflow-hidden">
+<div class="bg-error h-full w-full rounded-full"></div>
+</div>
+<button class="w-full py-xs border-2 border-secondary text-secondary rounded-lg text-label-md hover:bg-secondary-container transition-colors">Ready to Pick</button>
+</div>
+</div>
+</div>
+<!-- READY Column -->
+<div class="flex-1 flex flex-col min-w-[280px]">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<h3 class="font-headline-sm text-on-surface">Ready</h3>
+<span class="bg-surface-container-highest text-on-surface-variant px-xs py-base rounded-full text-body-sm font-bold">2</span>
+</div>
+</div>
+<div class="kanban-column flex-grow overflow-y-auto space-y-md pr-xs">
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7235</span>
+<span class="bg-secondary-container text-on-secondary-container px-xs py-base rounded-full text-[10px] uppercase font-bold">Waiting Courier</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">John Doe</p>
+<div class="flex items-center gap-sm bg-surface-container p-sm rounded-lg border border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">electric_moped</span>
+<p class="text-body-sm text-on-surface-variant">Courier arriving in 3m</p>
+</div>
+</div>
+</div>
+</div>
+<!-- OUT FOR DELIVERY Column -->
+<div class="flex-1 flex flex-col min-w-[280px]">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-on-surface-variant"></span>
+<h3 class="font-headline-sm text-on-surface">Out for Delivery</h3>
+<span class="bg-surface-container-highest text-on-surface-variant px-xs py-base rounded-full text-body-sm font-bold">8</span>
+</div>
+</div>
+<div class="kanban-column flex-grow overflow-y-auto space-y-md pr-xs opacity-75 grayscale-[0.5]">
+<div class="order-card-glow bg-surface-container-lowest p-md rounded-xl border border-outline-variant cursor-pointer">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-code-otp text-[14px] text-primary">#7230</span>
+<span class="text-body-sm text-on-surface-variant">Sent 12m ago</span>
+</div>
+<p class="font-headline-sm text-[16px] mb-base">Sara Bakari</p>
+<div class="flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border-2 border-surface bg-primary-fixed"></div>
+<div class="w-6 h-6 rounded-full border-2 border-surface bg-secondary-fixed"></div>
+</div>
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating FAB for new manually created orders (Hidden on small screens) -->
+<button class="fixed bottom-lg right-[420px] bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-30">
+<span class="material-symbols-outlined">post_add</span>
+</button>
+</main>
+<!-- Detail Side Panel -->
+<aside class="side-panel-transition fixed right-0 top-0 h-screen w-full md:w-[400px] bg-surface-container-lowest shadow-2xl z-50 translate-x-full border-l border-outline-variant" id="sidePanel">
+<div class="h-full flex flex-col">
+<!-- Panel Header -->
+<div class="p-lg border-b border-outline-variant flex items-center justify-between">
+<div>
+<h2 class="text-headline-md font-bold text-on-surface">Order Details</h2>
+<span class="font-code-otp text-primary text-body-md" id="detailOrderId">#7241</span>
+</div>
+<button class="material-symbols-outlined p-sm hover:bg-surface-container rounded-full transition-colors">close</button>
+</div>
+<!-- Panel Scrollable Content -->
+<div class="flex-grow overflow-y-auto p-lg">
+<!-- Customer Section -->
+<section class="mb-xl">
+<h4 class="text-label-md text-on-surface-variant uppercase mb-md tracking-wider">Customer</h4>
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-primary-fixed-dim flex items-center justify-center font-bold text-on-primary-fixed">LY</div>
+<div>
+<p class="text-body-lg font-bold" id="detailCustomerName">Lamine Yamal</p>
+<p class="text-body-sm text-on-surface-variant">+234 812 345 6789</p>
+</div>
+</div>
+</section>
+<!-- Items Section -->
+<section class="mb-xl">
+<h4 class="text-label-md text-on-surface-variant uppercase mb-md tracking-wider">Items (3)</h4>
+<ul class="space-y-sm">
+<li class="flex justify-between items-start p-sm bg-surface-container-low rounded-xl">
+<div class="flex gap-md">
+<span class="font-bold text-primary">2x</span>
+<div>
+<p class="font-bold">Grilled Tilapia</p>
+<p class="text-body-sm text-on-surface-variant">Extra Spice, No Onions</p>
+</div>
+</div>
+<span class="font-bold">₦8,500</span>
+</li>
+<li class="flex justify-between items-start p-sm bg-surface-container-low rounded-xl">
+<div class="flex gap-md">
+<span class="font-bold text-primary">1x</span>
+<div>
+<p class="font-bold">Jollof Rice (Party Style)</p>
+<p class="text-body-sm text-on-surface-variant">Standard portion</p>
+</div>
+</div>
+<span class="font-bold">₦2,200</span>
+</li>
+</ul>
+<div class="mt-md pt-md border-t border-dashed border-outline-variant flex justify-between">
+<span class="font-bold">Total</span>
+<span class="font-display text-headline-sm text-primary">₦10,700</span>
+</div>
+</section>
+<!-- Delivery Info -->
+<section class="mb-xl">
+<h4 class="text-label-md text-on-surface-variant uppercase mb-md tracking-wider">Delivery Information</h4>
+<div class="flex gap-md p-md bg-surface-container rounded-xl">
+<span class="material-symbols-outlined text-secondary">location_on</span>
+<div>
+<p class="text-body-sm leading-relaxed">Plot 12, Admiralty Way, Lekki Phase 1, Lagos, Nigeria</p>
+</div>
+</div>
+</section>
+<!-- Courier Info (Conditional) -->
+<section class="mb-xl">
+<h4 class="text-label-md text-on-surface-variant uppercase mb-md tracking-wider">Courier</h4>
+<div class="flex items-center justify-between p-md border border-outline-variant rounded-xl">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">pedal_bike</span>
+<span class="text-body-sm font-bold">Unassigned</span>
+</div>
+<button class="text-primary font-bold text-body-sm underline">Request Courier</button>
+</div>
+</section>
+</div>
+<!-- Panel Actions -->
+<div class="p-lg bg-surface border-t border-outline-variant grid grid-cols-1 gap-md">
+<button class="w-full bg-primary text-on-primary font-bold py-md rounded-xl shadow-lg active:scale-95 transition-transform">Accept &amp; Start Preparing</button>
+<button class="w-full border-2 border-outline text-on-surface font-bold py-md rounded-xl active:scale-95 transition-transform">Print Receipt</button>
+</div>
+</div>
+</aside>
+<!-- Overlay -->
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-40 hidden transition-opacity" id="overlay"></div>
+</div>
+

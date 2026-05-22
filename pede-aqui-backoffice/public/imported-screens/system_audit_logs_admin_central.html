@@ -1,0 +1,313 @@
+
+ SideNavBar Shell 
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low dark:bg-surface-dim shadow-sm flex flex-col border-r border-outline-variant z-50">
+<div class="px-lg py-xl">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed-dim">Marketplace HQ</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Global Admin Panel</p>
+</div>
+<nav class="flex-1 px-md space-y-xs overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">business_center</span>
+<span class="font-label-md text-label-md">Tenants</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Configurations</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Roles &amp; Permissions</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Audit Logs</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-label-md text-label-md">System Health</span>
+</a>
+</nav>
+<div class="p-md border-t border-outline-variant space-y-xs">
+<button class="w-full flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</button>
+<button class="w-full flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</button>
+</div>
+</aside>
+ TopAppBar Shell 
+<header class="flex justify-between items-center h-16 px-lg sticky top-0 z-40 w-[calc(100%-16rem)] ml-64 bg-surface dark:bg-on-background border-b border-outline-variant">
+<div class="flex items-center gap-xl flex-1">
+<span class="text-headline-sm font-headline-sm font-extrabold text-secondary dark:text-secondary-fixed">Admin Central</span>
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all outline-none text-body-sm font-body-sm" placeholder="Search logs, actions, or IP addresses..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden lg:flex items-center gap-lg mr-md">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" href="#">Documentation</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" href="#">Release Notes</a>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-xs"></div>
+<img alt="Admin Profile Avatar" class="h-10 w-10 rounded-full border-2 border-primary object-cover" data-alt="A professional headshot of a senior system administrator in a high-tech office environment. He has a focused and reliable expression, lit by warm ambient office lighting. The background features blurred digital server racks and modern glass partitions, maintaining a clean light-mode aesthetic with sharp focus on the person." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3T62D3FKAusYUcSSsp-G7M-l6aaJ5PBLFKgKFbTdATYgfFnETSO0ZSXEnwhxWod35FfkEZ8Dt3HQaKgIPc_GLM2a37YzglRBetpHwmFSw6NsZisxeexYTUQ3vUf6Chc_EoKDDh43MEmIapGrBI_b0uynRmQebPVub8IB_fkpV16okfGGVXHamZR87htZOEoSUDp2nfPJrsB5VXjx9GC5KLHIX9E2XMBmT9KWfKVh1wO8e4ZSbBDWPsgxbFwl93gx_KwkyFQ_pFDQ"/>
+</div>
+</header>
+ Main Content Canvas 
+<main class="ml-64 p-lg min-h-[calc(100vh-64px)]">
+<!-- Header Section -->
+<div class="mb-xl flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Platform Audit Logs</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Real-time security monitoring and administrative traceability.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm border border-outline text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined">download</span>
+                    Export CSV
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-90 active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined">filter_list</span>
+                    Save Current View
+                </button>
+</div>
+</div>
+<!-- Filter Grid -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-md mb-lg p-md bg-white rounded-xl audit-card">
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Actor</label>
+<select class="bg-surface-container-low border border-outline-variant rounded-lg p-sm focus:border-secondary outline-none text-body-sm">
+<option>All Administrators</option>
+<option>Adebayo Chen</option>
+<option>Sarah Al-Fayed</option>
+<option>Marcus Wright</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Action Type</label>
+<select class="bg-surface-container-low border border-outline-variant rounded-lg p-sm focus:border-secondary outline-none text-body-sm">
+<option>All Actions</option>
+<option>Commission Rate Change</option>
+<option>User Ban/Unban</option>
+<option>Config Deployment</option>
+<option>API Key Rotation</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1">Date Range</label>
+<div class="flex items-center bg-surface-container-low border border-outline-variant rounded-lg p-sm">
+<span class="material-symbols-outlined text-outline text-sm mr-xs">calendar_today</span>
+<input class="bg-transparent border-none p-0 outline-none w-full text-body-sm" type="text" value="Oct 12 - Oct 19, 2023"/>
+</div>
+</div>
+<div class="flex items-end">
+<button class="w-full h-[48px] bg-secondary text-white font-label-md text-label-md rounded-lg flex items-center justify-center gap-xs hover:opacity-90 transition-all">
+                    Apply Advanced Filters
+                </button>
+</div>
+</section>
+<!-- Stats Overview (Mini Bento) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
+<div class="bg-primary-container text-on-primary-container p-lg rounded-xl flex items-center justify-between shadow-sm">
+<div>
+<p class="font-label-md text-label-md opacity-90">Events Last 24h</p>
+<h3 class="font-headline-md text-headline-md">1,284</h3>
+</div>
+<div class="p-sm bg-white/20 rounded-lg">
+<span class="material-symbols-outlined text-headline-md">monitoring</span>
+</div>
+</div>
+<div class="bg-secondary-container text-on-secondary-container p-lg rounded-xl flex items-center justify-between shadow-sm border border-secondary/20">
+<div>
+<p class="font-label-md text-label-md opacity-90">Sensitive Actions</p>
+<h3 class="font-headline-md text-headline-md">42</h3>
+</div>
+<div class="p-sm bg-black/5 rounded-lg">
+<span class="material-symbols-outlined text-headline-md">security</span>
+</div>
+</div>
+<div class="bg-surface-container-highest p-lg rounded-xl flex items-center justify-between shadow-sm border border-outline-variant">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant">Active Admin Sessions</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">12</h3>
+</div>
+<div class="p-sm bg-white/50 rounded-lg">
+<span class="material-symbols-outlined text-headline-md text-primary">group</span>
+</div>
+</div>
+</section>
+<!-- Audit Log Table -->
+<div class="bg-white rounded-xl audit-card overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-outline-variant">
+<th class="px-lg py-md font-label-md text-label-md text-on-surface">Actor</th>
+<th class="px-lg py-md font-label-md text-label-md text-on-surface">Action</th>
+<th class="px-lg py-md font-label-md text-label-md text-on-surface">Target Entity</th>
+<th class="px-lg py-md font-label-md text-label-md text-on-surface">Timestamp</th>
+<th class="px-lg py-md font-label-md text-label-md text-on-surface">IP Address</th>
+<th class="px-lg py-md font-label-md text-label-md text-on-surface text-right">Details</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="log-row-transition hover:bg-surface-container-low">
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="h-8 w-8 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-xs">AC</div>
+<span class="font-label-md text-label-md text-on-surface">Adebayo Chen</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-primary-fixed text-on-primary-fixed-variant rounded-full text-[12px] font-bold">Changed Commission Rate</span>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Global Pricing / West Africa</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Oct 19, 2023 • 14:22:05</td>
+<td class="px-lg py-md font-code-otp text-[14px] text-on-surface-variant">192.168.1.104</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:underline font-label-md text-label-md">Inspect</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="log-row-transition hover:bg-surface-container-low">
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="h-8 w-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-xs">SF</div>
+<span class="font-label-md text-label-md text-on-surface">Sarah Al-Fayed</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-secondary-fixed text-on-secondary-fixed-variant rounded-full text-[12px] font-bold">API Key Rotation</span>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Logistics Service Provider #44</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Oct 19, 2023 • 12:45:12</td>
+<td class="px-lg py-md font-code-otp text-[14px] text-on-surface-variant">203.0.113.12</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:underline font-label-md text-label-md">Inspect</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="log-row-transition hover:bg-surface-container-low">
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-xs">MW</div>
+<span class="font-label-md text-label-md text-on-surface">Marcus Wright</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-[12px] font-bold">User Permission Update</span>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">User: helpdesk_manager_01</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Oct 19, 2023 • 11:30:58</td>
+<td class="px-lg py-md font-code-otp text-[14px] text-on-surface-variant">45.231.12.89</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:underline font-label-md text-label-md">Inspect</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="log-row-transition hover:bg-surface-container-low">
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="h-8 w-8 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-xs">AC</div>
+<span class="font-label-md text-label-md text-on-surface">Adebayo Chen</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-sm py-1 bg-error-container text-on-error-container rounded-full text-[12px] font-bold">Emergency System Halt</span>
+</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Node Cluster: Lagos_South_01</td>
+<td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">Oct 19, 2023 • 09:12:33</td>
+<td class="px-lg py-md font-code-otp text-[14px] text-on-surface-variant">192.168.1.104</td>
+<td class="px-lg py-md text-right">
+<button class="text-primary hover:underline font-label-md text-label-md">Inspect</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="p-lg bg-surface-container-low flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Showing 1 to 10 of 4,230 entries</span>
+<div class="flex gap-xs">
+<button class="h-10 w-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-white transition-all text-on-surface-variant">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="h-10 w-10 flex items-center justify-center bg-secondary text-white rounded-lg font-label-md">1</button>
+<button class="h-10 w-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-white transition-all text-on-surface-variant">2</button>
+<button class="h-10 w-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-white transition-all text-on-surface-variant">3</button>
+<button class="h-10 w-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-white transition-all text-on-surface-variant">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Asymmetric Detail Section -->
+<section class="mt-xxl grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<div class="lg:col-span-8 bg-white p-lg rounded-2xl audit-card">
+<div class="flex items-center justify-between mb-lg">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Security Event Trend</h4>
+<div class="flex items-center gap-sm">
+<span class="flex items-center gap-xs font-label-md text-label-md text-primary">
+<span class="h-2 w-2 rounded-full bg-primary"></span> Critical
+                        </span>
+<span class="flex items-center gap-xs font-label-md text-label-md text-secondary">
+<span class="h-2 w-2 rounded-full bg-secondary"></span> Standard
+                        </span>
+</div>
+</div>
+<!-- Mock Chart Placeholder -->
+<div class="h-64 w-full bg-surface-container-low rounded-xl relative overflow-hidden flex items-end px-md gap-4">
+<div class="w-full h-[30%] bg-secondary/20 rounded-t-lg transition-all hover:bg-secondary/40"></div>
+<div class="w-full h-[50%] bg-secondary/20 rounded-t-lg transition-all hover:bg-secondary/40"></div>
+<div class="w-full h-[80%] bg-primary/20 border-t-2 border-primary rounded-t-lg transition-all hover:bg-primary/30"></div>
+<div class="w-full h-[45%] bg-secondary/20 rounded-t-lg transition-all hover:bg-secondary/40"></div>
+<div class="w-full h-[60%] bg-secondary/20 rounded-t-lg transition-all hover:bg-secondary/40"></div>
+<div class="w-full h-[35%] bg-secondary/20 rounded-t-lg transition-all hover:bg-secondary/40"></div>
+<div class="w-full h-[95%] bg-primary/20 border-t-2 border-primary rounded-t-lg transition-all hover:bg-primary/30"></div>
+</div>
+<div class="mt-md flex justify-between font-label-md text-label-md text-on-surface-variant px-2">
+<span>Oct 13</span>
+<span>Oct 14</span>
+<span>Oct 15</span>
+<span>Oct 16</span>
+<span>Oct 17</span>
+<span>Oct 18</span>
+<span>Oct 19</span>
+</div>
+</div>
+<div class="lg:col-span-4 bg-inverse-surface text-inverse-on-surface p-lg rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-primary opacity-20 rounded-full blur-3xl"></div>
+<div>
+<span class="material-symbols-outlined text-headline-lg text-primary-fixed mb-md">verified_user</span>
+<h4 class="font-headline-sm text-headline-sm mb-sm">Compliance Report</h4>
+<p class="font-body-sm text-body-sm opacity-80 leading-relaxed">Your platform currently meets 100% of the mandatory audit requirements for the SOC2 Type II compliance window.</p>
+</div>
+<div class="mt-lg">
+<div class="space-y-sm mb-lg">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">Audit Integrity</span>
+<span class="font-label-md text-label-md text-secondary-fixed">Verified</span>
+</div>
+<div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+<div class="bg-secondary-fixed h-full w-[100%]"></div>
+</div>
+</div>
+<button class="w-full py-md bg-white text-inverse-surface font-label-md text-label-md rounded-lg hover:bg-opacity-90 transition-all">Generate Auditor Package</button>
+</div>
+</div>
+</section>
+</main>
+
