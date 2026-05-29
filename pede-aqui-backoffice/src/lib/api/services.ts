@@ -6,7 +6,12 @@ import type {
   CourierDashboard,
   Order,
   Vendor,
+  VendorDocument,
+  Category,
   Courier,
+  CourierDocument,
+  UserProfile,
+  UploadUrlResponse,
   Transaction,
   Commission,
   Refund,
@@ -34,17 +39,80 @@ export const orderService = {
   getTracking: (id: string) => apiClient.get<{ orderStatus: string; deliveryStatus: string }>(`/orders/${id}/tracking`),
 };
 
+// Categories
+export const categoryService = {
+  list: async (): Promise<Category[]> => {
+    try {
+      // Try different possible endpoints for categories
+      return await apiClient.get<Category[]>("/catalog/categories");
+    } catch (error) {
+      try {
+        return await apiClient.get<Category[]>("/admin/categories");
+      } catch (adminError) {
+        // Fallback categories if endpoints don't exist
+        console.warn("Categories endpoints not available, using fallback categories");
+        return [
+          { id: "restaurant", name: "Restaurante", vertical: "food", active: true },
+          { id: "grocery", name: "Mercearia", vertical: "retail", active: true },
+          { id: "pharmacy", name: "Farmácia", vertical: "health", active: true },
+          { id: "other", name: "Outro", vertical: "general", active: true },
+        ];
+      }
+    }
+  },
+};
+
 // Vendors
 export const vendorService = {
   list: (available?: boolean) => apiClient.get<Vendor[]>(`/vendors${available !== undefined ? `?available=${available}` : ""}`),
   getById: (id: string) => apiClient.get<Vendor>(`/vendors/${id}`),
-  create: (data: { name: string; category: string; status: string }) => apiClient.post<Vendor>("/vendors", data),
-  update: (id: string, data: { name: string; category: string; status: string }) => apiClient.put<Vendor>(`/vendors/${id}`, data),
+  create: (data: {
+    name: string;
+    categoryId: string;
+    latitude?: number;
+    longitude?: number;
+    ownerName?: string;
+    nif?: string;
+    phone: string;
+    address?: string;
+    description?: string;
+    logoStorageKey?: string;
+  }) => apiClient.post<Vendor>("/vendors", data),
+  update: (id: string, data: {
+    name: string;
+    categoryId: string;
+    latitude?: number;
+    longitude?: number;
+    ownerName?: string;
+    nif?: string;
+    phone?: string;
+    address?: string;
+    description?: string;
+    logoStorageKey?: string;
+  }) => apiClient.patch<Vendor>(`/vendors/${id}/profile`, data),
+  getDocuments: (id: string) => apiClient.get<VendorDocument[]>(`/vendors/${id}/documents`),
+  uploadDocument: (id: string, data: { documentType: string; storageKey: string }) =>
+    apiClient.post<VendorDocument>(`/vendors/${id}/documents`, data),
 };
 
 // Couriers
 export const courierService = {
+  list: () => apiClient.get<Courier[]>("/couriers"),
+  getById: (id: string) => apiClient.get<Courier>(`/couriers/${id}`),
   getMe: () => apiClient.get<Courier>("/couriers/me"),
+  create: (data: {
+    userProfileId: string;
+    operatingZoneId?: string;
+    fullName?: string;
+    phone?: string;
+    nif?: string;
+    vehicleType?: string;
+    vehiclePlate?: string;
+    dateOfBirth?: string;
+  }) => apiClient.post<Courier>("/couriers", data),
+  getDocuments: (id: string) => apiClient.get<CourierDocument[]>(`/couriers/${id}/documents`),
+  uploadDocument: (id: string, data: { documentType: string; storageKey: string }) =>
+    apiClient.post<CourierDocument>(`/couriers/${id}/documents`, data),
 };
 
 // Finance
@@ -91,6 +159,50 @@ function createCrudService(basePath: string) {
     update: (id: string, data: Omit<CrudRecord, "id" | "actualizadoEm">) => apiClient.put<CrudRecord>(`${basePath}/${id}`, data),
   };
 }
+
+// Users - Note: No user management endpoints exist in backend yet
+export const userService = {
+  // These endpoints are not implemented in the backend
+  list: () => Promise.reject(new Error("User management endpoints not implemented in backend")),
+  getById: (id: string) => Promise.reject(new Error("User management endpoints not implemented in backend")),
+  create: (data: {
+    keycloakUserId: string;
+    email: string;
+    displayName: string;
+    fullName?: string;
+    phone?: string;
+    nif?: string;
+    dateOfBirth?: string;
+    address?: string;
+    roles: string[];
+  }) => Promise.reject(new Error("User management endpoints not implemented in backend")),
+};
+
+// Upload
+export const uploadService = {
+  getPresignedUrl: (data: {
+    purpose: string;
+    fileName: string;
+    contentType: string;
+  }) => apiClient.post<UploadUrlResponse>("/uploads/images/presigned-url", data),
+  getDocumentPresignedUrl: (data: {
+    purpose: string;
+    fileName: string;
+    contentType: string;
+  }) => apiClient.post<UploadUrlResponse>("/uploads/documents/presigned-url", data),
+  uploadToS3: async (uploadUrl: string, file: File): Promise<void> => {
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Envio falhou: ${response.statusText}`);
+    }
+  },
+};
 
 export const managementService = {
   orders: createCrudService("/orders/backoffice"),

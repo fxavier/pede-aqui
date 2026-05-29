@@ -10,10 +10,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { dashboardService, orderService, vendorService } from "@/lib/api/services";
+import { dashboardService, orderService, vendorService, categoryService, uploadService } from "@/lib/api/services";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import type { VendorDashboard, Order } from "@/lib/api/types";
-import { DollarSign, ShoppingBag, TrendingUp, XCircle } from "lucide-react";
+import type { VendorDashboard, Order, Vendor, VendorDocument, Category } from "@/lib/api/types";
+import { DollarSign, ShoppingBag, TrendingUp, XCircle, Upload, FileText, Image, Trash2 } from "lucide-react";
 
 const mockDashboard: VendorDashboard = {
   salesSummary: {
@@ -56,14 +56,30 @@ type OrderTab = "all" | "pending" | "active" | "delivered" | "cancelled";
 type VendorRecord = {
   id: string;
   nome: string;
-  categoria: string;
+  categoryId: string;
+  categoryName?: string;
   estado: string;
 };
 
+type VendorFormData = {
+  id: string;
+  name: string;
+  ownerName: string;
+  nif: string;
+  phone: string;
+  address: string;
+  description: string;
+  categoryId: string;
+  status: string;
+  logoStorageKey?: string;
+  logoPreview?: string;
+  documents: VendorDocument[];
+};
+
 const mockVendors: VendorRecord[] = [
-  { id: "v-1", nome: "Restaurante Central", categoria: "Restaurante", estado: "Activo" },
-  { id: "v-2", nome: "Mercado Matola", categoria: "Mercearia", estado: "Activo" },
-  { id: "v-3", nome: "Farmacia Baixa", categoria: "Farmacia", estado: "Em validacao" },
+  { id: "v-1", nome: "Restaurante Central", categoryId: "restaurant", categoryName: "Restaurante", estado: "Activo" },
+  { id: "v-2", nome: "Mercado Matola", categoryId: "grocery", categoryName: "Mercearia", estado: "Activo" },
+  { id: "v-3", nome: "Farmacia Baixa", categoryId: "pharmacy", categoryName: "Farmácia", estado: "Em validacao" },
 ];
 
 const tabs: { key: OrderTab; label: string }[] = [
@@ -92,17 +108,36 @@ function filterOrders(orders: Order[], tab: OrderTab): Order[] {
 export default function VendorsPage() {
   const [dashboard, setDashboard] = useState<VendorDashboard | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<OrderTab>("all");
   const [vendorFormMode, setVendorFormMode] = useState<"create" | "edit">("create");
-  const [vendorForm, setVendorForm] = useState<VendorRecord>({ id: "", nome: "", categoria: "Restaurante", estado: "Activo" });
+  const [vendorForm, setVendorForm] = useState<VendorFormData>({ 
+    id: "", 
+    name: "", 
+    ownerName: "", 
+    nif: "", 
+    phone: "", 
+    address: "", 
+    description: "", 
+    categoryId: "", 
+    status: "Activo",
+    documents: []
+  });
   const [vendorRecords, setVendorRecords] = useState<VendorRecord[]>(mockVendors);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState("BUSINESS_LICENCE");
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Fetch categories first as they're needed for vendor mapping
+      const categoriesData = await categoryService.list();
+      setCategories(categoriesData);
+
       const [dashData, ordersData, vendorsData] = await Promise.all([
         dashboardService.getVendor(),
         orderService.list(),
@@ -110,16 +145,27 @@ export default function VendorsPage() {
       ]);
       setDashboard(dashData);
       setOrders(ordersData);
-      setVendorRecords(vendorsData.map((vendor) => ({
-        id: vendor.id,
-        nome: vendor.name,
-        categoria: vendor.category,
-        estado: vendor.status,
-      })));
+      setVendorRecords(vendorsData.map((vendor) => {
+        const category = categoriesData.find(cat => cat.id === vendor.categoryId);
+        return {
+          id: vendor.id,
+          nome: vendor.name,
+          categoryId: vendor.categoryId,
+          categoryName: category?.name || 'Categoria não encontrada',
+          estado: vendor.status,
+        };
+      }));
     } catch {
       setDashboard(mockDashboard);
       setOrders(mockOrders);
       setVendorRecords(mockVendors);
+      // Set fallback categories to match the service fallback
+      setCategories([
+        { id: "restaurant", name: "Restaurante", vertical: "food", active: true },
+        { id: "grocery", name: "Mercearia", vertical: "retail", active: true },
+        { id: "pharmacy", name: "Farmácia", vertical: "health", active: true },
+        { id: "other", name: "Outro", vertical: "general", active: true },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -131,43 +177,159 @@ export default function VendorsPage() {
 
   function resetVendorForm() {
     setVendorFormMode("create");
-    setVendorForm({ id: "", nome: "", categoria: "Restaurante", estado: "Activo" });
+    setVendorForm({ 
+      id: "", 
+      name: "", 
+      ownerName: "", 
+      nif: "", 
+      phone: "", 
+      address: "", 
+      description: "", 
+      categoryId: "", 
+      status: "Activo",
+      documents: []
+    });
+  }
+
+  async function handleLogoUpload(file: File) {
+    try {
+      setLogoUploading(true);
+      const { uploadUrl, storageKey } = await uploadService.getPresignedUrl({
+        purpose: "vendor-logo",
+        fileName: file.name,
+        contentType: file.type,
+      });
+      
+      await uploadService.uploadToS3(uploadUrl, file);
+      
+      const logoPreview = URL.createObjectURL(file);
+      setVendorForm(prev => ({ ...prev, logoStorageKey: storageKey, logoPreview }));
+    } catch (error) {
+      console.error("Logo upload failed:", error);
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  async function handleDocumentUpload(file: File, documentType: string) {
+    try {
+      setDocumentUploading(true);
+      const { uploadUrl, storageKey } = await uploadService.getDocumentPresignedUrl({
+        purpose: "vendor-document",
+        fileName: file.name,
+        contentType: file.type,
+      });
+      
+      await uploadService.uploadToS3(uploadUrl, file);
+      
+      const newDocument: VendorDocument = {
+        id: crypto.randomUUID(),
+        vendorId: vendorForm.id,
+        documentType,
+        storageKey,
+        status: "PENDING",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      setVendorForm(prev => ({ 
+        ...prev, 
+        documents: [...prev.documents, newDocument]
+      }));
+    } catch (error) {
+      console.error("Document upload failed:", error);
+    } finally {
+      setDocumentUploading(false);
+    }
+  }
+
+  function removeDocument(documentId: string) {
+    setVendorForm(prev => ({
+      ...prev,
+      documents: prev.documents.filter(doc => doc.id !== documentId)
+    }));
   }
 
   async function submitVendorForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!vendorForm.nome.trim()) return;
+    if (!vendorForm.name.trim() || !vendorForm.categoryId.trim() || !vendorForm.phone.trim()) return;
 
     if (vendorFormMode === "create") {
       try {
         const created = await vendorService.create({
-          name: vendorForm.nome,
-          category: vendorForm.categoria,
-          status: vendorForm.estado,
+          name: vendorForm.name,
+          ownerName: vendorForm.ownerName,
+          nif: vendorForm.nif,
+          phone: vendorForm.phone,
+          address: vendorForm.address,
+          description: vendorForm.description,
+          logoStorageKey: vendorForm.logoStorageKey,
+          categoryId: vendorForm.categoryId,
         });
+        
+        // Upload documents if any
+        for (const doc of vendorForm.documents) {
+          await vendorService.uploadDocument(created.id, {
+            documentType: doc.documentType,
+            storageKey: doc.storageKey,
+          });
+        }
+        
+        const category = categories.find(cat => cat.id === created.categoryId);
         setVendorRecords((prev) => [{
           id: created.id,
           nome: created.name,
-          categoria: created.category,
+          categoryId: created.categoryId,
+          categoryName: category?.name || 'Categoria não encontrada',
           estado: created.status,
         }, ...prev]);
       } catch {
-        setVendorRecords((prev) => [{ ...vendorForm, id: crypto.randomUUID() }, ...prev]);
+        const category = categories.find(cat => cat.id === vendorForm.categoryId);
+        setVendorRecords((prev) => [{ 
+          id: crypto.randomUUID(), 
+          nome: vendorForm.name, 
+          categoryId: vendorForm.categoryId,
+          categoryName: category?.name || 'Categoria não encontrada',
+          estado: vendorForm.status 
+        }, ...prev]);
       }
     } else {
       try {
         const updated = await vendorService.update(vendorForm.id, {
-          name: vendorForm.nome,
-          category: vendorForm.categoria,
-          status: vendorForm.estado,
+          name: vendorForm.name,
+          ownerName: vendorForm.ownerName,
+          nif: vendorForm.nif,
+          phone: vendorForm.phone,
+          address: vendorForm.address,
+          description: vendorForm.description,
+          logoStorageKey: vendorForm.logoStorageKey,
+          categoryId: vendorForm.categoryId,
         });
+        const category = categories.find(cat => cat.id === updated.categoryId);
         setVendorRecords((prev) => prev.map((vendor) => (
           vendor.id === vendorForm.id
-            ? { id: updated.id, nome: updated.name, categoria: updated.category, estado: updated.status }
+            ? { 
+                id: updated.id, 
+                nome: updated.name, 
+                categoryId: updated.categoryId,
+                categoryName: category?.name || 'Categoria não encontrada',
+                estado: updated.status 
+              }
             : vendor
         )));
       } catch {
-        setVendorRecords((prev) => prev.map((vendor) => (vendor.id === vendorForm.id ? vendorForm : vendor)));
+        const category = categories.find(cat => cat.id === vendorForm.categoryId);
+        setVendorRecords((prev) => prev.map((vendor) => (
+          vendor.id === vendorForm.id 
+            ? { 
+                ...vendor, 
+                nome: vendorForm.name, 
+                categoryId: vendorForm.categoryId,
+                categoryName: category?.name || 'Categoria não encontrada',
+                estado: vendorForm.status 
+              }
+            : vendor
+        )));
       }
     }
 
@@ -325,7 +487,7 @@ export default function VendorsPage() {
                         {vendorRecords.map((vendor) => (
                           <tr key={vendor.id} className="border-b border-outline-variant/50 last:border-0">
                             <td className="py-3 pr-4 font-bold text-on-surface">{vendor.nome}</td>
-                            <td className="py-3 pr-4 text-on-surface-variant">{vendor.categoria}</td>
+                            <td className="py-3 pr-4 text-on-surface-variant">{vendor.categoryName}</td>
                             <td className="py-3 pr-4 text-on-surface-variant">{vendor.estado}</td>
                             <td className="py-3">
                               <Button
@@ -333,7 +495,18 @@ export default function VendorsPage() {
                                 size="sm"
                                 onClick={() => {
                                   setVendorFormMode("edit");
-                                  setVendorForm(vendor);
+                                  setVendorForm({
+                                    id: vendor.id,
+                                    name: vendor.nome,
+                                    ownerName: "",
+                                    nif: "",
+                                    phone: "",
+                                    address: "",
+                                    description: "",
+                                    categoryId: vendor.categoryId,
+                                    status: vendor.estado,
+                                    documents: []
+                                  });
                                 }}
                               >
                                 Editar
@@ -352,23 +525,194 @@ export default function VendorsPage() {
                   <CardTitle>{vendorFormMode === "create" ? "Criar Vendedor" : "Editar Vendedor"}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-3" onSubmit={submitVendorForm}>
-                    <Input
-                      placeholder="Nome do vendedor"
-                      value={vendorForm.nome}
-                      onChange={(event) => setVendorForm((prev) => ({ ...prev, nome: event.target.value }))}
-                      required
-                    />
-                    <Input
-                      placeholder="Categoria"
-                      value={vendorForm.categoria}
-                      onChange={(event) => setVendorForm((prev) => ({ ...prev, categoria: event.target.value }))}
-                    />
-                    <Input
-                      placeholder="Estado"
-                      value={vendorForm.estado}
-                      onChange={(event) => setVendorForm((prev) => ({ ...prev, estado: event.target.value }))}
-                    />
+                  <form className="space-y-4" onSubmit={submitVendorForm}>
+                    {/* Logo Upload */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-on-surface">Logotipo</label>
+                      <div className="flex items-center gap-3">
+                        {vendorForm.logoPreview ? (
+                          <div className="relative">
+                            <img 
+                              src={vendorForm.logoPreview} 
+                              alt="Logo preview" 
+                              className="h-16 w-16 rounded-lg object-cover border border-outline-variant"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setVendorForm(prev => ({ ...prev, logoStorageKey: undefined, logoPreview: undefined }))}
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-error text-white flex items-center justify-center"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="h-16 w-16 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center">
+                            <Image className="h-6 w-6 text-on-surface-variant" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            id="logo-upload"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleLogoUpload(file);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById('logo-upload')?.click()}
+                            disabled={logoUploading}
+                          >
+                            {logoUploading ? (
+                              <>Enviando...</>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Escolher Logotipo
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-1 gap-3">
+                      <Input
+                        placeholder="Nome do vendedor *"
+                        value={vendorForm.name}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, name: event.target.value }))}
+                        required
+                      />
+                      <Input
+                        placeholder="Nome do proprietário"
+                        value={vendorForm.ownerName}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, ownerName: event.target.value }))}
+                      />
+                      <Input
+                        placeholder="NIF"
+                        value={vendorForm.nif}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, nif: event.target.value }))}
+                      />
+                      <Input
+                        placeholder="Telefone *"
+                        value={vendorForm.phone}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, phone: event.target.value }))}
+                        required
+                      />
+                      <Input
+                        placeholder="Endereço"
+                        value={vendorForm.address}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, address: event.target.value }))}
+                      />
+                      <textarea
+                        placeholder="Descrição"
+                        value={vendorForm.description}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, description: event.target.value }))}
+                        className="flex min-h-[80px] w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors placeholder:text-on-surface-variant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                      />
+                      <div>
+                        <label className="text-sm font-bold text-on-surface mb-1 block">Categoria *</label>
+                        <select
+                          value={vendorForm.categoryId}
+                          onChange={(event) => setVendorForm((prev) => ({ ...prev, categoryId: event.target.value }))}
+                          className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                          required
+                        >
+                          <option value="">Selecione uma categoria</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <select
+                        value={vendorForm.status}
+                        onChange={(event) => setVendorForm((prev) => ({ ...prev, status: event.target.value }))}
+                        className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="Activo">Activo</option>
+                        <option value="Em validacao">Em validacao</option>
+                        <option value="Suspenso">Suspenso</option>
+                      </select>
+                    </div>
+
+                    {/* Document Upload */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-on-surface">Documentos</label>
+                      
+                      {/* Document Upload Controls */}
+                      <div className="space-y-3">
+                        <select
+                          value={selectedDocType}
+                          onChange={(e) => setSelectedDocType(e.target.value)}
+                          className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="BUSINESS_LICENCE">Licença Comercial</option>
+                          <option value="TAX_CERTIFICATE">Certificado Fiscal</option>
+                          <option value="HEALTH_PERMIT">Alvará Sanitário</option>
+                          <option value="OTHER">Outro</option>
+                        </select>
+                        
+                        <div className="flex gap-2">
+                          <input
+                            type="file"
+                            accept=".pdf,.jpeg,.jpg,.png,.webp"
+                            id="document-upload"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleDocumentUpload(file, selectedDocType);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById('document-upload')?.click()}
+                            disabled={documentUploading}
+                          >
+                            {documentUploading ? (
+                              <>Enviando...</>
+                            ) : (
+                              <>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Adicionar Documento
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Document List */}
+                      {vendorForm.documents.length > 0 && (
+                        <div className="space-y-2">
+                          {vendorForm.documents.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between p-3 border border-outline-variant rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-on-surface-variant" />
+                                <span className="text-sm text-on-surface">{doc.documentType}</span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeDocument(doc.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex gap-2">
                       <Button type="submit" className="flex-1">{vendorFormMode === "create" ? "Criar" : "Guardar"}</Button>
                       {vendorFormMode === "edit" && (

@@ -51,28 +51,67 @@ export interface OrderItem {
   price: number;
 }
 
+// Category types
+export interface Category {
+  id: string;
+  name: string;
+  vertical: string;
+  active: boolean;
+}
+
 // Vendor types
 export interface Vendor {
   id: string;
   name: string;
-  category: string;
+  categoryId: string;
   status: string;
   verificationStatus: string;
   rating: number;
-  available: boolean;
   estimatedDeliveryMinutes: number;
+  available: boolean;
+  latitude?: number;
+  longitude?: number;
+  ownerName?: string;
+  nif?: string;
+  phone?: string;
+  address?: string;
+  description?: string;
+  logoStorageKey?: string;
+}
+
+export interface VendorDocument {
+  id: string;
+  vendorId: string;
+  documentType: string;
+  storageKey: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Courier types
 export interface Courier {
   id: string;
-  name: string;
-  phone: string;
-  vehicle: string;
-  rating: number;
-  available: boolean;
+  userProfileId: string;
   verificationStatus: string;
-  totalDeliveries: number;
+  available: boolean;
+  operatingZoneId?: string;
+  fullName?: string;
+  phone?: string;
+  nif?: string;
+  vehicleType?: string;
+  vehiclePlate?: string;
+  rating: number;
+}
+
+export interface CourierDocument {
+  id: string;
+  courierId: string;
+  documentType: string;
+  storageKey: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Finance types
@@ -132,6 +171,31 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+// User types
+export interface UserProfile {
+  id: string;
+  keycloakUserId: string;
+  email: string;
+  displayName: string;
+  fullName?: string;
+  phone?: string;
+  nif?: string;
+  dateOfBirth?: string;
+  address?: string;
+  avatarStorageKey?: string;
+  roles: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Upload types
+export interface UploadUrlResponse {
+  uploadUrl: string;
+  storageKey: string;
+  expiresIn: number;
 }
 
 // Error
