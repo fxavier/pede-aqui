@@ -29,6 +29,8 @@ import type {
   FinanceSummary,
   SupportTicket,
   Notification,
+  MerchantRegistrationPayload,
+  MerchantRegistrationResponse,
 } from "./types";
 
 // Auth
@@ -240,4 +242,29 @@ export const managementService = {
   finance: createCrudService("/finance/records"),
   marketing: createCrudService("/marketing/campaigns"),
   support: createCrudService("/support/tickets/backoffice"),
+};
+
+export const registrationService = {
+  register: async (payload: MerchantRegistrationPayload): Promise<MerchantRegistrationResponse> => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!apiBase) {
+      throw new Error("API base URL not configured");
+    }
+
+    const response = await fetch(`${apiBase}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const body = await response.json();
+
+    if (!response.ok) {
+      throw body; // Throw the parsed body object directly
+    }
+
+    return body as MerchantRegistrationResponse;
+  },
 };

@@ -331,3 +331,34 @@ export interface ApiError {
   fieldErrors?: { field: string; message: string }[];
   correlationId: string;
 }
+
+// Registration types
+export interface MerchantRegistrationPayload {
+  companyName: string;
+  companySlug: string;
+  legalName?: string;
+  taxNumber?: string;
+  businessType?: string;
+  industry?: string;
+  country: string;
+  city?: string;
+  address?: string;
+  defaultCurrency: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  password: string;
+  referralCode?: string;
+  promoCode?: string;
+}
+
+export interface MerchantRegistrationResponse {
+  tenantId: string;
+  tenantSlug: string;
+  userProfileId: string;
+  email: string;
+  displayName: string;
+}

@@ -64,7 +64,7 @@ export default function LoginPage() {
       dispatch(setUser({
         name: profileData.displayName || profileData.name,
         role: profileData.roles?.[0] || 'Admin',
-        tenant: 'Pede Aqui',
+        tenant: profileData.displayName || 'Pede Aqui',
         tenantId,
         email: profileData.email,
         token: accessToken,
@@ -146,6 +146,16 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Não tem conta?{' '}
+            <a
+              href="/register"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Registar empresa
+            </a>
+          </p>
         </div>
       </div>
     </div>

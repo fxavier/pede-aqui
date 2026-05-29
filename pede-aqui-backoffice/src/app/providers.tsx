@@ -42,7 +42,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           storeRef.current!.dispatch(loadFromSession({
             name: data.displayName,
             role: data.roles[0] || 'Admin',
-            tenant: 'Pede Aqui',
+            tenant: data.displayName || 'Pede Aqui',
             tenantId,
             email: data.email,
             token,
