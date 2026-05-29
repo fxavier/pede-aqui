@@ -22,7 +22,13 @@ public class VendorMapper {
                 vendor.getEstimatedDeliveryMinutes(),
                 vendor.isAvailable(),
                 vendor.getLatitude(),
-                vendor.getLongitude());
+                vendor.getLongitude(),
+                vendor.getOwnerName(),
+                vendor.getNif(),
+                vendor.getPhone(),
+                vendor.getAddress(),
+                vendor.getDescription(),
+                vendor.getLogoStorageKey());
     }
 
     public VendorDocumentResponse toDocumentResponse(VendorDocument document) {

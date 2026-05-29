@@ -28,23 +28,29 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     });
   }
 
-  // Session restoration effect
   React.useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
     if (token && storeRef.current) {
       authService.getMe()
         .then((data) => {
+          const tenantId: string | null = data.tenantId ?? null;
+          if (tenantId) {
+            sessionStorage.setItem('tenant_id', tenantId);
+          } else {
+            sessionStorage.removeItem('tenant_id');
+          }
           storeRef.current!.dispatch(loadFromSession({
             name: data.displayName,
             role: data.roles[0] || 'Admin',
             tenant: 'Pede Aqui',
+            tenantId,
             email: data.email,
             token,
           }));
         })
         .catch(() => {
-          // Session expired or invalid, clear token
           sessionStorage.removeItem('auth_token');
+          sessionStorage.removeItem('tenant_id');
         });
     }
   }, []);

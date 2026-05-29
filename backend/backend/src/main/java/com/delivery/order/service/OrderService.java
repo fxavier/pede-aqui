@@ -1,5 +1,7 @@
 package com.delivery.order.service;
 
+import com.delivery.auth.entity.AppUserProfile;
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.entity.Cart;
 import com.delivery.cart.entity.CartItem;
 import com.delivery.cart.repository.CartRepository;
@@ -17,13 +19,18 @@ import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.repository.PaymentRepository;
+import com.delivery.vendor.entity.Vendor;
+import com.delivery.vendor.repository.VendorRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,18 +44,40 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
     private final DeliveryRepository deliveryRepository;
     private final InventoryService inventoryService;
+    private final AppUserProfileRepository userProfileRepository;
+    private final VendorRepository vendorRepository;
     private final OrderMapper mapper;
     private final TenantContext tenantContext;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, OrderMapper mapper, TenantContext tenantContext) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, OrderMapper mapper, TenantContext tenantContext) {
         this.cartRepository = cartRepository;
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
         this.deliveryRepository = deliveryRepository;
         this.inventoryService = inventoryService;
+        this.userProfileRepository = userProfileRepository;
+        this.vendorRepository = vendorRepository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+    }
+
+    /** Returns all orders for the current tenant with customer and vendor names resolved. */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> listForCurrentContext() {
+        UUID tenantId = tenantId();
+        List<Order> orders = orderRepository.findByTenantId(tenantId);
+        Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
+        Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
+        Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(AppUserProfile::getId, AppUserProfile::getDisplayName));
+        Map<UUID, String> vendorNames = vendorRepository.findAllById(vendorIds).stream()
+                .collect(Collectors.toMap(Vendor::getId, Vendor::getName));
+        return orders.stream()
+                .map(o -> mapper.toResponse(o,
+                        customerNames.getOrDefault(o.getCustomerId(), "Unknown"),
+                        vendorNames.getOrDefault(o.getVendorId(), "Unknown")))
+                .toList();
     }
 
     /** Creates an order, reserves stock, and creates local payment/delivery records idempotently. */

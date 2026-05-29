@@ -1,6 +1,9 @@
 spring:
   application:
     name: delivery-marketplace
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/delivery}
     username: ${DB_USERNAME:delivery}
@@ -57,3 +60,9 @@ app:
     s3-region: ${AWS_REGION:us-east-1}
     s3-endpoint: ${AWS_S3_ENDPOINT:}
     presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS:900}
+  keycloak:
+    admin:
+      server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}
+      realm: ${KEYCLOAK_REALM:delivery}
+      client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}

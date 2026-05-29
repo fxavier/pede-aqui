@@ -4,12 +4,19 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.delivery.dispatch.dto.CourierResponse;
 import com.delivery.dispatch.dto.CourierEarningsSummaryResponse;
+import com.delivery.dispatch.dto.CreateCourierRequest;
+import com.delivery.dispatch.dto.CreateCourierDocumentRequest;
+import com.delivery.dispatch.dto.CourierDocumentResponse;
 import com.delivery.dispatch.entity.Courier;
+import com.delivery.dispatch.entity.CourierDocument;
 import com.delivery.dispatch.entity.CourierVerificationStatus;
 import com.delivery.dispatch.mapper.DispatchMapper;
 import com.delivery.dispatch.repository.CourierRepository;
+import com.delivery.dispatch.repository.CourierDocumentRepository;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.repository.DeliveryRepository;
 import java.math.BigDecimal;
@@ -23,13 +30,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CourierService {
     private final CourierRepository courierRepository;
+    private final CourierDocumentRepository courierDocumentRepository;
     private final AppUserProfileRepository userProfileRepository;
     private final DeliveryRepository deliveryRepository;
     private final DispatchMapper dispatchMapper;
     private final TenantContext tenantContext;
 
-    public CourierService(CourierRepository courierRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext) {
+    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext) {
         this.courierRepository = courierRepository;
+        this.courierDocumentRepository = courierDocumentRepository;
         this.userProfileRepository = userProfileRepository;
         this.deliveryRepository = deliveryRepository;
         this.dispatchMapper = dispatchMapper;
@@ -94,7 +103,82 @@ public class CourierService {
         return courierRepository.findByTenantIdAndUserProfileId(tenantId, profileId).orElseThrow(() -> new NotFoundException("Courier profile was not found"));
     }
 
+    @Transactional
+    public CourierResponse create(CreateCourierRequest request) {
+        UUID tenantId = tenantId();
+        
+        // Check if user is admin/operations or enforce ownership for courier self-registration
+        if (!isAdminOrOperations()) {
+            // Resolve caller's keycloak user ID
+            String callerKeycloakUserId = tenantContext.currentKeycloakUserId()
+                    .orElseThrow(() -> new BusinessException("user_required", "Authenticated user is required", HttpStatus.FORBIDDEN));
+            
+            // Look up caller's profile
+            var callerProfile = userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, callerKeycloakUserId)
+                    .orElseThrow(() -> new NotFoundException("User profile was not found"));
+            
+            // Verify ownership: caller can only register their own profile
+            if (!callerProfile.getId().equals(request.userProfileId())) {
+                throw new BusinessException("forbidden_user_profile", "Couriers may only register their own profile", HttpStatus.FORBIDDEN);
+            }
+        }
+        
+        Courier courier = new Courier(UUID.randomUUID(), tenantId, request.userProfileId(), request.operatingZoneId());
+        courier.updateProfile(request.fullName(), request.phone(), request.nif(), request.vehicleType(), request.vehiclePlate(), request.dateOfBirth());
+        courierRepository.save(courier);
+        return dispatchMapper.toCourierResponse(courier);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourierResponse> listAll() {
+        UUID tenantId = tenantId();
+        return courierRepository.findByTenantId(tenantId)
+                .stream()
+                .map(dispatchMapper::toCourierResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CourierResponse getById(UUID courierId) {
+        UUID tenantId = tenantId();
+        Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
+                .orElseThrow(() -> new NotFoundException("Courier not found"));
+        return dispatchMapper.toCourierResponse(courier);
+    }
+
+    @Transactional
+    public CourierDocumentResponse addDocument(UUID courierId, CreateCourierDocumentRequest request) {
+        UUID tenantId = tenantId();
+        Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
+                .orElseThrow(() -> new NotFoundException("Courier not found"));
+        
+        CourierDocument document = new CourierDocument(
+            UUID.randomUUID(),
+            tenantId,
+            courier.getId(),
+            request.documentType(),
+            request.storageKey()
+        );
+        courierDocumentRepository.save(document);
+        return dispatchMapper.toCourierDocumentResponse(document);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourierDocumentResponse> listDocuments(UUID courierId) {
+        UUID tenantId = tenantId();
+        return courierDocumentRepository.findAllByCourierIdAndTenantId(courierId, tenantId)
+                .stream()
+                .map(dispatchMapper::toCourierDocumentResponse)
+                .toList();
+    }
+
     private UUID tenantId() {
         return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
+    }
+
+    private boolean isAdminOrOperations() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority) || "ROLE_OPERATIONS".equals(authority));
     }
 }

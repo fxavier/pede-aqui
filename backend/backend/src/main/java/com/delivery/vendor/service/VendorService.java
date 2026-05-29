@@ -50,7 +50,9 @@ public class VendorService {
     @Transactional
     public VendorResponse create(CreateVendorRequest request) {
         UUID tenantId = tenantId();
-        Vendor vendor = new Vendor(UUID.randomUUID(), tenantId, request.name(), request.categoryId(), request.latitude(), request.longitude());
+        Vendor vendor = new Vendor(UUID.randomUUID(), tenantId, request.name(), request.categoryId(), 
+                request.latitude(), request.longitude(), request.ownerName(), request.nif(), 
+                request.phone(), request.address(), request.description(), request.logoStorageKey());
         return vendorMapper.toResponse(vendorRepository.save(vendor));
     }
 
@@ -80,7 +82,8 @@ public class VendorService {
     @Transactional
     public VendorResponse updateProfile(UUID vendorId, UpdateVendorProfileRequest request) {
         Vendor vendor = vendorRepository.findByTenantIdAndId(tenantId(), vendorId).orElseThrow(() -> new NotFoundException("Vendor was not found"));
-        vendor.updateProfile(request.name(), request.categoryId(), request.latitude(), request.longitude());
+        vendor.updateProfile(request.name(), request.categoryId(), request.latitude(), request.longitude(),
+                request.ownerName(), request.nif(), request.phone(), request.address(), request.description(), request.logoStorageKey());
         return vendorMapper.toResponse(vendor);
     }
 
@@ -89,6 +92,12 @@ public class VendorService {
     public VendorDocumentResponse addDocument(UUID vendorId, CreateVendorDocumentRequest request) {
         UUID tenantId = tenantId();
         ensureVendorExists(tenantId, vendorId);
+        
+        // Validate document type
+        if (!List.of("BUSINESS_LICENCE", "TAX_CERTIFICATE", "HEALTH_PERMIT", "OTHER").contains(request.documentType())) {
+            throw new BusinessException("invalid_document_type", "Invalid vendor document type. Allowed: BUSINESS_LICENCE, TAX_CERTIFICATE, HEALTH_PERMIT, OTHER", HttpStatus.BAD_REQUEST);
+        }
+        
         VendorDocument document = new VendorDocument(UUID.randomUUID(), tenantId, vendorId, request.documentType(), request.storageKey());
         return vendorMapper.toDocumentResponse(vendorDocumentRepository.save(document));
     }

@@ -9,6 +9,7 @@ const badgeVariants = cva("inline-flex items-center rounded-full px-2.5 py-1 tex
       secondary: "bg-secondary-container text-on-secondary-container",
       outline: "border border-outline-variant text-on-surface-variant",
       success: "bg-secondary-fixed text-on-secondary-fixed-variant",
+      destructive: "bg-error-container text-on-error-container",
     },
   },
   defaultVariants: { variant: "default" },

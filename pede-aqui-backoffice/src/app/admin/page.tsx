@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { dashboardService, orderService } from "@/lib/api/services";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, orderStatusLabels } from "@/lib/utils";
 import type { AdminDashboard, Order } from "@/lib/api/types";
 import { Building2, CreditCard, Package, TrendingDown, TrendingUp, Truck } from "lucide-react";
 
@@ -32,13 +32,13 @@ const mockDashboard: AdminDashboard = {
 };
 
 const mockOrders: Order[] = [
-  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", items: [] },
-  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Pizzaria Bella", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", items: [] },
-  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Sushi House", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", items: [] },
-  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Hamburgueria TOP", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", items: [] },
-  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Tasca do Zé", status: "CANCELLED", total: 450.00, createdAt: "2024-01-15T08:45:00Z", items: [] },
-  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", items: [] },
-  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Padaria do Bairro", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", items: [] },
+  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", deliveryCode: null, items: [] },
+  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Pizzaria Bella", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", deliveryCode: null, items: [] },
+  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Sushi House", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", deliveryCode: null, items: [] },
+  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Hamburgueria TOP", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", deliveryCode: null, items: [] },
+  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Tasca do Zé", status: "CANCELLED", total: 450.00, createdAt: "2024-01-15T08:45:00Z", deliveryCode: null, items: [] },
+  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", deliveryCode: null, items: [] },
+  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Padaria do Bairro", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", deliveryCode: null, items: [] },
 ];
 
 function StatusChart({ data }: { data: Record<string, number> }) {
@@ -61,7 +61,7 @@ function StatusChart({ data }: { data: Record<string, number> }) {
           key={status}
           className={colorMap[status] ?? "bg-surface-container-high"}
           style={{ width: `${(count / total) * 100}%` }}
-          title={`${status}: ${count}`}
+          title={`${orderStatusLabels[status as keyof typeof orderStatusLabels] ?? status}: ${count}`}
         />
       ))}
     </div>
@@ -182,7 +182,7 @@ export default function AdminPage() {
                               <td className="py-3 pr-4 text-on-surface-variant">{order.vendorName}</td>
                               <td className="py-3 pr-4 font-bold">{formatCurrency(order.total)}</td>
                               <td className="py-3 pr-4"><StatusBadge status={order.status} /></td>
-                              <td className="py-3 pr-4 text-on-surface-variant">{formatDate(order.createdAt)}</td>
+                              <td className="py-3 pr-4 text-on-surface-variant">{order.createdAt ? formatDate(order.createdAt) : "—"}</td>
                             </tr>
                           ))}
                         </tbody>

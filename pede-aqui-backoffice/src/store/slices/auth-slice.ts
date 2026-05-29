@@ -4,6 +4,7 @@ interface AuthUser {
   name: string;
   role: string;
   tenant: string;
+  tenantId: string | null;
   email?: string;
   token?: string;
 }

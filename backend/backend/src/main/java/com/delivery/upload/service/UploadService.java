@@ -3,6 +3,7 @@ package com.delivery.upload.service;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.upload.dto.CreateUploadUrlRequest;
+import com.delivery.upload.dto.CreateDocumentUploadUrlRequest;
 import com.delivery.upload.dto.UploadUrlResponse;
 import java.time.Duration;
 import java.time.Instant;
@@ -71,12 +72,49 @@ public class UploadService {
         return normalized;
     }
 
+    public UploadUrlResponse createDocumentUploadUrl(CreateDocumentUploadUrlRequest request) {
+        UUID tenantId = tenantContext.currentTenantId()
+                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
+        String userId = tenantContext.currentKeycloakUserId()
+                .orElseThrow(() -> new BusinessException("user_required", "Authenticated user is required", HttpStatus.FORBIDDEN));
+
+        String sanitizedPurpose = sanitizeSegment(request.purpose());
+        String extension = documentExtensionFromContentType(request.contentType());
+        String sanitizedFileName = sanitizeFileName(request.fileName());
+        String storageKey = "tenants/%s/documents/%s/%s/%s-%s.%s"
+                .formatted(tenantId, sanitizedPurpose, userId, Instant.now().toEpochMilli(), sanitizedFileName, extension);
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(storageKey)
+                .contentType(request.contentType().toLowerCase(Locale.ROOT))
+                .build();
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofSeconds(expirationSeconds))
+                .putObjectRequest(putObjectRequest)
+                .build();
+
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        return new UploadUrlResponse(presignedRequest.url().toString(), storageKey, expirationSeconds);
+    }
+
     private String extensionFromContentType(String contentType) {
         return switch (contentType.toLowerCase(Locale.ROOT)) {
             case "image/jpeg", "image/jpg" -> "jpg";
             case "image/png" -> "png";
             case "image/webp" -> "webp";
             default -> throw new BusinessException("invalid_content_type", "Only JPEG, PNG, and WEBP images are supported", HttpStatus.BAD_REQUEST);
+        };
+    }
+
+    private String documentExtensionFromContentType(String contentType) {
+        return switch (contentType.toLowerCase(Locale.ROOT)) {
+            case "application/pdf" -> "pdf";
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> throw new BusinessException("invalid_content_type", "Only PDF, JPEG, PNG, and WEBP documents are supported", HttpStatus.BAD_REQUEST);
         };
     }
 

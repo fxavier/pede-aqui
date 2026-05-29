@@ -8,11 +8,19 @@ function getAuthToken(): string | undefined {
   return undefined;
 }
 
+function getTenantId(): string | undefined {
+  if (typeof window !== "undefined") {
+    const id = sessionStorage.getItem("tenant_id");
+    return id ?? undefined;
+  }
+  return undefined;
+}
+
 class ApiClient {
   private basePath = "";
 
   async get<T>(path: string): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, { authToken: getAuthToken() });
+    return httpClient<T>(`${this.basePath}${path}`, { authToken: getAuthToken(), tenantId: getTenantId() });
   }
 
   async post<T>(path: string, data?: unknown): Promise<T> {
@@ -20,6 +28,7 @@ class ApiClient {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
       authToken: getAuthToken(),
+      tenantId: getTenantId(),
     });
   }
 
@@ -28,6 +37,7 @@ class ApiClient {
       method: "PATCH",
       body: data ? JSON.stringify(data) : undefined,
       authToken: getAuthToken(),
+      tenantId: getTenantId(),
     });
   }
 
@@ -36,6 +46,7 @@ class ApiClient {
       method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
       authToken: getAuthToken(),
+      tenantId: getTenantId(),
     });
   }
 
@@ -43,6 +54,7 @@ class ApiClient {
     return httpClient<T>(`${this.basePath}${path}`, {
       method: "DELETE",
       authToken: getAuthToken(),
+      tenantId: getTenantId(),
     });
   }
 }

@@ -28,6 +28,25 @@
         "http://localhost:3001/*"
       ],
       "webOrigins": ["+"]
+    },
+    {
+      "clientId": "delivery-admin-service",
+      "name": "Delivery Admin Service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountRoles": {
+        "clientMappings": {
+          "realm-management": {
+            "mappings": [
+              { "name": "manage-users" }
+            ]
+          }
+        }
+      }
     }
   ],
   "users": [

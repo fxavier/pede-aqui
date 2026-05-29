@@ -39,6 +39,13 @@ public class OrderItem {
 
     protected OrderItem() {}
 
+    public UUID getId() { return id; }
+    public String getProductNameSnapshot() { return productNameSnapshot; }
+    public String getSkuNameSnapshot() { return skuNameSnapshot; }
+    public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; }
+    public int getQuantity() { return quantity; }
+    public BigDecimal getLineTotal() { return lineTotal; }
+
     public OrderItem(UUID id, Order order, UUID tenantId, UUID skuId, String productNameSnapshot, String skuNameSnapshot, BigDecimal unitPriceSnapshot, int quantity) {
         this.id = id;
         this.order = order;

@@ -9,22 +9,24 @@ import { logout as logoutAction } from "@/store/slices/auth-slice";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Bell, Boxes, Building2, CreditCard,
-  Headphones, LayoutDashboard, Menu, Search, ShieldCheck,
+  Headphones, LayoutDashboard, LayoutGrid, Menu, Search, ShieldCheck,
   LogOut, ChevronRight, Package, Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const navigation = [
-  { href: "/", label: "Painel Principal", icon: LayoutDashboard },
-  { href: "/admin", label: "Admin Central", icon: ShieldCheck },
-  { href: "/vendors", label: "Vendedores", icon: Building2 },
-  { href: "/orders", label: "Encomendas", icon: Package },
-  { href: "/couriers", label: "Estafetas", icon: Truck },
-  { href: "/finance", label: "Finanças", icon: CreditCard },
-  { href: "/support", label: "Apoio", icon: Headphones },
-  { href: "/marketing", label: "Marketing", icon: BarChart3 },
-  { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes },
+  { href: "/", label: "Painel Principal", icon: LayoutDashboard, roles: [] as string[] },
+  { href: "/empresa", label: "A Minha Empresa", icon: Building2, roles: ["VENDOR_ADMIN", "ADMIN"] },
+  { href: "/admin", label: "Admin Central", icon: ShieldCheck, roles: ["ADMIN"] },
+  { href: "/catalogo", label: "Catálogo", icon: LayoutGrid, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
+  { href: "/vendors", label: "Vendedores", icon: Building2, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
+  { href: "/orders", label: "Encomendas", icon: Package, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "SUPPORT"] },
+  { href: "/couriers", label: "Estafetas", icon: Truck, roles: ["ADMIN", "OPS"] },
+  { href: "/finance", label: "Finanças", icon: CreditCard, roles: ["ADMIN", "FINANCE"] },
+  { href: "/support", label: "Apoio", icon: Headphones, roles: ["ADMIN", "SUPPORT"] },
+  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS"] },
+  { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes, roles: [] as string[] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -48,9 +50,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('tenant_id');
     dispatch(logoutAction());
     router.push('/login');
   };
+
+  const userRole = user?.role ?? "";
+  const visibleNav = navigation.filter(
+    (item) => item.roles.length === 0 || item.roles.includes(userRole),
+  );
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffdad2_0,transparent_32%),linear-gradient(135deg,#fff8f6_0%,#fff1ed_45%,#fff8f6_100%)] text-on-surface">
@@ -73,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navigation.map((item) => {
+          {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (

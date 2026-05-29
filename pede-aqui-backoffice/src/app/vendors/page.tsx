@@ -41,14 +41,14 @@ const mockDashboard: VendorDashboard = {
 };
 
 const mockOrders: Order[] = [
-  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", items: [] },
-  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Restaurante Central", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", items: [] },
-  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Restaurante Central", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", items: [] },
-  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Restaurante Central", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", items: [] },
-  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", items: [] },
-  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", items: [] },
-  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Restaurante Central", status: "DELIVERED", total: 940.00, createdAt: "2024-01-15T08:00:00Z", items: [] },
-  { id: "8", reference: "PA-2024-008", customerName: "Pedro Lopes", vendorName: "Restaurante Central", status: "CANCELLED", total: 450.00, createdAt: "2024-01-14T19:30:00Z", items: [] },
+  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", deliveryCode: null, items: [] },
+  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Restaurante Central", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", deliveryCode: null, items: [] },
+  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Restaurante Central", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", deliveryCode: null, items: [] },
+  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Restaurante Central", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", deliveryCode: null, items: [] },
+  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", deliveryCode: null, items: [] },
+  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", deliveryCode: null, items: [] },
+  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Restaurante Central", status: "DELIVERED", total: 940.00, createdAt: "2024-01-15T08:00:00Z", deliveryCode: null, items: [] },
+  { id: "8", reference: "PA-2024-008", customerName: "Pedro Lopes", vendorName: "Restaurante Central", status: "CANCELLED", total: 450.00, createdAt: "2024-01-14T19:30:00Z", deliveryCode: null, items: [] },
 ];
 
 type OrderTab = "all" | "pending" | "active" | "delivered" | "cancelled";
@@ -125,7 +125,7 @@ export default function VendorsPage() {
     status: "Activo",
     documents: []
   });
-  const [vendorRecords, setVendorRecords] = useState<VendorRecord[]>(mockVendors);
+  const [vendorRecords, setVendorRecords] = useState<VendorRecord[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState("BUSINESS_LICENCE");
@@ -155,17 +155,9 @@ export default function VendorsPage() {
           estado: vendor.status,
         };
       }));
-    } catch {
-      setDashboard(mockDashboard);
-      setOrders(mockOrders);
-      setVendorRecords(mockVendors);
-      // Set fallback categories to match the service fallback
-      setCategories([
-        { id: "restaurant", name: "Restaurante", vertical: "food", active: true },
-        { id: "grocery", name: "Mercearia", vertical: "retail", active: true },
-        { id: "pharmacy", name: "Farmácia", vertical: "health", active: true },
-        { id: "other", name: "Outro", vertical: "general", active: true },
-      ]);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setError("Falha ao carregar dados. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -253,6 +245,12 @@ export default function VendorsPage() {
   async function submitVendorForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!vendorForm.name.trim() || !vendorForm.categoryId.trim() || !vendorForm.phone.trim()) return;
+    
+    // Block submission if no valid categories are loaded
+    if (categories.length === 0) {
+      setError("Não é possível criar vendedor: categorias não disponíveis. Tente recarregar a página.");
+      return;
+    }
 
     if (vendorFormMode === "create") {
       try {
@@ -283,15 +281,11 @@ export default function VendorsPage() {
           categoryName: category?.name || 'Categoria não encontrada',
           estado: created.status,
         }, ...prev]);
-      } catch {
-        const category = categories.find(cat => cat.id === vendorForm.categoryId);
-        setVendorRecords((prev) => [{ 
-          id: crypto.randomUUID(), 
-          nome: vendorForm.name, 
-          categoryId: vendorForm.categoryId,
-          categoryName: category?.name || 'Categoria não encontrada',
-          estado: vendorForm.status 
-        }, ...prev]);
+        setError(null);
+      } catch (error) {
+        console.error("Failed to create vendor:", error);
+        setError("Falha ao criar vendedor. Tente novamente.");
+        return;
       }
     } else {
       try {
@@ -317,19 +311,11 @@ export default function VendorsPage() {
               }
             : vendor
         )));
-      } catch {
-        const category = categories.find(cat => cat.id === vendorForm.categoryId);
-        setVendorRecords((prev) => prev.map((vendor) => (
-          vendor.id === vendorForm.id 
-            ? { 
-                ...vendor, 
-                nome: vendorForm.name, 
-                categoryId: vendorForm.categoryId,
-                categoryName: category?.name || 'Categoria não encontrada',
-                estado: vendorForm.status 
-              }
-            : vendor
-        )));
+        setError(null);
+      } catch (error) {
+        console.error("Failed to update vendor:", error);
+        setError("Falha ao atualizar vendedor. Tente novamente.");
+        return;
       }
     }
 
@@ -433,7 +419,7 @@ export default function VendorsPage() {
                               <td className="py-3 pr-4 text-on-surface-variant">{order.customerName}</td>
                               <td className="py-3 pr-4 font-bold">{formatCurrency(order.total)}</td>
                               <td className="py-3 pr-4"><StatusBadge status={order.status} /></td>
-                              <td className="py-3 pr-4 text-on-surface-variant">{formatDate(order.createdAt)}</td>
+                              <td className="py-3 pr-4 text-on-surface-variant">{order.createdAt ? formatDate(order.createdAt) : "—"}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -473,50 +459,56 @@ export default function VendorsPage() {
                   <CardTitle>Lista de Vendedores</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-outline-variant text-xs font-bold uppercase text-on-surface-variant">
-                          <th className="pb-3 pr-4">Nome</th>
-                          <th className="pb-3 pr-4">Categoria</th>
-                          <th className="pb-3 pr-4">Estado</th>
-                          <th className="pb-3">Accoes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {vendorRecords.map((vendor) => (
-                          <tr key={vendor.id} className="border-b border-outline-variant/50 last:border-0">
-                            <td className="py-3 pr-4 font-bold text-on-surface">{vendor.nome}</td>
-                            <td className="py-3 pr-4 text-on-surface-variant">{vendor.categoryName}</td>
-                            <td className="py-3 pr-4 text-on-surface-variant">{vendor.estado}</td>
-                            <td className="py-3">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setVendorFormMode("edit");
-                                  setVendorForm({
-                                    id: vendor.id,
-                                    name: vendor.nome,
-                                    ownerName: "",
-                                    nif: "",
-                                    phone: "",
-                                    address: "",
-                                    description: "",
-                                    categoryId: vendor.categoryId,
-                                    status: vendor.estado,
-                                    documents: []
-                                  });
-                                }}
-                              >
-                                Editar
-                              </Button>
-                            </td>
+                  {loading ? (
+                    <TableSkeleton />
+                  ) : vendorRecords.length === 0 ? (
+                    <EmptyState message="Nenhum vendedor encontrado." />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-outline-variant text-xs font-bold uppercase text-on-surface-variant">
+                            <th className="pb-3 pr-4">Nome</th>
+                            <th className="pb-3 pr-4">Categoria</th>
+                            <th className="pb-3 pr-4">Estado</th>
+                            <th className="pb-3">Accoes</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {vendorRecords.map((vendor) => (
+                            <tr key={vendor.id} className="border-b border-outline-variant/50 last:border-0">
+                              <td className="py-3 pr-4 font-bold text-on-surface">{vendor.nome}</td>
+                              <td className="py-3 pr-4 text-on-surface-variant">{vendor.categoryName}</td>
+                              <td className="py-3 pr-4 text-on-surface-variant">{vendor.estado}</td>
+                              <td className="py-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setVendorFormMode("edit");
+                                    setVendorForm({
+                                      id: vendor.id,
+                                      name: vendor.nome,
+                                      ownerName: "",
+                                      nif: "",
+                                      phone: "",
+                                      address: "",
+                                      description: "",
+                                      categoryId: vendor.categoryId,
+                                      status: vendor.estado,
+                                      documents: []
+                                    });
+                                  }}
+                                >
+                                  Editar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -622,9 +614,12 @@ export default function VendorsPage() {
                           value={vendorForm.categoryId}
                           onChange={(event) => setVendorForm((prev) => ({ ...prev, categoryId: event.target.value }))}
                           className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={categories.length === 0}
                           required
                         >
-                          <option value="">Selecione uma categoria</option>
+                          <option value="">
+                            {categories.length === 0 ? "A carregar categorias..." : "Selecione uma categoria"}
+                          </option>
                           {categories.map((category) => (
                             <option key={category.id} value={category.id}>
                               {category.name}
@@ -714,7 +709,13 @@ export default function VendorsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button type="submit" className="flex-1">{vendorFormMode === "create" ? "Criar" : "Guardar"}</Button>
+                      <Button 
+                        type="submit" 
+                        className="flex-1"
+                        disabled={categories.length === 0}
+                      >
+                        {vendorFormMode === "create" ? "Criar" : "Guardar"}
+                      </Button>
                       {vendorFormMode === "edit" && (
                         <Button type="button" variant="outline" onClick={resetVendorForm}>Cancelar</Button>
                       )}

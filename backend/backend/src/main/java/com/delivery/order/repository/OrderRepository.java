@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Provides tenant-scoped order persistence access. */
 public interface OrderRepository extends JpaRepository<Order, UUID> {
+    List<Order> findByTenantId(UUID tenantId);
     Optional<Order> findByTenantIdAndId(UUID tenantId, UUID id);
     Optional<Order> findByTenantIdAndCheckoutIdempotencyKey(UUID tenantId, String checkoutIdempotencyKey);
     List<Order> findByTenantIdAndStatus(UUID tenantId, OrderStatus status);

@@ -33,7 +33,7 @@ class VendorServiceTest {
 
         VendorService service = new VendorService(repository, mock(VendorDocumentRepository.class), mock(VendorOpeningHourRepository.class), new VendorMapper(), tenantContext);
 
-        var response = service.create(new CreateVendorRequest("Mercado Central", UUID.randomUUID(), -25.9, 32.6));
+        var response = service.create(new CreateVendorRequest("Mercado Central", UUID.randomUUID(), -25.9, 32.6, null, null, "000000000", null, null, null));
 
         assertThat(response.verificationStatus()).isEqualTo(VendorVerificationStatus.PENDING);
         assertThat(response.available()).isFalse();
@@ -46,7 +46,7 @@ class VendorServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         when(repository.findByTenantIdAndId(tenantId, vendorId))
-                .thenReturn(Optional.of(new Vendor(vendorId, tenantId, "Loja X", UUID.randomUUID(), null, null)));
+                .thenReturn(Optional.of(new Vendor(vendorId, tenantId, "Loja X", UUID.randomUUID(), null, null, null, null, null, null, null, null)));
 
         VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext);
 
@@ -58,7 +58,7 @@ class VendorServiceTest {
     @Test
     void rejectsVendorVerificationAndForcesUnavailable() {
         UUID vendorId = UUID.randomUUID();
-        Vendor vendor = new Vendor(vendorId, tenantId, "Loja Y", UUID.randomUUID(), null, null);
+        Vendor vendor = new Vendor(vendorId, tenantId, "Loja Y", UUID.randomUUID(), null, null, null, null, null, null, null, null);
         vendor.setAvailability(true);
         VendorRepository repository = mock(VendorRepository.class);
         TenantContext tenantContext = mock(TenantContext.class);

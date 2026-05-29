@@ -25,7 +25,7 @@ class LandingScreen extends StatelessWidget {
                 child: FilledButton(
                   onPressed: () => Navigator.pushNamed(context, AppRoutes.onboarding),
                   style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: const Text('Download App', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                  child: const Text('Transferir App', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                 ),
               ),
             ],

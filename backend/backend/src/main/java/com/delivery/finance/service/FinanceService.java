@@ -1,6 +1,7 @@
 package com.delivery.finance.service;
 
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.finance.dto.CashReconciliationResponse;
 import com.delivery.finance.dto.CommissionResponse;
@@ -87,6 +88,26 @@ public class FinanceService {
                 .map(item -> item.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new FinanceSummaryResponse(confirmedPaymentsTotal, commissionTotal, refundsTotal, unreconciledCashTotal);
+    }
+
+    /** Approves a pending refund, marking it as refunded. */
+    @Transactional
+    public RefundFinanceResponse approveRefund(UUID id) {
+        UUID tenantId = tenantId();
+        com.delivery.payment.entity.Refund refund = refundRepository.findByTenantIdAndId(tenantId, id)
+                .orElseThrow(() -> new NotFoundException("Refund not found"));
+        refund.approve();
+        return financeMapper.toRefundFinanceResponse(refundRepository.save(refund));
+    }
+
+    /** Rejects a pending refund request. */
+    @Transactional
+    public RefundFinanceResponse rejectRefund(UUID id) {
+        UUID tenantId = tenantId();
+        com.delivery.payment.entity.Refund refund = refundRepository.findByTenantIdAndId(tenantId, id)
+                .orElseThrow(() -> new NotFoundException("Refund not found"));
+        refund.reject();
+        return financeMapper.toRefundFinanceResponse(refundRepository.save(refund));
     }
 
     /** Returns tenant refunds for finance review workflows. */

@@ -40,10 +40,8 @@ export default function LoginPage() {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Store token in sessionStorage
       sessionStorage.setItem('auth_token', accessToken);
 
-      // Get user profile
       const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/me`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -56,12 +54,18 @@ export default function LoginPage() {
       }
 
       const profileData = await profileResponse.json();
+      const tenantId: string | null = profileData.tenantId ?? null;
+      if (tenantId) {
+        sessionStorage.setItem('tenant_id', tenantId);
+      } else {
+        sessionStorage.removeItem('tenant_id');
+      }
 
-      // Update Redux state
       dispatch(setUser({
         name: profileData.displayName || profileData.name,
         role: profileData.roles?.[0] || 'Admin',
         tenant: 'Pede Aqui',
+        tenantId,
         email: profileData.email,
         token: accessToken,
       }));

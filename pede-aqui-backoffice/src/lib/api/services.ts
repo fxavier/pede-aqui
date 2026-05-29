@@ -7,7 +7,17 @@ import type {
   Order,
   Vendor,
   VendorDocument,
+  VendorOpeningHour,
+  VendorOpeningHourRequest,
   Category,
+  Product,
+  Sku,
+  CreateProductPayload,
+  CreateSkuPayload,
+  Coupon,
+  Promotion,
+  CreateCouponPayload,
+  CreatePromotionPayload,
   Courier,
   CourierDocument,
   UserProfile,
@@ -15,13 +25,15 @@ import type {
   Transaction,
   Commission,
   Refund,
+  CashReconciliation,
+  FinanceSummary,
   SupportTicket,
   Notification,
 } from "./types";
 
 // Auth
 export const authService = {
-  getMe: () => apiClient.get<{ id: string; displayName: string; email: string; roles: string[] }>("/me"),
+  getMe: () => apiClient.get<{ id: string; tenantId: string | null; displayName: string; email: string; roles: string[] }>("/me"),
 };
 
 // Dashboards
@@ -37,27 +49,38 @@ export const orderService = {
   list: () => apiClient.get<Order[]>("/orders"),
   getById: (id: string) => apiClient.get<Order>(`/orders/${id}`),
   getTracking: (id: string) => apiClient.get<{ orderStatus: string; deliveryStatus: string }>(`/orders/${id}/tracking`),
+  accept: (id: string) => apiClient.patch<Order>(`/vendor/orders/${id}/accept`),
+  reject: (id: string, reason: string) => apiClient.patch<Order>(`/vendor/orders/${id}/reject`, { reason }),
+  markPreparing: (id: string) => apiClient.patch<Order>(`/vendor/orders/${id}/preparing`),
+  markReadyForPickup: (id: string) => apiClient.patch<Order>(`/vendor/orders/${id}/ready-for-pickup`),
+};
+
+// Marketing
+export const marketingService = {
+  listCoupons: () => apiClient.get<Coupon[]>("/marketing/coupons"),
+  createCoupon: (data: CreateCouponPayload) => apiClient.post<Coupon>("/marketing/coupons", data),
+  deactivateCoupon: (id: string) => apiClient.patch<Coupon>(`/marketing/coupons/${id}/deactivate`),
+  listPromotions: () => apiClient.get<Promotion[]>("/marketing/promotions"),
+  createPromotion: (data: CreatePromotionPayload) => apiClient.post<Promotion>("/marketing/promotions", data),
+  deactivatePromotion: (id: string) => apiClient.patch<Promotion>(`/marketing/promotions/${id}/deactivate`),
+};
+
+// Catalog
+export const catalogService = {
+  listVendorProducts: (vendorId: string) => apiClient.get<Product[]>(`/catalog/vendors/${vendorId}/products`),
+  createProduct: (data: CreateProductPayload) => apiClient.post<Product>("/catalog/products", data),
+  createSku: (data: CreateSkuPayload) => apiClient.post<Sku>("/catalog/skus", data),
 };
 
 // Categories
 export const categoryService = {
   list: async (): Promise<Category[]> => {
     try {
-      // Try different possible endpoints for categories
       return await apiClient.get<Category[]>("/catalog/categories");
     } catch (error) {
-      try {
-        return await apiClient.get<Category[]>("/admin/categories");
-      } catch (adminError) {
-        // Fallback categories if endpoints don't exist
-        console.warn("Categories endpoints not available, using fallback categories");
-        return [
-          { id: "restaurant", name: "Restaurante", vertical: "food", active: true },
-          { id: "grocery", name: "Mercearia", vertical: "retail", active: true },
-          { id: "pharmacy", name: "Farmácia", vertical: "health", active: true },
-          { id: "other", name: "Outro", vertical: "general", active: true },
-        ];
-      }
+      console.error("Failed to load categories:", error);
+      // Return empty array if endpoint fails - this will prevent form submission
+      return [];
     }
   },
 };
@@ -93,6 +116,9 @@ export const vendorService = {
   getDocuments: (id: string) => apiClient.get<VendorDocument[]>(`/vendors/${id}/documents`),
   uploadDocument: (id: string, data: { documentType: string; storageKey: string }) =>
     apiClient.post<VendorDocument>(`/vendors/${id}/documents`, data),
+  getOpeningHours: (id: string) => apiClient.get<VendorOpeningHour[]>(`/vendors/${id}/opening-hours`),
+  updateOpeningHours: (id: string, hours: VendorOpeningHourRequest[]) =>
+    apiClient.put<VendorOpeningHour[]>(`/vendors/${id}/opening-hours`, { hours }),
 };
 
 // Couriers
@@ -120,8 +146,10 @@ export const financeService = {
   getTransactions: () => apiClient.get<Transaction[]>("/finance/transactions"),
   getCommissions: () => apiClient.get<Commission[]>("/finance/commissions"),
   getRefunds: () => apiClient.get<Refund[]>("/finance/refunds"),
-  getCashReconciliation: () => apiClient.get<unknown[]>("/finance/cash-reconciliation"),
-  getSummary: () => apiClient.get<{ totalTransactions: number; totalCommissions: number; totalRefunds: number }>("/finance/summary"),
+  approveRefund: (id: string) => apiClient.patch<Refund>(`/finance/refunds/${id}/approve`),
+  rejectRefund: (id: string) => apiClient.patch<Refund>(`/finance/refunds/${id}/reject`),
+  getCashReconciliation: () => apiClient.get<CashReconciliation[]>("/finance/cash-reconciliation"),
+  getSummary: () => apiClient.get<FinanceSummary>("/finance/summary"),
   getPayoutStatus: () => apiClient.get<{ pending: number; settled: number }>("/finance/payout-status"),
 };
 
@@ -131,6 +159,8 @@ export const supportService = {
   getMine: () => apiClient.get<SupportTicket[]>("/support/tickets/mine"),
   create: (data: { subject: string; description: string; orderId?: string }) =>
     apiClient.post<SupportTicket>("/support/tickets", data),
+  classify: (id: string, classification: string) =>
+    apiClient.patch<SupportTicket>(`/support/tickets/${id}/classify`, { classification }),
   updateStatus: (id: string, status: string) =>
     apiClient.patch<SupportTicket>(`/support/tickets/${id}/status`, { status }),
   addInternalNote: (id: string, note: string) =>

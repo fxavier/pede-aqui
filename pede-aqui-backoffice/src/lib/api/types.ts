@@ -37,18 +37,22 @@ export interface CourierDashboard {
 export interface Order {
   id: string;
   reference: string;
-  customerName: string;
-  vendorName: string;
   status: string;
   total: number;
-  createdAt: string;
-  items: OrderItem[];
+  deliveryCode: string | null;
+  customerName: string | null;
+  vendorName: string | null;
+  createdAt: string | null;
+  items: OrderItem[] | null;
 }
 
 export interface OrderItem {
-  name: string;
+  id: string;
+  productName: string;
+  skuName: string;
+  unitPrice: number;
   quantity: number;
-  price: number;
+  lineTotal: number;
 }
 
 // Category types
@@ -117,42 +121,57 @@ export interface CourierDocument {
 // Finance types
 export interface Transaction {
   id: string;
-  orderReference: string;
+  orderId: string;
   amount: number;
-  method: string;
   status: string;
-  createdAt: string;
 }
 
 export interface Commission {
   id: string;
-  orderReference: string;
-  vendorName: string;
-  basisAmount: number;
-  rate: number;
-  amount: number;
+  orderId: string;
+  vendorId: string;
+  commissionAmount: number;
   status: string;
+  createdAt: string;
 }
 
 export interface Refund {
   id: string;
-  orderReference: string;
+  paymentId: string;
+  orderId: string;
   amount: number;
   reason: string;
   status: string;
-  createdAt: string;
+}
+
+export interface CashReconciliation {
+  id: string;
+  orderId: string;
+  deliveryId: string;
+  courierId: string;
+  amount: number;
+  status: string;
+  recordedAt: string;
+}
+
+export interface FinanceSummary {
+  confirmedPaymentsTotal: number;
+  commissionTotal: number;
+  refundsTotal: number;
+  unreconciledCashTotal: number;
 }
 
 // Support ticket types
 export interface SupportTicket {
   id: string;
+  orderId: string | null;
   subject: string;
+  description: string;
   status: string;
-  classification: string;
-  createdBy: string;
-  orderReference?: string;
+  classification: string | null;
+  internalNote: string | null;
+  assigneeUserId: string | null;
   createdAt: string;
-  internalNotes?: string;
 }
 
 // Notification types
@@ -189,6 +208,113 @@ export interface UserProfile {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// Marketing types
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxUses?: number;
+  usesCount: number;
+  vendorId?: string;
+  validFrom: string;
+  validUntil?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface Promotion {
+  id: string;
+  name: string;
+  description?: string;
+  discountType: string;
+  discountValue: number;
+  vendorId?: string;
+  appliesTo: string;
+  startsAt: string;
+  endsAt?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface CreateCouponPayload {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxUses?: number;
+  vendorId?: string;
+  validFrom: string;
+  validUntil?: string;
+}
+
+export interface CreatePromotionPayload {
+  name: string;
+  description?: string;
+  discountType: string;
+  discountValue: number;
+  vendorId?: string;
+  appliesTo: string;
+  startsAt: string;
+  endsAt?: string;
+}
+
+// Catalog types
+export interface Sku {
+  id: string;
+  skuCode: string;
+  name: string;
+  price: number;
+  active: boolean;
+}
+
+export interface Product {
+  id: string;
+  vendorId: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  requiresPrescriptionMetadata: boolean;
+  prohibitedFuel: boolean;
+  skus: Sku[];
+}
+
+export interface CreateProductPayload {
+  vendorId: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  requiresPrescriptionMetadata?: boolean;
+  prohibitedFuel?: boolean;
+}
+
+export interface CreateSkuPayload {
+  productId: string;
+  vendorId: string;
+  skuCode: string;
+  name: string;
+  price: number;
+  initialStock: number;
+}
+
+// Vendor opening hours
+export interface VendorOpeningHour {
+  id: string;
+  vendorId: string;
+  dayOfWeek: number; // 1=Mon … 7=Sun
+  opensAt: string | null;  // "HH:mm:ss"
+  closesAt: string | null;
+  closed: boolean;
+}
+
+export interface VendorOpeningHourRequest {
+  dayOfWeek: number;
+  opensAt: string | null;
+  closesAt: string | null;
+  closed: boolean;
 }
 
 // Upload types

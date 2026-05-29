@@ -1,14 +1,20 @@
 package com.delivery.catalog.service;
 
+import com.delivery.catalog.dto.CategoryResponse;
 import com.delivery.catalog.dto.CreateProductRequest;
+import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
+import com.delivery.catalog.dto.SkuResponse;
 import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.mapper.CatalogMapper;
+import com.delivery.catalog.repository.CategoryRepository;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.inventory.entity.InventoryItem;
+import com.delivery.inventory.repository.InventoryItemRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,14 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 /** Contains catalog business rules such as fuel blocking and pharmacy flags. */
 @Service
 public class CatalogService {
+    private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final SkuRepository skuRepository;
+    private final InventoryItemRepository inventoryItemRepository;
     private final CatalogMapper mapper;
     private final TenantContext tenantContext;
 
-    public CatalogService(ProductRepository productRepository, SkuRepository skuRepository, CatalogMapper mapper, TenantContext tenantContext) {
+    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, CatalogMapper mapper, TenantContext tenantContext) {
+        this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.skuRepository = skuRepository;
+        this.inventoryItemRepository = inventoryItemRepository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
     }
@@ -54,6 +64,27 @@ public class CatalogService {
         List<Sku> skus = productIds.isEmpty() ? List.of() : skuRepository.findByTenantIdAndProductIdInAndActiveTrue(tenantId, productIds);
         Map<UUID, List<Sku>> skusByProduct = skus.stream().collect(Collectors.groupingBy(Sku::getProductId));
         return products.stream().map(product -> mapper.toProductResponse(product, skusByProduct.getOrDefault(product.getId(), List.of()))).toList();
+    }
+
+    /** Creates a SKU for an existing product and seeds an inventory entry. */
+    @Transactional
+    public SkuResponse createSku(CreateSkuRequest request) {
+        UUID tenantId = tenantId();
+        Sku sku = new Sku(UUID.randomUUID(), tenantId, request.productId(), request.skuCode(), request.name(), request.price());
+        skuRepository.save(sku);
+        InventoryItem inventory = new InventoryItem(UUID.randomUUID(), tenantId, request.vendorId(), sku.getId(), request.initialStock());
+        inventoryItemRepository.save(inventory);
+        return mapper.toSkuResponse(sku);
+    }
+
+    /** Lists all active categories within the current tenant. */
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listCategories() {
+        UUID tenantId = tenantId();
+        return categoryRepository.findByTenantIdAndActiveTrue(tenantId)
+                .stream()
+                .map(mapper::toCategoryResponse)
+                .toList();
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

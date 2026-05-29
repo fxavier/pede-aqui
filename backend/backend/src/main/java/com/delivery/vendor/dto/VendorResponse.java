@@ -14,4 +14,10 @@ public record VendorResponse(
         int estimatedDeliveryMinutes,
         boolean available,
         Double latitude,
-        Double longitude) {}
+        Double longitude,
+        String ownerName,
+        String nif,
+        String phone,
+        String address,
+        String description,
+        String logoStorageKey) {}

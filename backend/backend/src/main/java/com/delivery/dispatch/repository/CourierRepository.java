@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CourierRepository extends JpaRepository<Courier, UUID> {
     Optional<Courier> findByTenantIdAndId(UUID tenantId, UUID id);
     Optional<Courier> findByTenantIdAndUserProfileId(UUID tenantId, UUID userProfileId);
+    List<Courier> findByTenantId(UUID tenantId);
     List<Courier> findByTenantIdAndVerificationStatusAndAvailable(UUID tenantId, CourierVerificationStatus verificationStatus, boolean available);
     List<Courier> findByTenantIdAndVerificationStatusAndAvailableAndOperatingZoneId(UUID tenantId, CourierVerificationStatus verificationStatus, boolean available, UUID operatingZoneId);
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);

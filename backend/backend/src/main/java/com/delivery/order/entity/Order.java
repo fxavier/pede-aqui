@@ -103,5 +103,6 @@ public class Order {
     public String getCheckoutIdempotencyKey() { return checkoutIdempotencyKey; }
     public String getDeliveryConfirmationCodeHash() { return deliveryConfirmationCodeHash; }
     public String getDeliveryConfirmationCodeDisplay() { return deliveryConfirmationCodeDisplay; }
+    public Instant getCreatedAt() { return createdAt; }
     public List<OrderItem> getItems() { return items; }
 }

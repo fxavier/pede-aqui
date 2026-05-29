@@ -1,6 +1,7 @@
 package com.delivery.auth.dto;
 
 import com.delivery.common.security.MarketplaceRole;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -12,5 +13,10 @@ public record MeResponse(
         String email,
         String displayName,
         String phone,
-        Set<MarketplaceRole> roles) {
+        Set<MarketplaceRole> roles,
+        String fullName,
+        String nif,
+        LocalDate dateOfBirth,
+        String address,
+        String avatarStorageKey) {
 }

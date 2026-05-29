@@ -37,6 +37,18 @@ public class Vendor {
     private Double latitude;
     @Column
     private Double longitude;
+    @Column(name = "owner_name")
+    private String ownerName;
+    @Column
+    private String nif;
+    @Column
+    private String phone;
+    @Column
+    private String address;
+    @Column
+    private String description;
+    @Column(name = "logo_storage_key")
+    private String logoStorageKey;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -46,7 +58,8 @@ public class Vendor {
 
     protected Vendor() {}
 
-    public Vendor(UUID id, UUID tenantId, String name, UUID categoryId, Double latitude, Double longitude) {
+    public Vendor(UUID id, UUID tenantId, String name, UUID categoryId, Double latitude, Double longitude, 
+                  String ownerName, String nif, String phone, String address, String description, String logoStorageKey) {
         this.id = id;
         this.tenantId = tenantId;
         this.name = name;
@@ -58,17 +71,30 @@ public class Vendor {
         this.available = false;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.ownerName = ownerName;
+        this.nif = nif;
+        this.phone = phone;
+        this.address = address;
+        this.description = description;
+        this.logoStorageKey = logoStorageKey;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
 
     public void setAvailability(boolean available) { this.available = available; this.updatedAt = Instant.now(); }
     public void setEstimatedDeliveryMinutes(int minutes) { this.estimatedDeliveryMinutes = minutes; this.updatedAt = Instant.now(); }
-    public void updateProfile(String name, UUID categoryId, Double latitude, Double longitude) {
+    public void updateProfile(String name, UUID categoryId, Double latitude, Double longitude, 
+                              String ownerName, String nif, String phone, String address, String description, String logoStorageKey) {
         this.name = name;
         this.categoryId = categoryId;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.ownerName = ownerName;
+        this.nif = nif;
+        this.phone = phone;
+        this.address = address;
+        this.description = description;
+        this.logoStorageKey = logoStorageKey;
         this.updatedAt = Instant.now();
     }
     public void approveVerification() { this.verificationStatus = VendorVerificationStatus.APPROVED; this.updatedAt = Instant.now(); }
@@ -85,4 +111,10 @@ public class Vendor {
     public boolean isAvailable() { return available; }
     public Double getLatitude() { return latitude; }
     public Double getLongitude() { return longitude; }
+    public String getOwnerName() { return ownerName; }
+    public String getNif() { return nif; }
+    public String getPhone() { return phone; }
+    public String getAddress() { return address; }
+    public String getDescription() { return description; }
+    public String getLogoStorageKey() { return logoStorageKey; }
 }

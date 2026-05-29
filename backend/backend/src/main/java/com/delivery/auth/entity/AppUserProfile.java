@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +37,21 @@ public class AppUserProfile {
     private String displayName;
 
     private String phone;
+
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column
+    private String nif;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column
+    private String address;
+
+    @Column(name = "avatar_storage_key")
+    private String avatarStorageKey;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "app_user_profile_roles", joinColumns = @JoinColumn(name = "app_user_profile_id"))
@@ -67,6 +83,15 @@ public class AppUserProfile {
         this.updatedAt = this.createdAt;
     }
 
+    public void updateExtendedProfile(String fullName, String nif, LocalDate dateOfBirth, String address, String avatarStorageKey) {
+        this.fullName = fullName;
+        this.nif = nif;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.avatarStorageKey = avatarStorageKey;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
     public String getKeycloakUserId() { return keycloakUserId; }
@@ -77,4 +102,9 @@ public class AppUserProfile {
     public String getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public String getFullName() { return fullName; }
+    public String getNif() { return nif; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public String getAddress() { return address; }
+    public String getAvatarStorageKey() { return avatarStorageKey; }
 }

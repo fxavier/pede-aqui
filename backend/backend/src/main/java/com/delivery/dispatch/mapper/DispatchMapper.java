@@ -1,8 +1,10 @@
 package com.delivery.dispatch.mapper;
 
 import com.delivery.dispatch.dto.CourierResponse;
+import com.delivery.dispatch.dto.CourierDocumentResponse;
 import com.delivery.dispatch.dto.DispatchJobResponse;
 import com.delivery.dispatch.entity.Courier;
+import com.delivery.dispatch.entity.CourierDocument;
 import com.delivery.dispatch.entity.DispatchJob;
 import org.springframework.stereotype.Component;
 
@@ -10,10 +12,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class DispatchMapper {
     public CourierResponse toCourierResponse(Courier courier) {
-        return new CourierResponse(courier.getId(), courier.getUserProfileId(), courier.getVerificationStatus(), courier.isAvailable(), courier.getOperatingZoneId());
+        return new CourierResponse(courier.getId(), courier.getUserProfileId(), courier.getVerificationStatus(), courier.isAvailable(), courier.getOperatingZoneId(),
+                courier.getFullName(), courier.getPhone(), courier.getNif(), courier.getVehicleType(), courier.getVehiclePlate(), courier.getRating());
     }
 
     public DispatchJobResponse toDispatchJobResponse(DispatchJob job) {
         return new DispatchJobResponse(job.getId(), job.getOrderId(), job.getDeliveryId(), job.getCourierId(), job.getStatus(), job.getRejectionReason());
+    }
+
+    public CourierDocumentResponse toCourierDocumentResponse(CourierDocument document) {
+        return new CourierDocumentResponse(
+            document.getId(),
+            document.getCourierId(),
+            document.getDocumentType(),
+            document.getStorageKey(),
+            document.getStatus(),
+            document.getCreatedAt()
+        );
     }
 }

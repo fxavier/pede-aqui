@@ -14,18 +14,18 @@ class CheckoutPromotionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const summary = CartSummary(
       items: [
-        CartItem(productId: 'smokey', name: 'Smokey Jollof Feast', price: 4400, quantity: 1, emoji: '🍛'),
-        CartItem(productId: 'suya', name: 'Grilled Beef Suya', price: 2900, quantity: 1, emoji: '🥩'),
+        CartItem(productId: 'frango', name: 'Frango Grelhado com Fries', price: 45000, quantity: 1, emoji: '🍗'),
+        CartItem(productId: 'pizza', name: 'Pizza Margherita XXL', price: 32000, quantity: 1, emoji: '🍕'),
       ],
       deliveryFee: 0,
       taxes: 0,
-      discount: 1500,
+      discount: 15000,
     );
 
     return ScreenShell(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
       appBar: AppBar(
-        title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Finalizar Encomenda', style: TextStyle(fontWeight: FontWeight.w900)),
         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded)),
         actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.location_on_outlined))],
       ),
@@ -47,11 +47,11 @@ class CheckoutPromotionScreen extends StatelessWidget {
                 Expanded(
                   child: Text.rich(
                     TextSpan(
-                      text: 'PROMOTION APPLIED\n',
+                      text: 'PROMOÇÃO APLICADA\n',
                       style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w800),
                       children: [
-                        TextSpan(text: 'WEEKENDJOLLOF\n', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
-                        TextSpan(text: 'Enjoy free delivery and ₦1,500 off', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                        TextSpan(text: 'BOASVINDAS10\n', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
+                        TextSpan(text: 'Desfrute de entrega grátis e MT 150 de desconto', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -63,7 +63,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
           Row(
             children: [
               const Expanded(child: Text('ENTREGA EM', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.mutedText))),
-              TextButton(onPressed: () {}, child: const Text('Change')),
+              TextButton(onPressed: () {}, child: const Text('Alterar')),
             ],
           ),
           Container(
@@ -76,10 +76,10 @@ class CheckoutPromotionScreen extends StatelessWidget {
                 Expanded(
                   child: Text.rich(
                     TextSpan(
-                      text: 'Home (Apt 4B)\n',
+                      text: 'Casa (Apt 4B)\n',
                       style: TextStyle(fontWeight: FontWeight.w900),
                       children: [
-                        TextSpan(text: '14 Commercial Ave, Ikoyi Suite, Lagos\n', style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.mutedText)),
+                        TextSpan(text: 'Av. Julius Nyerere, 123, Polana\n', style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.mutedText)),
                         TextSpan(text: '15-35 min', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.mutedText)),
                       ],
                     ),
@@ -112,7 +112,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(item.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                            const Text('Regular • Extra Plantain', style: TextStyle(fontSize: 12, color: AppColors.mutedText)),
+                            const Text('Normal • Extra Porção', style: TextStyle(fontSize: 12, color: AppColors.mutedText)),
                           ],
                         ),
                       ),
@@ -130,9 +130,9 @@ class CheckoutPromotionScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.border)),
             child: Row(children: const [
-              Icon(Icons.credit_card_rounded, color: AppColors.blue),
+              Icon(Icons.mobile_friendly_rounded, color: AppColors.blue),
               SizedBox(width: 12),
-              Expanded(child: Text('•••• 4242', style: TextStyle(fontWeight: FontWeight.w900))),
+              Expanded(child: Text('M-Pesa • +258 84 123 4567', style: TextStyle(fontWeight: FontWeight.w900))),
               Icon(Icons.chevron_right_rounded),
             ]),
           ),
@@ -143,8 +143,8 @@ class CheckoutPromotionScreen extends StatelessWidget {
             child: Column(
               children: [
                 _PromoRow(label: 'Subtotal', value: summary.subtotal),
-                const _PromoTextRow(label: 'Delivery Fee', value: 'FREE'),
-                const _PromoTextRow(label: 'Discount (WEEKENDJOLLOF)', value: '-1,500'),
+                const _PromoTextRow(label: 'Taxa de Entrega', value: 'GRÁTIS'),
+                const _PromoTextRow(label: 'Desconto (BOASVINDAS10)', value: '-MT 150,00'),
                 const Divider(height: 24),
                 Row(children: [
                   const Expanded(child: Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
@@ -160,16 +160,16 @@ class CheckoutPromotionScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(color: AppColors.greenSoft, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.green)),
-                  child: const Text('WEEKENDJOLLOF  ✓', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.w900)),
+                  child: const Text('BOASVINDAS10  ✓', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.w900)),
                 ),
               ),
               const SizedBox(width: 10),
-              OutlinedButton(onPressed: () {}, child: const Text('Remove')),
+              OutlinedButton(onPressed: () {}, child: const Text('Remover')),
             ],
           ),
           const SizedBox(height: 22),
           PrimaryButton(
-            label: 'Place Order',
+            label: 'Fazer Encomenda',
             icon: Icons.arrow_forward_rounded,
             onPressed: () => Navigator.pushNamed(context, AppRoutes.orderTracking),
           ),

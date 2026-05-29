@@ -5,4 +5,5 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 /** Request used to register a new vendor profile. */
-public record CreateVendorRequest(@NotBlank String name, @NotNull UUID categoryId, Double latitude, Double longitude) {}
+public record CreateVendorRequest(@NotBlank String name, @NotNull UUID categoryId, Double latitude, Double longitude,
+                                  String ownerName, String nif, @NotBlank String phone, String address, String description, String logoStorageKey) {}

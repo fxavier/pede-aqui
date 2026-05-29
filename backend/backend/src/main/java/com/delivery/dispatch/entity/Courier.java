@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /** Represents a courier profile used by dispatch assignment logic. */
@@ -29,6 +30,18 @@ public class Courier {
     private UUID operatingZoneId;
     @Column(nullable = false)
     private double rating;
+    @Column(name = "full_name")
+    private String fullName;
+    @Column
+    private String phone;
+    @Column
+    private String nif;
+    @Column(name = "vehicle_type")
+    private String vehicleType;
+    @Column(name = "vehicle_plate")
+    private String vehiclePlate;
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -52,6 +65,16 @@ public class Courier {
 
     public void approve() { this.verificationStatus = CourierVerificationStatus.APPROVED; this.updatedAt = Instant.now(); }
     public void setAvailable(boolean available) { this.available = available; this.updatedAt = Instant.now(); }
+    
+    public void updateProfile(String fullName, String phone, String nif, String vehicleType, String vehiclePlate, LocalDate dateOfBirth) {
+        this.fullName = fullName;
+        this.phone = phone;
+        this.nif = nif;
+        this.vehicleType = vehicleType;
+        this.vehiclePlate = vehiclePlate;
+        this.dateOfBirth = dateOfBirth;
+        this.updatedAt = Instant.now();
+    }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
@@ -59,4 +82,11 @@ public class Courier {
     public CourierVerificationStatus getVerificationStatus() { return verificationStatus; }
     public boolean isAvailable() { return available; }
     public UUID getOperatingZoneId() { return operatingZoneId; }
+    public double getRating() { return rating; }
+    public String getFullName() { return fullName; }
+    public String getPhone() { return phone; }
+    public String getNif() { return nif; }
+    public String getVehicleType() { return vehicleType; }
+    public String getVehiclePlate() { return vehiclePlate; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
 }

@@ -1,0 +1,1428 @@
+================================================================================
+# ALL NEW TRANSLATIONS - grouped by conflicting short substring, longest first
+# Insert ALL of these BEFORE the existing entries (at line 135, before "Dashboard")
+# Within each section, longer/more specific entries come before shorter ones
+# to prevent partial substring matches from corrupting the output.
+================================================================================
+
+    // ─── "ACTIVE" phrases (must come before line 178 ["Active", "Activo"]) ───
+    ["Active & Scheduled Offers", "Ofertas Activas e Agendadas"],
+    ["Active & Visible", "Activo e Visível"],
+    ["Active Admin Sessions", "Sessões Admin Activas"],
+    ["Active Campaigns", "Campanhas Activas"],
+    ["Active Instances", "Instâncias Activas"],
+    ["Active on Marketplace", "Activo no Marketplace"],
+    ["Active Promotion ROI", "ROI de Promoções Activas"],
+    ["Active Segments", "Segmentos Activos"],
+    ["Active View", "Vista Activa"],
+
+    // ─── "ACTION" / "ACTIONS" / "ACTOR" phrases (must come before "Actions" at line 416 and "Action" at line 49) ───
+    ["Action Type", "Tipo de Acção"],
+    ["Actions", "Acções"],
+    ["Action", "Acção"],
+    ["Actor Role", "Função do Actor"],
+    ["Actor", "Actor"],
+    ["All Actions", "Todas as Acções"],
+
+    // ─── "ACTIVITIES" / "ACTIVITY" phrases ───
+    ["All Activities", "Todas as Actividades"],
+    ["Audit & Activity Logs", "Registos de Auditoria e Actividades"],
+    ["Recent Activity Feed", "Feed de Actividades Recentes"],
+    ["Avg Action Frequency", "Frequência Média de Acção"],
+
+    // ─── "ALL" + something phrases (must come before line 176 ["All", "Todas"]) ───
+    ["All Actors", "Todos os Actores"],
+    ["All Administrators", "Todos os Administradores"],
+    ["All Categories", "Todas as Categorias"],
+    ["All Customers", "Todos os Clientes"],
+    ["All Events", "Todos os Eventos"],
+    ["All Items", "Todos os Itens"],
+    ["All Reviews", "Todas as Avaliações"],
+    ["All Staff", "Toda a Equipa"],
+    ["All Systems Operational", "Todos os Sistemas Operacionais"],
+    ["All Tickets", "Todos os Tickets"],
+    ["Clear All Filters", "Limpar Todos os Filtros"],
+    ["View All 24 Users", "Ver Todos os 24 Utilizadores"],
+    ["View All Coupons", "Ver Todos os Cupões"],
+    ["View All Hub Connectivity", "Ver Conectividade de Todos os Polos"],
+    ["View All Logs", "Ver Todos os Registos"],
+    ["View All Requests", "Ver Todos os Pedidos"],
+    ["View All", "Ver Todos"],
+    ["All Day", "Dia Inteiro"],
+    ["All day closure", "Encerramento de dia inteiro"],
+    ["Apply to all days", "Aplicar a todos os dias"],
+    ["Manage All Schedules", "Gerir Todos os Horários"],
+    ["Process All", "Processar Tudo"],
+    ["Save All Updates", "Guardar Todas as Actualizações"],
+
+    // ─── "ALL" standalone (must come after all "All X" phrases, before line 176) ───
+
+    // ─── "ADJUSTMENT" / "ADJUSTMENTS" phrases ───
+    ["Adjustment", "Ajuste"],
+    ["Adjustments", "Ajustes"],
+    ["Manual Adj.", "Ajuste Manual"],
+
+    // ─── "ADMIN" / "ADMINISTRATOR" phrases ───
+    ["Administer customer accounts, driver profiles, and vendor access.", "Administrar contas de clientes, perfis de condutores e acesso de vendedores."],
+    ["Administrative Users", "Utilizadores Administrativos"],
+    ["Admin Profile Avatar", "Avatar do Perfil Admin"],
+    ["Administer", "Administrar"],
+    ["Global Admin Panel", "Painel de Admin Global"],
+    ["Regional Administrator", "Administrador Regional"],
+
+    // ─── "AI" phrases ───
+    ["AI Growth Engine", "Motor de Crescimento IA"],
+    ["AI Pulse Insights", "Análises de Pulso IA"],
+    ["ENABLE AI SORTING", "ACTIVAR ORDENAÇÃO IA"],
+    ["Let our AI reorder your menu based on real-time buying trends.", "Deixe a nossa IA reordenar o seu menu com base nas tendências de compra em tempo real."],
+    ["Our predictive AI helps you reallocate budget to the channels that deliver the highest growth rhythm.", "A nossa IA preditiva ajuda-o a realocar o orçamento para os canais que oferecem o maior ritmo de crescimento."],
+
+    // ─── "ANOMALY" / "ANALYZE" / "ANALYSIS" phrases ───
+    ["Anomaly Alerts", "Alertas de Anomalias"],
+    ["Analyze performance and manage past transactions.", "Analisar desempenho e gerir transacções passadas."],
+    ["Use 'Role' filters to isolate system-triggered anomalies.", "Use filtros de 'Perfil' para isolar anomalias desencadeadas pelo sistema."],
+
+    // ─── "API" phrases ───
+    ["API Key Rotation", "Rotação de Chave API"],
+    ["Core API Services", "Serviços Principais de API"],
+
+    // ─── "APPLICABILITY" / "APPLY" phrases ───
+    ["Applicability", "Aplicabilidade"],
+    ["Apply Advanced Filters", "Aplicar Filtros Avançados"],
+    ["Apply Decrease", "Aplicar Diminuição"],
+    ["Apply Increase", "Aplicar Aumento"],
+    ["Apply Sale Discount", "Aplicar Desconto de Venda"],
+    ["Apply Strategy →", "Aplicar Estratégia →"],
+    ["Apply suggestion", "Aplicar sugestão"],
+    ["Apply to all days", "Aplicar a todos os dias"],
+    ["Apply a fixed % or $ amount off.", "Aplicar um % fixo ou valor MT de desconto."],
+    ["Apply destination-based VAT logic automatically", "Aplicar lógica de IVA baseada no destino automaticamente"],
+
+    // ─── "ARRIVED" / "ASSIGNED" phrases ───
+    ["Arrived", "Chegou"],
+    ["Assigned 15m ago", "Atribuído há 15 min"],
+    ["Assigned Agent", "Agente Atribuído"],
+    ["Courier arriving in 3m", "Estafeta a chegar em 3 min"],
+
+    // ─── "AT RISK" phrases ───
+    ["At Risk (Inactive)", "Em Risco (Inactivo)"],
+    ["At Risk", "Em Risco"],
+    ["High Value, At Risk", "Alto Valor, Em Risco"],
+
+    // ─── "AUDIENCE" phrases ───
+    ["Audience:", "Público-alvo:"],
+
+    // ─── "AUDIT" phrases (new - must come before any shorter "Audit" match) ───
+    ["Audit & Activity Logs", "Registos de Auditoria e Actividades"],
+    ["Audit Integrity Check", "Verificação de Integridade da Auditoria"],
+    ["Audit Integrity", "Integridade da Auditoria"],
+    ["Audit Log (Excel)", "Registo de Auditoria (Excel)"],
+    ["Audit Logs", "Registos de Auditoria"],
+    ["Audit Log", "Registo de Auditoria"],
+    ["Audit Trail", "Trilha de Auditoria"],
+    ["Audit", "Auditoria"],
+    ["Document Audit", "Auditoria de Documentos"],
+    ["Platform Audit Logs", "Registos de Auditoria da Plataforma"],
+    ["Security Audit Passed", "Auditoria de Segurança Aprovada"],
+
+    // ─── "AUTHENTICATION" phrases ───
+    ["Authentication API", "API de Autenticação"],
+
+    // ─── "AUTO" phrases ───
+    ["Auto-highlight items with active discounts in the app.", "Destacar automaticamente itens com descontos activos na app."],
+    ["Automatic failover completed successfully.", "Failover automático concluído com sucesso."],
+    ["Automatic", "Automático"],
+
+    // ─── "AVAILABILITY" phrases ───
+    ["Availability", "Disponibilidade"],
+    ["Add Availability Window", "Adicionar Janela de Disponibilidade"],
+
+    // ─── "AVERAGE" / "AVG" phrases ───
+    ["Average CAC", "CAC Médio"],
+    ["Average Prep Time", "Tempo Médio de Preparação"],
+    ["Avg Action Frequency", "Frequência Média de Acção"],
+    ["Avg. Commission", "Comissão Média"],
+    ["Avg. Order Value", "Valor Médio de Encomenda"],
+    ["Avg. Response", "Resposta Média"],
+
+    // ─── "BANK" / "BASE" / "BATCH" / "BILLING" phrases ───
+    ["Bank Switches", "Transferências Bancárias"],
+    ["Base Price", "Preço Base"],
+    ["Base Rate (per km)", "Taxa Base (por km)"],
+    ["Batch Payouts Initiated", "Pagamentos em Lote Iniciados"],
+    ["Batch Settle", "Liquidar em Lote"],
+    ["Billing", "Facturação"],
+    ["Basic Information", "Informações Básicas"],
+
+    // ─── "BOGO" / "BUNDLE" phrases ───
+    ["BOGO Offer", "Oferta Leve 2 Pague 1"],
+    ["BOGO or item bundles", "Leve 2 Pague 1 ou pacotes de itens"],
+    ["Buy X Get Y", "Leve X Pague Y"],
+    ["Buy one get one free deals.", "Ofertas leve 2 pague 1."],
+
+    // ─── "BOTTOM NAV" / "BOTTOM NAVIGATION" phrases ───
+    ["Bottom Navigation (Mobile Only)", "Navegação Inferior (Apenas Mobile)"],
+    ["Bottom Navigation Bar (Mobile only)", "Barra de Navegação Inferior (Apenas Mobile)"],
+    ["BottomNavBar (Mobile Only)", "BarraNavInferior (Apenas Mobile)"],
+
+    // ─── "BOUNCE RATE" phrase ───
+    ["BOUNCE RATE", "TAXA DE REJEIÇÃO"],
+
+    // ─── "BREAKFAST" / "BRUNCH" / "LUNCH" / "DINNER" / "SNACK" / "DESSERTS" / "STARTERS" / "DRINKS" / "MAINS" / "SPECIALS" / "SEASONAL" phrases ───
+    ["Breakfast Only", "Apenas Pequeno-almoço"],
+    ["Breakfast", "Pequeno-almoço"],
+    ["Dinner Only", "Apenas Jantar"],
+    ["Dinner", "Jantar"],
+    ["Lunch Special", "Especial de Almoço"],
+    ["Lunch", "Almoço"],
+    ["Snack", "Lanche"],
+    ["Desserts", "Sobremesas"],
+    ["Starters", "Entradas"],
+    ["Beverages", "Bebidas"],
+    ["Drinks", "Bebidas"],
+    ["Mains", "Pratos Principais"],
+    ["Specials", "Especiais"],
+    ["Seasonal Specials", "Especiais Sazonais"],
+    ["Seasonal Drinks", "Bebidas Sazonais"],
+    ["Seasonal midnight discount", "desconto sazonal da meia-noite"],
+    ["Seasonal", "Sazonal"],
+
+    // ─── "BULK ACTION" phrases ───
+    ["Bulk Action Toast (Hidden by default)", "Toast de Acção em Massa (Oculto por defeito)"],
+
+    // ─── "BUSINESS ENTITY" phrases ───
+    ["Business Entity", "Entidade Comercial"],
+
+    // ─── "CAMPAIGN" / "CAMPAIGNS" phrases (must come before "Campaigns" standalone) ───
+    ["Campaign Health Alert", "Alerta de Saúde de Campanha"],
+    ["Campaigns", "Campanhas"],
+    ["Export Campaign Data (CSV)", "Exportar Dados de Campanha (CSV)"],
+    ["Last Campaign Sent", "Última Campanha Enviada"],
+    ["Top Performing Campaigns", "Campanhas com Melhor Desempenho"],
+
+    // ─── "CANCELLATION" / "CANCELLED" phrases ───
+    ["Cancelled", "Cancelado"],
+    ["High Cancellation Risk", "Alto Risco de Cancelamento"],
+    ["15% cancellation rate", "taxa de cancelamento de 15%"],
+
+    // ─── "CARD" phrases ───
+    ["Card", "Cartão"],
+
+    // ─── "CASH FLOW" phrases ───
+    ["Cash Flow", "Fluxo de Caixa"],
+    ["Fleet Cash Flow", "Fluxo de Caixa da Frota"],
+
+    // ─── "CATEGORIES" / "CATEGORY" phrases (must come before line 212 ["Category", "Categoria"]) ───
+    ["Categories with zero items are automatically hidden from your public storefront...", "Categorias sem itens são automaticamente ocultadas da sua loja pública..."],
+    ["Categories", "Categorias"],
+    ["All Categories", "Todas as Categorias"],
+    ["Empty Categories", "Categorias Vazias"],
+    ["New categories are hidden from customers by default until you add items.", "Novas categorias estão ocultas dos clientes por defeito até adicionar itens."],
+    ["Specific Categories", "Categorias Específicas"],
+    ["Total Categories", "Total de Categorias"],
+    ["Define how this category appears to your hungry customers.", "Defina como esta categoria aparece aos seus clientes."],
+    ["Use the drag handles on the left of each category to change the order...", "Use as pegas de arrasto à esquerda de cada categoria para alterar a ordem..."],
+
+    // ─── "CHANGE PHOTO" / "CHANGED" phrases ───
+    ["Change Photo", "Alterar Foto"],
+    ["Changed Commission Rate", "Taxa de Comissão Alterada"],
+    ["Commission Rate Change", "Alteração de Taxa de Comissão"],
+    ["Value Change", "Alteração de Valor"],
+
+    // ─── "CHRISTMAS" phrases ───
+    ["Christmas Break", "Pausa de Natal"],
+
+    // ─── "CLOSED" / "CLOSURES" phrases ───
+    ["Closed 14 days ago", "Fechado há 14 dias"],
+    ["Closures", "Encerramentos"],
+
+    // ─── "COD" phrases ───
+    ["COD Reconciled: Rider-049", "COD Reconciliado: Estafeta-049"],
+    ["COD Reconciliation Status", "Estado de Reconciliação COD"],
+    ["OUTSTANDING COD", "COD PENDENTE"],
+    ["Reconcile COD", "Reconciliar COD"],
+
+    // ─── "COMMISSION" phrases ───
+    ["Commission Rate Change", "Alteração de Taxa de Comissão"],
+    ["Changed Commission Rate", "Taxa de Comissão Alterada"],
+    ["Net Commissions", "Comissões Líquidas"],
+    ["Avg. Commission", "Comissão Média"],
+    ["Total Commissions (MTD)", "Comissões Totais (MTD)"],
+
+    // ─── "COMPLETED" phrases (must come before line 294 ["Completed Orders", ...]) ───
+    ["Completed", "Concluído"],
+    ["COMPLETED", "CONCLUÍDO"],
+    ["Completion Rate", "Taxa de Conclusão"],
+
+    // ─── "COMPONENT" phrases ───
+    ["Component", "Componente"],
+    ["Header (Shared Component)", "Cabeçalho (Componente Partilhado)"],
+
+    // ─── "CONFIG" / "CONFIGURATION" phrases ───
+    ["Config Deployment", "Implementação de Config"],
+    ["Configurations", "Configurações"],
+    ["Configure your operating hours, delivery parameters, and closures.", "Configure o seu horário de funcionamento, parâmetros de entrega e encerramentos."],
+    ["Configure pricing models for specific geographical boundaries.", "Configurar modelos de precificação para limites geográficos específicos."],
+    ["System Configurations", "Configurações do Sistema"],
+
+    // ─── "CONTACT CUSTOMER" phrases ───
+    ["Contact Customer", "Contactar Cliente"],
+
+    // ─── "CONVERSION" / "CONVERSIONS" phrases ───
+    ["Conversions", "Conversões"],
+    ["Conversion", "Conversão"],
+    ["Highest Conversion", "Maior Conversão"],
+    ["Total Conversions", "Total de Conversões"],
+    ["8.2% conversion rate", "taxa de conversão de 8,2%"],
+
+    // ─── "CORRECTION" phrases ───
+    ["Correction", "Correcção"],
+    ["Rectification", "Rectificação"],
+
+    // ─── "COUPON" phrases ───
+    ["Coupon", "Cupão"],
+    ["Flash sale coupon code", "código de cupão de venda relâmpago"],
+    ["Top Coupons", "Principais Cupões"],
+    ["View All Coupons", "Ver Todos os Cupões"],
+
+    // ─── "COURIER" phrases (must come before standalone "Courier" if added) ───
+    ["Courier arriving in 3m", "Estafeta a chegar em 3 min"],
+    ["Courier Assigned", "Estafeta Atribuído"],
+    ["Courier Background Check", "Verificação de Antecedentes do Estafeta"],
+    ["Courier Governance", "Governação de Estafetas"],
+    ["Courier profile picture", "foto de perfil do estafeta"],
+    ["Courier Trust Fund", "Fundo de Confiança do Estafeta"],
+    ["Courier #092 (Tunde)", "Estafeta #092 (Tunde)"],
+    ["Courier", "Estafeta"],
+    ["Request Courier", "Solicitar Estafeta"],
+    ["Waiting Courier", "Estafeta à Espera"],
+
+    // ─── "COVER DELIVERY" phrases ───
+    ["Cover delivery costs for customers.", "Cobrir custos de entrega para clientes."],
+
+    // ─── "CREATE" / "CRITICAL" phrases ───
+    ["Create Manual Log", "Criar Registo Manual"],
+    ["Create New Promotion", "Criar Nova Promoção"],
+    ["Create New Role", "Criar Novo Perfil"],
+    ["Create Promotion", "Criar Promoção"],
+    ["Create Segment", "Criar Segmento"],
+    ["Critical", "Crítico"],
+    ["Security Critical Actions", "Acções Críticas de Segurança"],
+
+    // ─── "CURRENT" phrases ───
+    ["Current Price", "Preço Actual"],
+    ["Current Stock", "Stock Actual"],
+
+    // ─── "CUSTOM" phrases ───
+    ["Custom Range...", "Intervalo Personalizado..."],
+    ["Customize your product information and variants", "Personalize as informações do produto e variantes"],
+
+    // ─── "CUSTOMER" phrases (must come before standalone "Customer") ───
+    ["Customer Acquisition Cost (CAC)", "Custo de Aquisição de Cliente (CAC)"],
+    ["Customer avatar", "avatar do cliente"],
+    ["Customer Loyalty", "Fidelização de Clientes"],
+    ["Customer Profile", "Perfil do Cliente"],
+    ["Customer Reviews", "Avaliações de Clientes"],
+    ["Customer Reviews & Feedback", "Avaliações e Feedback de Clientes"],
+    ["Customer Segments", "Segmentos de Clientes"],
+    ["Customer", "Cliente"],
+    ["Customers", "Clientes"],
+    ["All Customers", "Todos os Clientes"],
+    ["Contact Customer", "Contactar Cliente"],
+    ["High Value Customers", "Clientes de Alto Valor"],
+    ["Once per customer", "Uma vez por cliente"],
+    ["Per Customer Limit", "Limite por Cliente"],
+    ["Twice per customer", "Duas vezes por cliente"],
+
+    // ─── "DAILY" phrases ───
+    ["Daily Budget ($)", "Orçamento Diário (MT)"],
+    ["Daily Redemption Rates (Last 7 Days)", "Taxas de Resgate Diárias (Últimos 7 Dias)"],
+    ["Daily Revenue", "Receita Diária"],
+    ["Daily Specials", "Especiais Diários"],
+
+    // ─── "DATA" phrases ───
+    ["Date Range", "Intervalo de Datas"],
+    ["End Date", "Data de Fim"],
+    ["Start Date", "Data de Início"],
+
+    // ─── "DAYS AGO" / "DAYS REMAINING" phrases ───
+    ["15 days ago", "há 15 dias"],
+    ["2 days ago", "há 2 dias"],
+    ["5 days ago", "há 5 dias"],
+    ["25 days remaining", "25 dias restantes"],
+    ["78 days remaining", "78 dias restantes"],
+    ["Closed 14 days ago", "Fechado há 14 dias"],
+    ["Inactive for 30+ days", "Inactivo há 30+ dias"],
+    ["Joined in last 7 days", "Registado nos últimos 7 dias"],
+    ["No orders > 30 days", "Sem encomendas > 30 dias"],
+    ["Starts in 2 days", "Começa em 2 dias"],
+    ["Starts in 3 days", "Começa em 3 dias"],
+
+    // ─── "DEGRADED" / "DELAYED" / "DELIVERED" phrases ───
+    ["Degraded", "Degradado"],
+    ["DEGRADED", "DEGRADADO"],
+    ["Delayed", "Atrasado"],
+    ["Delivered", "Entregue"],
+    ["Logistics Delay", "Atraso Logístico"],
+
+    // ─── "DELIVERY" / "DELIVERY ZONE" phrases ───
+    ["Delivery Information", "Informações de Entrega"],
+    ["Delivery Zone", "Zona de Entrega"],
+    ["Free Delivery", "Entrega Grátis"],
+    ["Out for Delivery", "Saiu para Entrega"],
+
+    // ─── "DESCRIBE" / "DESCRIPTION" phrases ───
+    ["Describe the goals of this campaign...", "Descreva os objectivos desta campanha..."],
+    ["Briefly describe what makes this section special...", "Descreva brevemente o que torna esta secção especial..."],
+
+    // ─── "DETAILS" phrases ───
+    ["Details", "Detalhes"],
+    ["Item Details", "Detalhes do Item"],
+    ["Order Details", "Detalhes da Encomenda"],
+    ["Product Details", "Detalhes do Produto"],
+    ["Edit Item Details", "Editar Detalhes do Item"],
+
+    // ─── "DISCOUNT" phrases ───
+    ["Discount Value (%)", "Valor de Desconto (%)"],
+    ["Discounted Price (Optional)", "Preço com Desconto (Opcional)"],
+    ["Discount", "Desconto"],
+    ["Flat Discount", "Desconto Fixo"],
+    ["Flat discount in MZN", "desconto fixo em MT"],
+    ["Maximum Discount Amount (Optional)", "Valor Máximo de Desconto (Opcional)"],
+    ["Percentage Discount", "Desconto Percentual"],
+    ["Apply Sale Discount", "Aplicar Desconto de Venda"],
+    ["20% off all rice bowls", "20% de desconto em todas as tigelas de arroz"],
+    ["Only buys with discounts", "Apenas compra com descontos"],
+
+    // ─── "DISCARD" phrases ───
+    ["Discard Changes", "Descartar Alterações"],
+    ["Discard", "Descartar"],
+
+    // ─── "DISPLAY ADS" phrases ───
+    ["Display Ads", "Anúncios Gráficos"],
+
+    // ─── "DISPUTED" phrases ───
+    ["DISPUTED", "DISPUTADO"],
+
+    // ─── "DOCUMENT" / "DOCUMENTATION" phrases ───
+    ["Document Audit", "Auditoria de Documentos"],
+    ["Documentation", "Documentação"],
+
+    // ─── "DOWN" / "DRAFTING" / "DRAG" phrases ───
+    ["Down", "Inactivo"],
+    ["Drafting a new vibrant item for your marketplace stall.", "A criar um novo item vibrante para a sua banca no marketplace."],
+    ["Drag handles to reorder items for customers.", "Arraste as pegas para reordenar itens para os clientes."],
+    ["Drive more sales with targeted offers and discounts.", "Impulsione mais vendas com ofertas e descontos direccionados."],
+    ["Driver and user verification digit count", "contagem de dígitos de verificação do condutor e utilizador"],
+
+    // ─── "DUPLICATE" / "DURATION" phrases ───
+    ["Duplicate", "Duplicar"],
+    ["Duration", "Duração"],
+
+    // ─── "EARNINGS" phrases ───
+    ["Earnings (M)", "Ganhos (M)"],
+    ["Earnings", "Ganhos"],
+    ["Total Earnings", "Ganhos Totais"],
+
+    // ─── "EDIT ITEM" / "EDIT" phrases ───
+    ["Edit Item Details", "Editar Detalhes do Item"],
+    ["Edit Item Side Panel", "Painel Lateral de Edição de Item"],
+
+    // ─── "EMERGENCY" phrases ───
+    ["Emergency System Halt", "Paragem de Emergência do Sistema"],
+
+    // ─── "ENABLE AI SORTING" phrase ───
+    ["ENABLE AI SORTING", "ACTIVAR ORDENAÇÃO IA"],
+
+    // ─── "END DATE" / "ENDED" phrases ───
+    ["End Date", "Data de Fim"],
+    ["Ended", "Terminado"],
+
+    // ─── "ENSURE" / "ENTITY" / "ESTIMATED" phrases ───
+    ["Ensure statutory reserves are maintained before the 15th of the month.", "Garanta que as reservas legais são mantidas antes do dia 15 do mês."],
+    ["Entity", "Entidade"],
+    ["Business Entity", "Entidade Comercial"],
+    ["Target Entity", "Entidade Alvo"],
+    ["Estimated Reach:", "Alcance Estimado:"],
+    ["Est. Delivery Time", "Tempo Estimado de Entrega"],
+
+    // ─── "EVENTS" / "EVENT" phrases ───
+    ["Events Last 24h", "Eventos nas Últimas 24h"],
+    ["All Events", "Todos os Eventos"],
+    ["Recent Infrastructure Events", "Eventos de Infraestrutura Recentes"],
+    ["Security Event Trend", "Tendência de Eventos de Segurança"],
+
+    // ─── "EXPIRED" / "EXPLAIN" / "EXPLORE" phrases ───
+    ["EXPIRED", "EXPIRADO"],
+    ["Explain the benefits of this promotion...", "Explique os benefícios desta promoção..."],
+    ["Explore Pro Features", "Explorar Funcionalidades Pro"],
+
+    // ─── "EXPORT" phrases ───
+    ["Download as CSV", "Descarregar como CSV"],
+    ["Download as PDF", "Descarregar como PDF"],
+    ["Export Campaign Data (CSV)", "Exportar Dados de Campanha (CSV)"],
+    ["Export Financial Report", "Exportar Relatório Financeiro"],
+    ["Export Log", "Exportar Registo"],
+    ["Export PDF", "Exportar PDF"],
+
+    // ─── "EXTERNAL MESH" phrases ───
+    ["External Mesh", "Malha Externa"],
+
+    // ─── "FAB FOR QUICK ACTIONS" phrase ───
+    ["FAB for Quick Actions (Mobile Only)", "FAB para Acções Rápidas (Apenas Mobile)"],
+
+    // ─── "FAILURE" phrases ───
+    ["Failure", "Falha"],
+
+    // ─── "FEE" / "FEE MANAGEMENT" phrases ───
+    ["Fee Updated", "Taxa Actualizada"],
+    ["Fixed Platform Fee", "Taxa Fixa da Plataforma"],
+    ["Global Fee Policy", "Política de Taxas Global"],
+    ["Service Fee", "Taxa de Serviço"],
+    ["Zones & Fee Management", "Gestão de Zonas e Taxas"],
+
+    // ─── "FINANCE" / "FINANCIAL" phrases ───
+    ["FINANCE DEPT", "DEP. Financeiro"],
+    ["Finance Officer Avatar", "Avatar do Oficial Financeiro"],
+    ["Finance Role", "Perfil Financeiro"],
+    ["Financial Reconciliation", "Reconciliação Financeira"],
+    ["Export Financial Report", "Exportar Relatório Financeiro"],
+
+    // ─── "FLASH SALE" phrases ───
+    ["Flash sale coupon code", "código de cupão de venda relâmpago"],
+    ["Summer Flash Sale 2024", "Promoção Relâmpago de Verão 2024"],
+    ["Weekend Flash Sale", "Promoção Relâmpago de Fim de Semana"],
+
+    // ─── "FLEET" / "FLOATING ACTION" phrases ───
+    ["Fleet Cash Flow", "Fluxo de Caixa da Frota"],
+    ["Fleet Dispatcher", "Despachante de Frota"],
+    ["Floating Action Button - Mobile/Contextual Only", "Botão de Acção Flutuante - Apenas Mobile/Contextual"],
+    ["Floating Action Button Contextual Logic", "Lógica Contextual do Botão de Acção Flutuante"],
+    ["Floating Action Button", "Botão de Acção Flutuante"],
+    ["Floating Action for Mobile (Contextual)", "Acção Flutuante para Mobile (Contextual)"],
+
+    // ─── "FOLLOW THE STEPS" / "FREE DELIVERY" / "FREQUENT PRAISES" phrases ───
+    ["Follow the steps below to design and launch your next marketing initiative.", "Siga os passos abaixo para conceber e lançar a sua próxima iniciativa de marketing."],
+    ["Free Delivery", "Entrega Grátis"],
+    ["Frequent Praises", "Elogios Frequentes"],
+    ["Fresh market produce", "Produtos frescos do mercado"],
+    ["Friday 6pm-8pm orders are 15% more likely to mention delays.", "Encomendas de sexta às 18h-20h têm 15% mais probabilidade de mencionar atrasos."],
+
+    // ─── "FROM" / "FULL REFUND" phrases ───
+    ["From", "De"],
+    ["Full Refund", "Reembolso Total"],
+
+    // ─── "GENERATE AUDITOR PACKAGE" phrases ───
+    ["Generate Auditor Package", "Gerar Pacote de Auditoria"],
+
+    // ─── "GLOBAL" phrases ───
+    ["Global Admin Panel", "Painel de Admin Global"],
+    ["Global Distribution", "Distribuição Global"],
+    ["Global Error Rate", "Taxa de Erro Global"],
+    ["Global Fee Policy", "Política de Taxas Global"],
+    ["Global Pricing / West Africa", "Precificação Global / África Ocidental"],
+    ["Global Roles & Permissions", "Perfis e Permissões Globais"],
+    ["Global Router", "Roteador Global"],
+    ["Global Tax Calculation", "Cálculo Global de Impostos"],
+
+    // ─── "GOVERNANCE" phrases ───
+    ["Governance Health", "Saúde da Governação"],
+    ["Platform Governance", "Governação da Plataforma"],
+
+    // ─── "GROUP YOUR PRODUCTS" / "GROWTH" phrases ───
+    ["Group your products", "Agrupe os seus produtos"],
+    ["Growth Engine", "Motor de Crescimento"],
+    ["Growth", "Crescimento"],
+    ["AI Growth Engine", "Motor de Crescimento IA"],
+    ["Segment Growth Trends", "Tendências de Crescimento de Segmentos"],
+
+    // ─── "HEADER" phrases ───
+    ["Header (Shared Component)", "Cabeçalho (Componente Partilhado)"],
+
+    // ─── "HEALTH" / "HEALTH WEEK" phrases ───
+    ["Health Week Promo", "Promoção Semana da Saúde"],
+    ["Health", "Saúde"],
+    ["System Health", "Saúde do Sistema"],
+    ["Governance Health", "Saúde da Governação"],
+    ["Campaign Health Alert", "Alerta de Saúde de Campanha"],
+
+    // ─── "HELP" phrases ───
+    ["help", "ajuda"],
+
+    // ─── "HIGH" / "HIGHEST" phrases ───
+    ["High Cancellation Risk", "Alto Risco de Cancelamento"],
+    ["High Impact", "Alto Impacto"],
+    ["High Value Customers", "Clientes de Alto Valor"],
+    ["High Value, At Risk", "Alto Valor, Em Risco"],
+    ["High Value", "Alto Valor"],
+    ["Highest Conversion", "Maior Conversão"],
+    ["Highest Rating", "Melhor Classificação"],
+    ["High-quality photos of your food increase sales by up to 40%. Use bright, natural lighting.", "Fotos de alta qualidade da sua comida aumentam as vendas em até 40%. Use iluminação natural e brilhante."],
+    ["Highest volume since last Friday", "Maior volume desde sexta-feira passada"],
+
+    // ─── "HOUR AGO" / "HOURS" phrases ───
+    ["1 hour ago", "há 1 hora"],
+    ["Last check: 4 hours ago by System", "Última verificação: há 4 horas pelo Sistema"],
+
+    // ─── "IMMEDIATE ATTENTION" / "IN PROGRESS" / "IN STOCK" / "IN TRANSIT" phrases ───
+    ["3 items require immediate attention to prevent sales interruption.", "3 itens necessitam de atenção imediata para evitar interrupção de vendas."],
+    ["In Progress", "Em Progresso"],
+    ["In Stock", "Em Stock"],
+    ["In Transit", "Em Trânsito"],
+
+    // ─── "INCIDENT" / "INDEPENDENCE DAY" / "INFLUENCER" phrases ───
+    ["Incident", "Incidente"],
+    ["Independence Day", "Dia da Independência"],
+    ["Influencer", "Influenciador"],
+
+    // ─── "INSPECT" / "INSTAGRAM ADS" phrases ───
+    ["Inspect", "Inspeccionar"],
+    ["Instagram Ads", "Anúncios Instagram"],
+
+    // ─── "INTERNAL NOTE" phrases ───
+    ["Internal Note added", "Nota Interna adicionada"],
+    ["Internal Notes (Confidential)", "Notas Internas (Confidenciais)"],
+    ["Save Internal Note", "Guardar Nota Interna"],
+
+    // ─── "INVENTORY" phrases ───
+    ["Pricing & Inventory", "Precificação e Inventário"],
+
+    // ─── "INVOICE" phrases ───
+    ["Invoice Discrepancy", "Discrepância de Factura"],
+
+    // ─── "ITEM" / "ITEMS" phrases (must come before line 219 ["Items", "Itens"]) ───
+    ["Item Details", "Detalhes do Item"],
+    ["Items (3)", "Itens (3)"],
+    ["items selected", "itens seleccionados"],
+    ["All Items", "Todos os Itens"],
+    ["Edit Item Details", "Editar Detalhes do Item"],
+    ["Edit Item Side Panel", "Painel Lateral de Edição de Item"],
+    ["Specific Items", "Itens Específicos"],
+    ["Total Items", "Total de Itens"],
+    ["2 units left", "2 unidades restantes"],
+    ["3 items require immediate attention to prevent sales interruption.", "3 itens necessitam de atenção imediata para evitar interrupção de vendas."],
+
+    // ─── "JOINED" phrases ───
+    ["Joined in last 7 days", "Registado nos últimos 7 dias"],
+
+    // ─── "JUST NOW" phrases ───
+    ["Just now", "Agora mesmo"],
+
+    // ─── "LAGOS" → "MAPUTO" phrases ───
+    ["Lagos Base Fare", "Tarifa Base de Maputo"],
+    ["Top 5% in Lagos", "Top 5% em Maputo"],
+    ["of vendors in Lagos.", "dos vendedores em Maputo."],
+
+    // ─── "LAST" phrases ───
+    ["Last 24 Hours", "Últimas 24 Horas"],
+    ["Last 30 Days", "Últimos 30 Dias"],
+    ["Last 30 days", "Últimos 30 dias"],
+    ["Last 7 Days", "Últimos 7 Dias"],
+    ["Last Active", "Último Activo"],
+    ["Last Campaign Sent", "Última Campanha Enviada"],
+    ["Last check: 4 hours ago by System", "Última verificação: há 4 horas pelo Sistema"],
+    ["Last database synchronization completed 4 minutes ago.", "Última sincronização da base de dados concluída há 4 minutos."],
+
+    // ─── "LATE NIGHT DEALS" / "LAUNCH" / "LEVEL" phrases ───
+    ["Late Night Deals", "Ofertas da Noite"],
+    ["Launch", "Lançar"],
+    ["Level 4 Access", "Acesso Nível 4"],
+
+    // ─── "LIMITS" / "LIMIT" phrases ───
+    ["Limits", "Limites"],
+    ["Low Threshold", "Limiar Baixo"],
+    ["Low Stock Threshold", "Limiar de Stock Baixo"],
+    ["Per Customer Limit", "Limite por Cliente"],
+    ["Total Usage Limit", "Limite Total de Uso"],
+
+    // ─── "LOGISTICS" / "LOGS" phrases ───
+    ["Logistics Delay", "Atraso Logístico"],
+    ["Logistics Service Provider #44", "Prestador de Serviços Logísticos #44"],
+    ["Logs", "Registos"],
+    ["Audit Logs", "Registos de Auditoria"],
+    ["Audit Log", "Registo de Auditoria"],
+    ["Export Log", "Exportar Registo"],
+    ["Transaction Log", "Registo de Transacções"],
+    ["View All Logs", "Ver Todos os Registos"],
+
+    // ─── "LOW" phrases ───
+    ["Low Stock (8)", "Stock Baixo (8)"],
+    ["Low Stock Threshold", "Limiar de Stock Baixo"],
+    ["Low Stock", "Stock Baixo"],
+    ["Low Threshold", "Limiar Baixo"],
+    ["Lowest Rating", "Pior Classificação"],
+
+    // ─── "LTV >" phrase ───
+    ["LTV > MZN 250k", "LTV > MT 250k"],
+
+    // ─── "MAIN CONTENT" phrases ───
+    ["MAIN CONTENT AREA", "ÁREA DE CONTEÚDO PRINCIPAL"],
+    ["Main Content Area", "Área de Conteúdo Principal"],
+    ["Main Content Canvas", "Canvas de Conteúdo Principal"],
+    ["Main Content Container", "Contentor de Conteúdo Principal"],
+    ["Main Content Shell", "Estrutura de Conteúdo Principal"],
+    ["Main Content Wrapper", "Invólucro de Conteúdo Principal"],
+
+    // ─── "MAINTENANCE MODE" phrases ───
+    ["Maintenance Mode", "Modo de Manutenção"],
+    ["System Maintenance", "Manutenção do Sistema"],
+
+    // ─── "MANAGE" phrases ───
+    ["Manage administrative access levels and granular module permissions...", "Gerir níveis de acesso administrativo e permissões granulares de módulos..."],
+    ["Manage All Schedules", "Gerir Todos os Horários"],
+    ["Manage global infrastructure, tenant entities, and financial logic.", "Gerir infraestrutura global, entidades de inquilino e lógica financeira."],
+    ["Manage liquidity, settle disputes, and reconcile cash holdings.", "Gerir liquidez, resolver disputas e reconciliar posições de caixa."],
+    ["Manage platform liquidity, payouts, and fiscal compliance.", "Gerir liquidez da plataforma, pagamentos e conformidade fiscal."],
+    ["Manage stock levels, supplier relations, and warehouse assignments.", "Gerir níveis de stock, relações com fornecedores e atribuições de armazém."],
+    ["Manage your shop", "Gerir a sua loja"],
+
+    // ─── "MARKET" / "MARKETING" phrases ───
+    ["Market Insight", "Análise de Mercado"],
+    ["Marketing Backoffice", "Backoffice de Marketing"],
+    ["Marketing Portal", "Portal de Marketing"],
+    ["Marketplace Pricing", "Precificação do Marketplace"],
+    ["Marketplace HQ", "Sede do Marketplace"],
+    ["Local Market Retargeting", "Redireccionamento de Mercado Local"],
+    ["Total Marketing Revenue", "Receita Total de Marketing"],
+
+    // ─── "MAX" / "MAXIMUM" phrases ───
+    ["Max 20 km", "Máx 20 km"],
+    ["Maximum Discount Amount (Optional)", "Valor Máximo de Desconto (Opcional)"],
+
+    // ─── "MEDIA PROCESSING" / "MEDIUM" phrases ───
+    ["Media Processing", "Processamento de Media"],
+    ["Medium", "Médio"],
+
+    // ─── "MIN" / "MIN ORDER" phrases ───
+    ["Min. Order Value", "Valor Mínimo de Encomenda"],
+    ["Minimum Order Value", "Valor Mínimo de Encomenda"],
+    ["2 mins ago", "há 2 min"],
+    ["5 mins ago", "há 5 min"],
+
+    // ─── "MOBILE" phrases ───
+    ["Mobile Navigation Shell", "Estrutura de Navegação Mobile"],
+
+    // ─── "MODIFIED" / "MODIFY" / "MODULE" phrases ───
+    ["Modified", "Modificado"],
+    ["Modify Price", "Modificar Preço"],
+    ["Module Granularity", "Granularidade do Módulo"],
+    ["Module", "Módulo"],
+
+    // ─── "MONITOR" phrases ───
+    ["Monitor real-time fleet performance and financial health across the Pede Aqui network.", "Monitorizar o desempenho da frota em tempo real e a saúde financeira em toda a rede Pede Aqui."],
+
+    // ─── "MORNING" / "MONTH" phrases ───
+    ["this month", "este mês"],
+    ["+12.4% this month", "+12,4% este mês"],
+    ["+12% this month", "+12% este mês"],
+    ["+18.5% this month", "+18,5% este mês"],
+    ["+2% last month", "+2% mês passado"],
+
+    // ─── "NEGATIVE" phrases ───
+    ["Negative Only", "Apenas Negativo"],
+    ["Negative", "Negativo"],
+
+    // ─── "NET" phrases ───
+    ["Net Commissions", "Comissões Líquidas"],
+    ["Net Platform Revenue", "Receita Líquida da Plataforma"],
+
+    // ─── "NEUTRAL" phrases ───
+    ["Neutral", "Neutro"],
+
+    // ─── "NEW" phrases ───
+    ["New categories are hidden from customers by default until you add items.", "Novas categorias estão ocultas dos clientes por defeito até adicionar itens."],
+    ["New User Referral Push", "Campanha de Indicação de Novos Utilizadores"],
+    ["Newest First", "Mais Recentes Primeiro"],
+
+    // ─── "NEXT STEP" phrases ───
+    ["Next Step", "Próximo Passo"],
+
+    // ─── "OF" phrases (dynamic) ───
+    ["of vendors in Lagos.", "dos vendedores em Maputo."],
+    ["7 out of 10 customers have reviewed more than twice.", "7 em cada 10 clientes avaliaram mais de duas vezes."],
+
+    // ─── "OFFER" / "OFFERS" phrases ───
+    ["Active & Scheduled Offers", "Ofertas Activas e Agendadas"],
+    ["BOGO Offer", "Oferta Leve 2 Pague 1"],
+    ["Drive more sales with targeted offers and discounts.", "Impulsione mais vendas com ofertas e descontos direccionados."],
+    ["Boost your sales with targeted offers and discounts.", "Aumente as suas vendas com ofertas e descontos direccionados."],
+
+    // ─── "ONCE PER" / "ONLY BUYS" phrases ───
+    ["Once per customer", "Uma vez por cliente"],
+    ["Only buys with discounts", "Apenas compra com descontos"],
+
+    // ─── "OPEN" / "OPERATING" / "OPERATIONAL" / "OPERATIONS" phrases ───
+    ["Open", "Aberto"],
+    ["Operating Hours", "Horário de Funcionamento"],
+    ["Operational Zones", "Zonas Operacionais"],
+    ["Operational", "Operacional"],
+    ["Operations", "Operações"],
+    ["All Systems Operational", "Todos os Sistemas Operacionais"],
+
+    // ─── "OPTIMAL" / "OPTIMIZE" phrases ───
+    ["Optimal Speed", "Velocidade Óptima"],
+    ["Optimize Budget", "Optimizar Orçamento"],
+    ["Optimize Now", "Optimizar Agora"],
+    ["Optimize your reach and track real-time engagement across the network.", "Optimize o seu alcance e acompanhe o envolvimento em tempo real na rede."],
+    ["Organize how customers see your menu and optimize for peak performance.", "Organize como os clientes vêem o seu menu e optimize para o melhor desempenho."],
+
+    // ─── "OPTION" phrases ───
+    ["Option Name", "Nome da Opção"],
+    ["Options & Add-ons", "Opções e Adicionais"],
+
+    // ─── "ORDER" / "ORDERS" phrases (must come before line 217/218) ───
+    ["Order Details", "Detalhes da Encomenda"],
+    ["Order Management", "Gestão de Encomendas"],
+    ["Order Reassigned", "Encomenda Reatribuída"],
+    ["Order Reference", "Referência da Encomenda"],
+    ["Order Sale", "Venda por Encomenda"],
+    ["Order Sales", "Vendas por Encomenda"],
+    ["All Orders", "Todas as Encomendas"],
+    ["Avg. Order Value", "Valor Médio de Encomenda"],
+    ["Min. Order Value", "Valor Mínimo de Encomenda"],
+    ["Minimum Order Value", "Valor Mínimo de Encomenda"],
+    ["View Order", "Ver Encomenda"],
+    ["No orders > 30 days", "Sem encomendas > 30 dias"],
+
+    // ─── "ORGANIC SALES" / "ORGANIZE" phrases ───
+    ["Organic Sales", "Vendas Orgânicas"],
+    ["Organize how customers see your menu and optimize for peak performance.", "Organize como os clientes vêem o seu menu e optimize para o melhor desempenho."],
+    ["Organize your dishes into customer-friendly sections.", "Organize os seus pratos em secções amigáveis para o cliente."],
+    ["Organize your menu items into intuitive groups for your customers.", "Organize os itens do seu menu em grupos intuitivos para os seus clientes."],
+
+    // ─── "OTHERS" phrase ───
+    ["Others", "Outros"],
+
+    // ─── "OTP LENGTH" phrase ───
+    ["OTP Length", "Tamanho do OTP"],
+
+    // ─── "OUT FOR DELIVERY" / "OUT OF STOCK" phrases ───
+    ["Out for Delivery", "Saiu para Entrega"],
+    ["Out of Stock", "Sem Stock"],
+
+    // ─── "OVERDUE" phrases ───
+    ["OVERDUE (48h+)", "VENCIDO (48h+)"],
+    ["Overdue!", "Vencido!"],
+
+    // ─── "OVERLAY BACKDROP" / "OVERVIEW" / "OWNER" phrases ───
+    ["Overlay Backdrop", "Fundo de Sobreposição"],
+    ["Overview", "Visão Geral"],
+    ["Owner", "Proprietário"],
+
+    // ─── "PACKAGING DURABILITY" / "PARTIAL" phrases ───
+    ["Packaging durability", "durabilidade da embalagem"],
+    ["Partial", "Parcial"],
+    ["Partial Refund Initiated: #REF-90211", "Reembolso Parcial Iniciado: #REF-90211"],
+
+    // ─── "PAUSED" / "PAYOUTS" phrases ───
+    ["Paused", "Pausado"],
+    ["Payouts", "Pagamentos"],
+    ["Batch Payouts Initiated", "Pagamentos em Lote Iniciados"],
+    ["Process Batch Payouts", "Processar Pagamentos em Lote"],
+
+    // ─── "PEAK HOUR" phrases ───
+    ["Peak Hour Multiplier", "Multiplicador de Hora de Ponta"],
+    ["Peak Hour Warning", "Aviso de Hora de Ponta"],
+
+    // ─── "PER" phrases ───
+    ["Per Customer Limit", "Limite por Cliente"],
+
+    // ─── "PERCENTAGE DISCOUNT" phrase ───
+    ["Percentage Discount", "Desconto Percentual"],
+
+    // ─── "PERFORMANCE" phrases ───
+    ["Performance", "Desempenho"],
+    ["Today's Performance", "Desempenho de Hoje"],
+    ["Top Performing Campaigns", "Campanhas com Melhor Desempenho"],
+
+    // ─── "PERMISSIONS" phrases ───
+    ["Permissions for sarah.a@market-hq.com", "Permissões para sarah.a@market-hq.com"],
+    ["Roles & Permissions", "Perfis e Permissões"],
+    ["Global Roles & Permissions", "Perfis e Permissões Globais"],
+
+    // ─── "PLATFORM" phrases ───
+    ["Platform Audit Logs", "Registos de Auditoria da Plataforma"],
+    ["Platform Controls", "Controlos da Plataforma"],
+    ["Platform Governance", "Governação da Plataforma"],
+
+    // ─── "POLICIES" / "POLICY" phrases ───
+    ["Policies Enforced", "Políticas Aplicadas"],
+    ["Global Fee Policy", "Política de Taxas Global"],
+
+    // ─── "POPULAR" phrase ───
+    ["Popular", "Popular"],
+
+    // ─── "POSITIVE" / "PREMIUM" / "PRICING" phrases ───
+    ["Positive", "Positivo"],
+    ["Premium Plan", "Plano Premium"],
+    ["Pricing & Inventory", "Precificação e Inventário"],
+    ["Pricing", "Precificação"],
+    ["Marketplace Pricing", "Precificação do Marketplace"],
+    ["Global Pricing / West Africa", "Precificação Global / África Ocidental"],
+    ["Quick Price Editor", "Editor Rápido de Preços"],
+    ["Base Price", "Preço Base"],
+    ["Current Price", "Preço Actual"],
+    ["Discounted Price (Optional)", "Preço com Desconto (Opcional)"],
+    ["Modify Price", "Modificar Preço"],
+
+    // ─── "PRIORITY" phrase ───
+    ["Priority", "Prioridade"],
+
+    // ─── "PRO-TIP" phrase ───
+    ["Pro-Tip: Reordering", "Dica Profissional: Reordenação"],
+
+    // ─── "PROCESS" phrases ───
+    ["Process Batch Payouts", "Processar Pagamentos em Lote"],
+    ["Process All", "Processar Tudo"],
+    ["Process high-volume orders with rhythmic efficiency.", "Processar encomendas de alto volume com eficiência rítmica."],
+    ["Process transactions, generate invoices, and handle marketplace payouts.", "Processar transacções, gerar facturas e gerir pagamentos do marketplace."],
+    ["Processed By", "Processado Por"],
+    ["Processed by Sarah K.", "Processado por Sarah K."],
+    ["Processed", "Processado"],
+    ["Processing", "A Processar"],
+
+    // ─── "PRODUCT" phrases ───
+    ["Product Catalog", "Catálogo de Produtos"],
+    ["Product Details", "Detalhes do Produto"],
+    ["Product Listing Editor", "Editor de Listagem de Produtos"],
+    ["Product Media", "Multimédia do Produto"],
+    ["Product Name", "Nome do Produto"],
+    ["Group your products", "Agrupe os seus produtos"],
+    ["Customize your product information and variants", "Personalize as informações do produto e variantes"],
+
+    // ─── "PROMO" / "PROMOTION" phrases ───
+    ["Promo Seekers", "Caçadores de Promoções"],
+    ["Promotion Expansion", "Expansão de Promoção"],
+    ["Promotion Name", "Nome da Promoção"],
+    ["Promotion Strategy Tip", "Dica de Estratégia de Promoção"],
+    ["Promotion Tracking", "Acompanhamento de Promoções"],
+    ["Promotion Type", "Tipo de Promoção"],
+    ["Promotions & Coupons", "Promoções e Cupões"],
+    ["Promotions", "Promoções"],
+    ["Active Promotion ROI", "ROI de Promoções Activas"],
+    ["Create New Promotion", "Criar Nova Promoção"],
+    ["Create Promotion", "Criar Promoção"],
+    ["Explain the benefits of this promotion...", "Explique os benefícios desta promoção..."],
+    ["Health Week Promo", "Promoção Semana da Saúde"],
+    ["promotion is performing 20% better than the average. Consider extending it to weekdays.", "a promoção está com desempenho 20% acima da média. Considere estendê-la para os dias de semana."],
+    ["Your current promotion conversion rate is in the", "A sua taxa de conversão actual da promoção está no"],
+
+    // ─── "PUSH NOTIFS" phrase ───
+    ["Push Notifs", "Notifs Push"],
+
+    // ─── "QUICK" phrases ───
+    ["Quick Price Editor", "Editor Rápido de Preços"],
+    ["Quick Shortcuts", "Atalhos Rápidos"],
+
+    // ─── "RADIUS" phrase ───
+    ["Radius:", "Raio:"],
+
+    // ─── "RAMADAN" phrase ───
+    ["Ramadan Late Night Deal", "Oferta Noturna de Ramadão"],
+
+    // ─── "READY" phrases ───
+    ["Ready for more?", "Pronto para mais?"],
+    ["Ready for Pickup", "Pronto para Recolha"],
+    ["Ready to Pick", "Pronto para Recolher"],
+
+    // ─── "REAL-TIME" phrases ───
+    ["Real-time audit of orders, payouts, and adjustments.", "Auditoria em tempo real de encomendas, pagamentos e ajustes."],
+    ["Real-time instance propagation across data centers.", "Propagação de instâncias em tempo real entre centros de dados."],
+    ["Real-time oversight of all marketplace operations and system changes.", "Supervisão em tempo real de todas as operações do marketplace e alterações do sistema."],
+
+    // ─── "RECENT" phrases ───
+    ["Recent Activity Feed", "Feed de Actividades Recentes"],
+    ["Recent Infrastructure Events", "Eventos de Infraestrutura Recentes"],
+
+    // ─── "RECONCILE" / "RECONCILIATION" phrases ───
+    ["Reconcile COD", "Reconciliar COD"],
+    ["Reconciliation", "Reconciliação"],
+    ["Financial Reconciliation", "Reconciliação Financeira"],
+    ["COD Reconciliation Status", "Estado de Reconciliação COD"],
+    ["Refunds & Reconciliation", "Reembolsos e Reconciliação"],
+
+    // ─── "RECOVERED" / "RECTIFICATION" phrases ───
+    ["RECOVERED", "RECUPERADO"],
+    ["Rectification", "Rectificação"],
+
+    // ─── "REDIRECT" / "REFERENCE" / "REFUND" phrases ───
+    ["Redirect users to holding page for updates", "Redireccionar utilizadores para página de espera para actualizações"],
+    ["Reference ID", "ID de Referência"],
+    ["Order Reference", "Referência da Encomenda"],
+    ["Refund Approved: #REF-90210", "Reembolso Aprovado: #REF-90210"],
+    ["Refund Processed", "Reembolso Processado"],
+    ["Refund Requests", "Pedidos de Reembolso"],
+    ["Refunds & Reconciliation", "Reembolsos e Reconciliação"],
+    ["Refunds Processed", "Reembolsos Processados"],
+    ["Full Refund", "Reembolso Total"],
+    ["Partial Refund Initiated: #REF-90211", "Reembolso Parcial Iniciado: #REF-90211"],
+
+    // ─── "REGION" / "REGIONAL" phrases ───
+    ["Region", "Região"],
+    ["Regional Administrator", "Administrador Regional"],
+
+    // ─── "RELEASE NOTES" phrases ───
+    ["Release Notes", "Notas de Versão"],
+
+    // ─── "REMOVE" phrases ───
+    ["Remove shipping costs", "Remover custos de envio"],
+
+    // ─── "REORDER" / "REPEAT" / "REPLIED" / "REPORTER" / "REQUEST" phrases ───
+    ["Pro-Tip: Reordering", "Dica Profissional: Reordenação"],
+    ["Repeat Reviewers", "Avaliadores Repetentes"],
+    ["Replied", "Respondeu"],
+    ["Reporter", "Denunciante"],
+    ["Request Courier", "Solicitar Estafeta"],
+    ["Request ID", "ID do Pedido"],
+    ["View All Requests", "Ver Todos os Pedidos"],
+
+    // ─── "RESOLUTION" / "RESOLVED" / "RESTOCK" / "RESTOCKED" / "RESULT" phrases ───
+    ["Resolution Target", "Alvo de Resolução"],
+    ["Resolved", "Resolvido"],
+    ["Restock", "Reabastecer"],
+    ["Restocked", "Reabastecido"],
+    ["Result", "Resultado"],
+
+    // ─── "RETENTION" / "REVENUE" / "REVIEW" / "REWARD" phrases ───
+    ["Retention", "Retenção"],
+    ["Revenue", "Receita"],
+    ["Daily Revenue", "Receita Diária"],
+    ["Net Platform Revenue", "Receita Líquida da Plataforma"],
+    ["Spend vs. Revenue Trend", "Tendência de Gasto vs. Receita"],
+    ["Top Revenue Driver", "Principal Gerador de Receita"],
+    ["Total Marketing Revenue", "Receita Total de Marketing"],
+    ["Review past changes", "Rever alterações passadas"],
+    ["Reviewer Loyalty", "Fidelidade do Avaliador"],
+    ["Repeat Reviewers", "Avaliadores Repetentes"],
+    ["Reviews & Feedback", "Avaliações e Feedback"],
+    ["All Reviews", "Todas as Avaliações"],
+    ["Customer Reviews & Feedback", "Avaliações e Feedback de Clientes"],
+    ["Customer Reviews", "Avaliações de Clientes"],
+    ["Total Reviews", "Total de Avaliações"],
+    ["Reward Points", "Pontos de Recompensa"],
+
+    // ─── "ROI" phrases ───
+    ["ROI by Channel", "ROI por Canal"],
+    ["ROI", "ROI"],
+    ["Active Promotion ROI", "ROI de Promoções Activas"],
+    ["Top ROI", "Melhor ROI"],
+    ["Total ROI", "ROI Total"],
+    ["Unlock Higher ROI Today", "Desbloqueie ROI Mais Alto Hoje"],
+
+    // ─── "ROLE" phrases ───
+    ["Role", "Perfil"],
+    ["Roles & Permissions", "Perfis e Permissões"],
+    ["1 Role Accessing", "1 Perfil com Acesso"],
+    ["2 Roles Accessing", "2 Perfis com Acesso"],
+    ["3 Roles Accessing", "3 Perfis com Acesso"],
+    ["4 Roles Accessing", "4 Perfis com Acesso"],
+    ["Actor Role", "Função do Actor"],
+    ["Create New Role", "Criar Novo Perfil"],
+    ["Finance Role", "Perfil Financeiro"],
+    ["Global Roles & Permissions", "Perfis e Permissões Globais"],
+
+    // ─── "SALE MODE" / "SALES" / "SALES ATTRIBUTION" phrases ───
+    ["Sale Mode", "Modo de Venda"],
+    ["Sales Attribution", "Atribuição de Vendas"],
+    ["Organic Sales", "Vendas Orgânicas"],
+    ["Order Sales", "Vendas por Encomenda"],
+    ["Order Sale", "Venda por Encomenda"],
+
+    // ─── "SAVE AS" / "SAVE CURRENT" / "SAVE INTERNAL" / "SAVE ALL" phrases ───
+    ["Save All Updates", "Guardar Todas as Actualizações"],
+    ["Save as Draft", "Guardar como Rascunho"],
+    ["Save Current View", "Guardar Vista Actual"],
+    ["Save Internal Note", "Guardar Nota Interna"],
+
+    // ─── "SCHEDULED" phrases ───
+    ["SCHEDULED", "AGENDADO"],
+    ["Scheduled payouts for vendors and couriers.", "Pagamentos agendados para vendedores e estafetas."],
+    ["Scheduled: 7:00 AM - 11:00 AM daily.", "Agendado: 7:00 - 11:00 diariamente."],
+    ["Scheduled", "Agendado"],
+    ["Active & Scheduled Offers", "Ofertas Activas e Agendadas"],
+
+    // ─── "SEARCH" (longer) phrases remaining ───
+
+    // ─── "SECURITY" phrases ───
+    ["Security Audit Passed", "Auditoria de Segurança Aprovada"],
+    ["Security Critical Actions", "Acções Críticas de Segurança"],
+    ["Security Event Trend", "Tendência de Eventos de Segurança"],
+
+    // ─── "SEGMENT" / "SEGMENTS" / "SEGMENTATION" phrases ───
+    ["Segment Growth Trends", "Tendências de Crescimento de Segmentos"],
+    ["Segment Name", "Nome do Segmento"],
+    ["Segments", "Segmentos"],
+    ["Active Segments", "Segmentos Activos"],
+    ["Create Segment", "Criar Segmento"],
+    ["Customer Segments", "Segmentos de Clientes"],
+    ["Select Target Segments", "Seleccionar Segmentos Alvo"],
+
+    // ─── "SELECT TARGET" / "SEND ME" / "SENIOR" phrases ───
+    ["Select Target Segments", "Seleccionar Segmentos Alvo"],
+    ["Send me a notification when stock hits threshold", "Envie-me uma notificação quando o stock atingir o limiar"],
+    ["Senior Manager", "Gestor Sénior"],
+    ["Sensitive Actions", "Acções Sensíveis"],
+    ["Sent 12m ago", "Enviado há 12 min"],
+
+    // ─── "SENTIMENT ANALYSIS" phrases ───
+    ["Sentiment Analysis", "Análise de Sentimento"],
+
+    // ─── "SET SPECIFIC TIMES" phrase ───
+    ["Set specific times when this menu is served (e.g. Breakfast hours).", "Defina horários específicos em que este menu é servido (ex: horas de pequeno-almoço)."],
+
+    // ─── "SETTLEMENT" / "SETTLEMENTS" phrases ───
+    ["Settlement Calendar", "Calendário de Liquidações"],
+    ["Settlement", "Liquidação"],
+    ["Settlements Lead", "Responsável de Liquidações"],
+    ["Batch Settle", "Liquidar em Lote"],
+
+    // ─── "SHOWING" phrases ───
+    ["Showing", "A mostrar"],
+
+    // ─── "SLA COMPLIANCE" phrases ───
+    ["SLA Compliance", "Conformidade SLA"],
+
+    // ─── "SLOT" phrase ───
+    ["Slot", "Slot"],
+    ["Add Specific Slot", "Adicionar Slot Específico"],
+
+    // ─── "SOCIAL MEDIA" phrases ───
+    ["Social Media", "Redes Sociais"],
+
+    // ─── "SPECIFIC" phrases ───
+    ["Specific Categories", "Categorias Específicas"],
+    ["Specific Items", "Itens Específicos"],
+    ["Add Specific Slot", "Adicionar Slot Específico"],
+
+    // ─── "SPEND" phrases ───
+    ["Spend vs. Revenue Trend", "Tendência de Gasto vs. Receita"],
+    ["Spend", "Gasto"],
+    ["Total Spend", "Gasto Total"],
+    ["Top 5% by spend", "Top 5% por gasto"],
+    ["Top 5% of spenders this month.", "Top 5% dos que mais gastam este mês."],
+
+    // ─── "STAFF MEMBER" / "STANDARD" phrases ───
+    ["Staff Member", "Membro da Equipa"],
+    ["Standard portion", "porção padrão"],
+    ["Standard", "Padrão"],
+
+    // ─── "START" / "START DATE" phrases ───
+    ["Start Date", "Data de Início"],
+    ["Starts in 2 days", "Começa em 2 dias"],
+    ["Starts in 3 days", "Começa em 3 dias"],
+
+    // ─── "STATUS" phrases (if any longer ones exist) ───
+    ["Status changed to", "Estado alterado para"],
+    ["COD Reconciliation Status", "Estado de Reconciliação COD"],
+
+    // ─── "STOCK" phrases ───
+    ["Stock Alerts", "Alertas de Stock"],
+    ["Stock Quantity", "Quantidade em Stock"],
+    ["Current Stock", "Stock Actual"],
+    ["In Stock", "Em Stock"],
+    ["Low Stock Threshold", "Limiar de Stock Baixo"],
+    ["Low Stock", "Stock Baixo"],
+    ["Low Stock (8)", "Stock Baixo (8)"],
+    ["Out of Stock", "Sem Stock"],
+    ["Restock", "Reabastecer"],
+    ["Restocked", "Reabastecido"],
+    ["2 units left", "2 unidades restantes"],
+    ["3 items require immediate attention to prevent sales interruption.", "3 itens necessitam de atenção imediata para evitar interrupção de vendas."],
+
+    // ─── "STORE OWNER" / "SUBTOTAL" / "SUBTRACT" phrases ───
+    ["Store Owner Profile Avatar", "Avatar do Perfil do Proprietário da Loja"],
+    ["Subtract % from total", "Subtrair % do total"],
+
+    // ─── "SUCCESS" phrases (longer) ───
+    ["Success Feedback Overlay (Hidden by default)", "Sobreposição de Feedback de Sucesso (Oculta por defeito)"],
+    ["Success Modal (Hidden)", "Modal de Sucesso (Oculta)"],
+    ["Success Toast Notification (Hidden by default)", "Notificação Toast de Sucesso (Oculta por defeito)"],
+    ["Successful", "Bem-sucedido"],
+
+    // ─── "SUSPEND" / "SUSPENDED" phrases ───
+    ["Suspend Account", "Suspender Conta"],
+    ["Suspended", "Suspenso"],
+
+    // ─── "SYSTEM" phrases (longer first) ───
+    ["System (Automated)", "Sistema (Automático)"],
+    ["System Automations", "Automações do Sistema"],
+    ["System Configurations", "Configurações do Sistema"],
+    ["SYSTEM HEALTHY", "SISTEMA SAUDÁVEL"],
+    ["System Health", "Saúde do Sistema"],
+    ["System Maintenance", "Manutenção do Sistema"],
+    ["System Trigger", "Gatilho do Sistema"],
+    ["System-wide event tracking and security compliance monitoring.", "Monitorização de eventos em todo o sistema e conformidade de segurança."],
+    ["System", "Sistema"],
+    ["All Systems Operational", "Todos os Sistemas Operacionais"],
+    ["Emergency System Halt", "Paragem de Emergência do Sistema"],
+
+    // ─── "TARGET" / "TARGETING" phrases ───
+    ["Target Entity", "Entidade Alvo"],
+    ["Target", "Alvo"],
+    ["Targeting", "Segmentação"],
+    ["Select Target Segments", "Seleccionar Segmentos Alvo"],
+    ["Resolution Target", "Alvo de Resolução"],
+
+    // ─── "TAX" phrases ───
+    ["Tax Collections", "Cobranças de Impostos"],
+    ["Tax Liability", "Obrigação Fiscal"],
+    ["Global Tax Calculation", "Cálculo Global de Impostos"],
+
+    // ─── "TELL CUSTOMERS" phrases ───
+    ["Tell customers what's special about this section...", "Diga aos clientes o que torna esta secção especial..."],
+    ["Tell your customers about the ingredients, spices, and heritage of this dish...", "Conte aos seus clientes sobre os ingredientes, temperos e tradição deste prato..."],
+
+    // ─── "TENANT INSTANCES" phrases ───
+    ["Tenant Instances", "Instâncias de Inquilino"],
+
+    // ─── "THESE NOTES" / "THIS CATEGORY" / "THIS MONTH" phrases ───
+    ["These notes are strictly for backoffice staff...", "Estas notas são estritamente para a equipa de backoffice..."],
+    ["This category will automatically hide from the app outside these hours.", "Esta categoria será automaticamente ocultada da app fora destes horários."],
+    ["This name is visible to customers on your storefront.", "Este nome é visível para os clientes na sua loja."],
+    ["this month", "este mês"],
+
+    // ─── "TICKET" phrases ───
+    ["Ticket Created via Web Widget", "Ticket Criado via Widget Web"],
+    ["All Tickets", "Todos os Tickets"],
+
+    // ─── "TIME WINDOW" / "TIP" phrases ───
+    ["Time Window", "Janela de Tempo"],
+    ["Tip:", "Dica:"],
+
+    // ─── "TODAY" phrases ───
+    ["Today's Performance", "Desempenho de Hoje"],
+
+    // ─── "TOP" phrases ───
+    ["Top 5% by spend", "Top 5% por gasto"],
+    ["Top 5% in Maputo", "Top 5% em Maputo"],
+    ["Top 5% of spenders this month.", "Top 5% dos que mais gastam este mês."],
+    ["Top App Bar", "Barra Superior da App"],
+    ["Top Channels", "Principais Canais"],
+    ["Top Complaints", "Principais Reclamações"],
+    ["Top Coupons", "Principais Cupões"],
+    ["Top Navigation Bar (TopNavBar)", "Barra de Navegação Superior (TopNavBar)"],
+    ["Top Navigation Bar", "Barra de Navegação Superior"],
+    ["TOP NAVIGATION BAR", "BARRA DE NAVEGAÇÃO SUPERIOR"],
+    ["Top Navigation Shell", "Estrutura de Navegação Superior"],
+    ["Top Navigation", "Navegação Superior"],
+    ["Top Performing Campaigns", "Campanhas com Melhor Desempenho"],
+    ["Top Revenue Driver", "Principal Gerador de Receita"],
+    ["Top ROI", "Melhor ROI"],
+    ["Top Seller", "Mais Vendido"],
+
+    // ─── "TOTAL" + something phrases (must come before line 186 ["Total", "Total"]) ───
+    ["Total active user base", "base total de utilizadores activos"],
+    ["Total Campaign Cap ($)", "Limite Total de Campanha (MT)"],
+    ["Total Cap:", "Limite Total:"],
+    ["Total Categories", "Total de Categorias"],
+    ["Total Commissions (MTD)", "Comissões Totais (MTD)"],
+    ["Total Conversions", "Total de Conversões"],
+    ["Total Deliveries", "Total de Entregas"],
+    ["Total Earnings", "Ganhos Totais"],
+    ["Total Entries", "Total de Entradas"],
+    ["Total Items", "Total de Itens"],
+    ["Total Marketing Revenue", "Receita Total de Marketing"],
+    ["Total Redeemed", "Total Resgatado"],
+    ["Total Redemptions", "Total de Resgates"],
+    ["Total Reviews", "Total de Avaliações"],
+    ["Total ROI", "ROI Total"],
+    ["Total Spend", "Gasto Total"],
+    ["Total Usage Limit", "Limite Total de Uso"],
+    ["Total users", "Total de utilizadores"],
+
+    // ─── "TRANSACTION LOG" / "TRANSACTION TYPE" phrases ───
+    ["Transaction Log", "Registo de Transacções"],
+    ["Transaction Type", "Tipo de Transacção"],
+    ["142 transactions are being processed.", "142 transacções estão a ser processadas."],
+
+    // ─── "TURN THIS OFF" phrase ───
+    ["Turn this off to temporarily hide the category from your storefront.", "Desligue isto para ocultar temporariamente a categoria da sua loja."],
+
+    // ─── "TWICE PER" phrase ───
+    ["Twice per customer", "Duas vezes por cliente"],
+
+    // ─── "UNAUTHORIZED" phrase ───
+
+    // ─── "UNASSIGNED" phrase ───
+    ["Unassigned", "Não Atribuído"],
+
+    // ─── "UNLOCK" / "UPDATE" / "UPGRADE" phrases ───
+    ["Unlock Higher ROI Today", "Desbloqueie ROI Mais Alto Hoje"],
+    ["Update Profile Picture", "Actualizar Foto de Perfil"],
+    ["Update your catalog pricing in real-time to match market fluctuations.", "Actualize a precificação do seu catálogo em tempo real para acompanhar as flutuações do mercado."],
+    ["Upgrade to Pro to unlock advanced cohorts and basket analysis.", "Actualize para Pro para desbloquear coortes avançadas e análise de cesto."],
+
+    // ─── "UPSTREAM PROVIDER" phrase ───
+    ["Upstream provider reporting service outage in West-2.", "Fornecedor upstream a reportar indisponibilidade de serviço em West-2."],
+
+    // ─── "URGENT" / "USAGE" phrases ───
+    ["Urgent", "Urgente"],
+    ["Usage/Limit", "Uso/Limite"],
+    ["Usage", "Uso"],
+
+    // ─── "USER" / "USERS" phrases (longer first) ───
+    ["User Ban/Unban", "Banir/Desbanir Utilizador"],
+    ["User Base Split", "Divisão da Base de Utilizadores"],
+    ["User Count", "Contagem de Utilizadores"],
+    ["User Management", "Gestão de Utilizadores"],
+    ["User Permission Update", "Actualização de Permissão de Utilizador"],
+    ["User", "Utilizador"],
+    ["Users & Roles", "Utilizadores e Perfis"],
+    ["All Administrators", "Todos os Administradores"],
+    ["All Staff", "Toda a Equipa"],
+    ["Total users", "Total de utilizadores"],
+    ["34 users active", "34 utilizadores activos"],
+    ["24,500 active users", "24.500 utilizadores activos"],
+    ["New User Referral Push", "Campanha de Indicação de Novos Utilizadores"],
+
+    // ─── "VALIDATED" / "VALIDATION" / "VALUE" phrases ───
+    ["Validated", "Validado"],
+    ["Value & Requirements", "Valor e Requisitos"],
+    ["Value Change", "Alteração de Valor"],
+    ["Commission Rate Change", "Alteração de Taxa de Comissão"],
+    ["Discount Value (%)", "Valor de Desconto (%)"],
+    ["Avg. Order Value", "Valor Médio de Encomenda"],
+    ["Min. Order Value", "Valor Mínimo de Encomenda"],
+    ["Minimum Order Value", "Valor Mínimo de Encomenda"],
+    ["High Value Customers", "Clientes de Alto Valor"],
+    ["High Value, At Risk", "Alto Valor, Em Risco"],
+    ["High Value", "Alto Valor"],
+
+    // ─── "VENDOR" phrases ───
+    ["Vendor Manager Profile", "Perfil do Gestor de Vendedor"],
+    ["Vendor profile avatar", "avatar do perfil do vendedor"],
+
+    // ─── "VERIFICATION" phrases ───
+    ["Verification", "Verificação"],
+
+    // ─── "VIEW ALL" / "VIEW CERTIFICATE" / "VIEW DETAILED" / "VIEW FULL" / "VIEW ORDER" / "VIEW REGISTRY" phrases ───
+    ["View All 24 Users", "Ver Todos os 24 Utilizadores"],
+    ["View All Coupons", "Ver Todos os Cupões"],
+    ["View All Hub Connectivity", "Ver Conectividade de Todos os Polos"],
+    ["View All Logs", "Ver Todos os Registos"],
+    ["View All Requests", "Ver Todos os Pedidos"],
+    ["View All", "Ver Todos"],
+    ["View Certificate", "Ver Certificado"],
+    ["View Detailed Insights", "Ver Análises Detalhadas"],
+    ["View Detailed Reports", "Ver Relatórios Detalhados"],
+    ["View Full History", "Ver Histórico Completo"],
+    ["View Full Sentiment Report", "Ver Relatório de Sentimento Completo"],
+    ["View Order", "Ver Encomenda"],
+    ["View Registry", "Ver Registo"],
+
+    // ─── "VOLUME" phrase ───
+    ["Volume", "Volume"],
+
+    // ─── "WAIT TIMES" / "WAITING" phrases ───
+    ["Wait times (Peak)", "Tempos de espera (Pico)"],
+    ["Waiting Courier", "Estafeta à Espera"],
+    ["Waiting for Driver", "À Espera do Condutor"],
+
+    // ─── "WE MISS YOU" / "WEEKDAY" phrases ───
+    ["We Miss You Bonus", "Bónus Sentimos a Sua Falta"],
+
+    // ─── "WEEKEND" phrases ───
+    ["Weekend Flash Sale", "Promoção Relâmpago de Fim de Semana"],
+
+    // ─── "WEEKLY PAYOUT" / "WELCOME ONBOARD" phrases ───
+    ["Weekly Payout", "Pagamento Semanal"],
+    ["Welcome Onboard", "Bem-vindo a Bordo"],
+
+    // ─── "WHEN ACTIVE" phrase ───
+    ["When active, this product will be immediately visible to customers...", "Quando activo, este produto será imediatamente visível para os clientes..."],
+
+    // ─── "YOUR" / "YOUR CAMPAIGN" / "YOUR CURRENT" phrases ───
+    ["Your campaign will automatically pause once the daily budget or total cap is reached.", "A sua campanha será automaticamente pausada quando o orçamento diário ou o limite total for atingido."],
+    ["Your current promotion conversion rate is in the", "A sua taxa de conversão actual da promoção está no"],
+    ["Your", "Seu"],
+
+    // ─── "ZONES" phrases ───
+    ["Zones & Fee Management", "Gestão de Zonas e Taxas"],
+    ["Zones & Fees", "Zonas e Taxas"],
+    ["Operational Zones", "Zonas Operacionais"],
+
+    // ─── DAYS OF WEEK ───
+    ["Monday", "Segunda-feira"],
+    ["Tuesday", "Terça-feira"],
+    ["Wednesday", "Quarta-feira"],
+    ["Thursday", "Quinta-feira"],
+    ["Friday", "Sexta-feira"],
+    ["Saturday", "Sábado"],
+    ["Sunday", "Domingo"],
+    ["Mon", "Seg"],
+    ["Tue", "Ter"],
+    ["Wed", "Qua"],
+    ["Thu", "Qui"],
+    ["Fri", "Sex"],
+    ["Sat", "Sáb"],
+    ["Sun", "Dom"],
+
+    // ─── REVIEW LABELS (quoted phrases) ───
+    ["\"Authentic taste\" (19)", "\"Sabor autêntico\" (19)"],
+    ["\"Fast delivery\" (28)", "\"Entrega rápida\" (28)"],
+    ["\"Smoky flavor\" (42)", "\"Sabor fumado\" (42)"],
+
+    // ─── STATUS LABELS WITH % ───
+    ["15% cancellation rate", "taxa de cancelamento de 15%"],
+    ["8.2% conversion rate", "taxa de conversão de 8,2%"],
+    ["89% redemption rate", "taxa de resgate de 89%"],
+    ["94% of fleet reconciled", "94% da frota reconciliada"],
+
+    // ─── COMPLETED STATUS ───
+    ["Completed", "Concluído"],
+    ["COMPLETED", "CONCLUÍDO"],
+
+    // ─── SINGLE-WORD ENTRIES (standalone) ───
+    ["Audit", "Auditoria"],
+    ["Activate", "Activar"],
+    ["Adjustment", "Ajuste"],
+    ["Adjustments", "Ajustes"],
+    ["Campaigns", "Campanhas"],
+    ["Categories", "Categorias"],
+    ["Courier", "Estafeta"],
+    ["Customer", "Cliente"],
+    ["Customers", "Clientes"],
+    ["Delivery Zone", "Zona de Entrega"],
+    ["Verification", "Verificação"],
+
+    // ─── REMAINING METRIC/FORMAT TRANSLATIONS ───
+    ["1 hour ago", "há 1 hora"],
+    ["2 mins ago", "há 2 min"],
+    ["5 mins ago", "há 5 min"],
+    ["15 days ago", "há 15 dias"],
+    ["25 days remaining", "25 dias restantes"],
+    ["78 days remaining", "78 dias restantes"],
+    ["Starts in 2 days", "Começa em 2 dias"],
+    ["Starts in 3 days", "Começa em 3 dias"],
+
+    // ─── REMAINING DYNAMIC-SAFE TRANSLATIONS ───
+    ["+12.4% this month", "+12,4% este mês"],
+    ["+12% this month", "+12% este mês"],
+    ["+18.5% this month", "+18,5% este mês"],
+    ["+2% last month", "+2% mês passado"],
+    ["+12% vs yesterday", "+12% vs ontem"],
+    ["+12.4% vs last mo", "+12,4% vs mês passado"],
+    ["+12.4% vs last month", "+12,4% vs mês passado"],
+    ["+12.5% vs last month", "+12,5% vs mês passado"],
+    ["+5.2% vs last month", "+5,2% vs mês passado"],
+    ["-2.4% vs last week", "-2,4% vs semana passada"],
+    ["12.5% vs last month", "12,5% vs mês passado"],
+
+    // ─── CURRENCY NOTATION (already handled by localizeCurrencyToMzn) ───
+    // These are for any remaining $/MZN references in UI text:
+    ["MT 1.45 lower than avg", "MT 1,45 abaixo da média"],
+    ["Daily Budget ($)", "Orçamento Diário (MT)"],
+    ["Total Campaign Cap ($)", "Limite Total de Campanha (MT)"],
+    ["Flat discount in MZN", "desconto fixo em MT"],
+
+    // ─── SAMPLE CONTENT / ALT TEXTS / REVIEWS ───
+    ["Close-up of an African man with a beard and professional attire.", "Close-up de um homem africano com barba e roupa profissional."],
+    ["Portrait of a friendly male delivery rider.", "Retrato de um estafeta simpático."],
+    ["Portrait of a happy African woman in a yellow shirt.", "Retrato de uma mulher africana feliz com camisa amarela."],
+    ["Portrait of a professional female delivery courier.", "Retrato de uma estafeta profissional."],
+    ["Portrait of a young Nigerian male customer smiling.", "Retrato de um jovem cliente africano a sorrir."],
+    ["8 reviews mentioned sauce leaking or crushed containers this week.", "8 avaliações mencionaram fuga de molho ou embalagens danificadas esta semana."],
+    ["7 out of 10 customers have reviewed more than twice.", "7 em cada 10 clientes avaliaram mais de duas vezes."],
+    ["High-quality photos of your food increase sales by up to 40%. Use bright, natural lighting.", "Fotos de alta qualidade da sua comida aumentam as vendas em até 40%. Use iluminação natural e brilhante."],
+    ["High latency detected in image resizing worker queue.", "Alta latência detectada na fila de trabalho de redimensionamento de imagens."],
+    ["Customer reports delivery agent is 45 minutes late...", "Cliente reporta que estafeta está 45 minutos atrasado..."],
