@@ -65,8 +65,9 @@ public class OrderService {
     /** Returns all orders for the current tenant with customer and vendor names resolved. */
     @Transactional(readOnly = true)
     public List<OrderResponse> listForCurrentContext() {
-        UUID tenantId = tenantId();
-        List<Order> orders = orderRepository.findByTenantId(tenantId);
+        List<Order> orders = tenantContext.isPlatformAdmin()
+                ? orderRepository.findAll()
+                : orderRepository.findByTenantId(tenantId());
         Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
         Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
         Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()

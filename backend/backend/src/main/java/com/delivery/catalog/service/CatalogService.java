@@ -77,14 +77,13 @@ public class CatalogService {
         return mapper.toSkuResponse(sku);
     }
 
-    /** Lists all active categories within the current tenant. */
+    /** Lists all active categories. Platform admins see all tenants; others see their own. */
     @Transactional(readOnly = true)
     public List<CategoryResponse> listCategories() {
-        UUID tenantId = tenantId();
-        return categoryRepository.findByTenantIdAndActiveTrue(tenantId)
-                .stream()
-                .map(mapper::toCategoryResponse)
-                .toList();
+        if (tenantContext.isPlatformAdmin()) {
+            return categoryRepository.findByActiveTrue().stream().map(mapper::toCategoryResponse).toList();
+        }
+        return categoryRepository.findByTenantIdAndActiveTrue(tenantId()).stream().map(mapper::toCategoryResponse).toList();
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

@@ -43,20 +43,13 @@ public class KeycloakAdminService {
         this.clientSecret = clientSecret;
     }
 
-    public String createUser(String email, String firstName, String lastName, String password) {
+    public String createUser(String email, String firstName, String lastName, String password, String tenantId) {
         try {
-            // Step 1: Get admin token
             String adminToken = getAdminToken();
-
-            // Step 2: Create user
-            String userId = createKeycloakUser(adminToken, email, firstName, lastName, password);
-
-            // Step 3: Assign VENDOR_ADMIN role
+            String userId = createKeycloakUser(adminToken, email, firstName, lastName, password, tenantId);
             assignVendorAdminRole(adminToken, userId);
-
             return userId;
         } catch (BusinessException e) {
-            // Re-throw business exceptions (including email_exists from Keycloak conflicts)
             throw e;
         } catch (Exception e) {
             logger.error("Failed to create Keycloak user for email: {}", email, e);
@@ -85,7 +78,7 @@ public class KeycloakAdminService {
         return response.getBody().accessToken();
     }
 
-    private String createKeycloakUser(String adminToken, String email, String firstName, String lastName, String password) {
+    private String createKeycloakUser(String adminToken, String email, String firstName, String lastName, String password, String tenantId) {
         String url = serverUrl + "/admin/realms/" + realm + "/users";
 
         HttpHeaders headers = new HttpHeaders();
@@ -98,6 +91,7 @@ public class KeycloakAdminService {
                 "firstName", firstName,
                 "lastName", lastName,
                 "enabled", true,
+                "attributes", Map.of("tenant_id", List.of(tenantId)),
                 "credentials", List.of(Map.of(
                         "type", "password",
                         "value", password,

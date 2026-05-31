@@ -77,42 +77,41 @@ export default function EmpresaPage() {
     logoPreview: "",
   });
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [vendors, cats] = await Promise.all([vendorService.list(), categoryService.list()]);
-        setCategories(cats);
-        const v = vendors[0] ?? null;
-        setVendor(v);
-        if (v) {
-          setProfile({
-            name: v.name ?? "",
-            categoryId: v.categoryId ?? "",
-            ownerName: v.ownerName ?? "",
-            nif: v.nif ?? "",
-            phone: v.phone ?? "",
-            address: v.address ?? "",
-            description: v.description ?? "",
-            logoStorageKey: v.logoStorageKey ?? "",
-            logoPreview: "",
-          });
-          const [hours, docs] = await Promise.all([
-            vendorService.getOpeningHours(v.id),
-            vendorService.getDocuments(v.id),
-          ]);
-          if (hours.length > 0) setSchedule(hoursToSchedule(hours, defaultSchedule()));
-          setDocuments(docs);
-        }
-      } catch {
-        setError("Erro ao carregar dados da empresa. Tente novamente.");
-      } finally {
-        setLoading(false);
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [vendors, cats] = await Promise.all([vendorService.list(), categoryService.list()]);
+      setCategories(cats);
+      const v = vendors[0] ?? null;
+      setVendor(v);
+      if (v) {
+        setProfile({
+          name: v.name ?? "",
+          categoryId: v.categoryId ?? "",
+          ownerName: v.ownerName ?? "",
+          nif: v.nif ?? "",
+          phone: v.phone ?? "",
+          address: v.address ?? "",
+          description: v.description ?? "",
+          logoStorageKey: v.logoStorageKey ?? "",
+          logoPreview: "",
+        });
+        const [hours, docs] = await Promise.all([
+          vendorService.getOpeningHours(v.id),
+          vendorService.getDocuments(v.id),
+        ]);
+        if (hours.length > 0) setSchedule(hoursToSchedule(hours, defaultSchedule()));
+        setDocuments(docs);
       }
+    } catch {
+      setError("Erro ao carregar dados da empresa. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, []);
+  }
+
+  useEffect(() => { load(); }, []);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -208,7 +207,7 @@ export default function EmpresaPage() {
           {vendor && <StatusBadge status={vendor.verificationStatus} />}
         </div>
 
-        {error && <ErrorState message={error} onRetry={() => setError(null)} />}
+        {error && <ErrorState message={error} onRetry={load} />}
 
         {loading ? (
           <Card>

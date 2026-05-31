@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Provides tenant-scoped category queries. */
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findByTenantIdAndActiveTrue(UUID tenantId);
+    List<Category> findByActiveTrue();
 }

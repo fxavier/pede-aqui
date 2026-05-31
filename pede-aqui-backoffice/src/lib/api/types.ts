@@ -10,14 +10,9 @@ export interface AdminDashboard {
 }
 
 export interface VendorDashboard {
-  salesSummary: {
-    totalRevenue: number;
-    totalOrders: number;
-    averageOrderValue: number;
-  };
-  ordersByStatus: Record<string, number>;
-  topProducts: { name: string; quantity: number; revenue: number }[];
-  rejectedOrders: number;
+  ordersByStatusCount: number;
+  rejectedOrdersCount: number;
+  salesTotal: number;
 }
 
 export interface FinanceDashboard {

@@ -46,16 +46,19 @@ public class MerchantRegistrationService {
         }
 
         try {
-            // Step 2: Create user in Keycloak (this happens BEFORE DB writes)
+            // Step 2: Generate tenant ID first so it can be embedded in the Keycloak user attributes
+            UUID tenantId = UUID.randomUUID();
+
+            // Step 3: Create user in Keycloak with tenant_id attribute so it appears in the JWT
             String keycloakUserId = keycloakAdminService.createUser(
                     request.email(),
                     request.firstName(),
                     request.lastName(),
-                    request.password()
+                    request.password(),
+                    tenantId.toString()
             );
 
-            // Step 3: Create tenant
-            UUID tenantId = UUID.randomUUID();
+            // Step 4: Persist tenant
             Tenant tenant = new Tenant(tenantId, request.companyName(), request.companySlug(), request.defaultCurrency());
             tenantRepository.save(tenant);
 

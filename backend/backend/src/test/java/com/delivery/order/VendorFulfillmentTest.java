@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.repository.CartRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
@@ -16,6 +17,7 @@ import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
+import com.delivery.vendor.repository.VendorRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
@@ -81,6 +83,8 @@ class VendorFulfillmentTest {
                 mock(PaymentRepository.class),
                 mock(DeliveryRepository.class),
                 mock(InventoryService.class),
+                mock(AppUserProfileRepository.class),
+                mock(VendorRepository.class),
                 new OrderMapper(),
                 tenantContext);
     }

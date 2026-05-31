@@ -16,28 +16,9 @@ import type { VendorDashboard, Order, Vendor, VendorDocument, Category } from "@
 import { DollarSign, ShoppingBag, TrendingUp, XCircle, Upload, FileText, Image, Trash2 } from "lucide-react";
 
 const mockDashboard: VendorDashboard = {
-  salesSummary: {
-    totalRevenue: 458750.00,
-    totalOrders: 1247,
-    averageOrderValue: 368.00,
-  },
-  ordersByStatus: {
-    PENDING: 23,
-    ACCEPTED_BY_VENDOR: 45,
-    PREPARING: 18,
-    READY_FOR_PICKUP: 12,
-    DELIVERING: 8,
-    DELIVERED: 1102,
-    CANCELLED: 39,
-  },
-  topProducts: [
-    { name: "Frango Grelhado com Fries", quantity: 342, revenue: 123120.00 },
-    { name: "Pizza Margherita XXL", quantity: 287, revenue: 100450.00 },
-    { name: "Sushi Combo 24 peças", quantity: 156, revenue: 93600.00 },
-    { name: "Hambúrguer Especial da Casa", quantity: 298, revenue: 74500.00 },
-    { name: "Bacalhau à Brás", quantity: 164, revenue: 67240.00 },
-  ],
-  rejectedOrders: 12,
+  ordersByStatusCount: 45,
+  rejectedOrdersCount: 12,
+  salesTotal: 458750.00,
 };
 
 const mockOrders: Order[] = [
@@ -347,28 +328,26 @@ export default function VendorsPage() {
           <>
             <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
               <KpiCard
-                title="Receita Total"
-                value={formatCurrency(dashboard.salesSummary.totalRevenue)}
+                title="Receita Total (Entregas)"
+                value={formatCurrency(dashboard.salesTotal)}
                 icon={<DollarSign className="h-6 w-6" />}
-                trend={{ value: "15.2%", positive: true }}
               />
               <KpiCard
-                title="Total de Encomendas"
-                value={dashboard.salesSummary.totalOrders.toLocaleString("pt-PT")}
+                title="Encomendas Aceites"
+                value={dashboard.ordersByStatusCount.toLocaleString("pt-PT")}
                 icon={<ShoppingBag className="h-6 w-6" />}
-                trend={{ value: "8.7%", positive: true }}
               />
               <KpiCard
                 title="Ticket Médio"
-                value={formatCurrency(dashboard.salesSummary.averageOrderValue)}
+                value={dashboard.ordersByStatusCount > 0
+                  ? formatCurrency(dashboard.salesTotal / dashboard.ordersByStatusCount)
+                  : "—"}
                 icon={<TrendingUp className="h-6 w-6" />}
-                trend={{ value: "3.2%", positive: true }}
               />
               <KpiCard
                 title="Encomendas Rejeitadas"
-                value={dashboard.rejectedOrders.toLocaleString("pt-PT")}
+                value={dashboard.rejectedOrdersCount.toLocaleString("pt-PT")}
                 icon={<XCircle className="h-6 w-6" />}
-                trend={{ value: "2", positive: false }}
               />
             </section>
 
@@ -431,23 +410,22 @@ export default function VendorsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Produtos Mais Vendidos</CardTitle>
+                  <CardTitle>Resumo</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {dashboard.topProducts.map((product, i) => (
-                      <div key={product.name} className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-sm font-bold text-primary">
-                          {i + 1}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-on-surface">{product.name}</p>
-                          <p className="text-xs text-on-surface-variant">
-                            {product.quantity} vendidos · {formatCurrency(product.revenue)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                    <div className="flex items-center justify-between rounded-xl bg-surface-container-low p-4">
+                      <span className="text-sm text-on-surface-variant">Encomendas aceites</span>
+                      <span className="text-sm font-bold text-on-surface">{dashboard.ordersByStatusCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-surface-container-low p-4">
+                      <span className="text-sm text-on-surface-variant">Encomendas rejeitadas</span>
+                      <span className="text-sm font-bold text-error">{dashboard.rejectedOrdersCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-surface-container-low p-4">
+                      <span className="text-sm text-on-surface-variant">Receita total</span>
+                      <span className="text-sm font-bold text-on-surface">{formatCurrency(dashboard.salesTotal)}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

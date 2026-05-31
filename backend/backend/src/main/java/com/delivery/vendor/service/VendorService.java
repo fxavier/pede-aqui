@@ -56,9 +56,12 @@ public class VendorService {
         return vendorMapper.toResponse(vendorRepository.save(vendor));
     }
 
-    /** Lists tenant-scoped vendors with optional availability filtering. */
+    /** Lists vendors. Platform admins (no tenant scope) see all; tenant users see their own. */
     @Transactional(readOnly = true)
     public List<VendorResponse> list(Boolean available) {
+        if (tenantContext.isPlatformAdmin()) {
+            return vendorRepository.findAll().stream().map(vendorMapper::toResponse).toList();
+        }
         UUID tenantId = tenantId();
         List<Vendor> vendors = available == null
                 ? vendorRepository.findByTenantIdAndStatus(tenantId, "ACTIVE")

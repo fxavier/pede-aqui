@@ -27,6 +27,16 @@ public class TenantContext {
         return currentJwt().map(Jwt::getSubject);
     }
 
+    /** Returns true when the current principal has the platform ADMIN role and no tenant_id in their JWT. */
+    public boolean isPlatformAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        boolean hasAdminRole = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!hasAdminRole) return false;
+        String jwtTenantId = currentJwt().map(jwt -> jwt.getClaimAsString(TENANT_ID_CLAIM)).orElse(null);
+        return jwtTenantId == null || jwtTenantId.isBlank();
+    }
+
     private Optional<Jwt> currentJwt() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {

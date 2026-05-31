@@ -131,11 +131,10 @@ public class CourierService {
 
     @Transactional(readOnly = true)
     public List<CourierResponse> listAll() {
-        UUID tenantId = tenantId();
-        return courierRepository.findByTenantId(tenantId)
-                .stream()
-                .map(dispatchMapper::toCourierResponse)
-                .toList();
+        if (tenantContext.isPlatformAdmin()) {
+            return courierRepository.findAll().stream().map(dispatchMapper::toCourierResponse).toList();
+        }
+        return courierRepository.findByTenantId(tenantId()).stream().map(dispatchMapper::toCourierResponse).toList();
     }
 
     @Transactional(readOnly = true)
