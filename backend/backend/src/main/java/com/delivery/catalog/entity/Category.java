@@ -3,8 +3,13 @@ package com.delivery.catalog.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -24,6 +29,13 @@ public class Category {
     private String vertical;
     @Column(nullable = false)
     private boolean active;
+    @Column(name = "parent_id")
+    private UUID parentId;
+    @ManyToOne
+    @JoinColumn(name = "parent_id", insertable = false, updatable = false)
+    private Category parent;
+    @OneToMany(mappedBy = "parent")
+    private List<Category> children = new ArrayList<>();
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -42,12 +54,30 @@ public class Category {
         this.updatedAt = this.createdAt;
     }
 
+    public Category(UUID id, UUID tenantId, String name, String vertical, UUID parentId) {
+        this(id, tenantId, name, vertical);
+        this.parentId = parentId;
+    }
+
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
     public String getName() { return name; }
     public String getSlug() { return slug; }
     public String getVertical() { return vertical; }
     public boolean isActive() { return active; }
+    public UUID getParentId() { return parentId; }
+    public Category getParent() { return parent; }
+    public List<Category> getChildren() { return children; }
+
+    public void setParentId(UUID parentId) {
+        this.parentId = parentId;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        this.updatedAt = Instant.now();
+    }
 
     private static String slugify(String value) {
         return value.toLowerCase(Locale.ROOT).trim().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");

@@ -1,6 +1,7 @@
 package com.delivery.catalog.controller;
 
 import com.delivery.catalog.dto.CategoryResponse;
+import com.delivery.catalog.dto.CreateCategoryRequest;
 import com.delivery.catalog.dto.CreateProductRequest;
 import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,4 +41,23 @@ public class CatalogController {
 
     @GetMapping("/categories")
     public List<CategoryResponse> listCategories() { return service.listCategories(); }
+
+    @GetMapping("/categories/hierarchical")
+    public List<CategoryResponse> listCategoriesHierarchical() { return service.listCategoriesHierarchical(); }
+
+    @PostMapping("/categories")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CategoryResponse createCategory(@Valid @RequestBody CreateCategoryRequest request) {
+        return service.createCategory(request);
+    }
+
+    @GetMapping("/categories/vertical/{vertical}/root")
+    public List<CategoryResponse> listRootCategoriesByVertical(@PathVariable String vertical) {
+        return service.listRootCategoriesByVertical(vertical);
+    }
+
+    @GetMapping("/categories/{parentId}/children")
+    public List<CategoryResponse> listChildCategories(@PathVariable UUID parentId) {
+        return service.listChildCategories(parentId);
+    }
 }

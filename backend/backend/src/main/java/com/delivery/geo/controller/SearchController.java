@@ -1,5 +1,6 @@
 package com.delivery.geo.controller;
 
+import com.delivery.geo.dto.SearchResponse;
 import com.delivery.geo.dto.SearchVendorResponse;
 import com.delivery.geo.service.SearchService;
 import java.util.List;
@@ -18,7 +19,21 @@ public class SearchController {
     public SearchController(SearchService service) { this.service = service; }
 
     @GetMapping("/vendors")
-    public List<SearchVendorResponse> searchVendors(@RequestParam(required = false) Double latitude, @RequestParam(required = false) Double longitude, @RequestParam(required = false) UUID categoryId, @RequestParam(required = false) Boolean available) {
+    public SearchResponse searchVendors(
+            @RequestParam(name = "lat", required = false) Double latitude,
+            @RequestParam(name = "lng", required = false) Double longitude,
+            @RequestParam(required = false, defaultValue = "5000") Integer radius,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) Integer maxDeliveryMinutes,
+            @RequestParam(required = false, defaultValue = "RELEVANCE") String sort,
+            @RequestParam(required = false, defaultValue = "0") Integer page) {
+        return service.searchVendorsWithCount(latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
+    }
+
+    /** Legacy endpoint for backward compatibility. */
+    @GetMapping("/vendors/legacy")
+    public List<SearchVendorResponse> searchVendorsLegacy(@RequestParam(required = false) Double latitude, @RequestParam(required = false) Double longitude, @RequestParam(required = false) UUID categoryId, @RequestParam(required = false) Boolean available) {
         return service.searchNearby(latitude, longitude, categoryId, available);
     }
 }

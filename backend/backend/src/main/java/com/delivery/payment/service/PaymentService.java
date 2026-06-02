@@ -58,6 +58,7 @@ public class PaymentService {
             payment.confirm();
             Order order = orderRepository.findByTenantIdAndId(tenantId, payment.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
             order.markPaymentConfirmed();
+            auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.getReference(), "SUCCESS");
         }
         return mapper.toResponse(payment);
     }

@@ -5,8 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /** Represents a purchasable SKU for a product. */
@@ -27,6 +31,9 @@ public class Sku {
     private BigDecimal price;
     @Column(nullable = false)
     private boolean active;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "variant_selection", columnDefinition = "jsonb")
+    private Map<String, Object> variantSelection = new HashMap<>(); // Selected variant options for this SKU
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -55,4 +62,24 @@ public class Sku {
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
     public boolean isActive() { return active; }
+    public Map<String, Object> getVariantSelection() { return variantSelection; }
+
+    public void setVariantSelection(Map<String, Object> variantSelection) {
+        this.variantSelection = variantSelection != null ? variantSelection : new HashMap<>();
+        this.updatedAt = Instant.now();
+    }
+
+    public void setVariantOption(String variantType, Object value) {
+        this.variantSelection.put(variantType, value);
+        this.updatedAt = Instant.now();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getVariantOption(String variantType, Class<T> type) {
+        Object value = variantSelection.get(variantType);
+        if (value != null && type.isAssignableFrom(value.getClass())) {
+            return (T) value;
+        }
+        return null;
+    }
 }

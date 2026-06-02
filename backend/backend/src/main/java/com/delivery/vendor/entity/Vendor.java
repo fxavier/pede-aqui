@@ -49,6 +49,8 @@ public class Vendor {
     private String description;
     @Column(name = "logo_storage_key")
     private String logoStorageKey;
+    @Column(name = "delivery_zone_id")
+    private UUID deliveryZoneId;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -97,6 +99,7 @@ public class Vendor {
         this.logoStorageKey = logoStorageKey;
         this.updatedAt = Instant.now();
     }
+    public void setDeliveryZone(UUID deliveryZoneId) { this.deliveryZoneId = deliveryZoneId; this.updatedAt = Instant.now(); }
     public void approveVerification() { this.verificationStatus = VendorVerificationStatus.APPROVED; this.updatedAt = Instant.now(); }
     public void rejectVerification() { this.verificationStatus = VendorVerificationStatus.REJECTED; this.updatedAt = Instant.now(); }
 
@@ -117,4 +120,5 @@ public class Vendor {
     public String getAddress() { return address; }
     public String getDescription() { return description; }
     public String getLogoStorageKey() { return logoStorageKey; }
+    public UUID getDeliveryZoneId() { return deliveryZoneId; }
 }

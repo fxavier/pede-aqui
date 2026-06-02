@@ -26,11 +26,20 @@ public class CatalogMapper {
                 product.getDescription(),
                 product.isRequiresPrescriptionMetadata(),
                 product.isProhibitedFuel(),
+                product.getAttributes(),
+                product.getPrimaryImageKey(),
+                product.getImageGallery(),
                 skuResponses);
     }
 
     public CategoryResponse toCategoryResponse(Category category) {
-        return new CategoryResponse(category.getId(), category.getName(), category.getVertical(), category.isActive());
+        return CategoryResponse.withoutChildren(
+            category.getId(), 
+            category.getName(), 
+            category.getVertical(), 
+            category.isActive(), 
+            category.getParentId()
+        );
     }
 
     public SkuResponse toSkuResponse(Sku sku) {

@@ -39,13 +39,17 @@ public class AppUserProfileService {
                 .orElseThrow(() -> new NotFoundException("Authenticated user was not found"));
 
         Optional<UUID> tenantIdOpt = tenantContext.currentTenantId();
-        if (tenantIdOpt.isEmpty()) {
-            return buildProfileFromJwt(keycloakUserId);
+        if (tenantIdOpt.isPresent()) {
+            return repository.findByTenantIdAndKeycloakUserId(tenantIdOpt.get(), keycloakUserId)
+                    .map(mapper::toMeResponse)
+                    .orElseThrow(() -> new NotFoundException("User profile was not found"));
         }
 
-        return repository.findByTenantIdAndKeycloakUserId(tenantIdOpt.get(), keycloakUserId)
+        // If no tenant context, try to find user profile by keycloak user ID
+        // This handles cases where JWT doesn't contain tenant_id claim
+        return repository.findByKeycloakUserId(keycloakUserId)
                 .map(mapper::toMeResponse)
-                .orElseThrow(() -> new NotFoundException("User profile was not found"));
+                .orElse(buildProfileFromJwt(keycloakUserId));
     }
 
     private MeResponse buildProfileFromJwt(String keycloakUserId) {

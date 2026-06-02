@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.delivery.auth.entity.AppUserProfile;
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.entity.Cart;
 import com.delivery.cart.mapper.CartMapper;
 import com.delivery.cart.repository.CartRepository;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 class CartServiceTest {
     private final UUID tenantId = UUID.randomUUID();
     private final UUID customerId = UUID.randomUUID();
+    private final String keycloakUserId = "test-keycloak-user-id";
 
     @Test
     void rejectsItemsFromAnotherVendorInActiveCart() {
@@ -35,7 +38,7 @@ class CartServiceTest {
 
         CartService service = service(cartRepository, mock(SkuRepository.class), mock(InventoryItemRepository.class));
 
-        assertThatThrownBy(() -> service.addItem(customerId, secondVendor, skuId, 1))
+        assertThatThrownBy(() -> service.addItem(secondVendor, skuId, 1))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("MVP carts can contain products from one vendor only");
     }
@@ -44,7 +47,7 @@ class CartServiceTest {
     void rejectsInvalidQuantity() {
         CartService service = service(mock(CartRepository.class), mock(SkuRepository.class), mock(InventoryItemRepository.class));
 
-        assertThatThrownBy(() -> service.addItem(customerId, UUID.randomUUID(), UUID.randomUUID(), 0))
+        assertThatThrownBy(() -> service.addItem(UUID.randomUUID(), UUID.randomUUID(), 0))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Quantity must be positive");
     }
@@ -62,14 +65,20 @@ class CartServiceTest {
 
         CartService service = service(cartRepository, skuRepository, inventoryRepository);
 
-        assertThatThrownBy(() -> service.addItem(customerId, vendorId, skuId, 2))
+        assertThatThrownBy(() -> service.addItem(vendorId, skuId, 2))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Not enough stock is available");
     }
 
     private CartService service(CartRepository cartRepository, SkuRepository skuRepository, InventoryItemRepository inventoryRepository) {
         TenantContext tenantContext = mock(TenantContext.class);
+        AppUserProfileRepository userProfileRepository = mock(AppUserProfileRepository.class);
+        AppUserProfile userProfile = new AppUserProfile(customerId, tenantId, keycloakUserId, "test@example.com", "Test User", java.util.Set.of());
+        
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
-        return new CartService(cartRepository, skuRepository, new CartMapper(), new PricingService(), tenantContext, inventoryRepository);
+        when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(keycloakUserId));
+        when(userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId)).thenReturn(Optional.of(userProfile));
+        
+        return new CartService(cartRepository, skuRepository, new CartMapper(), new PricingService(), tenantContext, inventoryRepository, userProfileRepository);
     }
 }

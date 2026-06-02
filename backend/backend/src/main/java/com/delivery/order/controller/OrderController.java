@@ -1,5 +1,6 @@
 package com.delivery.order.controller;
 
+import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
 import com.delivery.order.service.OrderService;
@@ -26,7 +27,7 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
-    public List<OrderResponse> list() {
+    public List<AdminOrderResponse> list() {
         return orderService.listForCurrentContext();
     }
 

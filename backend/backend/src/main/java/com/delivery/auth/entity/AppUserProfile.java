@@ -53,6 +53,12 @@ public class AppUserProfile {
     @Column(name = "avatar_storage_key")
     private String avatarStorageKey;
 
+    @Column(name = "tutorial_completed_at")
+    private Instant tutorialCompletedAt;
+
+    @Column(name = "preferred_language", length = 10)
+    private String preferredLanguage = "pt";
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "app_user_profile_roles", joinColumns = @JoinColumn(name = "app_user_profile_id"))
     @Column(name = "role", nullable = false)
@@ -79,6 +85,7 @@ public class AppUserProfile {
         this.displayName = displayName;
         this.roles = new LinkedHashSet<>(roles);
         this.status = "ACTIVE";
+        this.preferredLanguage = "pt";
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
@@ -89,6 +96,16 @@ public class AppUserProfile {
         this.dateOfBirth = dateOfBirth;
         this.address = address;
         this.avatarStorageKey = avatarStorageKey;
+        this.updatedAt = Instant.now();
+    }
+
+    public void markTutorialCompleted() {
+        this.tutorialCompletedAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void setPreferredLanguage(String preferredLanguage) {
+        this.preferredLanguage = preferredLanguage;
         this.updatedAt = Instant.now();
     }
 
@@ -107,4 +124,6 @@ public class AppUserProfile {
     public LocalDate getDateOfBirth() { return dateOfBirth; }
     public String getAddress() { return address; }
     public String getAvatarStorageKey() { return avatarStorageKey; }
+    public Instant getTutorialCompletedAt() { return tutorialCompletedAt; }
+    public String getPreferredLanguage() { return preferredLanguage; }
 }

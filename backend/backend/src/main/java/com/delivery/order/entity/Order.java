@@ -52,6 +52,8 @@ public class Order {
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
     @Version
     private long version;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -87,6 +89,7 @@ public class Order {
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.updatedAt = Instant.now(); }
+    public void markRejectedByVendor(String reason) { this.status = OrderStatus.REJECTED_BY_VENDOR; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
     public void markDelivered() { this.status = OrderStatus.DELIVERED; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
@@ -104,5 +107,6 @@ public class Order {
     public String getDeliveryConfirmationCodeHash() { return deliveryConfirmationCodeHash; }
     public String getDeliveryConfirmationCodeDisplay() { return deliveryConfirmationCodeDisplay; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getRejectionReason() { return rejectionReason; }
     public List<OrderItem> getItems() { return items; }
 }

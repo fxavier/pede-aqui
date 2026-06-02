@@ -33,6 +33,8 @@ public class DispatchJob {
     private Instant assignedAt;
     @Column(name = "accepted_at")
     private Instant acceptedAt;
+    @Column(name = "expires_at")
+    private Instant expiresAt;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -57,6 +59,7 @@ public class DispatchJob {
     public void accept() { this.status = DispatchJobStatus.ACCEPTED; this.acceptedAt = Instant.now(); this.updatedAt = this.acceptedAt; }
     public void reject(String reason) { this.status = DispatchJobStatus.REASSIGNABLE; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
     public void reassign(UUID courierId) { this.courierId = courierId; this.status = DispatchJobStatus.ASSIGNED; this.assignedAt = Instant.now(); this.updatedAt = this.assignedAt; }
+    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
@@ -65,4 +68,5 @@ public class DispatchJob {
     public UUID getCourierId() { return courierId; }
     public DispatchJobStatus getStatus() { return status; }
     public String getRejectionReason() { return rejectionReason; }
+    public Instant getExpiresAt() { return expiresAt; }
 }

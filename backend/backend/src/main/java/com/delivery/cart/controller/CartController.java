@@ -27,7 +27,7 @@ public class CartController {
 
     @PostMapping("/items")
     public CartResponse addItem(@PathVariable UUID customerId, @Valid @RequestBody AddCartItemRequest request) {
-        return cartService.addItem(customerId, request.vendorId(), request.skuId(), request.quantity());
+        return cartService.addItem(request.vendorId(), request.skuId(), request.quantity());
     }
 
     @GetMapping("/pricing")

@@ -1,10 +1,12 @@
 package com.delivery.catalog.service;
 
 import com.delivery.catalog.dto.CategoryResponse;
+import com.delivery.catalog.dto.CreateCategoryRequest;
 import com.delivery.catalog.dto.CreateProductRequest;
 import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
 import com.delivery.catalog.dto.SkuResponse;
+import com.delivery.catalog.entity.Category;
 import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.mapper.CatalogMapper;
@@ -52,6 +54,20 @@ public class CatalogService {
             // Fuel itself cannot be transported; safe fuel-station convenience goods are allowed.
             throw new BusinessException("fuel_prohibited", "Fuel cannot be listed or delivered", HttpStatus.BAD_REQUEST);
         }
+        
+        // Set vertical-specific attributes
+        if (request.attributes() != null) {
+            product.setAttributes(request.attributes());
+        }
+        
+        // Set product images
+        if (request.primaryImageKey() != null) {
+            product.setPrimaryImageKey(request.primaryImageKey());
+        }
+        if (request.imageGallery() != null) {
+            product.setImageGallery(request.imageGallery());
+        }
+        
         return mapper.toProductResponse(productRepository.save(product));
     }
 
@@ -84,6 +100,81 @@ public class CatalogService {
             return categoryRepository.findByActiveTrue().stream().map(mapper::toCategoryResponse).toList();
         }
         return categoryRepository.findByTenantIdAndActiveTrue(tenantId()).stream().map(mapper::toCategoryResponse).toList();
+    }
+
+    /** Lists categories organized in a hierarchical tree structure. */
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listCategoriesHierarchical() {
+        List<Category> allCategories;
+        if (tenantContext.isPlatformAdmin()) {
+            allCategories = categoryRepository.findByActiveTrue();
+        } else {
+            allCategories = categoryRepository.findByTenantIdAndActiveTrue(tenantId());
+        }
+        return buildCategoryTree(allCategories);
+    }
+
+    /** Creates a new category with optional parent. */
+    @Transactional
+    public CategoryResponse createCategory(CreateCategoryRequest request) {
+        UUID tenantId = tenantId();
+        
+        // Validate parent category exists if specified
+        if (request.parentId() != null) {
+            Category parent = categoryRepository.findByIdAndTenantId(request.parentId(), tenantId)
+                .orElseThrow(() -> new BusinessException("parent_category_not_found", "Parent category not found", HttpStatus.BAD_REQUEST));
+            
+            // Ensure parent is active
+            if (!parent.isActive()) {
+                throw new BusinessException("parent_category_inactive", "Parent category must be active", HttpStatus.BAD_REQUEST);
+            }
+        }
+        
+        Category category = new Category(UUID.randomUUID(), tenantId, request.name(), request.vertical(), request.parentId());
+        return mapper.toCategoryResponse(categoryRepository.save(category));
+    }
+
+    /** Lists root categories (no parent) for a specific vertical. */
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listRootCategoriesByVertical(String vertical) {
+        UUID tenantId = tenantId();
+        List<Category> categories = categoryRepository.findByTenantIdAndVerticalAndParentIdIsNullAndActiveTrue(tenantId, vertical);
+        return categories.stream().map(mapper::toCategoryResponse).toList();
+    }
+
+    /** Lists child categories for a specific parent category. */
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listChildCategories(UUID parentId) {
+        UUID tenantId = tenantId();
+        List<Category> categories = categoryRepository.findByTenantIdAndParentIdAndActiveTrue(tenantId, parentId);
+        return categories.stream().map(mapper::toCategoryResponse).toList();
+    }
+
+    private List<CategoryResponse> buildCategoryTree(List<Category> allCategories) {
+        Map<UUID, List<Category>> childrenByParent = allCategories.stream()
+            .filter(cat -> cat.getParentId() != null)
+            .collect(Collectors.groupingBy(Category::getParentId));
+        
+        return allCategories.stream()
+            .filter(cat -> cat.getParentId() == null) // Root categories
+            .map(cat -> buildCategoryResponse(cat, childrenByParent))
+            .toList();
+    }
+
+    private CategoryResponse buildCategoryResponse(Category category, Map<UUID, List<Category>> childrenByParent) {
+        List<Category> children = childrenByParent.getOrDefault(category.getId(), List.of());
+        List<CategoryResponse> childResponses = children.stream()
+            .map(child -> buildCategoryResponse(child, childrenByParent))
+            .toList();
+        
+        return new CategoryResponse(
+            category.getId(),
+            category.getName(),
+            category.getVertical(),
+            category.isActive(),
+            category.getParentId(),
+            childResponses
+        );
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

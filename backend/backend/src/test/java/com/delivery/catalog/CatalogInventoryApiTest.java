@@ -16,6 +16,7 @@ import com.delivery.inventory.controller.InventoryController;
 import com.delivery.inventory.dto.InventoryResponse;
 import com.delivery.inventory.service.InventoryService;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ class CatalogInventoryApiTest {
         UUID vendorId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
         when(catalogService.createProduct(any()))
-                .thenReturn(new ProductResponse(UUID.randomUUID(), vendorId, categoryId, "Arroz", "Pacote 1kg", false, false, List.of()));
+                .thenReturn(new ProductResponse(UUID.randomUUID(), vendorId, categoryId, "Arroz", "Pacote 1kg", false, false, Map.of(), null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/v1/catalog/products")
                         .with(jwt())

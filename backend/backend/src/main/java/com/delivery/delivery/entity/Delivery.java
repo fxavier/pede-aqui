@@ -34,6 +34,8 @@ public class Delivery {
     private String proofPhotoStorageKey;
     @Column(name = "cash_collected_amount")
     private BigDecimal cashCollectedAmount;
+    @Column(name = "proximity_notified", nullable = false)
+    private Boolean proximityNotified = false;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -49,6 +51,7 @@ public class Delivery {
         this.orderId = orderId;
         this.status = DeliveryStatus.DISPATCH_PENDING;
         this.confirmationCodeHash = confirmationCodeHash;
+        this.proximityNotified = false;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
@@ -59,6 +62,7 @@ public class Delivery {
     public void updateStatus(DeliveryStatus status) { this.status = status; this.updatedAt = Instant.now(); }
     public void recordCashCollected(BigDecimal amount) { this.cashCollectedAmount = amount; this.updatedAt = Instant.now(); }
     public void setProofPhotoStorageKey(String proofPhotoStorageKey) { this.proofPhotoStorageKey = proofPhotoStorageKey; this.updatedAt = Instant.now(); }
+    public void markProximityNotified() { this.proximityNotified = true; this.updatedAt = Instant.now(); }
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
     public UUID getOrderId() { return orderId; }
@@ -66,4 +70,5 @@ public class Delivery {
     public DeliveryStatus getStatus() { return status; }
     public String getConfirmationCodeHash() { return confirmationCodeHash; }
     public int getConfirmationAttempts() { return confirmationAttempts; }
+    public Boolean getProximityNotified() { return proximityNotified; }
 }
