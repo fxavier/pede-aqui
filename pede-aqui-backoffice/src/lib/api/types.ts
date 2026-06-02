@@ -25,6 +25,7 @@ export interface FinanceDashboard {
 export interface CourierDashboard {
   completedDeliveries: number;
   failedDeliveries: number;
+  activeAssignments: number;
   earningsTotal: number;
 }
 

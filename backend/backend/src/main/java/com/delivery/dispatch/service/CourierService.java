@@ -19,6 +19,7 @@ import com.delivery.dispatch.repository.CourierRepository;
 import com.delivery.dispatch.repository.CourierDocumentRepository;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.dashboard.service.DashboardService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -35,14 +36,16 @@ public class CourierService {
     private final DeliveryRepository deliveryRepository;
     private final DispatchMapper dispatchMapper;
     private final TenantContext tenantContext;
+    private final DashboardService dashboardService;
 
-    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext) {
+    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext, DashboardService dashboardService) {
         this.courierRepository = courierRepository;
         this.courierDocumentRepository = courierDocumentRepository;
         this.userProfileRepository = userProfileRepository;
         this.deliveryRepository = deliveryRepository;
         this.dispatchMapper = dispatchMapper;
         this.tenantContext = tenantContext;
+        this.dashboardService = dashboardService;
     }
 
     /** Creates a courier profile for the authenticated user if one does not exist. */
@@ -86,9 +89,10 @@ public class CourierService {
     @Transactional(readOnly = true)
     public CourierEarningsSummaryResponse myEarningsSummary() {
         Courier courier = requireMine();
-        int completed = deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId(), courier.getId(), DeliveryStatus.DELIVERED).size();
-        int failed = deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId(), courier.getId(), DeliveryStatus.FAILED_DELIVERY).size();
-        BigDecimal earnings = BigDecimal.valueOf(completed).multiply(new BigDecimal("150.00"));
+        UUID tenantId = tenantId();
+        int completed = deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId, courier.getId(), DeliveryStatus.DELIVERED).size();
+        int failed = deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId, courier.getId(), DeliveryStatus.FAILED_DELIVERY).size();
+        BigDecimal earnings = dashboardService.calculateCourierEarnings(tenantId, courier.getId());
         return new CourierEarningsSummaryResponse(completed, failed, earnings);
     }
 
