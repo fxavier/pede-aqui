@@ -22,17 +22,16 @@ export async function httpClient<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const text = await response.text();
-    
-    let parsed;
+    let parsed: unknown = null;
     try {
       parsed = JSON.parse(text);
-      throw parsed;
-    } catch (jsonError) {
-      if (parsed !== undefined) {
-        throw parsed;
-      }
-      throw new Error(`Pedido à API falhou: ${response.status} ${response.statusText} ${text}`.trim());
+    } catch {
+      // body não é JSON válido — usar fallback de texto
     }
+    if (parsed !== null) {
+      throw parsed;
+    }
+    throw new Error(`Pedido à API falhou: ${response.status} ${response.statusText} ${text}`.trim());
   }
 
   return response.json() as Promise<T>;

@@ -15,11 +15,23 @@ interface AuthState {
   isLoading: boolean;
 }
 
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
+const getInitialState = (): AuthState => {
+  if (typeof window !== 'undefined') {
+    const token = sessionStorage.getItem('auth_token');
+    return {
+      user: null,
+      isAuthenticated: false,
+      isLoading: token !== null,
+    };
+  }
+  return {
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+  };
 };
+
+const initialState: AuthState = getInitialState();
 
 const authSlice = createSlice({
   name: "auth",

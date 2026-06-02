@@ -64,7 +64,7 @@ public class VendorService {
         }
         UUID tenantId = tenantId();
         List<Vendor> vendors = available == null
-                ? vendorRepository.findByTenantIdAndStatus(tenantId, "ACTIVE")
+                ? vendorRepository.findByTenantId(tenantId)
                 : vendorRepository.findByTenantIdAndAvailable(tenantId, available);
         return vendors.stream().map(vendorMapper::toResponse).toList();
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { AppShell } from "@/components/layout/app-shell";
 import { orderService } from "@/lib/api/services";
 import type { Order } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
@@ -160,7 +161,8 @@ export default function OrdersPage() {
   if (error) return <div className="p-8 text-destructive">{error}</div>;
 
   return (
-    <div className="space-y-6 p-6">
+    <AppShell>
+      <main className="space-y-6 p-4 md:p-8">
       <div>
         <h1 className="text-2xl font-bold">Encomendas</h1>
         <p className="text-muted-foreground">Gestão e acompanhamento de encomendas dos clientes.</p>
@@ -306,6 +308,7 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
-    </div>
+      </main>
+    </AppShell>
   );
 }

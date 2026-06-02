@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/layout/app-shell";
 import { financeService } from "@/lib/api/services";
 import type { Transaction, Commission, Refund, CashReconciliation, FinanceSummary } from "@/lib/api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +84,8 @@ export default function FinancePage() {
   if (error) return <div className="p-8 text-destructive">{error}</div>;
 
   return (
-    <div className="space-y-6 p-6">
+    <AppShell>
+      <main className="space-y-6 p-4 md:p-8">
       <div>
         <h1 className="text-2xl font-bold">Finanças</h1>
         <p className="text-muted-foreground">Transacções, comissões, reembolsos e reconciliação de caixa.</p>
@@ -290,6 +292,7 @@ export default function FinancePage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </main>
+    </AppShell>
   );
 }

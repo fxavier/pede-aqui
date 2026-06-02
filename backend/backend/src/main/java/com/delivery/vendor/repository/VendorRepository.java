@@ -12,6 +12,7 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     Optional<Vendor> findByTenantIdAndId(UUID tenantId, UUID id);
     List<Vendor> findByTenantIdAndStatus(UUID tenantId, String status);
     List<Vendor> findByTenantIdAndAvailable(UUID tenantId, boolean available);
+    List<Vendor> findByTenantId(UUID tenantId);
     List<Vendor> findByTenantIdAndCategoryId(UUID tenantId, UUID categoryId);
     List<Vendor> findByTenantIdAndVerificationStatus(UUID tenantId, VendorVerificationStatus verificationStatus);
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);

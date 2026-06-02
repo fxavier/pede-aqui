@@ -4,7 +4,7 @@ import * as React from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { makeStore, type AppStore } from "@/store/store";
-import { loadFromSession } from "@/store/slices/auth-slice";
+import { loadFromSession, setLoading } from "@/store/slices/auth-slice";
 import { authService } from "@/lib/api/services";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -51,6 +51,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         .catch(() => {
           sessionStorage.removeItem('auth_token');
           sessionStorage.removeItem('tenant_id');
+          storeRef.current!.dispatch(setLoading(false));
         });
     }
   }, []);

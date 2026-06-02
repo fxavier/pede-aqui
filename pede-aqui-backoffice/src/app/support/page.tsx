@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/layout/app-shell";
 import { supportService } from "@/lib/api/services";
 import type { SupportTicket } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +108,8 @@ export default function SupportPage() {
   const inProgress = tickets.filter(t => t.status === "IN_PROGRESS").length;
 
   return (
-    <div className="space-y-6 p-6">
+    <AppShell>
+      <main className="space-y-6 p-4 md:p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Apoio ao Cliente</h1>
@@ -311,6 +313,7 @@ export default function SupportPage() {
           </div>
         )}
       </div>
-    </div>
+      </main>
+    </AppShell>
   );
 }
