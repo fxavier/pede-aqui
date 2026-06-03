@@ -60,6 +60,7 @@ export default function UsersPage() {
     status: "ACTIVE"
   });
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [loadingUserEdit, setLoadingUserEdit] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -229,24 +230,35 @@ export default function UsersPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setUserFormMode("edit");
-                                setUserForm({
-                                  id: user.id,
-                                  keycloakUserId: "",
-                                  email: user.email,
-                                  displayName: user.nome,
-                                  fullName: "",
-                                  phone: "",
-                                  nif: "",
-                                  dateOfBirth: "",
-                                  address: "",
-                                  roles: user.cargo.split(", ").filter(Boolean),
-                                  status: user.estado,
-                                });
+                              disabled={loadingUserEdit}
+                              onClick={async () => {
+                                setLoadingUserEdit(true);
+                                try {
+                                  const userData = await userService.getById(user.id);
+                                  setUserFormMode("edit");
+                                  setUserForm({
+                                    id: userData.id,
+                                    keycloakUserId: userData.keycloakUserId,
+                                    email: userData.email,
+                                    displayName: userData.displayName,
+                                    fullName: userData.fullName || "",
+                                    phone: userData.phone || "",
+                                    nif: userData.nif || "",
+                                    dateOfBirth: userData.dateOfBirth || "",
+                                    address: userData.address || "",
+                                    roles: userData.roles,
+                                    status: userData.status,
+                                    avatarStorageKey: userData.avatarStorageKey,
+                                  });
+                                } catch (error) {
+                                  console.error("Erro ao carregar utilizador:", error);
+                                  setError("Erro ao carregar dados do utilizador. Tente novamente.");
+                                } finally {
+                                  setLoadingUserEdit(false);
+                                }
                               }}
                             >
-                              Editar
+                              {loadingUserEdit ? "A carregar..." : "Editar"}
                             </Button>
                           </td>
                         </tr>
@@ -326,6 +338,14 @@ export default function UsersPage() {
                     Informações Básicas
                   </label>
                   <div className="space-y-3">
+                    {userFormMode === "create" && (
+                      <Input
+                        placeholder="Keycloak User ID *"
+                        value={userForm.keycloakUserId}
+                        onChange={(event) => setUserForm((prev) => ({ ...prev, keycloakUserId: event.target.value }))}
+                        required
+                      />
+                    )}
                     <Input
                       placeholder="Nome de exibição *"
                       value={userForm.displayName}

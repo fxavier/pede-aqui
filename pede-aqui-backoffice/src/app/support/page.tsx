@@ -47,6 +47,8 @@ export default function SupportPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SupportTicket | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Note form state
   const [noteText, setNoteText] = useState("");
@@ -72,13 +74,21 @@ export default function SupportPage() {
 
   async function runAction(fn: () => Promise<SupportTicket>) {
     setActionLoading(true);
-    try { updateTicket(await fn()); } finally { setActionLoading(false); }
+    setActionError(null);
+    try {
+      updateTicket(await fn());
+    } catch (error) {
+      setActionError("Erro ao executar acção. Tente novamente.");
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!createSubject.trim() || !createDescription.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
       const ticket = await supportService.create({
         subject: createSubject,
@@ -90,6 +100,8 @@ export default function SupportPage() {
       setCreateDescription("");
       setCreateOrderId("");
       setShowCreate(false);
+    } catch (error) {
+      setCreateError("Erro ao criar ticket. Tente novamente.");
     } finally {
       setCreating(false);
     }
@@ -101,29 +113,36 @@ export default function SupportPage() {
     setNoteText("");
   }
 
-  if (loading) return <div className="p-8 text-muted-foreground">A carregar tickets…</div>;
-  if (error) return <div className="p-8 text-destructive">{error}</div>;
-
   const open = tickets.filter(t => t.status === "OPEN").length;
   const inProgress = tickets.filter(t => t.status === "IN_PROGRESS").length;
 
   return (
     <AppShell>
       <main className="space-y-6 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Apoio ao Cliente</h1>
-          <p className="text-muted-foreground">
-            {open} abertos · {inProgress} em curso · {tickets.length} total
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Apoio ao Cliente</h1>
+            <p className="text-muted-foreground">
+              {loading ? "A carregar…" : `${open} abertos · ${inProgress} em curso · ${tickets.length} total`}
+            </p>
+          </div>
+          <Button onClick={() => { setShowCreate(v => !v); setSelected(null); }}>
+            <Plus className="h-4 w-4 mr-1" /> Novo Ticket
+          </Button>
         </div>
-        <Button onClick={() => { setShowCreate(v => !v); setSelected(null); }}>
-          <Plus className="h-4 w-4 mr-1" /> Novo Ticket
-        </Button>
-      </div>
 
-      {/* Create form */}
-      {showCreate && (
+        {loading && (
+          <div className="text-muted-foreground">A carregar tickets…</div>
+        )}
+
+        {error && (
+          <div className="text-destructive">{error}</div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* Create form */}
+            {showCreate && (
         <Card>
           <CardHeader><CardTitle className="text-base">Criar Ticket</CardTitle></CardHeader>
           <CardContent>
@@ -154,6 +173,21 @@ export default function SupportPage() {
                   Cancelar
                 </Button>
               </div>
+              {createError && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-destructive">{createError}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-destructive hover:bg-transparent"
+                      onClick={() => setCreateError(null)}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -169,7 +203,7 @@ export default function SupportPage() {
             <Card
               key={ticket.id}
               className={`cursor-pointer transition-colors hover:bg-muted/50 ${selected?.id === ticket.id ? "ring-2 ring-primary" : ""}`}
-              onClick={() => { setSelected(ticket); setShowCreate(false); setNoteText(""); }}
+              onClick={() => { setSelected(ticket); setShowCreate(false); setNoteText(""); setActionError(null); }}
             >
               <CardContent className="py-3 px-4">
                 <div className="flex items-start justify-between gap-2">
@@ -204,7 +238,7 @@ export default function SupportPage() {
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                     <CardTitle className="text-sm">Detalhe</CardTitle>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>✕</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelected(null); setActionError(null); }}>✕</Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
@@ -231,6 +265,22 @@ export default function SupportPage() {
                     </Badge>
                   )}
                 </div>
+
+                {actionError && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-destructive">{actionError}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 text-destructive hover:bg-transparent"
+                        onClick={() => setActionError(null)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {selected.internalNote && (
                   <div className="bg-muted rounded p-2 text-xs">
@@ -312,7 +362,9 @@ export default function SupportPage() {
             </Card>
           </div>
         )}
-      </div>
+          </div>
+          </>
+        )}
       </main>
     </AppShell>
   );

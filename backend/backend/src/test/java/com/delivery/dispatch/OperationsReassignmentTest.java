@@ -39,7 +39,7 @@ class OperationsReassignmentTest {
                 .thenReturn(new DispatchJobResponse(jobId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DispatchJobStatus.ASSIGNED, null));
 
         mockMvc.perform(post("/api/v1/ops/dispatch/jobs/{jobId}/reassign", jobId)
-                        .with(jwt().authorities(() -> "ROLE_OPS"))
+                        .with(jwt().authorities(() -> "ROLE_OPERATIONS"))
                         .contentType("application/json")
                         .content("{\"operatingZoneId\":\"" + zoneId + "\"}"))
                 .andExpect(status().isOk());

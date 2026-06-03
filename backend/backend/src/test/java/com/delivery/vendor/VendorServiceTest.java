@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.vendor.dto.CreateVendorRequest;
@@ -31,7 +32,7 @@ class VendorServiceTest {
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         when(repository.save(any(Vendor.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        VendorService service = new VendorService(repository, mock(VendorDocumentRepository.class), mock(VendorOpeningHourRepository.class), new VendorMapper(), tenantContext);
+        VendorService service = new VendorService(repository, mock(VendorDocumentRepository.class), mock(VendorOpeningHourRepository.class), new VendorMapper(), tenantContext, mock(AppUserProfileRepository.class));
 
         var response = service.create(new CreateVendorRequest("Mercado Central", UUID.randomUUID(), -25.9, 32.6, null, null, "000000000", null, null, null));
 

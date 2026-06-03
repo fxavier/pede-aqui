@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 /** Provides tenant and vendor scoped product queries. */
 public interface ProductRepository extends JpaRepository<Product, UUID> {
+    List<Product> findByTenantIdAndVendorId(UUID tenantId, UUID vendorId);
     List<Product> findByTenantIdAndVendorIdAndStatus(UUID tenantId, UUID vendorId, String status);
     List<Product> findByTenantIdAndCategoryIdAndStatus(UUID tenantId, UUID categoryId, String status);
     Optional<Product> findByTenantIdAndId(UUID tenantId, UUID id);

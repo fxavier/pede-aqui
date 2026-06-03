@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { setUser } from '@/store/slices/auth-slice';
+import { authService } from '@/lib/api/services';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -41,19 +42,9 @@ export default function LoginPage() {
       const accessToken = tokenData.access_token;
 
       sessionStorage.setItem('auth_token', accessToken);
+      document.cookie = `auth_token=${accessToken}; path=/; SameSite=Strict`;
 
-      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/me`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!profileResponse.ok) {
-        throw new Error('Erro ao obter perfil do utilizador');
-      }
-
-      const profileData = await profileResponse.json();
+      const profileData = await authService.getMe();
       const tenantId: string | null = profileData.tenantId ?? null;
       if (tenantId) {
         sessionStorage.setItem('tenant_id', tenantId);
@@ -62,9 +53,9 @@ export default function LoginPage() {
       }
 
       dispatch(setUser({
-        name: profileData.displayName || profileData.name,
-        role: profileData.roles?.[0] || 'Admin',
-        tenant: profileData.displayName || 'Pede Aqui',
+        name: profileData.displayName,
+        role: profileData.roles?.[0] || '',
+        tenant: profileData.tenantId ?? 'Pede Aqui',
         tenantId,
         email: profileData.email,
         token: accessToken,

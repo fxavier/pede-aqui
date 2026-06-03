@@ -30,7 +30,7 @@ class NotificationServiceTest {
         var vendor = service.create(UUID.randomUUID(), "VENDOR_ADMIN", "ORDER", "Novo pedido", "Pedido pronto para preparar", "PA-1");
         var courier = service.create(UUID.randomUUID(), "COURIER", "DISPATCH", "Nova atribuicao", "Entrega disponivel", "DJ-1");
         var admin = service.create(UUID.randomUUID(), "ADMIN", "AUDIT", "Acao sensivel", "Reatribuicao executada", "OPS-1");
-        var ops = service.create(UUID.randomUUID(), "OPS", "DISPATCH", "Job reatribuivel", "Reatribuicao necessaria", "DJ-1");
+        var ops = service.create(UUID.randomUUID(), "OPERATIONS", "DISPATCH", "Job reatribuivel", "Reatribuicao necessaria", "DJ-1");
 
         assertThat(customer.title()).isEqualTo("Pedido confirmado");
         assertThat(vendor.title()).isEqualTo("Novo pedido");

@@ -1,12 +1,26 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
-export function middleware() {
-  // Middleware cannot access sessionStorage (server-side).
-  // Route protection is handled client-side in app-shell.tsx.
-  // This middleware only handles the /login redirect for already-authenticated users
-  // by checking a cookie (if we set one) — but since we use sessionStorage,
-  // we cannot check auth here. Leave as pass-through for now.
-  // TODO: migrate to httpOnly cookie for proper SSR auth guard.
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Define public path prefixes that are always allowed without a token
+  const publicPaths = ['/login', '/register', '/api/', '/_next/', '/favicon.ico'];
+
+  // Check if the current pathname starts with any public prefix
+  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
+
+  // Check for auth_token cookie
+  const authToken = request.cookies.get('auth_token');
+
+  if (!authToken || !authToken.value) {
+    // Redirect to login if no auth token on protected route
+    return NextResponse.redirect(new URL('/login', request.url), 307);
+  }
+
   return NextResponse.next();
 }
 

@@ -20,8 +20,12 @@ class DashboardCubit extends Cubit<DashboardState> {
   }
 
   Future<void> toggleAvailability(bool value) async {
-    emit(state.copyWith(isAvailable: value));
-    await _repository.updateAvailability(value);
+    try {
+      await _repository.updateAvailability(value);
+      emit(state.copyWith(isAvailable: value));
+    } catch (_) {
+      emit(state.copyWith(errorMessage: 'Não foi possível alterar a disponibilidade.'));
+    }
   }
 
   Future<void> acceptJob(String jobId) async {

@@ -47,6 +47,7 @@ public class VendorController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','VENDOR_STAFF','ADMIN')")
     public List<VendorResponse> list(@RequestParam(required = false) Boolean available) {
         return vendorService.list(available);
     }

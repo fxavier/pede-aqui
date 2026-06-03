@@ -59,13 +59,18 @@ public class Product {
         this.categoryId = categoryId;
         this.name = name;
         this.description = description;
-        this.status = "ACTIVE";
+        this.status = "PENDING"; // Start as PENDING for admin review
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
 
     public void markPrescriptionRequired() { this.requiresPrescriptionMetadata = true; this.manualValidationRequired = true; }
     public void markProhibitedFuel() { this.prohibitedFuel = true; }
+    public void approve() { this.status = "ACTIVE"; this.updatedAt = Instant.now(); }
+    public void reject() { this.status = "REJECTED"; this.updatedAt = Instant.now(); }
+    public boolean isPending() { return "PENDING".equals(this.status); }
+    public boolean isActive() { return "ACTIVE".equals(this.status); }
+    public boolean isRejected() { return "REJECTED".equals(this.status); }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }

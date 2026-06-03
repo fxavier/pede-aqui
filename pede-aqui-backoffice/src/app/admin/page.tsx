@@ -13,33 +13,6 @@ import { formatCurrency, formatDate, orderStatusLabels } from "@/lib/utils";
 import type { AdminDashboard, Order } from "@/lib/api/types";
 import { Building2, CreditCard, Package, TrendingDown, TrendingUp, Truck } from "lucide-react";
 
-const mockDashboard: AdminDashboard = {
-  totalOrders: 15842,
-  totalRevenue: 2847500.00,
-  activeVendors: 342,
-  activeCouriers: 89,
-  cancellations: 342,
-  failedDeliveries: 127,
-  ordersByStatus: {
-    PENDING: 234,
-    ACCEPTED_BY_VENDOR: 156,
-    PREPARING: 89,
-    READY_FOR_PICKUP: 45,
-    DELIVERING: 67,
-    DELIVERED: 15234,
-    CANCELLED: 342,
-  },
-};
-
-const mockOrders: Order[] = [
-  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", deliveryCode: null, items: [] },
-  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Pizzaria Bella", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", deliveryCode: null, items: [] },
-  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Sushi House", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", deliveryCode: null, items: [] },
-  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Hamburgueria TOP", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", deliveryCode: null, items: [] },
-  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Tasca do Zé", status: "CANCELLED", total: 450.00, createdAt: "2024-01-15T08:45:00Z", deliveryCode: null, items: [] },
-  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", deliveryCode: null, items: [] },
-  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Padaria do Bairro", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", deliveryCode: null, items: [] },
-];
 
 function StatusChart({ data }: { data: Record<string, number> }) {
   const colorMap: Record<string, string> = {
@@ -84,9 +57,8 @@ export default function AdminPage() {
       ]);
       setDashboard(dashData);
       setOrders(ordersData);
-    } catch {
-      setDashboard(mockDashboard);
-      setOrders(mockOrders);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar dados");
     } finally {
       setLoading(false);
     }
@@ -124,7 +96,7 @@ export default function AdminPage() {
               <KpiCard
                 title="Total de Encomendas"
                 value={dashboard.totalOrders.toLocaleString("pt-PT")}
-                subtitle={`${dashboard.ordersByStatus.DELIVERED.toLocaleString("pt-PT")} entregues`}
+                subtitle={`${(dashboard.ordersByStatus.DELIVERED ?? 0).toLocaleString("pt-PT")} entregues`}
                 icon={<Package className="h-6 w-6" />}
                 trend={{ value: "12%", positive: true }}
               />
@@ -225,7 +197,7 @@ export default function AdminPage() {
                         {dashboard.cancellations.toLocaleString("pt-PT")}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        {((dashboard.cancellations / dashboard.totalOrders) * 100).toFixed(1)}% do total de encomendas
+                        {dashboard.totalOrders > 0 ? ((dashboard.cancellations / dashboard.totalOrders) * 100).toFixed(1) : "0.0"}% do total de encomendas
                       </p>
                     </div>
                   </div>
@@ -245,7 +217,7 @@ export default function AdminPage() {
                         {dashboard.failedDeliveries.toLocaleString("pt-PT")}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        {((dashboard.failedDeliveries / dashboard.totalOrders) * 100).toFixed(1)}% do total de entregas
+                        {dashboard.totalOrders > 0 ? ((dashboard.failedDeliveries / dashboard.totalOrders) * 100).toFixed(1) : "0.0"}% do total de entregas
                       </p>
                     </div>
                   </div>

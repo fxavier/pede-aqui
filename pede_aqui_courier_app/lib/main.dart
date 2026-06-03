@@ -24,10 +24,10 @@ Future<void> main() async {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => DashboardCubit(getIt<CourierRepository>())..loadDashboard()),
-          BlocProvider(create: (_) => DeliveryCubit(getIt<CourierRepository>())..loadActiveDelivery()),
-          BlocProvider(create: (_) => EarningsCubit(getIt<CourierRepository>())..loadEarnings()),
-          BlocProvider(create: (_) => ProfileCubit(getIt<CourierRepository>())..loadProfile()),
+          BlocProvider(create: (_) => DashboardCubit(getIt<CourierRepository>())),
+          BlocProvider(create: (_) => DeliveryCubit(getIt<CourierRepository>())),
+          BlocProvider(create: (_) => EarningsCubit(getIt<CourierRepository>())),
+          BlocProvider(create: (_) => ProfileCubit(getIt<CourierRepository>())),
         ],
         child: const PedeAquiCourierApp(),
       ),

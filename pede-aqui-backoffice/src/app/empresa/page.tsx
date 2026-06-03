@@ -61,6 +61,7 @@ export default function EmpresaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState("BUSINESS_LICENCE");
@@ -80,11 +81,13 @@ export default function EmpresaPage() {
   async function load() {
     setLoading(true);
     setError(null);
+    setCategoryError(null);
+    
     try {
-      const [vendors, cats] = await Promise.all([vendorService.list(), categoryService.list()]);
-      setCategories(cats);
+      const vendors = await vendorService.list();
       const v = vendors[0] ?? null;
       setVendor(v);
+      
       if (v) {
         setProfile({
           name: v.name ?? "",
@@ -97,18 +100,28 @@ export default function EmpresaPage() {
           logoStorageKey: v.logoStorageKey ?? "",
           logoPreview: "",
         });
+        
         const [hours, docs] = await Promise.all([
           vendorService.getOpeningHours(v.id),
           vendorService.getDocuments(v.id),
         ]);
+        
         if (hours.length > 0) setSchedule(hoursToSchedule(hours, defaultSchedule()));
         setDocuments(docs);
       }
     } catch {
       setError("Erro ao carregar dados da empresa. Tente novamente.");
-    } finally {
-      setLoading(false);
     }
+    
+    try {
+      const cats = await categoryService.list();
+      setCategories(cats);
+    } catch {
+      setCategories([]);
+      setCategoryError("Não foi possível carregar as categorias");
+    }
+    
+    setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
@@ -332,13 +345,17 @@ export default function EmpresaPage() {
                     <select
                       value={profile.categoryId}
                       onChange={(e) => setProfile((p) => ({ ...p, categoryId: e.target.value }))}
-                      className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      disabled={categoryError !== null}
+                      className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="">Selecione uma categoria</option>
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
+                    {categoryError && (
+                      <p className="mt-1 text-xs text-error">{categoryError}</p>
+                    )}
                   </div>
 
                   <Button type="submit" disabled={saving}>

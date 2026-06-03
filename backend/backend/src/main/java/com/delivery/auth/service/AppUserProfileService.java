@@ -1,18 +1,23 @@
 package com.delivery.auth.service;
 
+import com.delivery.auth.dto.CreateUserProfileRequest;
 import com.delivery.auth.dto.MeResponse;
+import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.mapper.AppUserProfileMapper;
 import com.delivery.auth.repository.AppUserProfileRepository;
+import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.common.security.TenantContext;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -78,5 +83,62 @@ public class AppUserProfileService {
                     }
                 })
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /** Creates a new user profile (admin only). */
+    @Transactional
+    public MeResponse createUserProfile(CreateUserProfileRequest request) {
+        UUID tenantId = tenantContext.currentTenantId()
+                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
+
+        try {
+            AppUserProfile profile = new AppUserProfile(
+                    UUID.randomUUID(),
+                    tenantId,
+                    request.keycloakUserId(),
+                    request.email(),
+                    request.displayName(),
+                    request.roles()
+            );
+            
+            profile.updateExtendedProfile(
+                    request.fullName(),
+                    request.nif(),
+                    request.dateOfBirth(),
+                    request.address(),
+                    null
+            );
+
+            AppUserProfile saved = repository.save(profile);
+            return mapper.toMeResponse(saved);
+        } catch (DataIntegrityViolationException ex) {
+            if (ex.getMessage() != null && ex.getMessage().contains("nif")) {
+                throw new BusinessException("nif_already_registered", "NIF already registered for this tenant", org.springframework.http.HttpStatus.CONFLICT);
+            }
+            throw new BusinessException("user_creation_failed", "Failed to create user profile", org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /** Lists all user profiles in the current tenant (admin only). */
+    @Transactional(readOnly = true)
+    public List<MeResponse> listUserProfiles() {
+        UUID tenantId = tenantContext.currentTenantId()
+                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
+
+        return repository.findByTenantId(tenantId)
+                .stream()
+                .map(mapper::toMeResponse)
+                .toList();
+    }
+
+    /** Gets a user profile by ID (admin only). */
+    @Transactional(readOnly = true)
+    public MeResponse getUserProfileById(UUID id) {
+        UUID tenantId = tenantContext.currentTenantId()
+                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
+
+        return repository.findByIdAndTenantId(id, tenantId)
+                .map(mapper::toMeResponse)
+                .orElseThrow(() -> new NotFoundException("User profile not found"));
     }
 }

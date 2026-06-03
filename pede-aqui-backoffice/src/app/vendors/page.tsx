@@ -12,25 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { dashboardService, orderService, vendorService, categoryService, uploadService } from "@/lib/api/services";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import type { VendorDashboard, Order, Vendor, VendorDocument, Category } from "@/lib/api/types";
+import type { VendorDashboard, Order, VendorDocument, Category } from "@/lib/api/types";
 import { DollarSign, ShoppingBag, TrendingUp, XCircle, Upload, FileText, Image, Trash2 } from "lucide-react";
 
-const mockDashboard: VendorDashboard = {
-  ordersByStatusCount: 45,
-  rejectedOrdersCount: 12,
-  salesTotal: 458750.00,
-};
-
-const mockOrders: Order[] = [
-  { id: "1", reference: "PA-2024-001", customerName: "Maria Silva", vendorName: "Restaurante Central", status: "DELIVERING", total: 850.00, createdAt: "2024-01-15T10:30:00Z", deliveryCode: null, items: [] },
-  { id: "2", reference: "PA-2024-002", customerName: "João Santos", vendorName: "Restaurante Central", status: "PREPARING", total: 1250.00, createdAt: "2024-01-15T11:00:00Z", deliveryCode: null, items: [] },
-  { id: "3", reference: "PA-2024-003", customerName: "Ana Pereira", vendorName: "Restaurante Central", status: "DELIVERED", total: 2200.00, createdAt: "2024-01-15T09:15:00Z", deliveryCode: null, items: [] },
-  { id: "4", reference: "PA-2024-004", customerName: "Carlos Mendes", vendorName: "Restaurante Central", status: "PENDING", total: 680.00, createdAt: "2024-01-15T12:00:00Z", deliveryCode: null, items: [] },
-  { id: "5", reference: "PA-2024-005", customerName: "Sofia Rodrigues", vendorName: "Restaurante Central", status: "READY_FOR_PICKUP", total: 1750.00, createdAt: "2024-01-15T11:30:00Z", deliveryCode: null, items: [] },
-  { id: "6", reference: "PA-2024-006", customerName: "Rui Oliveira", vendorName: "Restaurante Central", status: "ACCEPTED_BY_VENDOR", total: 320.00, createdAt: "2024-01-15T12:15:00Z", deliveryCode: null, items: [] },
-  { id: "7", reference: "PA-2024-007", customerName: "Inês Costa", vendorName: "Restaurante Central", status: "DELIVERED", total: 940.00, createdAt: "2024-01-15T08:00:00Z", deliveryCode: null, items: [] },
-  { id: "8", reference: "PA-2024-008", customerName: "Pedro Lopes", vendorName: "Restaurante Central", status: "CANCELLED", total: 450.00, createdAt: "2024-01-14T19:30:00Z", deliveryCode: null, items: [] },
-];
 
 type OrderTab = "all" | "pending" | "active" | "delivered" | "cancelled";
 
@@ -51,17 +35,20 @@ type VendorFormData = {
   address: string;
   description: string;
   categoryId: string;
-  status: string;
   logoStorageKey?: string;
   logoPreview?: string;
   documents: VendorDocument[];
 };
 
-const mockVendors: VendorRecord[] = [
-  { id: "v-1", nome: "Restaurante Central", categoryId: "restaurant", categoryName: "Restaurante", estado: "Activo" },
-  { id: "v-2", nome: "Mercado Matola", categoryId: "grocery", categoryName: "Mercearia", estado: "Activo" },
-  { id: "v-3", nome: "Farmacia Baixa", categoryId: "pharmacy", categoryName: "Farmácia", estado: "Em validacao" },
-];
+// Status mapping between backend enum and Portuguese display
+const statusMapping = {
+  'PENDING': 'Em validação',
+  'APPROVED': 'Aprovado', 
+  'REJECTED': 'Rejeitado',
+  'ACTIVE': 'Ativo',
+  'INACTIVE': 'Inativo'
+} as const;
+
 
 const tabs: { key: OrderTab; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -103,8 +90,7 @@ export default function VendorsPage() {
     address: "", 
     description: "", 
     categoryId: "", 
-    status: "Activo",
-    documents: []
+      documents: []
   });
   const [vendorRecords, setVendorRecords] = useState<VendorRecord[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -133,7 +119,7 @@ export default function VendorsPage() {
           nome: vendor.name,
           categoryId: vendor.categoryId,
           categoryName: category?.name || 'Categoria não encontrada',
-          estado: vendor.status,
+          estado: statusMapping[vendor.verificationStatus as keyof typeof statusMapping] || vendor.verificationStatus,
         };
       }));
     } catch (error) {
@@ -159,7 +145,6 @@ export default function VendorsPage() {
       address: "", 
       description: "", 
       categoryId: "", 
-      status: "Activo",
       documents: []
     });
   }
@@ -260,7 +245,7 @@ export default function VendorsPage() {
           nome: created.name,
           categoryId: created.categoryId,
           categoryName: category?.name || 'Categoria não encontrada',
-          estado: created.status,
+          estado: statusMapping[created.verificationStatus as keyof typeof statusMapping] || created.verificationStatus,
         }, ...prev]);
         setError(null);
       } catch (error) {
@@ -288,7 +273,7 @@ export default function VendorsPage() {
                 nome: updated.name, 
                 categoryId: updated.categoryId,
                 categoryName: category?.name || 'Categoria não encontrada',
-                estado: updated.status 
+                estado: statusMapping[updated.verificationStatus as keyof typeof statusMapping] || updated.verificationStatus
               }
             : vendor
         )));
@@ -462,20 +447,29 @@ export default function VendorsPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    setVendorFormMode("edit");
-                                    setVendorForm({
-                                      id: vendor.id,
-                                      name: vendor.nome,
-                                      ownerName: "",
-                                      nif: "",
-                                      phone: "",
-                                      address: "",
-                                      description: "",
-                                      categoryId: vendor.categoryId,
-                                      status: vendor.estado,
-                                      documents: []
-                                    });
+                                  onClick={async () => {
+                                    try {
+                                      setVendorFormMode("edit");
+                                      const vendorData = await vendorService.getById(vendor.id);
+                                      // Load vendor documents as well
+                                      const vendorDocuments = await vendorService.getDocuments(vendor.id);
+                                      setVendorForm({
+                                        id: vendorData.id,
+                                        name: vendorData.name,
+                                        ownerName: vendorData.ownerName || "",
+                                        nif: vendorData.nif || "",
+                                        phone: vendorData.phone || "",
+                                        address: vendorData.address || "",
+                                        description: vendorData.description || "",
+                                        categoryId: vendorData.categoryId,
+                                        logoPreview: vendorData.logoStorageKey ? `/api/vendor-logo/${vendorData.logoStorageKey}` : undefined,
+                                        logoStorageKey: vendorData.logoStorageKey,
+                                        documents: vendorDocuments
+                                      });
+                                    } catch (error) {
+                                      console.error("Failed to load vendor data:", error);
+                                      setError("Falha ao carregar dados do vendedor. Tente novamente.");
+                                    }
                                   }}
                                 >
                                   Editar
@@ -605,15 +599,6 @@ export default function VendorsPage() {
                           ))}
                         </select>
                       </div>
-                      <select
-                        value={vendorForm.status}
-                        onChange={(event) => setVendorForm((prev) => ({ ...prev, status: event.target.value }))}
-                        className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="Activo">Activo</option>
-                        <option value="Em validacao">Em validacao</option>
-                        <option value="Suspenso">Suspenso</option>
-                      </select>
                     </div>
 
                     {/* Document Upload */}

@@ -12,7 +12,11 @@ const links = [
 export function BackofficeShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <main className="bo-layout">
-      <aside className="bo-sidebar">
+      <div style={{ backgroundColor: '#FFA500', padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#333', position: 'fixed', top: '0', left: '0', right: '0', zIndex: 1000 }}>
+        ⚠️ PROTÓTIPO INTERNO — Esta aplicação não tem autenticação real. Não usar em produção.
+      </div>
+      <div style={{ paddingTop: '50px' }}>
+        <aside className="bo-sidebar">
         <h1>Pede Aqui</h1>
         <p>Backoffice Mocambique</p>
         <nav>
@@ -30,6 +34,7 @@ export function BackofficeShell({ title, subtitle, children }: { title: string; 
         </header>
         <div className="bo-grid">{children}</div>
       </section>
+      </div>
     </main>
   );
 }

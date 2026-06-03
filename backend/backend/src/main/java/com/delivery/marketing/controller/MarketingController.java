@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Exposes coupon and promotion management endpoints for marketing operations. */
 @RestController
 @RequestMapping("/api/v1/marketing")
-@PreAuthorize("hasAnyRole('ADMIN','OPS')")
+@PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
 public class MarketingController {
     private final MarketingService service;
 

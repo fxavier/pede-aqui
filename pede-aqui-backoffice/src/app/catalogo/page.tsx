@@ -31,6 +31,9 @@ export default function CatalogoPage() {
   const [skuForm, setSkuForm] = useState({ skuCode: "", name: "", price: "", initialStock: "0" });
   const [creatingSku, setCreatingSku] = useState(false);
 
+  const [approvingProduct, setApprovingProduct] = useState<string | null>(null);
+  const [rejectingProduct, setRejectingProduct] = useState<string | null>(null);
+
   useEffect(() => {
     async function init() {
       setLoading(true);
@@ -49,13 +52,22 @@ export default function CatalogoPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedVendorId) return;
+    if (!selectedVendorId) {
+      setProducts([]);
+      setSelectedProduct(null);
+      return;
+    }
     setProductsLoading(true);
     setSelectedProduct(null);
+    setProducts([]); // Clear products immediately when switching vendors
+    setError(null); // Clear any previous errors
     catalogService
       .listVendorProducts(selectedVendorId)
       .then(setProducts)
-      .catch(() => setError("Erro ao carregar produtos."))
+      .catch(() => {
+        setProducts([]); // Ensure products are cleared on error
+        setError("Erro ao carregar produtos.");
+      })
       .finally(() => setProductsLoading(false));
   }, [selectedVendorId]);
 
@@ -74,7 +86,9 @@ export default function CatalogoPage() {
       setProducts((prev) => [...prev, created]);
       setProductForm({ name: "", categoryId: "", description: "" });
       setShowProductForm(false);
-    } catch {
+      setError(null); // Clear error after successful creation
+    } catch (err) {
+      console.error("Failed to create product:", err);
       setError("Erro ao criar produto.");
     } finally {
       setCreatingProduct(false);
@@ -99,10 +113,46 @@ export default function CatalogoPage() {
       setSelectedProduct(updated);
       setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setSkuForm({ skuCode: "", name: "", price: "", initialStock: "0" });
-    } catch {
+      setError(null); // Clear error after successful creation
+    } catch (err) {
+      console.error("Failed to create SKU:", err);
       setError("Erro ao criar SKU.");
     } finally {
       setCreatingSku(false);
+    }
+  }
+
+  async function handleApproveProduct(productId: string) {
+    setApprovingProduct(productId);
+    setError(null);
+    try {
+      const updated = await catalogService.approveProduct(productId);
+      setProducts((prev) => prev.map((p) => (p.id === productId ? updated : p)));
+      if (selectedProduct?.id === productId) {
+        setSelectedProduct(updated);
+      }
+    } catch (err) {
+      console.error("Failed to approve product:", err);
+      setError("Erro ao aprovar produto.");
+    } finally {
+      setApprovingProduct(null);
+    }
+  }
+
+  async function handleRejectProduct(productId: string) {
+    setRejectingProduct(productId);
+    setError(null);
+    try {
+      const updated = await catalogService.rejectProduct(productId);
+      setProducts((prev) => prev.map((p) => (p.id === productId ? updated : p)));
+      if (selectedProduct?.id === productId) {
+        setSelectedProduct(updated);
+      }
+    } catch (err) {
+      console.error("Failed to reject product:", err);
+      setError("Erro ao rejeitar produto.");
+    } finally {
+      setRejectingProduct(null);
     }
   }
 
@@ -210,6 +260,7 @@ export default function CatalogoPage() {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-on-surface">{product.name}</p>
                             <p className="text-xs text-on-surface-variant">{categoryName(product.categoryId)}</p>
+                            <StatusBadge status={product.status} />
                           </div>
                           <span className="ml-3 flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant">
                             <Tag className="h-3 w-3" />
@@ -225,9 +276,31 @@ export default function CatalogoPage() {
               {/* Right panel — SKU sub-panel */}
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {selectedProduct ? `SKUs — ${selectedProduct.name}` : "SKUs"}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>
+                      {selectedProduct ? `SKUs — ${selectedProduct.name}` : "SKUs"}
+                    </CardTitle>
+                    {selectedProduct?.status === "PENDING" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRejectProduct(selectedProduct.id)}
+                          disabled={rejectingProduct === selectedProduct.id}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          {rejectingProduct === selectedProduct.id ? "A rejeitar..." : "Rejeitar"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveProduct(selectedProduct.id)}
+                          disabled={approvingProduct === selectedProduct.id}
+                        >
+                          {approvingProduct === selectedProduct.id ? "A aprovar..." : "Aprovar"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {!selectedProduct ? (

@@ -71,11 +71,12 @@ public class CatalogService {
         return mapper.toProductResponse(productRepository.save(product));
     }
 
-    /** Lists active products for one vendor within the current tenant. */
+    /** Lists all products for one vendor within the current tenant, including PENDING products for admin review. */
     @Transactional(readOnly = true)
     public List<ProductResponse> listVendorProducts(UUID vendorId) {
         UUID tenantId = tenantId();
-        List<Product> products = productRepository.findByTenantIdAndVendorIdAndStatus(tenantId, vendorId, "ACTIVE");
+        // Include ALL products regardless of status - admins need to see PENDING products for review
+        List<Product> products = productRepository.findByTenantIdAndVendorId(tenantId, vendorId);
         List<UUID> productIds = products.stream().map(Product::getId).toList();
         List<Sku> skus = productIds.isEmpty() ? List.of() : skuRepository.findByTenantIdAndProductIdInAndActiveTrue(tenantId, productIds);
         Map<UUID, List<Sku>> skusByProduct = skus.stream().collect(Collectors.groupingBy(Sku::getProductId));
@@ -175,6 +176,36 @@ public class CatalogService {
             category.getParentId(),
             childResponses
         );
+    }
+
+    /** Approves a product for listing (changes status from PENDING to ACTIVE). */
+    @Transactional
+    public ProductResponse approveProduct(UUID productId) {
+        UUID tenantId = tenantId();
+        Product product = productRepository.findByTenantIdAndId(tenantId, productId)
+            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
+        
+        if (!product.isPending()) {
+            throw new BusinessException("product_not_pending", "Product is not in PENDING status", HttpStatus.BAD_REQUEST);
+        }
+        
+        product.approve();
+        return mapper.toProductResponse(productRepository.save(product));
+    }
+
+    /** Rejects a product (changes status from PENDING to REJECTED). */
+    @Transactional
+    public ProductResponse rejectProduct(UUID productId) {
+        UUID tenantId = tenantId();
+        Product product = productRepository.findByTenantIdAndId(tenantId, productId)
+            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
+        
+        if (!product.isPending()) {
+            throw new BusinessException("product_not_pending", "Product is not in PENDING status", HttpStatus.BAD_REQUEST);
+        }
+        
+        product.reject();
+        return mapper.toProductResponse(productRepository.save(product));
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

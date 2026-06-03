@@ -3,6 +3,9 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <main className="page-shell">
+      <div style={{ backgroundColor: '#FFA500', padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#333', marginBottom: '20px' }}>
+        ⚠️ PROTÓTIPO INTERNO — Esta aplicação não tem autenticação real. Não usar em produção.
+      </div>
       <section className="panel">
         <p className="eyebrow">Pede Aqui</p>
         <h1>Plataforma de Entregas - Mocambique</h1>

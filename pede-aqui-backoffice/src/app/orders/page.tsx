@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShoppingBag, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
 
 const STATUS_LABELS: Record<string, string> = {
   PAYMENT_PENDING: "Pag. Pendente",
@@ -63,11 +64,15 @@ function fmtDate(iso: string | null) {
 }
 
 export default function OrdersPage() {
+  const userRole = useAppSelector((state) => state.auth.user?.role);
+  const isVendor = userRole === 'VENDOR_ADMIN' || userRole === 'VENDOR_STAFF';
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Order | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showReject, setShowReject] = useState(false);
 
@@ -98,11 +103,12 @@ export default function OrdersPage() {
 
   async function handleAction(action: () => Promise<Order>) {
     setActionLoading(true);
+    setActionError(null);
     try {
       const updated = await action();
       updateOrder(updated);
     } catch {
-      // keep panel open so user sees the error
+      setActionError("Erro ao executar acção. Tente novamente.");
     } finally {
       setActionLoading(false);
     }
@@ -138,7 +144,7 @@ export default function OrdersPage() {
             <TableRow
               key={order.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => { setSelected(order); setShowReject(false); setRejectReason(""); }}
+              onClick={() => { setSelected(order); setShowReject(false); setRejectReason(""); setActionError(null); }}
             >
               <TableCell className="font-mono text-sm">{order.reference}</TableCell>
               <TableCell>{order.customerName ?? "—"}</TableCell>
@@ -157,19 +163,26 @@ export default function OrdersPage() {
     );
   }
 
-  if (loading) return <div className="p-8 text-muted-foreground">A carregar encomendas…</div>;
-  if (error) return <div className="p-8 text-destructive">{error}</div>;
-
   return (
     <AppShell>
       <main className="space-y-6 p-4 md:p-8">
-      <div>
-        <h1 className="text-2xl font-bold">Encomendas</h1>
-        <p className="text-muted-foreground">Gestão e acompanhamento de encomendas dos clientes.</p>
-      </div>
+        <div>
+          <h1 className="text-2xl font-bold">Encomendas</h1>
+          <p className="text-muted-foreground">Gestão e acompanhamento de encomendas dos clientes.</p>
+        </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {loading && (
+          <div className="text-muted-foreground">A carregar encomendas…</div>
+        )}
+
+        {error && (
+          <div className="text-destructive">{error}</div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* KPI row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
@@ -224,7 +237,7 @@ export default function OrdersPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-mono">{selected.reference}</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>✕</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelected(null); setActionError(null); }}>✕</Button>
                 </div>
                 <Badge variant={STATUS_VARIANT[selected.status] ?? "outline"} className="w-fit">
                   {STATUS_LABELS[selected.status] ?? selected.status}
@@ -253,61 +266,72 @@ export default function OrdersPage() {
                   </div>
                 )}
 
+                {/* Error display */}
+                {actionError && (
+                  <div className="bg-destructive/10 text-destructive border border-destructive/20 rounded-md p-2">
+                    <span className="text-xs">{actionError}</span>
+                  </div>
+                )}
+
                 {/* Fulfillment actions */}
-                <div className="space-y-2 pt-2 border-t">
-                  {selected.status === "PAYMENT_CONFIRMED" && (
-                    <>
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        disabled={actionLoading}
-                        onClick={() => handleAction(() => orderService.accept(selected.id))}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" /> Aceitar
+                {isVendor && (
+                  <div className="space-y-2 pt-2 border-t">
+                    {selected.status === "PAYMENT_CONFIRMED" && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          disabled={actionLoading}
+                          onClick={() => handleAction(() => orderService.accept(selected.id))}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" /> Aceitar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full"
+                          disabled={actionLoading}
+                          onClick={() => setShowReject(v => !v)}
+                        >
+                          Rejeitar
+                        </Button>
+                        {showReject && (
+                          <div className="space-y-1">
+                            <input
+                              className="w-full border rounded px-2 py-1 text-xs"
+                              placeholder="Motivo da rejeição"
+                              value={rejectReason}
+                              onChange={e => setRejectReason(e.target.value)}
+                            />
+                            <Button size="sm" variant="destructive" className="w-full" disabled={actionLoading || !rejectReason.trim()} onClick={handleReject}>
+                              Confirmar Rejeição
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {selected.status === "ACCEPTED_BY_VENDOR" && (
+                      <Button size="sm" className="w-full" disabled={actionLoading} onClick={() => handleAction(() => orderService.markPreparing(selected.id))}>
+                        Marcar Em Preparação
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="w-full"
-                        disabled={actionLoading}
-                        onClick={() => setShowReject(v => !v)}
-                      >
-                        Rejeitar
+                    )}
+                    {selected.status === "PREPARING" && (
+                      <Button size="sm" className="w-full" disabled={actionLoading} onClick={() => handleAction(() => orderService.markReadyForPickup(selected.id))}>
+                        Pronto para Recolha
                       </Button>
-                      {showReject && (
-                        <div className="space-y-1">
-                          <input
-                            className="w-full border rounded px-2 py-1 text-xs"
-                            placeholder="Motivo da rejeição"
-                            value={rejectReason}
-                            onChange={e => setRejectReason(e.target.value)}
-                          />
-                          <Button size="sm" variant="destructive" className="w-full" disabled={actionLoading || !rejectReason.trim()} onClick={handleReject}>
-                            Confirmar Rejeição
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {selected.status === "ACCEPTED_BY_VENDOR" && (
-                    <Button size="sm" className="w-full" disabled={actionLoading} onClick={() => handleAction(() => orderService.markPreparing(selected.id))}>
-                      Marcar Em Preparação
-                    </Button>
-                  )}
-                  {selected.status === "PREPARING" && (
-                    <Button size="sm" className="w-full" disabled={actionLoading} onClick={() => handleAction(() => orderService.markReadyForPickup(selected.id))}>
-                      Pronto para Recolha
-                    </Button>
-                  )}
-                  {DONE_STATUSES.has(selected.status) && (
-                    <p className="text-xs text-muted-foreground text-center">Encomenda concluída</p>
-                  )}
-                </div>
+                    )}
+                    {DONE_STATUSES.has(selected.status) && (
+                      <p className="text-xs text-muted-foreground text-center">Encomenda concluída</p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         )}
-      </div>
+          </div>
+          </>
+        )}
       </main>
     </AppShell>
   );

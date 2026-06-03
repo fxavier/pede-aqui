@@ -25,7 +25,7 @@ class PedeAquiCourierApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       themeMode: settings.themeMode,
       theme: AppTheme.light(),
-      darkTheme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       locale: const Locale('pt', 'MZ'),
       supportedLocales: const [Locale('pt', 'MZ'), Locale('pt', 'PT')],
       localizationsDelegates: const [
@@ -33,7 +33,7 @@ class PedeAquiCourierApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      initialRoute: AppRoutes.shell,
+      initialRoute: AppRoutes.login,
       routes: {
         AppRoutes.onboarding: (_) => const OnboardingScreen(),
         AppRoutes.login: (_) => const LoginScreen(),

@@ -38,15 +38,19 @@ class DeliveryCubit extends Cubit<DeliveryState> {
     final delivery = state.delivery;
     if (delivery == null || !state.canConfirm) return;
 
-    await _repository.confirmDelivery(
-      deliveryId: delivery.id,
-      otpCode: state.otpCode,
-      hasProofPhoto: state.hasProofPhoto,
-    );
+    try {
+      await _repository.confirmDelivery(
+        deliveryId: delivery.id,
+        otpCode: state.otpCode,
+        hasProofPhoto: state.hasProofPhoto,
+      );
 
-    emit(state.copyWith(
-      isConfirmed: true,
-      delivery: delivery.copyWith(status: DeliveryStatus.delivered),
-    ));
+      emit(state.copyWith(
+        isConfirmed: true,
+        delivery: delivery.copyWith(status: DeliveryStatus.delivered),
+      ));
+    } catch (_) {
+      emit(state.copyWith(errorMessage: 'Não foi possível confirmar a entrega.'));
+    }
   }
 }

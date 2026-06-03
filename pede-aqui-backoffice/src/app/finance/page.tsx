@@ -47,6 +47,7 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -75,24 +76,33 @@ export default function FinancePage() {
         ? await financeService.approveRefund(id)
         : await financeService.rejectRefund(id);
       setRefunds(prev => prev.map(r => r.id === updated.id ? updated : r));
+    } catch {
+      setActionError("Erro ao processar reembolso. Tente novamente.");
     } finally {
       setActionLoading(null);
     }
   }
 
-  if (loading) return <div className="p-8 text-muted-foreground">A carregar dados financeiros…</div>;
-  if (error) return <div className="p-8 text-destructive">{error}</div>;
-
   return (
     <AppShell>
       <main className="space-y-6 p-4 md:p-8">
-      <div>
-        <h1 className="text-2xl font-bold">Finanças</h1>
-        <p className="text-muted-foreground">Transacções, comissões, reembolsos e reconciliação de caixa.</p>
-      </div>
+        <div>
+          <h1 className="text-2xl font-bold">Finanças</h1>
+          <p className="text-muted-foreground">Transacções, comissões, reembolsos e reconciliação de caixa.</p>
+        </div>
 
-      {/* KPI row */}
-      {summary && (
+        {loading && (
+          <div className="text-muted-foreground">A carregar dados financeiros…</div>
+        )}
+
+        {error && (
+          <div className="text-destructive">{error}</div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* KPI row */}
+            {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -203,6 +213,14 @@ export default function FinancePage() {
         {/* Reembolsos */}
         <TabsContent value="refunds">
           <Card>
+            {actionError && (
+              <CardContent className="pt-6 pb-0">
+                <div className="flex items-center justify-between bg-destructive/10 text-destructive border border-destructive/20 rounded-md p-3">
+                  <span className="text-sm">{actionError}</span>
+                  <Button size="sm" variant="ghost" onClick={() => setActionError(null)}>✕</Button>
+                </div>
+              </CardContent>
+            )}
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -291,7 +309,9 @@ export default function FinancePage() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+          </Tabs>
+          </>
+        )}
       </main>
     </AppShell>
   );

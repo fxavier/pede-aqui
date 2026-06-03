@@ -1,5 +1,6 @@
 package com.delivery.vendor.service;
 
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
@@ -19,6 +20,7 @@ import com.delivery.vendor.repository.VendorDocumentRepository;
 import com.delivery.vendor.repository.VendorOpeningHourRepository;
 import com.delivery.vendor.repository.VendorRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,18 +34,21 @@ public class VendorService {
     private final VendorOpeningHourRepository vendorOpeningHourRepository;
     private final VendorMapper vendorMapper;
     private final TenantContext tenantContext;
+    private final AppUserProfileRepository appUserProfileRepository;
 
     public VendorService(
             VendorRepository vendorRepository,
             VendorDocumentRepository vendorDocumentRepository,
             VendorOpeningHourRepository vendorOpeningHourRepository,
             VendorMapper vendorMapper,
-            TenantContext tenantContext) {
+            TenantContext tenantContext,
+            AppUserProfileRepository appUserProfileRepository) {
         this.vendorRepository = vendorRepository;
         this.vendorDocumentRepository = vendorDocumentRepository;
         this.vendorOpeningHourRepository = vendorOpeningHourRepository;
         this.vendorMapper = vendorMapper;
         this.tenantContext = tenantContext;
+        this.appUserProfileRepository = appUserProfileRepository;
     }
 
     /** Registers a vendor profile for the current tenant. */
@@ -62,7 +67,10 @@ public class VendorService {
         if (tenantContext.isPlatformAdmin()) {
             return vendorRepository.findAll().stream().map(vendorMapper::toResponse).toList();
         }
-        UUID tenantId = tenantId();
+        
+        // Get tenant ID with fallback to user profile lookup
+        UUID tenantId = resolveTenantId();
+        
         List<Vendor> vendors = available == null
                 ? vendorRepository.findByTenantId(tenantId)
                 : vendorRepository.findByTenantIdAndAvailable(tenantId, available);
@@ -155,7 +163,23 @@ public class VendorService {
         }
     }
 
+    private UUID resolveTenantId() {
+        // Try to get tenant ID from JWT claims first
+        Optional<UUID> tenantIdOpt = tenantContext.currentTenantId();
+        if (tenantIdOpt.isPresent()) {
+            return tenantIdOpt.get();
+        }
+        
+        // Fallback: lookup tenant ID from user profile using Keycloak user ID
+        String keycloakUserId = tenantContext.currentKeycloakUserId()
+                .orElseThrow(() -> new BusinessException("authentication_required", "Authentication is required", HttpStatus.UNAUTHORIZED));
+        
+        return appUserProfileRepository.findByKeycloakUserId(keycloakUserId)
+                .map(profile -> profile.getTenantId())
+                .orElseThrow(() -> new BusinessException("tenant_required", "User is not associated with any tenant", HttpStatus.FORBIDDEN));
+    }
+
     private UUID tenantId() {
-        return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
+        return resolveTenantId();
     }
 }

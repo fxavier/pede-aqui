@@ -60,4 +60,14 @@ public class CatalogController {
     public List<CategoryResponse> listChildCategories(@PathVariable UUID parentId) {
         return service.listChildCategories(parentId);
     }
+
+    @PostMapping("/products/{productId}/approve")
+    public ProductResponse approveProduct(@PathVariable UUID productId) {
+        return service.approveProduct(productId);
+    }
+
+    @PostMapping("/products/{productId}/reject")
+    public ProductResponse rejectProduct(@PathVariable UUID productId) {
+        return service.rejectProduct(productId);
+    }
 }

@@ -78,17 +78,23 @@ public class DashboardService {
     public AdminDashboardResponse admin() {
         UUID tenantId = tenantId();
         
-        long totalOrders = orderRepository.countByTenantId(tenantId);
+        var allOrders = orderRepository.findByTenantId(tenantId);
+        long totalOrders = allOrders.size();
         
         BigDecimal totalRevenue = orderRepository.findByTenantIdAndStatus(tenantId, OrderStatus.DELIVERED).stream()
                 .map(order -> order.getTotal())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        Map<String, Long> ordersByStatus = orderRepository.findByTenantId(tenantId).stream()
+        Map<String, Long> ordersByStatus = allOrders.stream()
                 .collect(Collectors.groupingBy(
                     order -> order.getStatus().name(),
                     Collectors.counting()
                 ));
+        
+        // Ensure all OrderStatus enum values are present with default 0L
+        for (OrderStatus status : OrderStatus.values()) {
+            ordersByStatus.putIfAbsent(status.name(), 0L);
+        }
         
         long activeVendors = vendorRepository.countByTenantIdAndAvailable(tenantId, true);
         long activeCouriers = courierRepository.countByTenantIdAndAvailable(tenantId, true);

@@ -36,7 +36,7 @@ class DashboardState extends Equatable {
       isAvailable: isAvailable ?? this.isAvailable,
       activeDelivery: activeDelivery ?? this.activeDelivery,
       availableJobs: availableJobs ?? this.availableJobs,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 

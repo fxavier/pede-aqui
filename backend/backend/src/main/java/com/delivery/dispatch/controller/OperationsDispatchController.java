@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Exposes operations-only order monitoring and dispatch reassignment actions. */
 @RestController
 @RequestMapping("/api/v1/ops/dispatch")
-@PreAuthorize("hasAnyRole('OPS','ADMIN')")
+@PreAuthorize("hasAnyRole('OPERATIONS','ADMIN')")
 public class OperationsDispatchController {
     private final DispatchService dispatchService;
 

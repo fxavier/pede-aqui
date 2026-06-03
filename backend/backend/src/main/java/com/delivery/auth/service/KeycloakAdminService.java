@@ -156,6 +156,22 @@ public class KeycloakAdminService {
         }
     }
 
+    public void deleteUser(String userId) {
+        try {
+            String adminToken = getAdminToken();
+            String url = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(adminToken);
+
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
+        } catch (Exception e) {
+            logger.error("Failed to delete user with ID: {}", userId, e);
+            // Best-effort cleanup: log error but do not throw exception
+        }
+    }
+
     private record TokenResponse(@JsonProperty("access_token") String accessToken) {}
     private record RoleResponse(String id, String name) {}
 }

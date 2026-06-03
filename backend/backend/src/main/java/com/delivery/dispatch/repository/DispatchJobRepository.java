@@ -13,4 +13,5 @@ public interface DispatchJobRepository extends JpaRepository<DispatchJob, UUID> 
     List<DispatchJob> findByTenantIdAndCourierId(UUID tenantId, UUID courierId);
     List<DispatchJob> findByTenantIdAndStatus(UUID tenantId, DispatchJobStatus status);
     long countByTenantIdAndStatus(UUID tenantId, DispatchJobStatus status);
+    long countByTenantIdAndCourierIdAndStatus(UUID tenantId, UUID courierId, DispatchJobStatus status);
 }

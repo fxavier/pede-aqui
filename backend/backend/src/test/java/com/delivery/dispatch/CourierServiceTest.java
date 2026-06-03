@@ -19,6 +19,7 @@ import com.delivery.dispatch.repository.CourierDocumentRepository;
 import com.delivery.dispatch.repository.CourierRepository;
 import com.delivery.dispatch.service.CourierService;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.dashboard.service.DashboardService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,7 +45,7 @@ class CourierServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext);
+        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class));
 
         var eligible = service.eligibleInZone(zoneA);
 
@@ -84,7 +85,8 @@ class CourierServiceTest {
                 userProfileRepository,
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
-                tenantContext
+                tenantContext,
+                mock(DashboardService.class)
         );
 
         CreateCourierRequest request = new CreateCourierRequest(differentProfileId, UUID.randomUUID(), null, null, null, null, null, null);
@@ -126,7 +128,8 @@ class CourierServiceTest {
                 mock(AppUserProfileRepository.class),
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
-                tenantContext
+                tenantContext,
+                mock(DashboardService.class)
         );
 
         // Create request with profile fields

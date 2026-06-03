@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3, Bell, Boxes, Building2, CreditCard,
   Headphones, LayoutDashboard, LayoutGrid, Menu, Search, ShieldCheck,
-  LogOut, ChevronRight, Package, Truck,
+  LogOut, ChevronRight, Package, Truck, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ const navigation = [
   { href: "/admin", label: "Admin Central", icon: ShieldCheck, roles: ["ADMIN"] },
   { href: "/catalogo", label: "Catálogo", icon: LayoutGrid, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
   { href: "/vendors", label: "Vendedores", icon: Building2, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
+  { href: "/users", label: "Utilizadores", icon: Users, roles: ["ADMIN"] },
   { href: "/orders", label: "Encomendas", icon: Package, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "SUPPORT"] },
   { href: "/couriers", label: "Estafetas", icon: Truck, roles: ["ADMIN", "OPS"] },
   { href: "/finance", label: "Finanças", icon: CreditCard, roles: ["ADMIN", "FINANCE"] },
@@ -53,6 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     sessionStorage.removeItem('auth_token');
     sessionStorage.removeItem('tenant_id');
+    document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Strict';
     dispatch(logoutAction());
     router.push('/login');
   };

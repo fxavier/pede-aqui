@@ -29,7 +29,7 @@ public class DeliveryController {
     }
 
     @PatchMapping("/{deliveryId}/status")
-    @PreAuthorize("hasAnyRole('COURIER','OPS','ADMIN')")
+    @PreAuthorize("hasAnyRole('COURIER','OPERATIONS','ADMIN')")
     public DeliveryResponse updateStatus(@PathVariable UUID deliveryId, @Valid @RequestBody UpdateDeliveryStatusRequest request) {
         return service.updateStatus(deliveryId, request.status(), request.proofPhotoStorageKey(), request.cashCollectedAmount());
     }

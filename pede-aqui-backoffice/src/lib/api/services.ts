@@ -72,18 +72,14 @@ export const catalogService = {
   listVendorProducts: (vendorId: string) => apiClient.get<Product[]>(`/catalog/vendors/${vendorId}/products`),
   createProduct: (data: CreateProductPayload) => apiClient.post<Product>("/catalog/products", data),
   createSku: (data: CreateSkuPayload) => apiClient.post<Sku>("/catalog/skus", data),
+  approveProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/approve`),
+  rejectProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/reject`),
 };
 
 // Categories
 export const categoryService = {
   list: async (): Promise<Category[]> => {
-    try {
-      return await apiClient.get<Category[]>("/catalog/categories");
-    } catch (error) {
-      console.error("Failed to load categories:", error);
-      // Return empty array if endpoint fails - this will prevent form submission
-      return [];
-    }
+    return await apiClient.get<Category[]>("/catalog/categories");
   },
 };
 
@@ -192,11 +188,22 @@ function createCrudService(basePath: string) {
   };
 }
 
-// Users - Note: No user management endpoints exist in backend yet
+// Users
 export const userService = {
-  // These endpoints are not implemented in the backend
-  list: () => Promise.reject(new Error("User management endpoints not implemented in backend")),
-  getById: (id: string) => Promise.reject(new Error("User management endpoints not implemented in backend")),
+  list: async (): Promise<UserProfile[]> => {
+    try {
+      return await apiClient.get<UserProfile[]>("/admin/users");
+    } catch (error) {
+      // If backend returns 404, return empty array instead of rejecting
+      if (error && typeof error === 'object' && 'response' in error && 
+          error.response && typeof error.response === 'object' && 'status' in error.response && 
+          error.response.status === 404) {
+        return [];
+      }
+      throw error;
+    }
+  },
+  getById: (id: string) => apiClient.get<UserProfile>(`/admin/users/${id}`),
   create: (data: {
     keycloakUserId: string;
     email: string;
@@ -207,7 +214,7 @@ export const userService = {
     dateOfBirth?: string;
     address?: string;
     roles: string[];
-  }) => Promise.reject(new Error("User management endpoints not implemented in backend")),
+  }) => apiClient.post<UserProfile>("/admin/users", data),
 };
 
 // Upload

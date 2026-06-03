@@ -8,9 +8,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { courierService, uploadService } from "@/lib/api/services";
+import { courierService, uploadService, userService } from "@/lib/api/services";
 import { formatDate, cn } from "@/lib/utils";
-import type { Courier, CourierDocument } from "@/lib/api/types";
+import type { Courier, CourierDocument, UserProfile } from "@/lib/api/types";
 import { Upload, FileText, Trash2, User, Phone, Car } from "lucide-react";
 
 type CourierRecord = {
@@ -36,7 +36,9 @@ type CourierFormData = {
 
 export default function CouriersPage() {
   const [couriers, setCouriers] = useState<CourierRecord[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [courierForm, setCourierForm] = useState<CourierFormData>({ 
@@ -71,7 +73,23 @@ export default function CouriersPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const data = await userService.list();
+      setUsers(data);
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchData();
+    fetchUsers();
+  }, []);
 
   const filteredCouriers = couriers.filter(courier => 
     courier.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,14 +153,7 @@ export default function CouriersPage() {
   async function submitCourierForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!courierForm.fullName.trim() || !courierForm.userProfileId.trim()) {
-      setError("Nome completo e ID do perfil de utilizador são obrigatórios.");
-      return;
-    }
-
-    // Basic UUID validation for userProfileId
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(courierForm.userProfileId)) {
-      setError("ID do perfil de utilizador deve ser um UUID válido.");
+      setError("Nome completo e perfil de utilizador são obrigatórios.");
       return;
     }
 
@@ -260,14 +271,24 @@ export default function CouriersPage() {
                     Perfil de Utilizador
                   </label>
                   <div className="space-y-1">
-                    <Input
-                      placeholder="ID do perfil de utilizador *"
+                    <select
                       value={courierForm.userProfileId}
                       onChange={(event) => setCourierForm((prev) => ({ ...prev, userProfileId: event.target.value }))}
+                      className="flex h-11 w-full rounded-xl border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
                       required
-                    />
+                      disabled={usersLoading}
+                    >
+                      <option value="">
+                        {usersLoading ? "A carregar utilizadores..." : "Selecione um utilizador *"}
+                      </option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.displayName} ({user.email})
+                        </option>
+                      ))}
+                    </select>
                     <p className="text-xs text-on-surface-variant">
-                      Insira o UUID do perfil de utilizador existente para associar ao estafeta.
+                      Selecione o utilizador que será associado a este estafeta.
                     </p>
                   </div>
                 </div>

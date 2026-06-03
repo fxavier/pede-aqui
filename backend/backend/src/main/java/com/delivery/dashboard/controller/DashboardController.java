@@ -19,7 +19,7 @@ public class DashboardController {
     public DashboardController(DashboardService dashboardService) { this.dashboardService = dashboardService; }
 
     @GetMapping("/admin")
-    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
     public AdminDashboardResponse admin() { return dashboardService.admin(); }
 
     @GetMapping("/vendor")

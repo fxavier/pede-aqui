@@ -53,8 +53,7 @@ public class FinanceService {
     @Transactional(readOnly = true)
     public List<TransactionResponse> listTransactions() {
         UUID tenantId = tenantId();
-        return paymentRepository.findAll().stream()
-                .filter(payment -> payment.getTenantId().equals(tenantId))
+        return paymentRepository.findByTenantId(tenantId).stream()
                 .map(financeMapper::toTransactionResponse)
                 .toList();
     }
@@ -113,8 +112,8 @@ public class FinanceService {
     /** Returns tenant refunds for finance review workflows. */
     @Transactional(readOnly = true)
     public java.util.List<RefundFinanceResponse> listRefunds() {
-        return refundRepository.findAll().stream()
-                .filter(item -> item.getTenantId().equals(tenantId()))
+        UUID tenantId = tenantId();
+        return refundRepository.findByTenantId(tenantId).stream()
                 .map(financeMapper::toRefundFinanceResponse)
                 .toList();
     }
