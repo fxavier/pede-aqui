@@ -57,6 +57,8 @@ export interface Category {
   name: string;
   vertical: string;
   active: boolean;
+  parentId?: string;
+  children?: Category[];
 }
 
 // Vendor types
@@ -276,6 +278,10 @@ export interface Product {
   requiresPrescriptionMetadata: boolean;
   prohibitedFuel: boolean;
   skus: Sku[];
+  status?: string;
+  attributes?: Record<string, any>;
+  primaryImageKey?: string;
+  imageGallery?: string[];
 }
 
 export interface CreateProductPayload {
@@ -294,6 +300,29 @@ export interface CreateSkuPayload {
   name: string;
   price: number;
   initialStock: number;
+}
+
+// Product Variation Groups (Families)
+export interface ProductVariationGroup {
+  id: string;
+  productId: string;
+  name: string;
+  description?: string;
+  required: boolean;
+  minSelections: number;
+  maxSelections: number;
+  displayOrder: number;
+  options?: ProductVariationOption[];
+}
+
+export interface ProductVariationOption {
+  id: string;
+  groupId: string;
+  name: string;
+  description?: string;
+  priceModifier: number;
+  available: boolean;
+  displayOrder: number;
 }
 
 // Vendor opening hours

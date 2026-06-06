@@ -66,6 +66,14 @@ public class ProductVariationOption {
         this.updatedAt = Instant.now();
     }
 
+    public void updateProfile(String name, String description, BigDecimal priceModifier, Boolean available, Integer displayOrder) {
+        this.name = name;
+        this.priceDelta = priceModifier != null ? priceModifier : BigDecimal.ZERO;
+        this.available = available;
+        this.displayOrder = displayOrder;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }

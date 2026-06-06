@@ -12,6 +12,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     List<Product> findByTenantIdAndVendorId(UUID tenantId, UUID vendorId);
     List<Product> findByTenantIdAndVendorIdAndStatus(UUID tenantId, UUID vendorId, String status);
     List<Product> findByTenantIdAndCategoryIdAndStatus(UUID tenantId, UUID categoryId, String status);
+    List<Product> findByTenantIdAndCategoryId(UUID tenantId, UUID categoryId);
     Optional<Product> findByTenantIdAndId(UUID tenantId, UUID id);
 
     @Query("select distinct p.vendorId from Product p where p.tenantId = :tenantId and p.status = :status")

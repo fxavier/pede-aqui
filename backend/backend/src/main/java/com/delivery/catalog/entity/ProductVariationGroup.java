@@ -75,6 +75,15 @@ public class ProductVariationGroup {
         this.updatedAt = Instant.now();
     }
 
+    public void updateProfile(String name, String description, Boolean required, Integer minSelections, Integer maxSelections, Integer displayOrder) {
+        this.name = name;
+        this.required = required;
+        this.minSelections = minSelections;
+        this.maxSelections = maxSelections;
+        this.displayOrder = displayOrder;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }

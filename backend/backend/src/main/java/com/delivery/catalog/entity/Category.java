@@ -79,6 +79,14 @@ public class Category {
         this.updatedAt = Instant.now();
     }
 
+    public void updateProfile(String name, String vertical, UUID parentId) {
+        this.name = name;
+        this.slug = slugify(name);
+        this.vertical = vertical;
+        this.parentId = parentId;
+        this.updatedAt = Instant.now();
+    }
+
     private static String slugify(String value) {
         return value.toLowerCase(Locale.ROOT).trim().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }

@@ -2,6 +2,7 @@ package com.delivery.catalog.controller;
 
 import com.delivery.catalog.dto.CategoryResponse;
 import com.delivery.catalog.dto.CreateCategoryRequest;
+import com.delivery.catalog.dto.UpdateCategoryRequest;
 import com.delivery.catalog.dto.CreateProductRequest;
 import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
@@ -11,9 +12,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,6 +62,22 @@ public class CatalogController {
     @GetMapping("/categories/{parentId}/children")
     public List<CategoryResponse> listChildCategories(@PathVariable UUID parentId) {
         return service.listChildCategories(parentId);
+    }
+
+    @GetMapping("/categories/{categoryId}")
+    public CategoryResponse getCategoryById(@PathVariable UUID categoryId) {
+        return service.getCategoryById(categoryId);
+    }
+
+    @PutMapping("/categories/{categoryId}")
+    public CategoryResponse updateCategory(@PathVariable UUID categoryId, @Valid @RequestBody UpdateCategoryRequest request) {
+        return service.updateCategory(categoryId, request);
+    }
+
+    @DeleteMapping("/categories/{categoryId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(@PathVariable UUID categoryId) {
+        service.deleteCategory(categoryId);
     }
 
     @PostMapping("/products/{productId}/approve")

@@ -12,7 +12,8 @@ import { TableSkeleton } from "@/components/ui/loading-skeleton";
 import { vendorService, categoryService, catalogService } from "@/lib/api/services";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { Product, Vendor, Category } from "@/lib/api/types";
-import { Plus, Tag } from "lucide-react";
+import { Plus, Tag, Settings } from "lucide-react";
+import Link from "next/link";
 
 export default function CatalogoPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -161,11 +162,27 @@ export default function CatalogoPage() {
   return (
     <AppShell>
       <main className="space-y-6 p-4 md:p-8">
-        <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">Catálogo</h1>
-          <p className="mt-1 text-body-md text-on-surface-variant">
-            Gestão de produtos e variantes (SKUs) por vendedor.
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Catálogo</h1>
+            <p className="mt-1 text-body-md text-on-surface-variant">
+              Gestão de produtos e variantes (SKUs) por vendedor.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button asChild variant="outline">
+              <Link href="/catalogo/categorias" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Gerir Categorias
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/catalogo/familias" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Gerir Famílias
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {error && <ErrorState message={error} onRetry={() => setError(null)} />}
@@ -260,7 +277,7 @@ export default function CatalogoPage() {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-on-surface">{product.name}</p>
                             <p className="text-xs text-on-surface-variant">{categoryName(product.categoryId)}</p>
-                            <StatusBadge status={product.status} />
+                            <StatusBadge status={product.status || "PENDING"} />
                           </div>
                           <span className="ml-3 flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant">
                             <Tag className="h-3 w-3" />

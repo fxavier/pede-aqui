@@ -2,17 +2,28 @@ package com.delivery.catalog.service;
 
 import com.delivery.catalog.dto.CategoryResponse;
 import com.delivery.catalog.dto.CreateCategoryRequest;
+import com.delivery.catalog.dto.UpdateCategoryRequest;
 import com.delivery.catalog.dto.CreateProductRequest;
 import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
 import com.delivery.catalog.dto.SkuResponse;
+import com.delivery.catalog.dto.ProductVariationGroupResponse;
+import com.delivery.catalog.dto.ProductVariationOptionResponse;
+import com.delivery.catalog.dto.CreateProductVariationGroupRequest;
+import com.delivery.catalog.dto.CreateProductVariationOptionRequest;
+import com.delivery.catalog.dto.UpdateProductVariationGroupRequest;
+import com.delivery.catalog.dto.UpdateProductVariationOptionRequest;
 import com.delivery.catalog.entity.Category;
 import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
+import com.delivery.catalog.entity.ProductVariationGroup;
+import com.delivery.catalog.entity.ProductVariationOption;
 import com.delivery.catalog.mapper.CatalogMapper;
 import com.delivery.catalog.repository.CategoryRepository;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
+import com.delivery.catalog.repository.ProductVariationGroupRepository;
+import com.delivery.catalog.repository.ProductVariationOptionRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.entity.InventoryItem;
@@ -32,14 +43,18 @@ public class CatalogService {
     private final ProductRepository productRepository;
     private final SkuRepository skuRepository;
     private final InventoryItemRepository inventoryItemRepository;
+    private final ProductVariationGroupRepository variationGroupRepository;
+    private final ProductVariationOptionRepository variationOptionRepository;
     private final CatalogMapper mapper;
     private final TenantContext tenantContext;
 
-    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, CatalogMapper mapper, TenantContext tenantContext) {
+    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.skuRepository = skuRepository;
         this.inventoryItemRepository = inventoryItemRepository;
+        this.variationGroupRepository = variationGroupRepository;
+        this.variationOptionRepository = variationOptionRepository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
     }
@@ -151,6 +166,87 @@ public class CatalogService {
         return categories.stream().map(mapper::toCategoryResponse).toList();
     }
 
+    /** Gets a category by ID. */
+    @Transactional(readOnly = true)
+    public CategoryResponse getCategoryById(UUID categoryId) {
+        UUID tenantId = tenantId();
+        Category category = categoryRepository.findByTenantIdAndId(tenantId, categoryId)
+            .orElseThrow(() -> new BusinessException("category_not_found", "Category not found", HttpStatus.NOT_FOUND));
+        return mapper.toCategoryResponse(category);
+    }
+
+    /** Updates an existing category. */
+    @Transactional
+    public CategoryResponse updateCategory(UUID categoryId, UpdateCategoryRequest request) {
+        UUID tenantId = tenantId();
+        
+        Category category = categoryRepository.findByTenantIdAndId(tenantId, categoryId)
+            .orElseThrow(() -> new BusinessException("category_not_found", "Category not found", HttpStatus.NOT_FOUND));
+
+        // Validate parent category if specified
+        if (request.parentId() != null) {
+            if (request.parentId().equals(categoryId)) {
+                throw new BusinessException("invalid_parent_category", "Category cannot be parent of itself", HttpStatus.BAD_REQUEST);
+            }
+            
+            Category parentCategory = categoryRepository.findByTenantIdAndId(tenantId, request.parentId())
+                .orElseThrow(() -> new BusinessException("parent_category_not_found", "Parent category not found", HttpStatus.NOT_FOUND));
+            
+            if (!parentCategory.isActive()) {
+                throw new BusinessException("parent_category_inactive", "Parent category must be active", HttpStatus.BAD_REQUEST);
+            }
+
+            // Check for circular dependency
+            if (wouldCreateCircularDependency(categoryId, request.parentId(), tenantId)) {
+                throw new BusinessException("circular_dependency", "Update would create circular dependency", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        category.updateProfile(request.name(), request.vertical(), request.parentId());
+        category.setActive(request.active());
+        
+        return mapper.toCategoryResponse(categoryRepository.save(category));
+    }
+
+    /** Deletes a category (soft delete by setting active = false). */
+    @Transactional
+    public void deleteCategory(UUID categoryId) {
+        UUID tenantId = tenantId();
+        
+        Category category = categoryRepository.findByTenantIdAndId(tenantId, categoryId)
+            .orElseThrow(() -> new BusinessException("category_not_found", "Category not found", HttpStatus.NOT_FOUND));
+
+        // Check if category has active children
+        List<Category> activeChildren = categoryRepository.findByTenantIdAndParentIdAndActiveTrue(tenantId, categoryId);
+        if (!activeChildren.isEmpty()) {
+            throw new BusinessException("category_has_children", "Cannot delete category with active children", HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if category is used by products
+        List<Product> products = productRepository.findByTenantIdAndCategoryId(tenantId, categoryId);
+        if (!products.isEmpty()) {
+            throw new BusinessException("category_has_products", "Cannot delete category with associated products", HttpStatus.BAD_REQUEST);
+        }
+
+        category.setActive(false);
+        categoryRepository.save(category);
+    }
+
+    private boolean wouldCreateCircularDependency(UUID categoryId, UUID newParentId, UUID tenantId) {
+        UUID currentParent = newParentId;
+        
+        while (currentParent != null) {
+            if (currentParent.equals(categoryId)) {
+                return true;
+            }
+            
+            Category parent = categoryRepository.findByTenantIdAndId(tenantId, currentParent).orElse(null);
+            currentParent = parent != null ? parent.getParentId() : null;
+        }
+        
+        return false;
+    }
+
     private List<CategoryResponse> buildCategoryTree(List<Category> allCategories) {
         Map<UUID, List<Category>> childrenByParent = allCategories.stream()
             .filter(cat -> cat.getParentId() != null)
@@ -206,6 +302,148 @@ public class CatalogService {
         
         product.reject();
         return mapper.toProductResponse(productRepository.save(product));
+    }
+
+    // Product Variation Groups (Families) Management
+    
+    /** Creates a new product variation group (family). */
+    @Transactional
+    public ProductVariationGroupResponse createProductVariationGroup(CreateProductVariationGroupRequest request) {
+        UUID tenantId = tenantId();
+        
+        // Validate product exists
+        productRepository.findByTenantIdAndId(tenantId, request.productId())
+            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
+        
+        if (request.maxSelections() < request.minSelections()) {
+            throw new BusinessException("invalid_selection_limits", "Max selections must be >= min selections", HttpStatus.BAD_REQUEST);
+        }
+        
+        ProductVariationGroup group = new ProductVariationGroup(UUID.randomUUID(), tenantId, request.productId(), request.name());
+        group.updateProfile(request.name(), request.description(), request.required(), request.minSelections(), request.maxSelections(), request.displayOrder());
+        
+        ProductVariationGroup saved = variationGroupRepository.save(group);
+        return mapper.toProductVariationGroupResponse(saved);
+    }
+    
+    /** Lists product variation groups for a product. */
+    @Transactional(readOnly = true)
+    public List<ProductVariationGroupResponse> listProductVariationGroups(UUID productId) {
+        UUID tenantId = tenantId();
+        
+        // Validate product exists
+        productRepository.findByTenantIdAndId(tenantId, productId)
+            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
+        
+        List<ProductVariationGroup> groups = variationGroupRepository.findByTenantIdAndProductIdOrderByDisplayOrderAsc(tenantId, productId);
+        return groups.stream().map(mapper::toProductVariationGroupResponse).toList();
+    }
+    
+    /** Gets a product variation group by ID. */
+    @Transactional(readOnly = true)
+    public ProductVariationGroupResponse getProductVariationGroupById(UUID groupId) {
+        UUID tenantId = tenantId();
+        ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+        return mapper.toProductVariationGroupResponse(group);
+    }
+    
+    /** Updates a product variation group. */
+    @Transactional
+    public ProductVariationGroupResponse updateProductVariationGroup(UUID groupId, UpdateProductVariationGroupRequest request) {
+        UUID tenantId = tenantId();
+        
+        ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+            
+        if (request.maxSelections() < request.minSelections()) {
+            throw new BusinessException("invalid_selection_limits", "Max selections must be >= min selections", HttpStatus.BAD_REQUEST);
+        }
+        
+        group.updateProfile(request.name(), request.description(), request.required(), request.minSelections(), request.maxSelections(), request.displayOrder());
+        
+        ProductVariationGroup saved = variationGroupRepository.save(group);
+        return mapper.toProductVariationGroupResponse(saved);
+    }
+    
+    /** Deletes a product variation group and its options. */
+    @Transactional
+    public void deleteProductVariationGroup(UUID groupId) {
+        UUID tenantId = tenantId();
+        
+        ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+        
+        // Delete all options first
+        variationOptionRepository.deleteByTenantIdAndGroupId(tenantId, groupId);
+        
+        // Delete the group
+        variationGroupRepository.delete(group);
+    }
+    
+    // Product Variation Options Management
+    
+    /** Creates a new product variation option. */
+    @Transactional
+    public ProductVariationOptionResponse createProductVariationOption(CreateProductVariationOptionRequest request) {
+        UUID tenantId = tenantId();
+        
+        // Validate group exists
+        variationGroupRepository.findByTenantIdAndId(tenantId, request.groupId())
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+        
+        ProductVariationOption option = new ProductVariationOption(UUID.randomUUID(), tenantId, request.groupId(), request.name());
+        option.updateProfile(request.name(), request.description(), request.priceModifier(), request.available(), request.displayOrder());
+        
+        ProductVariationOption saved = variationOptionRepository.save(option);
+        return mapper.toProductVariationOptionResponse(saved);
+    }
+    
+    /** Lists product variation options for a group. */
+    @Transactional(readOnly = true)
+    public List<ProductVariationOptionResponse> listProductVariationOptions(UUID groupId) {
+        UUID tenantId = tenantId();
+        
+        // Validate group exists
+        variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+        
+        List<ProductVariationOption> options = variationOptionRepository.findByTenantIdAndGroupIdOrderByDisplayOrderAsc(tenantId, groupId);
+        return options.stream().map(mapper::toProductVariationOptionResponse).toList();
+    }
+    
+    /** Gets a product variation option by ID. */
+    @Transactional(readOnly = true)
+    public ProductVariationOptionResponse getProductVariationOptionById(UUID optionId) {
+        UUID tenantId = tenantId();
+        ProductVariationOption option = variationOptionRepository.findByTenantIdAndId(tenantId, optionId)
+            .orElseThrow(() -> new BusinessException("variation_option_not_found", "Product variation option not found", HttpStatus.NOT_FOUND));
+        return mapper.toProductVariationOptionResponse(option);
+    }
+    
+    /** Updates a product variation option. */
+    @Transactional
+    public ProductVariationOptionResponse updateProductVariationOption(UUID optionId, UpdateProductVariationOptionRequest request) {
+        UUID tenantId = tenantId();
+        
+        ProductVariationOption option = variationOptionRepository.findByTenantIdAndId(tenantId, optionId)
+            .orElseThrow(() -> new BusinessException("variation_option_not_found", "Product variation option not found", HttpStatus.NOT_FOUND));
+        
+        option.updateProfile(request.name(), request.description(), request.priceModifier(), request.available(), request.displayOrder());
+        
+        ProductVariationOption saved = variationOptionRepository.save(option);
+        return mapper.toProductVariationOptionResponse(saved);
+    }
+    
+    /** Deletes a product variation option. */
+    @Transactional
+    public void deleteProductVariationOption(UUID optionId) {
+        UUID tenantId = tenantId();
+        
+        ProductVariationOption option = variationOptionRepository.findByTenantIdAndId(tenantId, optionId)
+            .orElseThrow(() -> new BusinessException("variation_option_not_found", "Product variation option not found", HttpStatus.NOT_FOUND));
+        
+        variationOptionRepository.delete(option);
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

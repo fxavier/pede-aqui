@@ -150,7 +150,7 @@ export default function RegisterPage() {
         });
         
         setErrors(fieldErrors);
-        setStep(firstFailingStep);
+        setStep(firstFailingStep as 1 | 2 | 3);
       } else {
         setGlobalError(error.message || 'Erro inesperado. Tente novamente.');
       }

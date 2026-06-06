@@ -13,6 +13,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     
     // Hierarchical category queries
     Optional<Category> findByIdAndTenantId(UUID id, UUID tenantId);
+    Optional<Category> findByTenantIdAndId(UUID tenantId, UUID id);
     List<Category> findByTenantIdAndVerticalAndParentIdIsNullAndActiveTrue(UUID tenantId, String vertical);
     List<Category> findByTenantIdAndParentIdAndActiveTrue(UUID tenantId, UUID parentId);
     List<Category> findByTenantIdAndParentIdIsNullAndActiveTrue(UUID tenantId);

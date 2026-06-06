@@ -8,10 +8,12 @@ import { TableSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { dashboardService, orderService } from "@/lib/api/services";
 import { formatCurrency, formatDate, orderStatusLabels } from "@/lib/utils";
 import type { AdminDashboard, Order } from "@/lib/api/types";
-import { Building2, CreditCard, Package, TrendingDown, TrendingUp, Truck } from "lucide-react";
+import { Building2, CreditCard, Package, TrendingDown, TrendingUp, Truck, Tag, Settings } from "lucide-react";
+import Link from "next/link";
 
 
 function StatusChart({ data }: { data: Record<string, number> }) {
@@ -69,11 +71,27 @@ export default function AdminPage() {
   return (
     <AppShell>
       <main className="space-y-6 p-4 md:p-8">
-        <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">Admin Central</h1>
-          <p className="mt-1 text-body-md text-on-surface-variant">
-            Visão geral do marketplace e métricas operacionais.
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Admin Central</h1>
+            <p className="mt-1 text-body-md text-on-surface-variant">
+              Visão geral do marketplace e métricas operacionais.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button asChild variant="outline">
+              <Link href="/admin/categorias" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Gerir Categorias
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/familias" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Gerir Famílias
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {error && (

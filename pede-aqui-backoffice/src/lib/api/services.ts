@@ -14,6 +14,8 @@ import type {
   Sku,
   CreateProductPayload,
   CreateSkuPayload,
+  ProductVariationGroup,
+  ProductVariationOption,
   Coupon,
   Promotion,
   CreateCouponPayload,
@@ -81,6 +83,68 @@ export const categoryService = {
   list: async (): Promise<Category[]> => {
     return await apiClient.get<Category[]>("/catalog/categories");
   },
+  listHierarchical: async (): Promise<Category[]> => {
+    return await apiClient.get<Category[]>("/catalog/categories/hierarchical");
+  },
+  getById: (id: string) => apiClient.get<Category>(`/catalog/categories/${id}`),
+  create: (data: {
+    name: string;
+    vertical: string;
+    parentId?: string;
+  }) => apiClient.post<Category>("/catalog/categories", data),
+  update: (id: string, data: {
+    name: string;
+    vertical: string;
+    parentId?: string;
+    active: boolean;
+  }) => apiClient.put<Category>(`/catalog/categories/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/catalog/categories/${id}`),
+};
+
+// Product Families (Variation Groups)
+export const productFamilyService = {
+  listForProduct: (productId: string) => apiClient.get<ProductVariationGroup[]>(`/catalog/products/${productId}/variation-groups`),
+  getById: (groupId: string) => apiClient.get<ProductVariationGroup>(`/catalog/product-variation-groups/${groupId}`),
+  create: (data: {
+    productId: string;
+    name: string;
+    description?: string;
+    required: boolean;
+    minSelections: number;
+    maxSelections: number;
+    displayOrder: number;
+  }) => apiClient.post<ProductVariationGroup>("/catalog/product-variation-groups", data),
+  update: (groupId: string, data: {
+    name: string;
+    description?: string;
+    required: boolean;
+    minSelections: number;
+    maxSelections: number;
+    displayOrder: number;
+  }) => apiClient.put<ProductVariationGroup>(`/catalog/product-variation-groups/${groupId}`, data),
+  delete: (groupId: string) => apiClient.delete(`/catalog/product-variation-groups/${groupId}`),
+};
+
+// Product Variation Options
+export const productVariationOptionService = {
+  listForGroup: (groupId: string) => apiClient.get<ProductVariationOption[]>(`/catalog/product-variation-groups/${groupId}/options`),
+  getById: (optionId: string) => apiClient.get<ProductVariationOption>(`/catalog/product-variation-options/${optionId}`),
+  create: (data: {
+    groupId: string;
+    name: string;
+    description?: string;
+    priceModifier?: number;
+    available: boolean;
+    displayOrder: number;
+  }) => apiClient.post<ProductVariationOption>("/catalog/product-variation-options", data),
+  update: (optionId: string, data: {
+    name: string;
+    description?: string;
+    priceModifier?: number;
+    available: boolean;
+    displayOrder: number;
+  }) => apiClient.put<ProductVariationOption>(`/catalog/product-variation-options/${optionId}`, data),
+  delete: (optionId: string) => apiClient.delete(`/catalog/product-variation-options/${optionId}`),
 };
 
 // Vendors
