@@ -1,5 +1,9 @@
 package com.delivery.delivery.entity;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -7,9 +11,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
 
 /** Tracks delivery status and customer confirmation code validation. */
 @Entity
@@ -56,11 +57,25 @@ public class Delivery {
         this.updatedAt = this.createdAt;
     }
 
-    public void markDelivered() { status = DeliveryStatus.DELIVERED; updatedAt = Instant.now(); }
-    public void recordFailedAttempt() { confirmationAttempts++; updatedAt = Instant.now(); }
-    public void assignCourier(UUID courierId) { this.courierId = courierId; this.status = DeliveryStatus.ASSIGNED; this.updatedAt = Instant.now(); }
-    public void updateStatus(DeliveryStatus status) { this.status = status; this.updatedAt = Instant.now(); }
-    public void recordCashCollected(BigDecimal amount) { this.cashCollectedAmount = amount; this.updatedAt = Instant.now(); }
+    public void markDelivered() { 
+        status = DeliveryStatus.DELIVERED; updatedAt = Instant.now(); 
+    }
+    public void recordFailedAttempt() { 
+        confirmationAttempts++; updatedAt = Instant.now(); 
+    }
+    public void assignCourier(UUID courierId) {
+        this.courierId = courierId;
+        this.status = DeliveryStatus.ASSIGNED;
+        this.updatedAt = Instant.now(); 
+    }
+    public void updateStatus(DeliveryStatus status) { 
+        this.status = status; 
+        this.updatedAt = Instant.now(); 
+    }
+    public void recordCashCollected(BigDecimal amount) { 
+        this.cashCollectedAmount = amount; 
+        this.updatedAt = Instant.now();
+     }
     public void setProofPhotoStorageKey(String proofPhotoStorageKey) { this.proofPhotoStorageKey = proofPhotoStorageKey; this.updatedAt = Instant.now(); }
     public void markProximityNotified() { this.proximityNotified = true; this.updatedAt = Instant.now(); }
     public UUID getId() { return id; }

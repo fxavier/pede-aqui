@@ -358,7 +358,7 @@ export default function UsersPage() {
                       onChange={(event) => setUserForm((prev) => ({ ...prev, fullName: event.target.value }))}
                     />
                     <Input
-                      placeholder="NIF"
+                      placeholder="NUIT"
                       value={userForm.nif}
                       onChange={(event) => setUserForm((prev) => ({ ...prev, nif: event.target.value }))}
                     />

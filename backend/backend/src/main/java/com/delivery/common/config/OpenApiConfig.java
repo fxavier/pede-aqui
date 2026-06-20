@@ -1,5 +1,9 @@
 package com.delivery.common.config;
 
+import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -7,9 +11,6 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /** Configures OpenAPI metadata for the delivery marketplace REST API. */
 @Configuration
@@ -21,9 +22,9 @@ public class OpenApiConfig {
         String schemeName = "bearerAuth";
         return new OpenAPI()
                 .info(new Info()
-                        .title("Delivery Marketplace MVP API")
+                        .title("Delivery Marketplace API")
                         .version("0.1.0")
-                        .description("Simple layered MVP API under /api/v1"))
+                        .description("Simple layered MVP API under /api/v1 Developed by Xavier Francisco for the Delivery Marketplace project."))
                 .components(new Components().addSecuritySchemes(schemeName, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")

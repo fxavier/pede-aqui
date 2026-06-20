@@ -559,7 +559,7 @@ export default function VendorsPage() {
                         onChange={(event) => setVendorForm((prev) => ({ ...prev, ownerName: event.target.value }))}
                       />
                       <Input
-                        placeholder="NIF"
+                        placeholder="NUIT"
                         value={vendorForm.nif}
                         onChange={(event) => setVendorForm((prev) => ({ ...prev, nif: event.target.value }))}
                       />

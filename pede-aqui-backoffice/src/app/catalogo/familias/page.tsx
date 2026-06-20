@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { catalogService, productFamilyService, productVariationOptionService, vendorService } from '@/lib/api/services';
 import type { Product, ProductVariationGroup, ProductVariationOption, Vendor } from '@/lib/api/types';
 import { useAppSelector } from '@/store/hooks';
+import { AppShell } from '@/components/layout/app-shell';
 
 export default function ProductFamiliesPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -249,14 +250,17 @@ export default function ProductFamiliesPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Gestão de Famílias de Produtos</h1>
-        <div>A carregar...</div>
-      </div>
+      <AppShell>
+        <div className="p-6 space-y-6">
+          <h1 className="text-3xl font-bold">Gestão de Famílias de Produtos</h1>
+          <div>A carregar...</div>
+        </div>
+      </AppShell>
     );
   }
 
   return (
+    <AppShell>
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
@@ -776,5 +780,6 @@ export default function ProductFamiliesPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }

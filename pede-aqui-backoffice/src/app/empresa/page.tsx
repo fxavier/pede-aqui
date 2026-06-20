@@ -320,7 +320,7 @@ export default function EmpresaPage() {
                     onChange={(e) => setProfile((p) => ({ ...p, ownerName: e.target.value }))}
                   />
                   <Input
-                    placeholder="NIF"
+                    placeholder="NUIT"
                     value={profile.nif}
                     onChange={(e) => setProfile((p) => ({ ...p, nif: e.target.value }))}
                   />

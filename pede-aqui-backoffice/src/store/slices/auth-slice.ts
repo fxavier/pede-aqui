@@ -4,7 +4,9 @@ interface AuthUser {
   name: string;
   role: string;
   tenant: string;
-  tenantId: string | null;
+  tenantId: string | null;       // from JWT — null for platform super-admin
+  activeTenantId: string | null; // currently impersonating (platform admin only)
+  activeTenantName: string | null;
   email?: string;
   token?: string;
 }
@@ -18,17 +20,9 @@ interface AuthState {
 const getInitialState = (): AuthState => {
   if (typeof window !== 'undefined') {
     const token = sessionStorage.getItem('auth_token');
-    return {
-      user: null,
-      isAuthenticated: false,
-      isLoading: token !== null,
-    };
+    return { user: null, isAuthenticated: false, isLoading: token !== null };
   }
-  return {
-    user: null,
-    isAuthenticated: false,
-    isLoading: false,
-  };
+  return { user: null, isAuthenticated: false, isLoading: false };
 };
 
 const initialState: AuthState = getInitialState();
@@ -53,9 +47,29 @@ const authSlice = createSlice({
       state.isAuthenticated = action.payload !== null;
       state.isLoading = false;
     },
+    /** Platform admin enters a tenant context. */
+    enterTenant(state, action: PayloadAction<{ tenantId: string; tenantName: string }>) {
+      if (state.user) {
+        state.user.activeTenantId = action.payload.tenantId;
+        state.user.activeTenantName = action.payload.tenantName;
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('tenant_id', action.payload.tenantId);
+      }
+    },
+    /** Platform admin exits tenant context back to platform view. */
+    exitTenant(state) {
+      if (state.user) {
+        state.user.activeTenantId = null;
+        state.user.activeTenantName = null;
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tenant_id');
+      }
+    },
   },
 });
 
-export const { setUser, setLoading, logout, loadFromSession } = authSlice.actions;
+export const { setUser, setLoading, logout, loadFromSession, enterTenant, exitTenant } = authSlice.actions;
 export type { AuthUser, AuthState };
 export default authSlice.reducer;

@@ -166,6 +166,26 @@ public class CourierService {
         return dispatchMapper.toCourierDocumentResponse(document);
     }
 
+    /** Approves a courier's registration. Only ADMIN or OPS may call this. */
+    @Transactional
+    public CourierResponse approveCourier(UUID courierId) {
+        UUID tenantId = tenantId();
+        Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
+                .orElseThrow(() -> new NotFoundException("Courier not found"));
+        courier.approve();
+        return dispatchMapper.toCourierResponse(courier);
+    }
+
+    /** Rejects a courier's registration. Only ADMIN or OPS may call this. */
+    @Transactional
+    public CourierResponse rejectCourier(UUID courierId) {
+        UUID tenantId = tenantId();
+        Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
+                .orElseThrow(() -> new NotFoundException("Courier not found"));
+        courier.reject();
+        return dispatchMapper.toCourierResponse(courier);
+    }
+
     @Transactional(readOnly = true)
     public List<CourierDocumentResponse> listDocuments(UUID courierId) {
         UUID tenantId = tenantId();

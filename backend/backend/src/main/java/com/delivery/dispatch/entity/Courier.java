@@ -64,6 +64,7 @@ public class Courier {
     }
 
     public void approve() { this.verificationStatus = CourierVerificationStatus.APPROVED; this.updatedAt = Instant.now(); }
+    public void reject() { this.verificationStatus = CourierVerificationStatus.REJECTED; this.available = false; this.updatedAt = Instant.now(); }
     public void setAvailable(boolean available) { this.available = available; this.updatedAt = Instant.now(); }
     
     public void updateProfile(String fullName, String phone, String nif, String vehicleType, String vehiclePlate, LocalDate dateOfBirth) {

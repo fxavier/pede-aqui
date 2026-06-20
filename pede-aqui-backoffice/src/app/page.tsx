@@ -16,8 +16,14 @@ export default function HomePage() {
       return;
     }
 
+    // Platform super-admin (no tenant in JWT) without active impersonation → platform dashboard
+    if (!user?.tenantId && !user?.activeTenantId && user?.role === 'ADMIN') {
+      router.replace('/platform');
+      return;
+    }
+
     const userRole = user?.role;
-    
+
     switch (userRole) {
       case 'ADMIN':
         router.replace('/admin');

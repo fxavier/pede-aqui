@@ -51,6 +51,35 @@ export interface OrderItem {
   lineTotal: number;
 }
 
+// Tenant types
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  defaultCurrency: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Platform super-admin types
+export interface PlatformStats {
+  totalTenants: number;
+  activeTenants: number;
+  inactiveTenants: number;
+  totalUsers: number;
+  totalCouriers: number;
+  totalVendors: number;
+}
+
+// Vertical types
+export interface Vertical {
+  id: string;
+  slug: string;
+  label: string;
+  active: boolean;
+}
+
 // Category types
 export interface Category {
   id: string;

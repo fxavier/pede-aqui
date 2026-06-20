@@ -268,7 +268,7 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  NIF / VAT
+                  NUIT / VAT
                 </label>
                 <input
                   type="text"
@@ -559,7 +559,7 @@ export default function RegisterPage() {
                 )}
                 {form.taxNumber && (
                   <>
-                    <dt className="text-gray-500">NIF:</dt>
+                    <dt className="text-gray-500">NUIT:</dt>
                     <dd className="text-gray-900 font-medium">{form.taxNumber}</dd>
                   </>
                 )}

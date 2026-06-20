@@ -76,4 +76,16 @@ public class CourierController {
     public List<CourierDocumentResponse> listDocuments(@PathVariable UUID courierId) {
         return courierService.listDocuments(courierId);
     }
+
+    @PatchMapping("/{courierId}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    public CourierResponse approve(@PathVariable UUID courierId) {
+        return courierService.approveCourier(courierId);
+    }
+
+    @PatchMapping("/{courierId}/reject")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    public CourierResponse reject(@PathVariable UUID courierId) {
+        return courierService.rejectCourier(courierId);
+    }
 }

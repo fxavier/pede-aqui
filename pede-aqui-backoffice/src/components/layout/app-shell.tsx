@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSearchQuery, toggleSidebar } from "@/store/slices/ui-slice";
-import { logout as logoutAction } from "@/store/slices/auth-slice";
+import { logout as logoutAction, exitTenant } from "@/store/slices/auth-slice";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Bell, Boxes, Building2, CreditCard,
   Headphones, LayoutDashboard, LayoutGrid, Menu, Search, ShieldCheck,
-  LogOut, ChevronRight, Package, Truck, Users,
+  LogOut, ChevronRight, Package, Truck, Users, ArrowLeft, Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     dispatch(logoutAction());
     router.push('/login');
   };
+
+  const handleExitTenant = () => {
+    dispatch(exitTenant());
+    router.push('/platform');
+  };
+
+  const isImpersonating = !user?.tenantId && !!user?.activeTenantId;
 
   const userRole = user?.role ?? "";
   const visibleNav = navigation.filter(
@@ -123,6 +130,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className={cn("transition-all duration-300", collapsed ? "lg:pl-20" : "lg:pl-72")}>
+        {isImpersonating && (
+          <div className="flex items-center justify-between bg-primary px-4 py-2 text-on-primary md:px-8">
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <Globe className="h-4 w-4 shrink-0" />
+              <span>Super Admin a gerir: <span className="underline underline-offset-2">{user.activeTenantName}</span></span>
+            </div>
+            <button
+              onClick={handleExitTenant}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold transition-colors hover:bg-on-primary/10"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Sair do Tenant
+            </button>
+          </div>
+        )}
         <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-outline-variant bg-background/85 px-4 backdrop-blur-xl md:px-8">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => dispatch(toggleSidebar())} aria-label="Alternar barra lateral">

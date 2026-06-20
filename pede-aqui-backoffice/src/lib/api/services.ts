@@ -5,6 +5,8 @@ import type {
   FinanceDashboard,
   CourierDashboard,
   Order,
+  Tenant,
+  Vertical,
   Vendor,
   VendorDocument,
   VendorOpeningHour,
@@ -33,7 +35,22 @@ import type {
   Notification,
   MerchantRegistrationPayload,
   MerchantRegistrationResponse,
+  PlatformStats,
 } from "./types";
+
+// Platform super-admin (no tenant context)
+export const platformService = {
+  getStats: () => apiClient.get<PlatformStats>("/platform/stats"),
+};
+
+// Tenant management (platform admin only)
+export const tenantService = {
+  list: () => apiClient.get<Tenant[]>("/tenants"),
+  create: (data: { name: string; slug: string; defaultCurrency: string }) =>
+    apiClient.post<Tenant>("/tenants", data),
+  updateStatus: (id: string, status: string) =>
+    apiClient.patch<Tenant>(`/tenants/${id}/status`, { status }),
+};
 
 // Auth
 export const authService = {
@@ -76,6 +93,15 @@ export const catalogService = {
   createSku: (data: CreateSkuPayload) => apiClient.post<Sku>("/catalog/skus", data),
   approveProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/approve`),
   rejectProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/reject`),
+};
+
+// Verticals
+export const verticalService = {
+  list: () => apiClient.get<Vertical[]>("/catalog/verticals"),
+  create: (data: { label: string }) => apiClient.post<Vertical>("/catalog/verticals", data),
+  update: (id: string, data: { label: string; active: boolean }) =>
+    apiClient.put<Vertical>(`/catalog/verticals/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/catalog/verticals/${id}`),
 };
 
 // Categories
@@ -201,6 +227,8 @@ export const courierService = {
   getDocuments: (id: string) => apiClient.get<CourierDocument[]>(`/couriers/${id}/documents`),
   uploadDocument: (id: string, data: { documentType: string; storageKey: string }) =>
     apiClient.post<CourierDocument>(`/couriers/${id}/documents`, data),
+  approve: (id: string) => apiClient.patch<Courier>(`/couriers/${id}/approve`),
+  reject: (id: string) => apiClient.patch<Courier>(`/couriers/${id}/reject`),
 };
 
 // Finance

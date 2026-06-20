@@ -52,17 +52,20 @@ export default function LoginPage() {
         sessionStorage.removeItem('tenant_id');
       }
 
+      const isPlatformAdmin = !tenantId && (profileData.roles ?? []).includes('ADMIN');
+
       dispatch(setUser({
         name: profileData.displayName,
         role: profileData.roles?.[0] || '',
-        tenant: profileData.tenantId ?? 'Pede Aqui',
+        tenant: profileData.tenantId ?? 'Pede Aqui Platform',
         tenantId,
+        activeTenantId: null,
+        activeTenantName: null,
         email: profileData.email,
         token: accessToken,
       }));
 
-      // Redirect to dashboard
-      router.push('/');
+      router.push(isPlatformAdmin ? '/platform' : '/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Credenciais inválidas. Verifique o email e a palavra-passe.';
       setError(message);
