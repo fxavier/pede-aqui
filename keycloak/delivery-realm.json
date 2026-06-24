@@ -80,6 +80,38 @@
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": false,
       "standardFlowEnabled": false
+    },
+    {
+      "clientId": "pede-aqui-web",
+      "name": "Pede Aqui Delivery Web",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:4173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:4173"
+      ],
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -157,7 +189,16 @@
       "enabled": true,
       "serviceAccountClientId": "delivery-admin-service",
       "clientRoles": {
-        "realm-management": ["realm-admin", "manage-users", "create-client", "manage-clients", "view-clients", "view-users", "query-clients", "query-users"]
+        "realm-management": [
+          "realm-admin",
+          "manage-users",
+          "create-client",
+          "manage-clients",
+          "view-clients",
+          "view-users",
+          "query-clients",
+          "query-users"
+        ]
       }
     }
   ]

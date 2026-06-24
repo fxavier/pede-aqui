@@ -9,9 +9,12 @@ Multi-tenant delivery marketplace MVP ("Pede Aqui") targeting Mozambique. Four d
 | Directory | Tech | Role |
 |---|---|---|
 | `backend/` | Java 21 + Spring Boot | REST API, Keycloak JWT auth, Flyway migrations |
-| `web/` | Next.js + TypeScript | Backoffice (admin/ops/finance/vendor/support) |
+| `pede-aqui-backoffice/` | Next.js 15 + TypeScript | Backoffice (admin/ops/finance/vendor/support) |
+| `pede-aqui-delivery/` | React 18 + Vite + TypeScript | Customer-facing delivery web SPA |
 | `pede_aqui_delivery_app/` | Flutter + Dart | Customer mobile app |
 | `pede_aqui_courier_app/` | Flutter + Dart | Courier (estafeta) mobile app |
+
+(`web/` is an older prototype; active backoffice work is in `pede-aqui-backoffice/`.)
 
 Local services run via Docker Compose: PostgreSQL (PostGIS), Redis, Keycloak, MinIO, Prometheus.
 
@@ -34,25 +37,55 @@ mvn spring-boot:run
 Run a single test class:
 
 ```bash
-cd backend
-mvn -pl backend test -Dtest=SupportTicketServiceTest
+cd backend/backend
+mvn test -Dtest=SupportTicketServiceTest
 ```
 
 Full verify (compile + tests):
 
 ```bash
-cd backend && mvn clean verify
+cd backend/backend && mvn clean verify
 ```
 
-### Web (Next.js backoffice)
+### Customer web app (React + Vite)
 
 ```bash
-cd web
-npm ci
-npm run dev           # http://localhost:3000
-npm run validate      # typecheck + lint + screen coverage
+cd pede-aqui-delivery
+npm install
+npm run dev           # http://localhost:5173
+npm run typecheck
 npm run build
 ```
+
+`.env.local` (copy from the checked-in file):
+```
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_KEYCLOAK_URL=http://localhost:8081
+VITE_KEYCLOAK_REALM=delivery
+VITE_KEYCLOAK_CLIENT_ID=pede-aqui-web
+```
+
+The app falls back to mock data (`src/lib/mockData.ts`) when the backend is unreachable, so basic UI work is possible without a running backend.
+
+### Backoffice (Next.js)
+
+```bash
+cd pede-aqui-backoffice
+npm ci
+npm run dev           # http://localhost:3000
+npm run validate      # typecheck + lint + screen coverage check
+npm run build
+```
+
+`.env.local` must exist (copy from the checked-in file) with at minimum:
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8081
+NEXT_PUBLIC_KEYCLOAK_REALM=delivery
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=delivery-app
+```
+
+There is no mock mode in the service layer — the API services always hit the backend. If the backend is not running, service calls will fail. (`NEXT_PUBLIC_ENABLE_MOCKS` only affects the `/screens` HTML prototype viewer.)
 
 ### Customer mobile app
 
@@ -109,18 +142,21 @@ mapper/        Entity ↔ DTO conversion
 
 Cross-cutting packages: `common/config`, `common/exception`, `common/security`.
 
+Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`, `dispatch`, `finance`, `geo`, `inventory`, `marketing`, `notification`, `order`, `payment`, `rating`, `support`, `tenant`, `upload`, `vendor`.
+
 ### Security
 
 - Keycloak JWT tokens. `JwtRoleConverter` maps `realm_access.roles` into `ROLE_<name>` Spring authorities.
-- `SecurityConfig` opens `/actuator/health/**`, `/api-docs/**`, `/swagger-ui/**`, and `/api/v1/register`. Everything else requires a valid JWT.
+- `SecurityConfig` opens `/actuator/health/**`, `/api-docs/**`, `/swagger-ui/**`, `/api/v1/register`, and `/api/v1/customers/register`. Everything else requires a valid JWT.
 - Fine-grained access uses `@PreAuthorize` annotations in service or controller methods.
-- Roles in use: `ADMIN`, `OPS`, `VENDOR_ADMIN`, `COURIER`, `CUSTOMER`, `FINANCE`, `SUPPORT`.
+- Roles: `ADMIN`, `OPS`, `VENDOR_ADMIN`, `COURIER`, `CUSTOMER`, `FINANCE`, `SUPPORT`.
 
 ### Tenant model
 
 - Tenant-scoped records carry a `tenant_id` column.
+- `TenantContext` resolves tenant: JWT `tenant_id` claim first, then `X-Tenant-Id` request header as fallback (used by platform admins managing tenants).
+- Platform super-admins have `ADMIN` role and **no** `tenant_id` in their JWT. `TenantContext.isPlatformAdmin()` identifies them.
 - Service methods validate tenant context; repositories are plain Spring Data JPA interfaces.
-- The `X-Tenant-Id` header (UUID) must be passed on most `/api/v1/*` requests (auto-documented via `OpenApiConfig`).
 
 ### Database
 
@@ -130,33 +166,98 @@ Cross-cutting packages: `common/config`, `common/exception`, `common/security`.
 
 ### Storage
 
-MinIO (local) / AWS S3 (prod) for document uploads. Presigned URLs issued by the backend; clients upload directly.
+MinIO (local) / AWS S3 (prod). Pattern: call `/uploads/images/presigned-url` or `/uploads/documents/presigned-url` to get `{ uploadUrl, storageKey }`, then PUT the file directly to `uploadUrl`. Pass `storageKey` back to the API to link the file to an entity.
 
-## Web Backoffice Architecture
+## Backoffice Architecture
 
-Next.js App Router. Routes mirror operational domains: `/admin`, `/operations`, `/finance`, `/vendor`, `/support`.
+Next.js App Router. All authenticated pages use `AppShell` from `src/components/layout/app-shell.tsx`.
 
-Source layout:
+### Routes
 
-```
-src/app/        App Router pages (admin, operations, finance, vendor, support)
-src/features/   Feature modules with business logic per domain
-src/components/ Shared UI primitives
-src/services/   API service layer (currently mock, API-ready)
-```
+| Route | Role(s) | Purpose |
+|---|---|---|
+| `/login`, `/register` | — | Auth entry points |
+| `/platform` | ADMIN (no tenant) | Super-admin: tenant management and impersonation |
+| `/` | all | Dashboard; redirects to `/platform` for platform admins |
+| `/empresa` | VENDOR_ADMIN, ADMIN | Own company profile, logo, documents |
+| `/admin` | ADMIN | Orders overview, category/vertical management |
+| `/catalogo` | ADMIN, VENDOR_ADMIN, OPS | Product catalog, SKUs, categories, families |
+| `/vendors` | ADMIN, VENDOR_ADMIN, OPS | Vendor management |
+| `/users` | ADMIN | User profiles |
+| `/orders` | ADMIN, VENDOR_ADMIN, OPS, SUPPORT | Order management |
+| `/couriers` | ADMIN, OPS | Courier management |
+| `/finance` | ADMIN, FINANCE | Settlements, earnings |
+| `/support` | ADMIN, SUPPORT | Ticket management |
+| `/marketing` | ADMIN, OPS | Campaigns |
+| `/screens` | all | HTML prototype viewer (not real features) |
 
-Mock data is active by default. To connect real backend: set `NEXT_PUBLIC_ENABLE_MOCKS=false` and `NEXT_PUBLIC_API_BASE_URL`.
+### Auth flow
+
+Login page calls Keycloak token endpoint with `grant_type=password`. Token stored in `sessionStorage` as `auth_token` and also set as a cookie. `AppProviders` rehydrates auth state on page load by calling `authService.getMe()`. Root page redirects to `/platform` for platform super-admins or `/` (dashboard) for tenant users.
+
+Platform super-admins can "enter" a tenant (stored in `activeTenantId` Redux state) to operate on its behalf; `X-Tenant-Id` header is sent automatically.
+
+### State management
+
+Redux Toolkit: `auth-slice` (user identity, tenant impersonation), `ui-slice` (sidebar, search). TanStack Query for server state where used. Redux store is in `src/store/`.
+
+### API layer
+
+All API calls go through `src/lib/api/services.ts` via `src/lib/api/client.ts`. The client attaches `Authorization: Bearer <token>` and `X-Tenant-Id` from `sessionStorage` automatically. Service exports: `platformService`, `tenantService`, `authService`, `dashboardService`, `orderService`, `catalogService`, `categoryService`, `vendorService`, `courierService`, `financeService`, `supportService`, `userService`, `uploadService`, `registrationService`, and others. Types are in `src/lib/api/types.ts`.
+
+### Screens prototype area
+
+`/screens` renders static HTML prototypes stored in `public/imported-screens/*.html` via `ImportedScreenView`. These are design references, not live features. The actual feature pages for the same domains live under their own routes above.
+
+## Customer Web App Architecture (`pede-aqui-delivery`)
+
+React 18 + Vite SPA. Tailwind CSS v3 + shadcn/ui components.
+
+### Routes
+
+| Route | Auth required | Purpose |
+|---|---|---|
+| `/` | No | Home — vendor grid, vertical browsing, category carousel |
+| `/vendor/:vendorId` | No (add to cart requires auth) | Vendor product catalog |
+| `/catalogo/:verticalId` | No | Products grouped by vendor for a vertical |
+| `/login`, `/register` | No | Custom Keycloak ROPC auth (no redirect) |
+| `/checkout` | Yes | Checkout flow |
+| `/orders` | Yes | Order history |
+| `/orders/:orderId` | Yes | Order detail with status polling (30 s) |
+
+### Auth flow
+
+Two token paths coexist in `auth-slice.ts`:
+- **OIDC PKCE** via `oidc-client-ts` (`userManager`) — for future use
+- **ROPC** (primary): `keycloakService.login()` calls Keycloak's token endpoint directly with `grant_type=password`, stores the JWT as `auth_token` in `sessionStorage`. `initAuth` checks `userManager.getUser()` first, then falls back to parsing `auth_token` from `sessionStorage`.
+
+Customer registration hits the backend at `POST /api/v1/customers/register` (open endpoint), which creates a Keycloak user via `KeycloakAdminService.createCustomer()` and assigns the `CUSTOMER` role.
+
+### State management
+
+Redux Toolkit: `auth-slice` (token, sub, displayName, email, status), `cart-slice` (items, vendorId, cartId). TanStack Query for all server data. Store in `src/store/`.
+
+### API & mock layer
+
+All API calls go through `src/lib/api/services.ts` via `src/lib/api/client.ts` (Axios). The client attaches `Authorization: Bearer <token>` from `sessionStorage`. Services: `authService`, `keycloakService`, `customerRegistrationService`, `vendorService`, `catalogService`, `cartService`, `checkoutService`, `orderService`.
+
+`src/lib/mockData.ts` holds `MOCK_VENDORS`, `MOCK_PRODUCTS`, and `VERTICALS` used as fallback when the API is unavailable. Pages that fall back: home, vendor, catalogo.
+
+### Key UI components
+
+- `ProductCard` — three-state "Comprar" button (`idle → adding → added`) with CSS spring animation
+- `VendorCard` — vendor tile with rating, delivery time, open/closed badge
+- `CartDrawer` — slide-in cart panel
+- `AppShell` — top nav with cart icon badge; wraps all authenticated-capable routes
 
 ## Flutter App Architecture
-
-Both mobile apps follow the same pattern:
 
 **Delivery app** (`pede_aqui_delivery_app`):
 - `lib/core/` — config, DI (GetIt), network (Dio), constants
 - `lib/features/` — auth, cart, catalog, checkout, orders, settings (each feature-isolated)
 - `lib/shared/` — reusable widgets
 - State management: BLoC/Cubit (`flutter_bloc`)
-- DI registration in `lib/core/di/service_locator.dart`; mock repositories by default, swap to API repositories for backend integration
+- DI registration in `lib/core/di/service_locator.dart`; swap to API repositories for backend integration
 
 **Courier app** (`pede_aqui_courier_app`):
 - `lib/core/` — constants, DI (GetIt), network, providers, theme, utils

@@ -320,6 +320,7 @@ export interface CreateProductPayload {
   description?: string;
   requiresPrescriptionMetadata?: boolean;
   prohibitedFuel?: boolean;
+  primaryImageKey?: string;
 }
 
 export interface CreateSkuPayload {

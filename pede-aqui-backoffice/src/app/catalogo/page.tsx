@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/loading-skeleton";
-import { vendorService, categoryService, catalogService } from "@/lib/api/services";
+import { vendorService, categoryService, catalogService, uploadService } from "@/lib/api/services";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { Product, Vendor, Category } from "@/lib/api/types";
 import { Plus, Tag, Settings } from "lucide-react";
@@ -26,8 +26,10 @@ export default function CatalogoPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [showProductForm, setShowProductForm] = useState(false);
-  const [productForm, setProductForm] = useState({ name: "", categoryId: "", description: "" });
+  const [productForm, setProductForm] = useState({ name: "", categoryId: "", description: "", imageFile: null as File | null, imagePreview: "" });
   const [creatingProduct, setCreatingProduct] = useState(false);
+  // ponytail: blob URLs per product id, lives only in session memory
+  const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
 
   const [skuForm, setSkuForm] = useState({ skuCode: "", name: "", price: "", initialStock: "0" });
   const [creatingSku, setCreatingSku] = useState(false);
@@ -78,16 +80,29 @@ export default function CatalogoPage() {
     setCreatingProduct(true);
     setError(null);
     try {
+      let primaryImageKey: string | undefined;
+      const blobUrl = productForm.imagePreview;
+      if (productForm.imageFile) {
+        const { uploadUrl, storageKey } = await uploadService.getPresignedUrl({
+          purpose: "product_image",
+          fileName: productForm.imageFile.name,
+          contentType: productForm.imageFile.type,
+        });
+        await uploadService.uploadToS3(uploadUrl, productForm.imageFile);
+        primaryImageKey = storageKey;
+      }
       const created = await catalogService.createProduct({
         vendorId: selectedVendorId,
         categoryId: productForm.categoryId,
         name: productForm.name,
         description: productForm.description || undefined,
+        primaryImageKey,
       });
       setProducts((prev) => [...prev, created]);
-      setProductForm({ name: "", categoryId: "", description: "" });
+      if (blobUrl) setImagePreviews((prev) => ({ ...prev, [created.id]: blobUrl }));
+      setProductForm({ name: "", categoryId: "", description: "", imageFile: null, imagePreview: "" });
       setShowProductForm(false);
-      setError(null); // Clear error after successful creation
+      setError(null);
     } catch (err) {
       console.error("Failed to create product:", err);
       setError("Erro ao criar produto.");
@@ -251,6 +266,28 @@ export default function CatalogoPage() {
                         value={productForm.description}
                         onChange={(e) => setProductForm((p) => ({ ...p, description: e.target.value }))}
                       />
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold text-on-surface-variant">
+                          Imagem do produto
+                        </label>
+                        {productForm.imagePreview && (
+                          <img
+                            src={productForm.imagePreview}
+                            alt="preview"
+                            className="mb-2 h-24 w-24 rounded-lg object-cover border border-outline-variant"
+                          />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="block w-full text-sm text-on-surface-variant file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-1.5 file:text-xs file:font-semibold"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            const preview = file ? URL.createObjectURL(file) : "";
+                            setProductForm((p) => ({ ...p, imageFile: file, imagePreview: preview }));
+                          }}
+                        />
+                      </div>
                       <Button type="submit" size="sm" disabled={creatingProduct}>
                         {creatingProduct ? "A criar..." : "Criar Produto"}
                       </Button>
@@ -274,10 +311,23 @@ export default function CatalogoPage() {
                               : "border-outline-variant hover:bg-surface-container",
                           )}
                         >
+                          <div className="flex min-w-0 items-center gap-3">
+                            {imagePreviews[product.id] ? (
+                              <img
+                                src={imagePreviews[product.id]}
+                                alt={product.name}
+                                className="h-10 w-10 shrink-0 rounded-lg object-cover border border-outline-variant"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high border border-outline-variant">
+                                <Tag className="h-4 w-4 text-on-surface-variant/40" />
+                              </div>
+                            )}
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-on-surface">{product.name}</p>
                             <p className="text-xs text-on-surface-variant">{categoryName(product.categoryId)}</p>
                             <StatusBadge status={product.status || "PENDING"} />
+                          </div>
                           </div>
                           <span className="ml-3 flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant">
                             <Tag className="h-3 w-3" />

@@ -43,6 +43,15 @@ public class AppUserProfileService {
         String keycloakUserId = tenantContext.currentKeycloakUserId()
                 .orElseThrow(() -> new NotFoundException("Authenticated user was not found"));
 
+        // Platform admins have no tenant_id in their JWT. Even when they are managing a tenant
+        // (X-Tenant-Id header is present), their identity is not scoped to that tenant's profiles,
+        // so skip the tenant-specific lookup to avoid a spurious 404.
+        if (tenantContext.isPlatformAdmin()) {
+            return repository.findByKeycloakUserId(keycloakUserId)
+                    .map(mapper::toMeResponse)
+                    .orElse(buildProfileFromJwt(keycloakUserId));
+        }
+
         Optional<UUID> tenantIdOpt = tenantContext.currentTenantId();
         if (tenantIdOpt.isPresent()) {
             return repository.findByTenantIdAndKeycloakUserId(tenantIdOpt.get(), keycloakUserId)
@@ -50,8 +59,6 @@ public class AppUserProfileService {
                     .orElseThrow(() -> new NotFoundException("User profile was not found"));
         }
 
-        // If no tenant context, try to find user profile by keycloak user ID
-        // This handles cases where JWT doesn't contain tenant_id claim
         return repository.findByKeycloakUserId(keycloakUserId)
                 .map(mapper::toMeResponse)
                 .orElse(buildProfileFromJwt(keycloakUserId));

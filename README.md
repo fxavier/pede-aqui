@@ -6,6 +6,7 @@ Production-oriented MVP for a multi-tenant delivery marketplace using a simple l
 
 - `backend/`: Java 21 Spring Boot API with controller, service, repository, entity, dto, mapper, config, exception, and security layers.
 - `web/`: Next.js TypeScript backoffice.
+- `pede-aqui-delivery/`: React + Vite customer-facing web app (browse, order, track).
 - `mobile/`: Flutter customer and courier app shell.
 - `docs/`: Practical architecture, API, and local development notes.
 - `specs/001-delivery-marketplace-mvp/`: specification, plan, data model, contracts, and tasks.

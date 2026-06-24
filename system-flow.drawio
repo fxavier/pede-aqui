@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Pede Aqui Order Flow">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="2460" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="2" value="Pede Aqui — End-to-End Order Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#1A252F;" vertex="1" parent="1">
+          <mxGeometry x="50" y="10" width="900" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- Phase labels -->
+        <mxCell id="3" value="PHASE 1 — Order Placement" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF5FB;strokeColor=#2E86C1;fontSize=10;fontStyle=1;fontColor=#1A5276;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="60" y="56" width="260" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="4" value="PHASE 2 — Fulfillment &amp; Delivery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#E67E22;fontSize=10;fontStyle=1;fontColor=#784212;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="520" y="56" width="280" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Vertical separator -->
+        <mxCell id="5" value="" style="endArrow=none;dashed=1;html=1;dashPattern=8 4;strokeWidth=1;strokeColor=#AAAAAA;" edge="1" parent="1">
+          <mxGeometry x="430" y="56" width="10" height="10" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="2410" />
+            </Array>
+            <mxPoint x="430" y="56" as="sourcePoint" />
+            <mxPoint x="430" y="2410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- LEGEND -->
+        <mxCell id="6" value="LEGEND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F9FA;strokeColor=#999999;fontSize=11;fontStyle=1;fontColor=#333333;arcSize=5;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="870" y="60" width="280" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="7" value="Customer Action" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2E86C1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="94" width="160" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="8" value="API / System" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="132" width="160" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="9" value="Vendor Action" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5F5E3;strokeColor=#1E8449;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="170" width="160" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="10" value="Courier Action" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="208" width="160" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="Decision" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#F39C12;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="246" width="80" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="12" value="Error / Failure State" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FADBD8;strokeColor=#C0392B;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="888" y="300" width="160" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 1: ORDER PLACEMENT PHASE -->
+
+        <!-- Start -->
+        <mxCell id="13" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1E8449;strokeColor=#145A32;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="120" y="100" width="140" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- Customer Login -->
+        <mxCell id="14" value="&lt;b&gt;Customer / Courier Login&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Keycloak OAuth2 / PKCE&lt;br&gt;Returns JWT access token&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2E86C1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="194" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Browse Catalog -->
+        <mxCell id="15" value="&lt;b&gt;Browse Catalog&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;GET /catalog/vendors — Redis cache (60s TTL)&lt;br&gt;Products, categories, availability&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2E86C1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="300" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Add to Cart -->
+        <mxCell id="16" value="&lt;b&gt;Add Items to Cart&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;POST /cart/items — persisted in PostgreSQL&lt;br&gt;Validates stock via inventory module&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2E86C1;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="406" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Checkout -->
+        <mxCell id="17" value="&lt;b&gt;Checkout&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;POST /checkout — idempotency key required&lt;br&gt;Validates cart, calculates total + fees&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="512" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Payment Confirmed -->
+        <mxCell id="18" value="&lt;b&gt;Payment Confirmed&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Mock payment gateway — confirms synchronously&lt;br&gt;All steps in one DB transaction&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="618" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Order Created -->
+        <mxCell id="19" value="&lt;b&gt;Order Created in DB&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Status: PAYMENT_CONFIRMED&lt;br&gt;Delivery record created; audit log written&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="724" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Vendor Notified -->
+        <mxCell id="20" value="&lt;b&gt;Vendor Notified&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Notification module persists alert&lt;br&gt;Vendor sees order in Backoffice dashboard&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="830" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 2: FULFILLMENT AND DELIVERY PHASE -->
+
+        <!-- Decision: Vendor Accepts? -->
+        <mxCell id="21" value="Vendor&#xa;Accepts?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#F39C12;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="535" y="826" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ACCEPTED_BY_VENDOR -->
+        <mxCell id="22" value="&lt;b&gt;ACCEPTED_BY_VENDOR&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Vendor confirms order in Backoffice&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5F5E3;strokeColor=#1E8449;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="946" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- PREPARING -->
+        <mxCell id="23" value="&lt;b&gt;PREPARING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Vendor marks order as being prepared&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5F5E3;strokeColor=#1E8449;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1042" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- READY_FOR_PICKUP -->
+        <mxCell id="24" value="&lt;b&gt;READY_FOR_PICKUP&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Vendor marks order ready at counter&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5F5E3;strokeColor=#1E8449;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1138" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- Dispatch Find Courier -->
+        <mxCell id="25" value="&lt;b&gt;Dispatch: Find Courier&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;First APPROVED + online courier in operatingZoneId&lt;br&gt;Excludes prior reassigned courier&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1234" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Decision: Courier Available? -->
+        <mxCell id="26" value="Courier&#xa;Available?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#F39C12;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="535" y="1340" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Courier Assigned -->
+        <mxCell id="27" value="&lt;b&gt;Courier Assigned &amp;amp; Notified&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Delivery record linked to courier&lt;br&gt;Push notification sent to Courier App&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1460" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- Courier ACCEPTED -->
+        <mxCell id="28" value="&lt;b&gt;Courier ACCEPTED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Courier accepts delivery in App&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1556" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- ARRIVED_AT_VENDOR -->
+        <mxCell id="29" value="&lt;b&gt;ARRIVED_AT_VENDOR&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Courier marks arrival at pickup point&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1652" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- PICKED_UP -->
+        <mxCell id="30" value="&lt;b&gt;PICKED_UP&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Courier confirms pickup from vendor&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1748" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- ON_ROUTE_TO_CUSTOMER -->
+        <mxCell id="31" value="&lt;b&gt;ON_ROUTE_TO_CUSTOMER&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Courier en route — customer can track&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1844" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- ARRIVED_AT_CUSTOMER -->
+        <mxCell id="32" value="&lt;b&gt;ARRIVED_AT_CUSTOMER&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Courier marks arrival at delivery address&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8DAEF;strokeColor=#7D3C98;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1940" width="260" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- OTP Requested -->
+        <mxCell id="33" value="&lt;b&gt;OTP Verification&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Customer reads 6-digit OTP to courier&lt;br&gt;Attempts counted; OTP never logged&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="2036" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Decision: OTP Valid? -->
+        <mxCell id="34" value="OTP&#xa;Valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#F39C12;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="535" y="2142" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- DELIVERED -->
+        <mxCell id="35" value="&lt;b&gt;DELIVERED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Order closed — earnings recorded for courier&lt;br&gt;Customer invited to rate delivery&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5F5E3;strokeColor=#1E8449;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="2262" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- End -->
+        <mxCell id="36" value="END" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C0392B;strokeColor=#922B21;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="580" y="2368" width="140" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- ALTERNATIVE BRANCHES -->
+
+        <!-- Order Rejected -->
+        <mxCell id="37" value="&lt;b&gt;Order Rejected&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Refund initiated&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FADBD8;strokeColor=#C0392B;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="843" width="190" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- No Courier Found -->
+        <mxCell id="38" value="&lt;b&gt;No Courier Found&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Wait &amp;amp; retry dispatch&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FADBD8;strokeColor=#C0392B;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="1357" width="190" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- FAILED_DELIVERY -->
+        <mxCell id="39" value="&lt;b&gt;FAILED_DELIVERY&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#555&quot;&gt;Max OTP attempts exceeded&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FADBD8;strokeColor=#C0392B;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="2159" width="190" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES: COLUMN 1 (vertical down) -->
+
+        <mxCell id="50" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;strokeWidth=2;" edge="1" parent="1" source="13" target="14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="51" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#2E86C1;" edge="1" parent="1" source="14" target="15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="52" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#2E86C1;" edge="1" parent="1" source="15" target="16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="53" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#2E86C1;" edge="1" parent="1" source="16" target="17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="54" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="17" target="18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="55" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="18" target="19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="56" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="19" target="20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Phase transition: Vendor Notified -> Vendor Decision (horizontal) -->
+        <mxCell id="57" value="triggers fulfillment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#E67E22;fontColor=#784212;fontSize=9;strokeWidth=2;dashed=1;" edge="1" parent="1" source="20" target="21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Vendor Decision -> Order Rejected (No) -->
+        <mxCell id="58" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#C0392B;fontColor=#C0392B;fontSize=10;fontStyle=1;" edge="1" parent="1" source="21" target="37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Vendor Decision -> ACCEPTED (Yes) -->
+        <mxCell id="59" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;fontColor=#1E8449;fontSize=10;fontStyle=1;" edge="1" parent="1" source="21" target="22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ACCEPTED -> PREPARING -> READY -> DISPATCH -->
+        <mxCell id="60" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;" edge="1" parent="1" source="22" target="23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="61" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;" edge="1" parent="1" source="23" target="24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="62" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="24" target="25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="63" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="25" target="26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Courier Decision -> No Courier (No) -->
+        <mxCell id="64" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#C0392B;fontColor=#C0392B;fontSize=10;fontStyle=1;" edge="1" parent="1" source="26" target="38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Courier Decision -> Courier Assigned (Yes) -->
+        <mxCell id="65" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;fontColor=#1E8449;fontSize=10;fontStyle=1;" edge="1" parent="1" source="26" target="27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Courier delivery chain -->
+        <mxCell id="66" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7D3C98;" edge="1" parent="1" source="27" target="28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="67" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7D3C98;" edge="1" parent="1" source="28" target="29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="68" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7D3C98;" edge="1" parent="1" source="29" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7D3C98;" edge="1" parent="1" source="30" target="31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="70" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7D3C98;" edge="1" parent="1" source="31" target="32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="71" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="32" target="33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="72" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E67E22;" edge="1" parent="1" source="33" target="34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- OTP Decision -> FAILED (No) -->
+        <mxCell id="73" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#C0392B;fontColor=#C0392B;fontSize=10;fontStyle=1;" edge="1" parent="1" source="34" target="39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- OTP Decision -> DELIVERED (Yes) -->
+        <mxCell id="74" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1E8449;fontColor=#1E8449;fontSize=10;fontStyle=1;" edge="1" parent="1" source="34" target="35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DELIVERED -> End -->
+        <mxCell id="75" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#C0392B;strokeWidth=2;" edge="1" parent="1" source="35" target="36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
