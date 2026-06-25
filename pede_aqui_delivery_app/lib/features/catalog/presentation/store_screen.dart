@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/app_bottom_nav.dart';
 import '../../../shared/widgets/product_tile.dart';
 import '../../../shared/widgets/screen_shell.dart';
@@ -29,7 +31,7 @@ class _StoreScreenState extends State<StoreScreen> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 116),
       appBar: AppBar(
-        title: const Text('Pede Aqui', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Pede Aqui', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w800)),
         leading: IconButton(onPressed: () => Navigator.maybePop(context), icon: const Icon(Icons.arrow_back_rounded)),
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
@@ -49,8 +51,13 @@ class _StoreScreenState extends State<StoreScreen> {
               Container(
                 height: 190,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF2A120D), Color(0xFFC9280A)]),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.forestDark, AppColors.forest, AppColors.forestLight],
+                  ),
                   borderRadius: BorderRadius.circular(28),
+                  boxShadow: AppShadows.warmMd,
                 ),
                 child: Stack(
                   children: [
@@ -63,8 +70,8 @@ class _StoreScreenState extends State<StoreScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(.09), blurRadius: 22, offset: const Offset(0, 10))],
+                          borderRadius: BorderRadius.circular(AppRadii.card),
+                          boxShadow: AppShadows.warmMd,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +79,7 @@ class _StoreScreenState extends State<StoreScreen> {
                           children: [
                             Row(
                               children: [
-                                Expanded(child: Text(vendor?.name ?? 'Avenida Gourmet', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
+                                Expanded(child: Text(vendor?.name ?? 'Avenida Gourmet', style: const TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w800))),
                                 const StatusChip(label: '17 min', green: true),
                               ],
                             ),
@@ -81,7 +88,7 @@ class _StoreScreenState extends State<StoreScreen> {
                             const SizedBox(height: 10),
                             Row(
                               children: const [
-                                Icon(Icons.star_rounded, color: AppColors.warning, size: 17),
+                                Icon(Icons.star_rounded, color: AppColors.amber600, size: 17),
                                 SizedBox(width: 4),
                                 Text('4.8', style: TextStyle(fontWeight: FontWeight.w800)),
                                 SizedBox(width: 14),
@@ -111,7 +118,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('Entradas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const Text('Entradas', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -121,7 +128,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
-                  childAspectRatio: .68,
+                  childAspectRatio: .60,
                 ),
                 itemBuilder: (_, index) => ProductTile(
                   product: products[index],
@@ -131,13 +138,13 @@ class _StoreScreenState extends State<StoreScreen> {
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(color: AppColors.forest, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: AppShadows.warm),
                 child: Row(
                   children: [
-                    const Expanded(child: Text('3 itens no carrinho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+                    const Expanded(child: Text('3 itens no carrinho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, AppRoutes.cart),
-                      child: const Text('Ver carrinho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                      child: const Text('Ver carrinho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                     ),
                   ],
                 ),

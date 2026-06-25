@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
 
-final _moneyFormatter = NumberFormat.currency(locale: 'pt_MZ', symbol: 'MT', decimalDigits: 2);
+/// Mirrors the web `formatMZN`: grouped thousands, no forced decimals, "MT" suffix.
+final _moneyFormatter = NumberFormat.decimalPattern('pt_MZ')..maximumFractionDigits = 0;
 
 class MoneyText extends StatelessWidget {
   const MoneyText(this.value, {super.key, this.large = false, this.color = AppColors.primary});
@@ -14,15 +15,11 @@ class MoneyText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatted = _moneyFormatter.format(value)
-        .replaceAll('MT', '')
-        .replaceAll('MZN', '')
-        .trim();
     return Text(
-      '$formatted MT',
+      '${_moneyFormatter.format(value)} MT',
       style: TextStyle(
         color: color,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
         fontSize: large ? 22 : 14,
       ),
     );

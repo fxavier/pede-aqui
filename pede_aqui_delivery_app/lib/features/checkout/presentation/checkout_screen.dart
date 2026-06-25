@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../features/cart/presentation/cart_cubit.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -18,7 +20,7 @@ class CheckoutScreen extends StatelessWidget {
     return ScreenShell(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
       appBar: AppBar(
-        title: const Text('Finalizar\nEncomenda', style: TextStyle(fontWeight: FontWeight.w900, height: 1.0)),
+        title: const Text('Finalizar\nEncomenda', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w800, height: 1.0)),
         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded)),
         actions: const [
           Padding(
@@ -38,7 +40,7 @@ class CheckoutScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.greenSoft, borderRadius: BorderRadius.circular(22)),
+            decoration: BoxDecoration(color: AppColors.greenSoft, borderRadius: BorderRadius.circular(AppRadii.card)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
@@ -64,13 +66,13 @@ class CheckoutScreen extends StatelessWidget {
           const SizedBox(height: 22),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Expanded(child: Text('Resumo do Pedido', style: TextStyle(fontWeight: FontWeight.w900))),
+                    const Expanded(child: Text('Resumo do Pedido', style: TextStyle(fontFamily: 'Fraunces', fontSize: 16, fontWeight: FontWeight.w800))),
                     TextButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.cart), child: const Text('Editar')),
                   ],
                 ),
@@ -86,7 +88,7 @@ class CheckoutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Método de Pagamento', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          const Text('Método de Pagamento', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 14),
           const _PaymentOption(
             selected: true,
@@ -112,7 +114,7 @@ class CheckoutScreen extends StatelessWidget {
                   minimumSize: const Size(86, 54),
                   side: const BorderSide(color: AppColors.green),
                   foregroundColor: AppColors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.base)),
                 ),
                 child: const Text('Aplicar', style: TextStyle(fontWeight: FontWeight.w900)),
               ),
@@ -204,7 +206,7 @@ class _PaymentOption extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(color: selected ? AppColors.green : AppColors.border, width: selected ? 1.4 : 1),
       ),
       child: Row(

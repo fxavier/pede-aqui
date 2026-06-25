@@ -29,3 +29,11 @@ flutter:
   uses-material-design: true
   assets:
     - assets/reference_screens/
+  # Variable fonts; Flutter maps fontWeight to the wght axis automatically.
+  fonts:
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces.ttf
+    - family: Plus Jakarta Sans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf

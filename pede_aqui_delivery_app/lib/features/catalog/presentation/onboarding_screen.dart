@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/screen_shell.dart';
@@ -21,15 +22,9 @@ class OnboardingScreen extends StatelessWidget {
             height: 270,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF171C22),
+              color: AppColors.forest,
               borderRadius: BorderRadius.circular(36),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(.18),
-                  blurRadius: 36,
-                  offset: const Offset(0, 22),
-                ),
-              ],
+              boxShadow: AppShadows.warmLg,
             ),
             child: Stack(
               children: [
@@ -41,7 +36,7 @@ class OnboardingScreen extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF10151D), Color(0xFF4B1F10), Color(0xFF0A5E3F)],
+                          colors: [AppColors.forestDark, AppColors.forest, AppColors.forestLight],
                         ),
                       ),
                     ),
@@ -65,7 +60,7 @@ class OnboardingScreen extends StatelessWidget {
           const Text(
             'Descubra perto de si',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 31, fontWeight: FontWeight.w900, letterSpacing: -.8),
+            style: TextStyle(fontFamily: 'Fraunces', fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.5),
           ),
           const SizedBox(height: 12),
           const Text(

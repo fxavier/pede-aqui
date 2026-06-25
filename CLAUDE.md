@@ -65,7 +65,7 @@ VITE_KEYCLOAK_REALM=delivery
 VITE_KEYCLOAK_CLIENT_ID=pede-aqui-web
 ```
 
-The app falls back to mock data (`src/lib/mockData.ts`) when the backend is unreachable, so basic UI work is possible without a running backend.
+The app requires a running backend. There is no mock fallback — all pages hit the live API. Public browse endpoints (categories, vendor search, product catalog) work without authentication or a tenant header.
 
 ### Backoffice (Next.js)
 
@@ -147,7 +147,7 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 ### Security
 
 - Keycloak JWT tokens. `JwtRoleConverter` maps `realm_access.roles` into `ROLE_<name>` Spring authorities.
-- `SecurityConfig` opens `/actuator/health/**`, `/api-docs/**`, `/swagger-ui/**`, `/api/v1/register`, and `/api/v1/customers/register`. Everything else requires a valid JWT.
+- `SecurityConfig` opens: `/actuator/health/**`, `/api-docs/**`, `/swagger-ui/**`, `/api/v1/register`, `/api/v1/customers/register`, and the three public browse endpoints: `/api/v1/catalog/categories`, `/api/v1/catalog/vendors/*/products`, `/api/v1/search/vendors`. Everything else requires a valid JWT.
 - Fine-grained access uses `@PreAuthorize` annotations in service or controller methods.
 - Roles: `ADMIN`, `OPS`, `VENDOR_ADMIN`, `COURIER`, `CUSTOMER`, `FINANCE`, `SUPPORT`.
 
@@ -237,11 +237,11 @@ Customer registration hits the backend at `POST /api/v1/customers/register` (ope
 
 Redux Toolkit: `auth-slice` (token, sub, displayName, email, status), `cart-slice` (items, vendorId, cartId). TanStack Query for all server data. Store in `src/store/`.
 
-### API & mock layer
+### API layer
 
-All API calls go through `src/lib/api/services.ts` via `src/lib/api/client.ts` (Axios). The client attaches `Authorization: Bearer <token>` from `sessionStorage`. Services: `authService`, `keycloakService`, `customerRegistrationService`, `vendorService`, `catalogService`, `cartService`, `checkoutService`, `orderService`.
+All API calls go through `src/lib/api/services.ts` via `src/lib/api/client.ts` (Axios). The client attaches `Authorization: Bearer <token>` from `sessionStorage` when available. Services: `authService`, `keycloakService`, `customerRegistrationService`, `vendorService`, `catalogService`, `cartService`, `checkoutService`, `orderService`.
 
-`src/lib/mockData.ts` holds `MOCK_VENDORS`, `MOCK_PRODUCTS`, and `VERTICALS` used as fallback when the API is unavailable. Pages that fall back: home, vendor, catalogo.
+Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The home page derives the vertical list from `GET /api/v1/catalog/categories` grouped by the `vertical` field.
 
 ### Key UI components
 

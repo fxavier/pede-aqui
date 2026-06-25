@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/app_bottom_nav.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/screen_shell.dart';
@@ -28,7 +30,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 3),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 116),
       appBar: AppBar(
-        title: const Text('Encomenda #PA-2026-00891', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        title: const Text('Encomenda #PA-2026-00891', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w800, fontSize: 16)),
         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded)),
         actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded))],
       ),
@@ -50,7 +52,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(28),
-                  gradient: const LinearGradient(colors: [Color(0xFFF7D06B), Color(0xFF866642), Color(0xFF1A242D)]),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.forestLight, AppColors.forest, AppColors.forestDark],
+                  ),
+                  boxShadow: AppShadows.warmMd,
                 ),
                 child: Stack(
                   children: [
@@ -82,7 +89,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(height: 18),
               _Timeline(steps: order.steps),
               const SizedBox(height: 20),
-              const Text('Código de Entrega', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              const Text('Código de Entrega', style: TextStyle(fontFamily: 'Fraunces', fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               const Text('Forneça este código ao estafeta no momento da entrega.', style: TextStyle(color: AppColors.mutedText)),
               const SizedBox(height: 14),
@@ -93,7 +100,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
                 child: Row(
                   children: [
                     const CircleAvatar(radius: 26, backgroundColor: AppColors.greenSoft, child: Text('KM', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.w900))),
@@ -118,11 +125,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(height: 18),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Detalhes do Pedido', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                    const Text('Detalhes do Pedido', style: TextStyle(fontFamily: 'Fraunces', fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 12),
                     ...order.lines.map((line) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -196,8 +203,8 @@ class _CodeBox extends StatelessWidget {
     return Container(
       width: 48,
       height: 58,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-      child: Center(child: Text(digit, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.md), border: Border.all(color: AppColors.border)),
+      child: Center(child: Text(digit, style: const TextStyle(fontFamily: 'Fraunces', fontSize: 22, fontWeight: FontWeight.w800))),
     );
   }
 }

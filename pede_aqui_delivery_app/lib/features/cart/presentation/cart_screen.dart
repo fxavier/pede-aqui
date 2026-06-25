@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/app_bottom_nav.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/order_summary_card.dart';
@@ -42,7 +44,7 @@ class CartScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
-                    child: Text('Carrinho — Avenida Gourmet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                    child: Text('Carrinho — Avenida Gourmet', style: TextStyle(fontFamily: 'Fraunces', fontSize: 18, fontWeight: FontWeight.w800)),
                   ),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded)),
                 ],
@@ -50,7 +52,7 @@ class CartScreen extends StatelessWidget {
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
                 child: Row(
                   children: [
                     const Icon(Icons.location_on_outlined, color: AppColors.green),
@@ -60,7 +62,7 @@ class CartScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Entregar em', style: TextStyle(color: AppColors.mutedText, fontSize: 12)),
-                          Text('Av. Julius Nyerere, 123, Polana', style: TextStyle(fontWeight: FontWeight.w900)),
+                          Text('Av. Julius Nyerere, 123, Polana', style: TextStyle(fontWeight: FontWeight.w700)),
                         ],
                       ),
                     ),
@@ -69,7 +71,7 @@ class CartScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Os teus itens', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const Text('Os teus itens', style: TextStyle(fontFamily: 'Fraunces', fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 14),
               ...summary.items.map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: 14),
@@ -100,13 +102,20 @@ class _CartItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
       child: Row(
         children: [
           Container(
             width: 82,
             height: 82,
-            decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(18)),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.surfaceContainer, AppColors.surfaceContainerHigh],
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
             child: Center(child: Text(item.emoji, style: const TextStyle(fontSize: 38))),
           ),
           const SizedBox(width: 14),
@@ -114,7 +123,7 @@ class _CartItemTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 7),
                 Text('${item.quantity} unidades', style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
               ],

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../features/cart/data/cart_models.dart';
 import '../../../shared/widgets/money_text.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -25,7 +27,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
     return ScreenShell(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
       appBar: AppBar(
-        title: const Text('Finalizar Encomenda', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Finalizar Encomenda', style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w800)),
         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded)),
         actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.location_on_outlined))],
       ),
@@ -36,8 +38,8 @@ class CheckoutPromotionScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.green,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [BoxShadow(color: AppColors.green.withOpacity(.25), blurRadius: 24, offset: const Offset(0, 10))],
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              boxShadow: [BoxShadow(color: AppColors.green.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 10))],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +70,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
             child: Row(
               children: const [
                 Icon(Icons.home_rounded, color: AppColors.primary),
@@ -93,7 +95,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
             child: Column(
               children: summary.items.map((item) {
                 return Padding(
@@ -103,7 +105,14 @@ class CheckoutPromotionScreen extends StatelessWidget {
                       Container(
                         width: 52,
                         height: 52,
-                        decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(14)),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.surfaceContainer, AppColors.surfaceContainerHigh],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                        ),
                         child: Center(child: Text(item.emoji, style: const TextStyle(fontSize: 25))),
                       ),
                       const SizedBox(width: 12),
@@ -128,7 +137,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.lg), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
             child: Row(children: const [
               Icon(Icons.mobile_friendly_rounded, color: AppColors.blue),
               SizedBox(width: 12),
@@ -139,7 +148,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5)),
             child: Column(
               children: [
                 _PromoRow(label: 'Subtotal', value: summary.subtotal),

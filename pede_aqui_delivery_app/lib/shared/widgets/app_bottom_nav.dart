@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/pede_aqui_app.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_shadows.dart';
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({required this.currentIndex, super.key});
@@ -22,15 +23,10 @@ class AppBottomNav extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withOpacity(.96),
+        color: AppColors.surface.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.08),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        border: Border.all(color: AppColors.border, width: 0.5),
+        boxShadow: AppShadows.warmMd,
       ),
       child: Row(
         children: List.generate(_items.length, (index) {

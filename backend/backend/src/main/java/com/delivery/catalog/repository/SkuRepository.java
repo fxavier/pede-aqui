@@ -10,4 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SkuRepository extends JpaRepository<Sku, UUID> {
     Optional<Sku> findByTenantIdAndId(UUID tenantId, UUID id);
     List<Sku> findByTenantIdAndProductIdInAndActiveTrue(UUID tenantId, List<UUID> productIds);
+    /** Tenant-free: active SKUs for given products (public browse). */
+    List<Sku> findByProductIdInAndActiveTrue(List<UUID> productIds);
 }

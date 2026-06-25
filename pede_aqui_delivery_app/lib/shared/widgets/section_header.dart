@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 
+/// Section title mirrored from the web `.font-display` headings (Fraunces).
 class SectionHeader extends StatelessWidget {
   const SectionHeader({required this.title, super.key, this.actionLabel, this.onAction});
 
@@ -16,7 +17,12 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              fontFamily: 'Fraunces',
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.text,
+            ),
           ),
         ),
         if (actionLabel != null)
@@ -24,7 +30,7 @@ class SectionHeader extends StatelessWidget {
             onPressed: onAction,
             child: Text(
               actionLabel!,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
             ),
           ),
       ],

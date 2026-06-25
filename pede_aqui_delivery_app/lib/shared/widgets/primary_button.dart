@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
 
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -29,7 +30,7 @@ class PrimaryButton extends StatelessWidget {
           backgroundColor: backgroundColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
         ),
         child: loading
             ? const SizedBox(

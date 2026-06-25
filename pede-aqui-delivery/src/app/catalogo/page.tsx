@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { useDispatch, useSelector } from 'react-redux'
-import { ArrowLeft, Star, Clock, Bike } from 'lucide-react'
+import { ArrowLeft, Star, Clock, Bike, AlertCircle } from 'lucide-react'
 import { vendorService, catalogService, cartService } from '@/lib/api/services'
 import { ProductCard } from '@/components/ProductCard'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { setCartFromResponse, replaceCart } from '@/store/cart-slice'
-import { VERTICALS, MOCK_VENDORS, MOCK_PRODUCTS, mockVendorVertical } from '@/lib/mockData'
+import { verticalMeta, VERTICAL_META } from '@/lib/verticals'
 import { formatMZN } from '@/lib/utils'
 import type { RootState, AppDispatch } from '@/store'
 import type { Product, VendorSearchResult } from '@/lib/api/types'
@@ -23,19 +23,18 @@ export default function CatalogoPage() {
   const cart = useSelector((s: RootState) => s.cart)
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null)
 
-  const vertical = VERTICALS.find((v) => v.id === verticalId)
+  const vertical = verticalMeta(verticalId)
+  const isKnownVertical = verticalId in VERTICAL_META
 
   /* Fetch vendors in this vertical */
-  const { data: searchData, isError: vendorsError } = useQuery({
+  const { data: searchData, isLoading: isVendorsLoading, isError: vendorsError, refetch: refetchVendors } = useQuery({
     queryKey: ['vendors', verticalId],
     queryFn: () => vendorService.search({ category: verticalId }),
     retry: 1,
-    enabled: !!verticalId,
+    enabled: !!verticalId && isKnownVertical,
   })
 
-  const vendorList: VendorSearchResult[] = vendorsError
-    ? MOCK_VENDORS.filter((v) => mockVendorVertical(v.name) === verticalId)
-    : (searchData?.vendors ?? [])
+  const vendorList: VendorSearchResult[] = searchData?.vendors ?? []
 
   /* Fetch products for each vendor in parallel (cap at 8 vendors) */
   const cappedVendors = vendorList.slice(0, 8)
@@ -83,7 +82,7 @@ export default function CatalogoPage() {
     }))
   }
 
-  if (!vertical) {
+  if (!isKnownVertical) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-20 text-center">
         <p className="text-4xl">🔍</p>
@@ -92,8 +91,6 @@ export default function CatalogoPage() {
       </div>
     )
   }
-
-  const isLoading = vendorList.length > 0 && productQueries.some((q) => q.isLoading)
 
   return (
     <>
@@ -112,9 +109,9 @@ export default function CatalogoPage() {
             <div>
               <h1 className="font-display text-2xl font-black text-white">{vertical.label}</h1>
               <p className="text-sm text-white/60">
-                {vendorList.length > 0
-                  ? `${vendorList.length} ${vendorList.length === 1 ? 'estabelecimento' : 'estabelecimentos'}`
-                  : 'A carregar…'}
+                {isVendorsLoading
+                  ? 'A carregar…'
+                  : `${vendorList.length} ${vendorList.length === 1 ? 'estabelecimento' : 'estabelecimentos'}`}
               </p>
             </div>
           </div>
@@ -123,8 +120,8 @@ export default function CatalogoPage() {
 
       {/* Content */}
       <div className="mx-auto max-w-5xl px-4 py-6">
-        {/* Initial loading — no vendors yet */}
-        {!vendorsError && vendorList.length === 0 && (
+        {/* Loading skeletons */}
+        {isVendorsLoading && (
           <div className="space-y-8">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i}>
@@ -139,11 +136,25 @@ export default function CatalogoPage() {
           </div>
         )}
 
+        {/* Vendor fetch error */}
+        {vendorsError && (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <AlertCircle className="h-10 w-10 text-muted-foreground" />
+            <p className="text-muted-foreground">Não foi possível carregar os estabelecimentos.</p>
+            <button
+              onClick={() => refetchVendors()}
+              className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white hover:bg-ember/90"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
         {/* No vendors in this vertical */}
-        {(vendorsError || vendorList.length === 0) && !isLoading && (
+        {!isVendorsLoading && !vendorsError && vendorList.length === 0 && (
           <div className="py-20 text-center">
             <p className="text-4xl">{vertical.emoji}</p>
-            <p className="mt-3 text-muted-foreground">Nenhum estabelecimento disponível em {vertical.label}.</p>
+            <p className="mt-3 text-muted-foreground">Nenhum resultado para esta categoria.</p>
             <Link to="/" className="mt-4 inline-block text-sm font-semibold underline">Ver todos</Link>
           </div>
         )}
@@ -152,9 +163,7 @@ export default function CatalogoPage() {
         <div className="space-y-10">
           {cappedVendors.map((vendor, idx) => {
             const query = productQueries[idx]
-            const products: Product[] = query?.isError || (query?.data?.length === 0)
-              ? MOCK_PRODUCTS.map((p) => ({ ...p, vendorId: vendor.vendorId }))
-              : (query?.data ?? [])
+            const products: Product[] = query?.data ?? []
 
             return (
               <section key={vendor.vendorId}>
@@ -200,6 +209,12 @@ export default function CatalogoPage() {
                       <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />
                     ))}
                   </div>
+                ) : query?.isError ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Não foi possível carregar os produtos deste estabelecimento.
+                  </p>
+                ) : products.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">Cardápio não disponível</p>
                 ) : (
                   <div className="space-y-3">
                     {products.slice(0, 5).map((product) => (

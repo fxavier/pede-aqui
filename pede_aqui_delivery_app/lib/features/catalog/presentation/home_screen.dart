@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/app_bottom_nav.dart';
 import '../../../shared/widgets/screen_shell.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -42,7 +44,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text('Bom dia, Felix!', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+              const Text('Bom dia, Felix!', style: TextStyle(fontFamily: 'Fraunces', fontSize: 26, fontWeight: FontWeight.w800)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -59,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                     height: 56,
                     child: FilledButton(
                       onPressed: () {},
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md))),
                       child: const Text('Buscar', style: TextStyle(fontWeight: FontWeight.w800)),
                     ),
                   ),
@@ -81,7 +83,7 @@ class HomeScreen extends StatelessWidget {
                           Container(
                             width: 58,
                             height: 58,
-                            decoration: BoxDecoration(color: category.color.withOpacity(.13), borderRadius: BorderRadius.circular(18)),
+                            decoration: BoxDecoration(color: category.color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(AppRadii.lg)),
                             child: Icon(category.icon, color: category.color),
                           ),
                           const SizedBox(height: 8),
@@ -115,22 +117,27 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF0D85D8), Color(0xFF15A6FF)]),
-                  borderRadius: BorderRadius.circular(24),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.forest, AppColors.forestLight],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  boxShadow: AppShadows.warmMd,
                 ),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Farmácias 24h', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-                          SizedBox(height: 6),
-                          Text('Entregamos os seus medicamentos em menos de 30 minutos.', style: TextStyle(color: Colors.white70)),
+                          const Text('Farmácias 24h', style: TextStyle(fontFamily: 'Fraunces', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 6),
+                          Text('Entregamos os seus medicamentos em menos de 30 minutos.', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
                         ],
                       ),
                     ),
-                    const Icon(Icons.local_hospital_rounded, color: Colors.white30, size: 76),
+                    Icon(Icons.local_hospital_rounded, color: Colors.white.withValues(alpha: 0.2), size: 76),
                   ],
                 ),
               ),

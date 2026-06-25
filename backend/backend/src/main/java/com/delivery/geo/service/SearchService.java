@@ -1,6 +1,5 @@
 package com.delivery.geo.service;
 
-import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.geo.dto.SearchResponse;
@@ -8,9 +7,9 @@ import com.delivery.geo.dto.SearchSortOption;
 import com.delivery.geo.dto.SearchVendorResponse;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /** Provides tenant-scoped vendor discovery; vendor persistence is added in the vendor slice. */
@@ -29,39 +28,31 @@ public class SearchService {
         this.productRepository = productRepository;
     }
 
-    /** Enhanced search with Redis caching, pagination, and filtering. */
+    /** Enhanced search with Redis caching, pagination, and filtering. Anonymous requests search across all tenants. */
     public List<SearchVendorResponse> searchVendors(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        UUID tenantId = tenantContext.currentTenantId()
-                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
-
-        return searchVendorsWithCache(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
+        Optional<UUID> tenantId = tenantContext.currentTenantId();
+        return searchVendorsWithCache(tenantId.orElse(null), latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
     }
 
-    /** Enhanced search that includes totalCount for API response. */
+    /** Enhanced search that includes totalCount for API response. Anonymous requests search across all tenants. */
     public SearchResponse searchVendorsWithCount(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        UUID tenantId = tenantContext.currentTenantId()
-                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
+        Optional<UUID> tenantId = tenantContext.currentTenantId();
+        UUID tid = tenantId.orElse(null);
 
-        // Get total count before pagination
-        List<SearchVendorResponse> allResults = searchVendorsInternalForCount(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
+        List<SearchVendorResponse> allResults = searchVendorsInternalForCount(tid, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
         int totalCount = allResults.size();
-        
-        // Get paginated results
-        List<SearchVendorResponse> pageResults = searchVendorsWithCache(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
-        
+        List<SearchVendorResponse> pageResults = searchVendorsWithCache(tid, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
+
         return new SearchResponse(pageResults, totalCount, page, PAGE_SIZE);
     }
 
-    @Cacheable(value = "vendorSearch", key = "#tenantId + '_' + #latitude + '_' + #longitude + '_' + #radius + '_' + #category + '_' + #sort + '_' + #page")
+    @Cacheable(value = "vendorSearch", key = "(#tenantId != null ? #tenantId : '*') + '_' + #latitude + '_' + #longitude + '_' + #radius + '_' + #category + '_' + #sort + '_' + #page")
     private List<SearchVendorResponse> searchVendorsWithCache(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
         return searchVendorsInternal(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
     }
 
     private List<SearchVendorResponse> searchVendorsInternal(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        // Get vendor IDs from products (existing logic)
-        List<UUID> vendorIds = category == null
-                ? productRepository.findDistinctVendorIdsByTenantIdAndStatus(tenantId, "ACTIVE")
-                : productRepository.findDistinctVendorIdsByTenantIdAndCategoryIdAndStatus(tenantId, UUID.fromString(category), "ACTIVE");
+        List<UUID> vendorIds = resolveVendorIds(tenantId, category);
 
         double normalizedLat = latitude == null ? 0.0d : latitude;
         double normalizedLng = longitude == null ? 0.0d : longitude;
@@ -87,10 +78,7 @@ public class SearchService {
     }
 
     private List<SearchVendorResponse> searchVendorsInternalForCount(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort) {
-        // Get vendor IDs from products (existing logic)
-        List<UUID> vendorIds = category == null
-                ? productRepository.findDistinctVendorIdsByTenantIdAndStatus(tenantId, "ACTIVE")
-                : productRepository.findDistinctVendorIdsByTenantIdAndCategoryIdAndStatus(tenantId, UUID.fromString(category), "ACTIVE");
+        List<UUID> vendorIds = resolveVendorIds(tenantId, category);
 
         double normalizedLat = latitude == null ? 0.0d : latitude;
         double normalizedLng = longitude == null ? 0.0d : longitude;
@@ -103,6 +91,18 @@ public class SearchService {
                 .filter(vendor -> maxDeliveryMinutes == null || vendor.estimatedDeliveryMinutes() <= maxDeliveryMinutes)
                 .sorted(getComparator(sort))
                 .toList();
+    }
+
+    /** Resolves vendor IDs scoped to a tenant when present, or across all tenants for anonymous access. */
+    private List<UUID> resolveVendorIds(UUID tenantId, String category) {
+        if (tenantId == null) {
+            return category == null
+                    ? productRepository.findDistinctVendorIdsByStatus("ACTIVE")
+                    : productRepository.findDistinctVendorIdsByCategoryIdAndStatus(UUID.fromString(category), "ACTIVE");
+        }
+        return category == null
+                ? productRepository.findDistinctVendorIdsByTenantIdAndStatus(tenantId, "ACTIVE")
+                : productRepository.findDistinctVendorIdsByTenantIdAndCategoryIdAndStatus(tenantId, UUID.fromString(category), "ACTIVE");
     }
 
     /** Legacy method for backward compatibility. */

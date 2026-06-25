@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/screen_shell.dart';
@@ -35,7 +37,7 @@ class LandingScreen extends StatelessWidget {
           const SizedBox(height: 18),
           const Text(
             'O seu marketplace de entrega favorito',
-            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.1, height: 1.03),
+            style: TextStyle(fontFamily: 'Fraunces', fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.05),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -51,8 +53,12 @@ class LandingScreen extends StatelessWidget {
             height: 300,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.surfaceContainer, AppColors.surfaceContainerHigh],
+              ),
+              borderRadius: BorderRadius.circular(AppRadii.card),
             ),
             child: Stack(
               children: [
@@ -65,8 +71,8 @@ class LandingScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(.08), blurRadius: 24, offset: const Offset(0, 10))],
+                      borderRadius: BorderRadius.circular(AppRadii.card),
+                      boxShadow: AppShadows.warmMd,
                     ),
                     child: Row(
                       children: [
@@ -75,7 +81,7 @@ class LandingScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Prato do Dia', style: TextStyle(color: AppColors.mutedText, fontWeight: FontWeight.w700)),
-                              Text('Moqueca Baiana', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                              Text('Moqueca Baiana', style: TextStyle(fontFamily: 'Fraunces', fontSize: 18, fontWeight: FontWeight.w800)),
                             ],
                           ),
                         ),
@@ -122,10 +128,10 @@ class _StoreButton extends StatelessWidget {
         icon: Icon(icon, color: Colors.white),
         label: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: dark ? const Color(0xFF1F130F) : AppColors.primary,
+          backgroundColor: dark ? AppColors.forest : AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.base)),
         ),
       ),
     );

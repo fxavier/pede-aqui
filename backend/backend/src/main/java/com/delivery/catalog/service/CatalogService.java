@@ -30,6 +30,7 @@ import com.delivery.inventory.entity.InventoryItem;
 import com.delivery.inventory.repository.InventoryItemRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -86,14 +87,22 @@ public class CatalogService {
         return mapper.toProductResponse(productRepository.save(product));
     }
 
-    /** Lists all products for one vendor within the current tenant, including PENDING products for admin review. */
+    /** Lists products for one vendor. Anonymous: active products only (cross-tenant). Authenticated: all products in tenant (incl. PENDING for admin review). */
     @Transactional(readOnly = true)
     public List<ProductResponse> listVendorProducts(UUID vendorId) {
-        UUID tenantId = tenantId();
-        // Include ALL products regardless of status - admins need to see PENDING products for review
-        List<Product> products = productRepository.findByTenantIdAndVendorId(tenantId, vendorId);
-        List<UUID> productIds = products.stream().map(Product::getId).toList();
-        List<Sku> skus = productIds.isEmpty() ? List.of() : skuRepository.findByTenantIdAndProductIdInAndActiveTrue(tenantId, productIds);
+        Optional<UUID> tenantIdOpt = tenantContext.currentTenantId();
+        List<Product> products;
+        List<Sku> skus;
+        if (tenantIdOpt.isEmpty()) {
+            products = productRepository.findByVendorIdAndStatus(vendorId, "ACTIVE");
+            List<UUID> productIds = products.stream().map(Product::getId).toList();
+            skus = productIds.isEmpty() ? List.of() : skuRepository.findByProductIdInAndActiveTrue(productIds);
+        } else {
+            UUID tenantId = tenantIdOpt.get();
+            products = productRepository.findByTenantIdAndVendorId(tenantId, vendorId);
+            List<UUID> productIds = products.stream().map(Product::getId).toList();
+            skus = productIds.isEmpty() ? List.of() : skuRepository.findByTenantIdAndProductIdInAndActiveTrue(tenantId, productIds);
+        }
         Map<UUID, List<Sku>> skusByProduct = skus.stream().collect(Collectors.groupingBy(Sku::getProductId));
         return products.stream().map(product -> mapper.toProductResponse(product, skusByProduct.getOrDefault(product.getId(), List.of()))).toList();
     }
@@ -109,13 +118,12 @@ public class CatalogService {
         return mapper.toSkuResponse(sku);
     }
 
-    /** Lists all active categories. Platform admins see all tenants; others see their own. */
+    /** Lists all active categories. Anonymous and platform admins see all tenants; others see their own. */
     @Transactional(readOnly = true)
     public List<CategoryResponse> listCategories() {
-        if (tenantContext.isPlatformAdmin()) {
-            return categoryRepository.findByActiveTrue().stream().map(mapper::toCategoryResponse).toList();
-        }
-        return categoryRepository.findByTenantIdAndActiveTrue(tenantId()).stream().map(mapper::toCategoryResponse).toList();
+        return tenantContext.currentTenantId()
+                .map(id -> categoryRepository.findByTenantIdAndActiveTrue(id).stream().map(mapper::toCategoryResponse).toList())
+                .orElseGet(() -> categoryRepository.findByActiveTrue().stream().map(mapper::toCategoryResponse).toList());
     }
 
     /** Lists categories organized in a hierarchical tree structure. */

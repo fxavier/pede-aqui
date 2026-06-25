@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useDispatch, useSelector } from 'react-redux'
-import { ArrowLeft, Star, Clock, Bike } from 'lucide-react'
+import { ArrowLeft, Star, Clock, Bike, AlertCircle } from 'lucide-react'
 import { catalogService, cartService } from '@/lib/api/services'
-import { MOCK_PRODUCTS } from '@/lib/mockData'
 import { ProductCard } from '@/components/ProductCard'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,25 +38,22 @@ export default function VendorPage() {
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
-  const { data: products = [], isLoading, isError } = useQuery({
+  const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['products', vendorId],
     queryFn: () => catalogService.getProducts(vendorId!),
     enabled: !!vendorId,
     retry: 1,
   })
 
-  /* Fall back to mock products when API unavailable */
-  const allProducts = isError || products.length === 0 ? MOCK_PRODUCTS : products
-
   const grouped = useMemo(() => {
     const map = new Map<string, Product[]>()
-    for (const p of allProducts) {
+    for (const p of products) {
       const key = p.categoryId ?? 'Outros'
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(p)
     }
     return map
-  }, [allProducts])
+  }, [products])
 
   const categories = [...grouped.keys()]
 
@@ -176,6 +172,22 @@ export default function VendorPage() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />
             ))}
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <AlertCircle className="h-10 w-10 text-muted-foreground" />
+            <p className="text-muted-foreground">Não foi possível carregar o cardápio.</p>
+            <button
+              onClick={() => refetch()}
+              className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white hover:bg-ember/90"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="text-4xl">🍽️</p>
+            <p className="mt-3 text-muted-foreground">Cardápio não disponível</p>
           </div>
         ) : (
           <div className="space-y-8">

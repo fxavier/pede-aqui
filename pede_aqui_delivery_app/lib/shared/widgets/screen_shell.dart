@@ -30,7 +30,7 @@ class ScreenShell extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.background, Color(0xFFFFFDFC)],
+            colors: [AppColors.background, AppColors.surfaceContainerLow],
           ),
         ),
         child: SafeArea(

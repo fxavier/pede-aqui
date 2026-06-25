@@ -1,14 +1,11 @@
 import { useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { VendorCard } from '@/components/VendorCard'
-import { vendorService } from '@/lib/api/services'
+import { vendorService, catalogService } from '@/lib/api/services'
 import { useDebounce } from '@/lib/useDebounce'
-import { VERTICALS, MOCK_VENDORS, mockVendorVertical } from '@/lib/mockData'
-import type { VendorSearchResult } from '@/lib/api/types'
-
-const BROWSEABLE_VERTICALS = VERTICALS.filter((v) => v.id !== 'all')
+import { groupByVertical, verticalMeta, VERTICAL_META } from '@/lib/verticals'
 
 export default function HomePage() {
   const [search, setSearch] = useState('')
@@ -20,25 +17,36 @@ export default function HomePage() {
     categoryScrollRef.current?.scrollBy({ left: dir === 'right' ? 200 : -200, behavior: 'smooth' })
   }
 
-  const { data, isLoading, isError } = useQuery({
+  const { data: categoriesData, isError: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => catalogService.getCategories(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+
+  const verticalIds = useMemo(
+    () => (categoriesError ? [] : groupByVertical(categoriesData ?? [])),
+    [categoriesData, categoriesError],
+  )
+
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['vendors', activeVertical],
     queryFn: () => vendorService.search({ category: activeVertical !== 'all' ? activeVertical : undefined }),
     retry: 1,
   })
 
-  const allVendors: VendorSearchResult[] = useMemo(() => {
-    if (!isError) return data?.vendors ?? []
-    if (activeVertical === 'all') return MOCK_VENDORS
-    return MOCK_VENDORS.filter((v) => mockVendorVertical(v.name) === activeVertical)
-  }, [isError, data, activeVertical])
-
   const vendors = useMemo(() => {
-    return allVendors.filter((v) =>
-      v.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-    )
-  }, [allVendors, debouncedSearch])
+    const list = data?.vendors ?? []
+    return list.filter((v) => v.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
+  }, [data, debouncedSearch])
 
   const openCount = vendors.filter((v) => v.available).length
+
+  // Carousel: 'all' + derived verticals; browse grid: derived verticals only
+  const carouselVerticals = useMemo(
+    () => [{ id: 'all', ...VERTICAL_META.all }, ...verticalIds.map((id) => ({ id, ...verticalMeta(id) }))],
+    [verticalIds],
+  )
 
   return (
     <>
@@ -87,19 +95,24 @@ export default function HomePage() {
       </section>
 
       {/* ── Browse by vertical ── */}
-      <div className="mx-auto max-w-5xl px-4 pt-6 pb-2">
-        <h2 className="font-display mb-3 text-lg font-bold text-foreground">Explorar por categoria</h2>
-        <div className="grid grid-cols-4 gap-3 lg:grid-cols-7">
-          {BROWSEABLE_VERTICALS.map((v) => (
-            <Link key={v.id} to={`/catalogo/${v.id}`} className="group block">
-              <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-warm ring-1 ring-border/50 transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-warm-md">
-                <span className="text-3xl leading-none">{v.emoji}</span>
-                <span className="text-center text-xs font-semibold leading-tight text-foreground">{v.label}</span>
-              </div>
-            </Link>
-          ))}
+      {verticalIds.length > 0 && (
+        <div className="mx-auto max-w-5xl px-4 pt-6 pb-2">
+          <h2 className="font-display mb-3 text-lg font-bold text-foreground">Explorar por categoria</h2>
+          <div className="grid grid-cols-4 gap-3 lg:grid-cols-7">
+            {verticalIds.map((id) => {
+              const meta = verticalMeta(id)
+              return (
+                <Link key={id} to={`/catalogo/${id}`} className="group block">
+                  <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-warm ring-1 ring-border/50 transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-warm-md">
+                    <span className="text-3xl leading-none">{meta.emoji}</span>
+                    <span className="text-center text-xs font-semibold leading-tight text-foreground">{meta.label}</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Category carousel ── */}
       <div className="mt-4 border-b border-border bg-white shadow-sm">
@@ -116,7 +129,7 @@ export default function HomePage() {
             className="flex flex-1 gap-2 overflow-x-auto scrollbar-hide"
             style={{ scrollSnapType: 'x mandatory' }}
           >
-            {VERTICALS.map((v) => (
+            {carouselVerticals.map((v) => (
               <button
                 key={v.id}
                 onClick={() => setActiveVertical(v.id)}
@@ -150,6 +163,17 @@ export default function HomePage() {
               <div key={i} className="h-56 animate-pulse rounded-2xl bg-muted" />
             ))}
           </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <AlertCircle className="h-10 w-10 text-muted-foreground" />
+            <p className="text-muted-foreground">Não foi possível carregar os restaurantes.</p>
+            <button
+              onClick={() => refetch()}
+              className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white hover:bg-ember/90"
+            >
+              Tentar novamente
+            </button>
+          </div>
         ) : (
           <>
             <p className="mb-4 text-sm text-muted-foreground">
@@ -160,7 +184,11 @@ export default function HomePage() {
             {vendors.length === 0 ? (
               <div className="py-20 text-center">
                 <p className="text-4xl">🔍</p>
-                <p className="mt-3 text-muted-foreground">Nenhum resultado para "{debouncedSearch}"</p>
+                <p className="mt-3 text-muted-foreground">
+                  {debouncedSearch
+                    ? `Nenhum resultado para "${debouncedSearch}"`
+                    : 'Nenhum restaurante disponível'}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

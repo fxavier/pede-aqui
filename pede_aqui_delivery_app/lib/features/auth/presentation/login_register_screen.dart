@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../app/pede_aqui_app.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_shadows.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/screen_shell.dart';
@@ -49,13 +50,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: .07),
-                      blurRadius: 34,
-                      offset: const Offset(0, 18)),
-                ],
+                border: Border.all(color: AppColors.border, width: 0.5),
+                boxShadow: AppShadows.warmLg,
               ),
               child: Column(
                 children: [
@@ -107,7 +103,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                   if (_validationError != null) ...[
                     Text(
                       _validationError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      style: const TextStyle(color: AppColors.error, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -120,7 +116,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             Text(
                               state.error!,
                               style: const TextStyle(
-                                  color: Colors.red, fontSize: 14),
+                                  color: AppColors.error, fontSize: 14),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
