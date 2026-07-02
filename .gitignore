@@ -34,6 +34,14 @@ minio-data/
 postgres-data/
 redis-data/
 
+# Terraform (never commit provider binaries or state)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+# keep .terraform.lock.hcl and *.tfvars — those are meant to be committed
+
 ### CSV files  #####
 *.csv
 *.xlsx

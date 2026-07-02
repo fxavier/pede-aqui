@@ -16,6 +16,8 @@ Multi-tenant delivery marketplace MVP ("Pede Aqui") targeting Mozambique. Four d
 
 (`web/` is an older prototype; active backoffice work is in `pede-aqui-backoffice/`.)
 
+`infra/` and `admin/` hold two Terraform root modules for S3 upload storage (`infra/` = static CORS apply, `admin/` = privileged bootstrap) — see the Storage section.
+
 Local services run via Docker Compose: PostgreSQL (PostGIS), Redis, Keycloak, MinIO, Prometheus.
 
 ## Local Development
@@ -117,6 +119,8 @@ flutter run -d android \
   --dart-define=KEYCLOAK_REDIRECT_URI=com.pedeaqui.courier:/oauthredirect
 ```
 
+On an Android emulator use `10.0.2.2` to reach host services (as above); on an iOS simulator use `localhost` for the same `--dart-define` URLs. Keycloak redirect URIs must be registered per client exactly as shown.
+
 Validate Flutter apps:
 
 ```bash
@@ -167,6 +171,14 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 ### Storage
 
 MinIO (local) / AWS S3 (prod). Pattern: call `/uploads/images/presigned-url` or `/uploads/documents/presigned-url` to get `{ uploadUrl, storageKey }`, then PUT the file directly to `uploadUrl`. Pass `storageKey` back to the API to link the file to an entity.
+
+- Presigner config is `S3Config` + `app.storage.*` in `application.yml`. Setting `AWS_S3_ENDPOINT` (e.g. `http://localhost:9000`) switches to MinIO and enables path-style; leaving it empty targets real AWS. If `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` are present they're used directly (`StaticCredentialsProvider`), otherwise the AWS default chain (`~/.aws`, instance role) applies.
+- `application.yml` auto-imports the repo-root `.env` via `spring.config.import`, so local AWS vars are picked up without exporting them — but a real OS env var still overrides the `.env` value. A stale backend process on port 8080 is the usual reason config changes "don't take"; kill it (`lsof -i :8080`) before restarting.
+- **Browser-direct uploads need bucket CORS.** A presigned URL authorizes the PUT but the browser preflight still fails unless the target bucket has a CORS policy allowing the app origin. This is the whole reason the Terraform exists.
+- **Terraform is split into two root modules — this split is deliberate, don't merge them:**
+  - `infra/` applies the bucket CORS config. It is **fully static — no data-source read of the bucket.** Bucket name/ARN/region are hardcoded in `infra/locals.tf` (S3 ARNs carry no account/region, so the ARN derives from the name). This lets `plan` run under a low-privilege identity that can't read the bucket. `manage_bucket=false`/`create_iam_user=false` are the defaults; `existing_backend_user=""` because the backend user already has object rw (see below), so no IAM policy is attached — `infra/` only needs `s3:PutBucketCORS` to apply.
+  - `admin/` is the privileged bootstrap module (bucket-metadata read + IAM user creation). Run it with an admin profile (`terraform apply -var aws_profile=<admin>`) only when provisioning a new environment. In the existing `dev` account it's a no-op: the backend user already exists.
+- **Identities:** the backend app user (`delivery-springboot-dev` in dev) holds only `s3:PutObject`/`GetObject`/`DeleteObject` on the bucket — it already has these, so it needs no Terraform-managed policy. It has **no** IAM permissions and **no** `s3:PutBucketCORS`, so it cannot apply the CORS itself. Applying CORS is a one-time privileged action: either an admin runs `terraform apply` in `infra/`, or set it directly in the S3 console (bucket → Permissions → CORS). The `default` AWS profile in `~/.aws` is this low-privilege app user, not an admin — an admin profile must be added separately.
 
 ## Backoffice Architecture
 
@@ -258,6 +270,7 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 - `lib/shared/` — reusable widgets
 - State management: BLoC/Cubit (`flutter_bloc`)
 - DI registration in `lib/core/di/service_locator.dart`; swap to API repositories for backend integration
+- **Design system mirrors the web `pede-aqui-delivery`, which is the visual source of truth.** Stacks are incompatible, so only tokens/visual rules are replicated, never CSS. Tokens live in `lib/core/constants/`: `app_colors.dart` (ember-orange primary, forest-green chrome, warm cream surfaces — hex equivalents of the web HSL vars), `app_spacing.dart` (`AppSpacing` + `AppRadii`), `app_shadows.dart` (`AppShadows.warm*`, brown-tinted to match the web `shadow-warm` utilities). Theme assembled in `lib/app/theme.dart`. Fonts bundled in `assets/fonts/`: **Fraunces** (serif — display/section headers) + **Plus Jakarta Sans** (body). No hardcoded colors/measures outside the token files. The web is light-only; the app's dark theme is a derived variant kept only for the settings toggle.
 
 **Courier app** (`pede_aqui_courier_app`):
 - `lib/core/` — constants, DI (GetIt), network, providers, theme, utils

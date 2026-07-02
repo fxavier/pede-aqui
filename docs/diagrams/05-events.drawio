@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="30.2.4">
+  <diagram name="DomainEvents">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Domain Events — Order Choreography (logical, in-process state changes)" style="text;html=1;fontSize=20;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="20" width="900" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="No message bus — these are logical lifecycle events raised by service state transitions; consumers are called in-process (audit, notifications, settlement, ratings)." style="text;html=1;fontSize=12;align=left;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="52" width="1100" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ev1" value="OrderCreated&#xa;(Checkout)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="60" y="150" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev2" value="PaymentConfirmed&#xa;(Payment)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="290" y="150" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev3" value="OrderAccepted&#xa;(Vendor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="520" y="150" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev4" value="ReadyForPickup&#xa;(Vendor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="750" y="150" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev5" value="CourierAssigned&#xa;(Dispatch)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="980" y="150" width="150" height="60" as="geometry"/></mxCell>
+
+        <mxCell id="ev6" value="OrderPickedUp&#xa;(Delivery)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="980" y="300" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev7" value="OutForDelivery&#xa;(Delivery)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="750" y="300" width="150" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev8" value="OrderDelivered&#xa;(OTP confirmed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="520" y="300" width="150" height="60" as="geometry"/></mxCell>
+
+        <mxCell id="evR" value="RefundRequested&#xa;(reject / fail)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1"><mxGeometry x="290" y="300" width="150" height="60" as="geometry"/></mxCell>
+
+        <mxCell id="cons" value="In-process consumers" style="swimlane;startSize=28;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="470" width="1070" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cn" value="NotificationService&#xa;(push / status updates)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="cons"><mxGeometry x="30" y="45" width="220" height="55" as="geometry"/></mxCell>
+        <mxCell id="cf" value="FinanceService&#xa;(Commission / settlement)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="cons"><mxGeometry x="290" y="45" width="220" height="55" as="geometry"/></mxCell>
+        <mxCell id="cr" value="RatingService&#xa;(request review)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="cons"><mxGeometry x="550" y="45" width="220" height="55" as="geometry"/></mxCell>
+        <mxCell id="ca" value="AuditLog&#xa;(admin/ops/finance actions)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;" vertex="1" parent="cons"><mxGeometry x="810" y="45" width="220" height="55" as="geometry"/></mxCell>
+
+        <mxCell id="c1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev1" target="ev2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev2" target="ev3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev3" target="ev4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev4" target="ev5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ev5" target="ev6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev6" target="ev7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="ev7" target="ev8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c8" value="payment failed /&#xa;vendor rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="ev2" target="evR"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="d1" value="subscribes (most events)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;" edge="1" parent="1" source="ev8" target="cn"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d2" value="on Delivered" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;" edge="1" parent="1" source="ev8" target="cf"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d3" value="on Delivered" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;" edge="1" parent="1" source="ev8" target="cr"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="d4" value="refund → settlement" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;strokeColor=#b85450;" edge="1" parent="1" source="evR" target="cf"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
