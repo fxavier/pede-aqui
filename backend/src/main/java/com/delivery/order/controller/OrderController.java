@@ -26,7 +26,7 @@ public class OrderController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS','VENDOR_ADMIN','VENDOR_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
     public List<AdminOrderResponse> list() {
         return orderService.listForCurrentContext();
     }

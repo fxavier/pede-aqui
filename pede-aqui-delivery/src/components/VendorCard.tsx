@@ -1,89 +1,72 @@
 import { Link } from 'react-router-dom'
-import { Star, Clock, Bike } from 'lucide-react'
+import { Star, Clock, MapPin, Bike } from 'lucide-react'
 import type { VendorSearchResult } from '@/lib/api/types'
 import { formatMZN } from '@/lib/utils'
-
-function vendorVisual(name: string): { emoji: string; from: string; to: string } {
-  const n = name.toLowerCase()
-  if (n.includes('burger') || n.includes('fast'))      return { emoji: '🍔', from: '#FFF7E6', to: '#FDE68A' }
-  if (n.includes('pizza'))                             return { emoji: '🍕', from: '#FFF5F5', to: '#FECACA' }
-  if (n.includes('sushi') || n.includes('zen'))        return { emoji: '🍣', from: '#F0F9FF', to: '#BAE6FD' }
-  if (n.includes('green') || n.includes('garden')
-    || n.includes('saudável') || n.includes('bowl'))   return { emoji: '🥗', from: '#F0FDF4', to: '#BBF7D0' }
-  if (n.includes('farmácia') || n.includes('saúde'))   return { emoji: '💊', from: '#EFF6FF', to: '#BFDBFE' }
-  if (n.includes('café') || n.includes('continental')) return { emoji: '☕', from: '#FFFBEB', to: '#FDE68A' }
-  if (n.includes('pastelaria') || n.includes('doce'))  return { emoji: '🎂', from: '#FDF2F8', to: '#F9A8D4' }
-  if (n.includes('super') || n.includes('mercado'))    return { emoji: '🛒', from: '#F7FEE7', to: '#D9F99D' }
-  return                                                { emoji: '🍲', from: '#FFF7ED', to: '#FED7AA' }
-}
+import { vendorCover } from '@/lib/covers'
 
 export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
-  const { emoji, from, to } = vendorVisual(vendor.name)
+  const { emoji, from, to } = vendorCover(vendor.name)
+  const fast = vendor.estimatedDeliveryMinutes != null && vendor.estimatedDeliveryMinutes <= 20
 
   return (
-    <Link to={`/vendor/${vendor.vendorId}`} className="group block">
-      <div className="overflow-hidden rounded-2xl bg-white shadow-warm ring-1 ring-border/60 transition-all duration-300 group-hover:-translate-y-1.5 group-hover:shadow-warm-md group-hover:ring-border/80">
-        {/* Cover */}
-        <div
-          className="relative flex h-36 items-center justify-center text-5xl"
-          style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
-        >
-          <span className="drop-shadow-sm transition-transform duration-300 group-hover:scale-115">
-            {emoji}
+    <Link
+      to={`/vendor/${vendor.vendorId}`}
+      className="group flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-warm transition-all duration-300 hover:-translate-y-1 hover:shadow-warm-lg"
+    >
+      {/* Cover (emoji/gradient — backend has no images) */}
+      <div className="relative flex h-44 select-none items-center justify-center text-6xl"
+           style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}>
+        {/* Soft top-light so covers read as lit surfaces rather than flat fills */}
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.55), transparent 55%)' }} />
+        <span className="relative drop-shadow-md transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">{emoji}</span>
+
+        {fast && vendor.available && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-brand-600 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg shadow-brand-500/20">
+            Rápido 🔥
           </span>
+        )}
+        {vendor.available ? (
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-sm backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Aberto
+          </span>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[3px]">
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200">Fechado</span>
+          </div>
+        )}
+      </div>
 
-          {/* Closed overlay */}
-          {!vendor.available && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-[2px]">
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm ring-1 ring-border">
-                Fechado
-              </span>
-            </div>
-          )}
+      <div className="flex-1 space-y-1.5 p-5 text-left">
+        <h3 className="line-clamp-1 font-display text-lg font-extrabold leading-snug tracking-tight text-slate-800 transition-colors group-hover:text-brand-600">
+          {vendor.name}
+        </h3>
+      </div>
 
-          {/* Fast delivery badge */}
-          {vendor.available && vendor.estimatedDeliveryMinutes && vendor.estimatedDeliveryMinutes <= 20 && (
-            <span className="absolute right-2 top-2 rounded-full bg-forest px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-              Rápido 🔥
-            </span>
-          )}
-
-          {/* Open indicator */}
-          {vendor.available && (
-            <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-green-700 shadow-sm backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-              Aberto
-            </span>
-          )}
+      {/* Footer meta */}
+      <div className="flex items-center justify-between border-t border-slate-50 bg-slate-50/70 px-5 py-4 text-xs font-semibold text-slate-500">
+        <div className="flex items-center gap-1.5 rounded-md border border-slate-100 bg-white px-2 py-1 shadow-sm">
+          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <span className="font-bold text-slate-800">{vendor.rating > 0 ? vendor.rating.toFixed(1) : 'Novo'}</span>
         </div>
 
-        {/* Info */}
-        <div className="p-3">
-          <h3 className="text-sm font-semibold leading-tight line-clamp-1 text-foreground">
-            {vendor.name}
-          </h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-0.5 font-semibold text-amber-600">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {vendor.rating.toFixed(1)}
-            </span>
-            {vendor.estimatedDeliveryMinutes && (
-              <span className="flex items-center gap-0.5">
-                <Clock className="h-3 w-3" />
-                {vendor.estimatedDeliveryMinutes} min
-              </span>
-            )}
-            {vendor.deliveryFee !== null && (
-              <span className="flex items-center gap-0.5">
-                <Bike className="h-3 w-3" />
-                {vendor.deliveryFee === 0 ? (
-                  <span className="font-semibold text-green-600">Grátis</span>
-                ) : (
-                  formatMZN(vendor.deliveryFee)
-                )}
-              </span>
-            )}
+        <div className="flex items-center gap-3">
+          {vendor.estimatedDeliveryMinutes != null && (
+            <div className="flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              <span>{vendor.estimatedDeliveryMinutes} min</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5 text-slate-400" />
+            <span>{vendor.distanceKm.toFixed(1)} km</span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-1 text-right">
+          <Bike className="h-3.5 w-3.5 text-slate-400" />
+          <span className="font-bold text-slate-700">
+            {vendor.deliveryFee == null ? '—' : vendor.deliveryFee === 0 ? 'Grátis' : formatMZN(vendor.deliveryFee)}
+          </span>
         </div>
       </div>
     </Link>

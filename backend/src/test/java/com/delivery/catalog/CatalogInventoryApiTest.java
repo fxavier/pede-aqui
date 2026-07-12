@@ -46,7 +46,7 @@ class CatalogInventoryApiTest {
         UUID vendorId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
         when(catalogService.createProduct(any()))
-                .thenReturn(new ProductResponse(UUID.randomUUID(), vendorId, categoryId, "Arroz", "Pacote 1kg", false, false, Map.of(), null, List.of(), List.of()));
+                .thenReturn(new ProductResponse(UUID.randomUUID(), vendorId, categoryId, "Arroz", "Pacote 1kg", "PENDING", false, false, Map.of(), null, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/v1/catalog/products")
                         .with(jwt())

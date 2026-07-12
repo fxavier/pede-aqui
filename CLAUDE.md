@@ -25,8 +25,10 @@ Local services run via Docker Compose: PostgreSQL (PostGIS), Redis, Keycloak, Mi
 ### Start infrastructure
 
 ```bash
-docker compose up -d postgres redis keycloak minio
+docker compose up -d postgres redis keycloak minio minio-init
 ```
+
+(`minio-init` creates the `pede-aqui-uploads` bucket used by the backend's `dev` profile; it's idempotent.)
 
 ### Backend (Spring Boot)
 
@@ -39,25 +41,29 @@ mvn spring-boot:run
 Run a single test class:
 
 ```bash
-cd backend/backend
+cd backend
 mvn test -Dtest=SupportTicketServiceTest
 ```
 
 Full verify (compile + tests):
 
 ```bash
-cd backend/backend && mvn clean verify
+cd backend && mvn clean verify
 ```
+
+Spring profiles: `dev` is the default (`spring.profiles.default`) and points storage at local MinIO — no AWS needed. `prod` (`SPRING_PROFILES_ACTIVE=prod`) targets real AWS S3 and fails fast if `AWS_S3_BUCKET`/`AWS_REGION` are missing. See the Storage section.
 
 ### Customer web app (React + Vite)
 
 ```bash
 cd pede-aqui-delivery
-npm install
+npm install           # pnpm install also works (both lockfiles exist)
 npm run dev           # http://localhost:5173
 npm run typecheck
 npm run build
 ```
+
+If using pnpm: `pnpm-workspace.yaml` must keep `allowBuilds: { esbuild: true }` — pnpm 10+ blocks esbuild's postinstall otherwise and `pnpm dev` fails with `ERR_PNPM_IGNORED_BUILDS`. (The old `pnpm.onlyBuiltDependencies` package.json field is ignored.)
 
 `.env.local` (copy from the checked-in file):
 ```
@@ -164,21 +170,25 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 
 ### Database
 
-- Migrations live in `backend/backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`.
+- Migrations live in `backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`. (`backend/backend/` is a stray build-artifact dir, not the module.)
 - `ddl-auto: validate` — Hibernate never mutates schema; always create a migration for schema changes.
 - PostGIS extension enabled (used for geo/zone features).
 
 ### Storage
 
-MinIO (local) / AWS S3 (prod). Pattern: call `/uploads/images/presigned-url` or `/uploads/documents/presigned-url` to get `{ uploadUrl, storageKey }`, then PUT the file directly to `uploadUrl`. Pass `storageKey` back to the API to link the file to an entity.
+Profile-driven: **dev = MinIO** (default), **prod = AWS S3**. Pattern: call `/uploads/images/presigned-url` or `/uploads/documents/presigned-url` to get `{ uploadUrl, storageKey }`, then PUT the file directly to `uploadUrl`. Pass `storageKey` back to the API to link the file to an entity.
 
-- Presigner config is `S3Config` + `app.storage.*` in `application.yml`. Setting `AWS_S3_ENDPOINT` (e.g. `http://localhost:9000`) switches to MinIO and enables path-style; leaving it empty targets real AWS. If `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` are present they're used directly (`StaticCredentialsProvider`), otherwise the AWS default chain (`~/.aws`, instance role) applies.
-- `application.yml` auto-imports the repo-root `.env` via `spring.config.import`, so local AWS vars are picked up without exporting them — but a real OS env var still overrides the `.env` value. A stale backend process on port 8080 is the usual reason config changes "don't take"; kill it (`lsof -i :8080`) before restarting.
-- **Browser-direct uploads need bucket CORS.** A presigned URL authorizes the PUT but the browser preflight still fails unless the target bucket has a CORS policy allowing the app origin. This is the whole reason the Terraform exists.
+- Presigner is `S3Config` reading `app.storage.*`. A non-empty `s3-endpoint` switches to MinIO/path-style; empty targets real AWS. Explicit access keys win over the AWS default chain.
+- **`dev` profile** (`application-dev.yml`, active by default): MinIO at `http://localhost:9000`, bucket `pede-aqui-uploads`, `minioadmin` creds — all hardcoded defaults, overridable via `MINIO_*` vars. The bucket is auto-created by the `minio-init` compose service. MinIO answers CORS `*` by default, so browser uploads need no extra config. The `AWS_*` vars in `.env` are ignored for storage in dev.
+- **`prod` profile** (`application-prod.yml`): real S3; `AWS_S3_BUCKET`/`AWS_REGION` have no defaults so startup fails fast if unset. Leave access keys unset in prod when an instance role exists — the default chain picks it up.
+- Presigning is pure local crypto (no network call), which is why the compose backend signs `localhost:9000` URLs it can't itself reach — the browser on the host does the PUT.
+- `application.yml` auto-imports the repo-root `.env` via `spring.config.import` — but a real OS env var still overrides the `.env` value. A stale backend process on port 8080 is the usual reason config changes "don't take"; kill it (`lsof -i :8080`) before restarting.
+- **Browser-direct uploads to real S3 need bucket CORS.** A presigned URL authorizes the PUT but the browser preflight still fails unless the bucket has a CORS policy allowing the app origin. This is the whole reason the Terraform exists. (MinIO doesn't have this problem.)
+- **AWS state (2026-07): the dev bucket `pede-aqui-dev-documents-*` was deleted.** `infra/terraform.tfvars` now has `manage_bucket = true` so one `terraform apply` recreates bucket + public-access-block + ownership + CORS — but it requires `s3:CreateBucket`, and **neither local AWS profile has it**: both `default` (`tms-springboot-dev`) and `admin` (`delivery-springboot-dev` — misleading name, it's an app user) are object-rw only. Recreating the bucket needs real admin credentials added to `~/.aws` first.
 - **Terraform is split into two root modules — this split is deliberate, don't merge them:**
-  - `infra/` applies the bucket CORS config. It is **fully static — no data-source read of the bucket.** Bucket name/ARN/region are hardcoded in `infra/locals.tf` (S3 ARNs carry no account/region, so the ARN derives from the name). This lets `plan` run under a low-privilege identity that can't read the bucket. `manage_bucket=false`/`create_iam_user=false` are the defaults; `existing_backend_user=""` because the backend user already has object rw (see below), so no IAM policy is attached — `infra/` only needs `s3:PutBucketCORS` to apply.
-  - `admin/` is the privileged bootstrap module (bucket-metadata read + IAM user creation). Run it with an admin profile (`terraform apply -var aws_profile=<admin>`) only when provisioning a new environment. In the existing `dev` account it's a no-op: the backend user already exists.
-- **Identities:** the backend app user (`delivery-springboot-dev` in dev) holds only `s3:PutObject`/`GetObject`/`DeleteObject` on the bucket — it already has these, so it needs no Terraform-managed policy. It has **no** IAM permissions and **no** `s3:PutBucketCORS`, so it cannot apply the CORS itself. Applying CORS is a one-time privileged action: either an admin runs `terraform apply` in `infra/`, or set it directly in the S3 console (bucket → Permissions → CORS). The `default` AWS profile in `~/.aws` is this low-privilege app user, not an admin — an admin profile must be added separately.
+  - `infra/` is **fully static — no data-source read of the bucket.** Bucket name/ARN/region are hardcoded in `infra/locals.tf` (S3 ARNs carry no account/region, so the ARN derives from the name). This lets `plan` run under a low-privilege identity that can't read the bucket.
+  - `admin/` is the privileged bootstrap module (bucket-metadata read + IAM user creation). Run it with an admin profile (`terraform apply -var aws_profile=<admin>`) only when provisioning a new environment.
+- **Identities:** the backend app users hold only `s3:PutObject`/`GetObject`/`DeleteObject` — no IAM permissions, no `s3:PutBucketCORS`, no `s3:CreateBucket`. Bucket-level actions are one-time privileged operations: an admin runs `terraform apply` in `infra/`, or sets CORS directly in the S3 console.
 
 ## Backoffice Architecture
 
@@ -236,6 +246,8 @@ React 18 + Vite SPA. Tailwind CSS v3 + shadcn/ui components.
 | `/checkout` | Yes | Checkout flow |
 | `/orders` | Yes | Order history |
 | `/orders/:orderId` | Yes | Order detail with status polling (30 s) |
+| `/orders/:orderId/confirmation` | Yes | Post-checkout confirmation |
+| `/profile` | No (shows auth state) | Customer profile |
 
 ### Auth flow
 
@@ -270,7 +282,7 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 - `lib/shared/` — reusable widgets
 - State management: BLoC/Cubit (`flutter_bloc`)
 - DI registration in `lib/core/di/service_locator.dart`; swap to API repositories for backend integration
-- **Design system mirrors the web `pede-aqui-delivery`, which is the visual source of truth.** Stacks are incompatible, so only tokens/visual rules are replicated, never CSS. Tokens live in `lib/core/constants/`: `app_colors.dart` (ember-orange primary, forest-green chrome, warm cream surfaces — hex equivalents of the web HSL vars), `app_spacing.dart` (`AppSpacing` + `AppRadii`), `app_shadows.dart` (`AppShadows.warm*`, brown-tinted to match the web `shadow-warm` utilities). Theme assembled in `lib/app/theme.dart`. Fonts bundled in `assets/fonts/`: **Fraunces** (serif — display/section headers) + **Plus Jakarta Sans** (body). No hardcoded colors/measures outside the token files. The web is light-only; the app's dark theme is a derived variant kept only for the settings toggle.
+- **Design system mirrors the web `pede-aqui-delivery`, which is the visual source of truth.** Stacks are incompatible, so only tokens/visual rules are replicated, never CSS. Tokens live in `lib/core/constants/`: `app_colors.dart` (ember-orange primary, forest-green chrome, warm cream surfaces — hex equivalents of the web HSL vars), `app_spacing.dart` (`AppSpacing` + `AppRadii`), `app_shadows.dart` (`AppShadows.warm*`, brown-tinted to match the web `shadow-warm` utilities). Theme assembled in `lib/app/theme.dart`. Fonts bundled in `assets/fonts/`: **Fraunces** (serif — display/section headers) + **Plus Jakarta Sans** (body). No hardcoded colors/measures outside the token files. The web is light-only; the app's dark theme is a derived variant kept only for the settings toggle. Note: the web has since been restyled to a rose brand (`#e11d48`, see `pede-aqui-delivery/design.md`); the Flutter tokens still reflect the earlier ember-orange palette and haven't been re-synced.
 
 **Courier app** (`pede_aqui_courier_app`):
 - `lib/core/` — constants, DI (GetIt), network, providers, theme, utils
@@ -281,6 +293,7 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 
 ## Key API Flows
 
+- **Product lifecycle**: products are created `PENDING` and only become visible after admin approval (`Product.approve()` → `ACTIVE`). Vendor search (`/search/vendors`) derives its vendor list from products with status `ACTIVE` — an empty storefront usually means no ACTIVE products, not a broken endpoint. Vendor name/rating in search results are currently pseudo-generated stubs (see `SearchService.createVendorResponse`).
 - **Checkout**: cart → checkout (idempotency key) → mock payment → delivery record — all in one transaction.
 - **Delivery completion**: courier submits 6-digit OTP from customer; invalid attempts counted but OTP never logged.
 - **Vendor fulfillment state machine**: `PAYMENT_CONFIRMED → ACCEPTED_BY_VENDOR → PREPARING → READY_FOR_PICKUP`.

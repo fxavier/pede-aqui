@@ -5,7 +5,18 @@
       "Bash(python3 -c \"import sys,json; users=json.load\\(sys.stdin\\); [print\\(u.get\\('username','?'\\), u.get\\('email',''\\)\\) for u in users]\")",
       "Bash(curl -s -X POST http://localhost:8081/realms/delivery/protocol/openid-connect/token -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=password&client_id=delivery-app&username=admin&password=Admin1234!')",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('error','OK'\\), d.get\\('access_token',''\\)[:80] if 'access_token' in d else d.get\\('error_description',''\\)\\)\")",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('terraform.tfstate'\\)\\);print\\('serial',d.get\\('serial'\\)\\);[print\\(r['mode'],r['type'],r['name'],'count=',len\\(r['instances']\\)\\) for r in d['resources']]\")",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('terraform.tfstate.1782926614.backup'\\)\\);print\\('serial',d.get\\('serial'\\)\\);[print\\(r['mode'],r['type'],r['name'],'count=',len\\(r['instances']\\)\\) for r in d['resources']]\")",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('../admin/terraform.tfstate'\\)\\);print\\('serial',d.get\\('serial'\\)\\);[print\\(r['mode'],r['type'],r['name']\\) for r in d['resources']]\")",
+      "Read(//Users/xavier/.aws/**)",
+      "Bash(AWS_PROFILE=admin aws sts get-caller-identity)",
+      "Bash(AWS_PROFILE=admin aws s3api get-bucket-cors --bucket pede-aqui-dev-documents-493628259161 --region eu-west-1)",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('admin/terraform.tfstate'\\)\\);[print\\('region=',i['attributes'].get\\('region'\\),'| bucket=',i['attributes'].get\\('bucket'\\),'| id=',i['attributes'].get\\('id'\\)\\) for r in d['resources'] if r['type']=='aws_s3_bucket' for i in r['instances']]\")",
+      "Bash(terraform apply *)",
+      "Bash(rtk --version)",
+      "Bash(rtk cat *)",
+      "Bash(rtk grep *)"
     ]
   }
 }

@@ -1,0 +1,11 @@
+# Perfil dev (predefinido): armazenamento no MinIO local (docker compose).
+# Sem dependência de AWS — o bucket é criado pelo serviço minio-init do compose.
+# MINIO_ENDPOINT é substituído para http://minio:9000 quando o backend corre
+# dentro do compose; localhost:9000 serve para `mvn spring-boot:run` no host.
+app:
+  storage:
+    s3-bucket: ${MINIO_BUCKET:pede-aqui-uploads}
+    s3-region: us-east-1 # MinIO ignora a região, mas o SDK exige uma
+    s3-endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    s3-access-key: ${MINIO_ROOT_USER:minioadmin}
+    s3-secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}

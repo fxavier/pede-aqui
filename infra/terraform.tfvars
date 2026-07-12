@@ -1,8 +1,10 @@
 aws_region  = "eu-west-1"
 bucket_name = "pede-aqui-dev-documents-493628259161"
 
-# Bucket já existe → só aplicar CORS. Reutiliza as keys já em .env.
-manage_bucket   = false
+# O bucket foi apagado (head-bucket → 404 em 2026-07). infra/ passa a criá-lo
+# e a geri-lo: bucket + block-public-access + ownership + CORS num só apply.
+# Requer s3:CreateBucket na identidade do apply (perfil admin).
+manage_bucket   = true
 create_iam_user = false
 
 # O utilizador do backend (delivery-springboot-dev) já existe e já tem

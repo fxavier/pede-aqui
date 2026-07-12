@@ -17,6 +17,18 @@ export interface VendorSearchResponse {
   size: number
 }
 
+// Vendor public profile (GET /api/v1/catalog/vendors/{vendorId})
+export interface VendorPublicInfo {
+  vendorId: string
+  name: string
+  description: string | null
+  address: string | null
+  rating: number
+  available: boolean
+  estimatedDeliveryMinutes: number | null
+  logoUrl: string | null
+}
+
 // Catalog (GET /api/v1/catalog/vendors/{vendorId}/products)
 export interface Sku {
   id: string
@@ -35,6 +47,7 @@ export interface Product {
   skus: Sku[]
   status?: string
   primaryImageKey?: string
+  primaryImageUrl?: string | null
   requiresPrescriptionMetadata?: boolean
 }
 

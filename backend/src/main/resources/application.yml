@@ -1,4 +1,7 @@
 spring:
+  # dev (MinIO) salvo indicação em contrário; produção define SPRING_PROFILES_ACTIVE=prod.
+  profiles:
+    default: dev
   # Load the repo-root .env (KEY=VALUE) so local dev picks up AWS_* etc. without
   # exporting them into the shell. Optional + multiple paths to tolerate the run
   # working dir being the repo root, backend/, or backend/backend/. OS env vars

@@ -8,6 +8,7 @@ import type {
   OrderResponse,
   Product,
   TrackingResponse,
+  VendorPublicInfo,
   VendorSearchResponse,
 } from './types'
 
@@ -55,6 +56,9 @@ export const customerRegistrationService = {
 export const vendorService = {
   search: (params?: { lat?: number; lng?: number; category?: string }) =>
     apiClient.get<VendorSearchResponse>('/search/vendors', { params }).then((r) => r.data),
+
+  get: (vendorId: string) =>
+    apiClient.get<VendorPublicInfo>(`/catalog/vendors/${vendorId}`).then((r) => r.data),
 }
 
 export const catalogService = {

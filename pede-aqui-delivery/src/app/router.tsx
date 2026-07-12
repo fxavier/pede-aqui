@@ -11,6 +11,7 @@ import OrdersPage from './orders/page'
 import OrderDetailPage from './orders/detail/page'
 import OrderConfirmationPage from './orders/confirmation/page'
 import CatalogoPage from './catalogo/page'
+import ProfilePage from './profile/page'
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'profile', element: <ProfilePage /> },
       { path: 'vendor/:vendorId', element: <VendorPage /> },
       { path: 'catalogo/:verticalId', element: <CatalogoPage /> },
       {

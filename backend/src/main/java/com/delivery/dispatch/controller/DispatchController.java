@@ -24,11 +24,11 @@ public class DispatchController {
     public DispatchController(DispatchService dispatchService) { this.dispatchService = dispatchService; }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('COURIER','OPERATIONS','ADMIN')")
+    @PreAuthorize("hasAnyRole('COURIER','OPS','ADMIN')")
     public List<DispatchJobResponse> list() { return dispatchService.list(); }
 
     @PostMapping("/assign")
-    @PreAuthorize("hasAnyRole('OPERATIONS','ADMIN')")
+    @PreAuthorize("hasAnyRole('OPS','ADMIN')")
     public DispatchJobResponse assign(@RequestParam UUID orderId, @RequestParam UUID deliveryId, @RequestParam UUID operatingZoneId) {
         return dispatchService.assign(orderId, deliveryId, operatingZoneId);
     }
@@ -44,6 +44,6 @@ public class DispatchController {
     }
 
     @PostMapping("/{jobId}/reassign")
-    @PreAuthorize("hasAnyRole('OPERATIONS','ADMIN')")
+    @PreAuthorize("hasAnyRole('OPS','ADMIN')")
     public DispatchJobResponse reassign(@PathVariable UUID jobId, @RequestParam UUID operatingZoneId) { return dispatchService.reassign(jobId, operatingZoneId); }
 }

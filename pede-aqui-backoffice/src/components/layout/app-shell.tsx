@@ -71,6 +71,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (item) => item.roles.length === 0 || item.roles.includes(userRole),
   );
 
+  // Route guard: hiding the nav link isn't enough — direct URL navigation would
+  // still render an off-limits page and fire API calls that 403. Enforce the same
+  // role rules on the current route (longest matching nav prefix wins).
+  const activeNav = navigation
+    .filter((item) => item.href !== "/" && (pathname === item.href || pathname.startsWith(item.href + "/")))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  const forbidden = !!activeNav && activeNav.roles.length > 0 && !activeNav.roles.includes(userRole);
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffdad2_0,transparent_32%),linear-gradient(135deg,#fff8f6_0%,#fff1ed_45%,#fff8f6_100%)] text-on-surface">
       <aside
@@ -173,7 +181,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        {children}
+        {forbidden ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-16 text-center">
+            <ShieldCheck className="h-10 w-10 text-on-surface-variant" />
+            <p className="font-headline-sm text-xl">Acesso restrito</p>
+            <p className="max-w-sm text-sm text-on-surface-variant">
+              A tua conta ({userRole || "sem role"}) não tem permissão para aceder a esta secção.
+            </p>
+          </div>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );

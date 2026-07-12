@@ -43,6 +43,21 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Cria o bucket usado pelo perfil dev do backend (application-dev.yml). Idempotente.
+  minio-init:
+    image: minio/mc:RELEASE.2024-10-08T09-37-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/pede-aqui-uploads"
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -64,12 +79,11 @@ services:
       DB_USERNAME: delivery
       DB_PASSWORD: delivery
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/delivery
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      AWS_REGION: ${AWS_REGION}
-      AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS:-900}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SPRING_DATA_REDIS_HOST: redis
+      # Storage: perfil dev (MinIO) por defeito — ver application-dev.yml.
+      # O endpoint fica localhost:9000 (default) de propósito: o presign não
+      # faz chamadas de rede e o browser é quem faz o PUT, a partir do host.
+      # Para AWS real: SPRING_PROFILES_ACTIVE=prod + AWS_S3_BUCKET/AWS_REGION/keys.
     ports:
       - "8082:8080"
     volumes:

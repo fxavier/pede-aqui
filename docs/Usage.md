@@ -3,34 +3,99 @@
 This guide describes the end-to-end usage flow for the Delivery Marketplace MVP,
 with concrete examples for API, web backoffice, and mobile apps.
 
-## 1. Start the Platform
+## 1. Start the Platform (dev profile)
+
+Prerequisites: Docker + Compose, Java 21, Maven 3.9+, Node 20+, Flutter (Dart 3.x).
+
+### 1.1 Infrastructure
 
 From repository root:
 
 ```bash
-docker compose up -d
+docker compose up -d postgres redis keycloak minio minio-init
 ```
 
-Then start clients as needed:
+`minio-init` creates the `pede-aqui-uploads` bucket the backend uses in dev (idempotent). Bringing up `backend` too (`docker compose up -d`) runs the API in a container on port **8082**; running it from source (below) uses **8080**.
+
+### 1.2 Backend and clients
 
 ```bash
-# Web backoffice
-cd web && npm run dev
+# Backend API — runs the `dev` Spring profile by default (MinIO storage, no AWS)
+cd backend && mvn spring-boot:run
+
+# Customer web app (React + Vite)
+cd pede-aqui-delivery && npm install && npm run dev      # http://localhost:5173
+
+# Backoffice (Next.js)
+cd pede-aqui-backoffice && npm ci && npm run dev          # http://localhost:3000
 
 # Mobile customer app
-cd mobile/delivery_app && flutter run
+cd pede_aqui_delivery_app && flutter pub get && flutter run
 
 # Mobile courier app
-cd mobile/courier_app && flutter run
+cd pede_aqui_courier_app && flutter pub get && flutter run
 ```
 
 Useful local URLs:
 
-- Backend API: `http://localhost:8080`
+- Backend API: `http://localhost:8080` (source) / `http://localhost:8082` (compose)
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/api-docs`
 - Keycloak: `http://localhost:8081`
+- MinIO console: `http://localhost:9001` (`minioadmin` / `minioadmin`)
 - Prometheus: `http://localhost:9090`
+
+## 1a. Storage Profiles: dev vs prod
+
+Uploads use S3-presigned URLs: the client asks the API for a presigned URL, then PUTs
+the file straight to the object store. Which store is used is decided entirely by the
+active Spring profile — no Java or client code changes between environments.
+
+| | **dev** (default) | **prod** (`SPRING_PROFILES_ACTIVE=prod`) |
+|---|---|---|
+| Config file | `backend/src/main/resources/application-dev.yml` | `application-prod.yml` |
+| Object store | Local MinIO (`http://localhost:9000`) | Real AWS S3 |
+| Bucket | `pede-aqui-uploads` (auto-created by `minio-init`) | `AWS_S3_BUCKET` — **no default, fails fast if unset** |
+| Region | `us-east-1` (MinIO ignores it) | `AWS_REGION` — **no default** |
+| Credentials | `minioadmin` / `minioadmin` | AWS default chain (instance role) or `AWS_ACCESS_KEY_ID`/`SECRET` |
+| Browser CORS | Open by default in MinIO — nothing to do | **Must be applied to the bucket** (see 1c) |
+
+`dev` is the default via `spring.profiles.default` in `application.yml`; you don't set
+anything to get it. The `AWS_*` values in the repo-root `.env` are ignored for storage in
+dev — they only matter under `prod`.
+
+### Running under the prod profile
+
+```bash
+cd backend
+SPRING_PROFILES_ACTIVE=prod \
+AWS_S3_BUCKET=pede-aqui-prod-uploads \
+AWS_REGION=eu-west-1 \
+mvn spring-boot:run
+# credentials: rely on the instance IAM role in real prod, or export
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY for a machine without one.
+```
+
+If `AWS_S3_BUCKET` or `AWS_REGION` are missing, startup aborts immediately rather than
+signing URLs against the wrong bucket. This is deliberate.
+
+Frontends point at prod by building with production env vars instead of the dev defaults:
+`pede-aqui-delivery` uses `VITE_API_BASE_URL` / `VITE_KEYCLOAK_*`; `pede-aqui-backoffice`
+uses `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_KEYCLOAK_*`. Build with `npm run build`.
+
+## 1c. AWS S3 setup for prod (one-time, privileged)
+
+The backend's runtime AWS identity only has object read/write — it cannot create the
+bucket or set CORS. Those are one-time admin actions:
+
+1. **Create the bucket** in the target region with Block Public Access **on**. Either
+   `terraform apply` in `infra/` with an admin profile (it also applies CORS + ownership),
+   or create it in the S3 console.
+2. **Apply CORS** so browser preflight succeeds — the `infra/` Terraform does this, or set
+   it manually (bucket → Permissions → CORS) allowing the app origins with `PUT, GET, HEAD`.
+
+Without bucket CORS, presigned PUTs from the browser fail the preflight even though the URL
+itself is valid. MinIO (dev) does not have this constraint.
 
 ## 2. Authentication and Tenant Scope
 
@@ -271,17 +336,18 @@ curl -X PATCH "http://localhost:8080/api/v1/support/tickets/<ticketId>/resolve" 
 
 ## 10. Web and Mobile Usage Summary
 
-### Web Backoffice
+### Web Backoffice (`pede-aqui-backoffice`)
 
-The web app exposes role-based pages:
+Role-based pages behind Keycloak login. Platform super-admins (ADMIN, no tenant) land on
+`/platform` to manage and impersonate tenants; tenant users land on `/` (dashboard). Main
+routes: `/empresa`, `/admin`, `/catalogo`, `/vendors`, `/users`, `/orders`, `/couriers`,
+`/finance`, `/support`, `/marketing`. All pages include loading, empty, error, and
+forbidden views.
 
-- `/admin`
-- `/vendor`
-- `/operations`
-- `/finance`
-- `/support`
+### Customer Web App (`pede-aqui-delivery`)
 
-All pages include loading, empty, error, and forbidden views.
+Public browse (home, vendor catalog, vertical listing) works without login; cart, checkout,
+and order history require a customer token. Auth is ROPC against Keycloak (no redirect).
 
 ### Mobile Customer App
 

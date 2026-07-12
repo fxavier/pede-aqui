@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { ShoppingCart, Check, Loader2 } from 'lucide-react'
+import { Plus, Check, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { Product } from '@/lib/api/types'
 import { cn, formatMZN } from '@/lib/utils'
+import { productEmoji } from '@/lib/covers'
 
 type BtnState = 'idle' | 'adding' | 'added'
 
@@ -13,18 +14,9 @@ interface Props {
   onAdd: (product: Product) => Promise<void> | void
 }
 
-const PRODUCT_EMOJI: Record<string, string> = {
-  Entradas: '🥟',
-  'Pratos Principais': '🍛',
-  Bebidas: '🥤',
-  Sobremesas: '🍮',
-  Outros: '📦',
-}
-
 export function ProductCard({ product, onAdd }: Props) {
   const [btnState, setBtnState] = useState<BtnState>('idle')
   const activeSku = product.skus.find((s) => s.active) ?? product.skus[0]
-  const emoji = PRODUCT_EMOJI[product.categoryId ?? ''] ?? '📦'
 
   async function handleAdd() {
     if (btnState !== 'idle' || !activeSku) return
@@ -32,75 +24,43 @@ export function ProductCard({ product, onAdd }: Props) {
     try {
       await onAdd(product)
       setBtnState('added')
-      setTimeout(() => setBtnState('idle'), 1800)
+      setTimeout(() => setBtnState('idle'), 1600)
     } catch {
       setBtnState('idle')
     }
   }
 
   return (
-    <div
-      className={cn(
-        'group flex gap-3 rounded-2xl bg-white p-4 ring-1 transition-all duration-300',
-        btnState === 'added'
-          ? 'ring-green-300 shadow-[0_0_0_3px_rgba(34,197,94,0.15),0_8px_24px_-4px_rgba(60,30,5,0.12)]'
-          : 'ring-border/50 shadow-warm hover:shadow-warm-md',
-      )}
-    >
-      {/* Thumbnail */}
-      <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/70 to-secondary text-[2.25rem] transition-transform duration-200 group-hover:scale-105">
-        {emoji}
+    <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md hover:border-brand-100 transition-all flex justify-between gap-4 text-left group">
+      <div className="space-y-1.5 flex-1 min-w-0">
+        <div className="flex items-start gap-2">
+          <h4 className="flex-1 font-display font-extrabold text-slate-800 text-sm leading-snug group-hover:text-brand-600 transition-colors">{product.name}</h4>
+          {product.requiresPrescriptionMetadata && <Badge variant="secondary" className="shrink-0 text-[10px]">Receita</Badge>}
+        </div>
+        {product.description && <p className="text-xs text-slate-400 font-medium line-clamp-2 leading-relaxed">{product.description}</p>}
+        <p className="pt-1 font-display font-extrabold text-sm text-slate-800">{activeSku ? formatMZN(activeSku.price) : '—'}</p>
       </div>
 
-      {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-start gap-2">
-          <h4 className="flex-1 text-sm font-semibold leading-snug text-foreground">
-            {product.name}
-          </h4>
-          {product.requiresPrescriptionMetadata && (
-            <Badge variant="secondary" className="shrink-0 text-[10px]">Receita</Badge>
-          )}
-        </div>
-
-        {product.description && (
-          <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
-            {product.description}
-          </p>
-        )}
-
-        <p className="mt-1.5 text-sm font-bold text-primary">
-          {activeSku ? formatMZN(activeSku.price) : '—'}
-        </p>
-
-        {/* Comprar button */}
+      <div className="relative w-24 h-24 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center text-4xl flex-shrink-0 overflow-hidden">
+        {product.primaryImageUrl
+          ? <img src={product.primaryImageUrl} alt={product.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          : productEmoji(product.categoryId)}
         <button
           onClick={handleAdd}
           disabled={!activeSku || btnState !== 'idle'}
+          aria-label="Adicionar ao carrinho"
           className={cn(
-            'mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl py-2.5 text-sm font-bold text-white',
-            'transition-all duration-300 active:scale-[0.97]',
-            'disabled:cursor-not-allowed',
+            'absolute bottom-2 right-2 h-8 min-w-8 px-2 rounded-full flex items-center justify-center gap-1 text-xs font-bold shadow-md border transition-all active:scale-90 disabled:cursor-not-allowed',
             btnState === 'added'
-              ? 'bg-green-500 shadow-[0_4px_18px_rgba(34,197,94,0.55)]'
+              ? 'bg-emerald-500 border-emerald-400 text-white'
               : btnState === 'adding'
-              ? 'cursor-wait bg-forest/70 shadow-none'
-              : 'bg-forest shadow-[0_4px_14px_rgba(26,47,29,0.3)] hover:-translate-y-px hover:bg-forest-light hover:shadow-[0_6px_22px_rgba(26,47,29,0.45)]',
+              ? 'bg-white border-slate-100 text-slate-400 cursor-wait'
+              : 'bg-white border-slate-100 text-slate-800 hover:bg-brand-50 hover:text-brand-600',
           )}
         >
-          {btnState === 'adding' ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : btnState === 'added' ? (
-            <>
-              <Check className="h-4 w-4 animate-check" />
-              <span>Adicionado!</span>
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="h-4 w-4" />
-              <span>Comprar</span>
-            </>
-          )}
+          {btnState === 'adding' ? <Loader2 className="w-4 h-4 animate-spin" />
+            : btnState === 'added' ? <Check className="w-4 h-4 animate-check" />
+            : <Plus className="w-4 h-4" />}
         </button>
       </div>
     </div>

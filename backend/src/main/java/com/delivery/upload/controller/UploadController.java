@@ -27,7 +27,7 @@ public class UploadController {
         return uploadService.createImageUploadUrl(request);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS','VENDOR_ADMIN','VENDOR_STAFF','COURIER')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF','COURIER')")
     @PostMapping("/documents/presigned-url")
     @ResponseStatus(HttpStatus.CREATED)
     public UploadUrlResponse createDocumentUploadUrl(@Valid @RequestBody CreateDocumentUploadUrlRequest request) {

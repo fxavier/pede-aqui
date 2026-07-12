@@ -10,12 +10,19 @@ import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.entity.ProductVariationGroup;
 import com.delivery.catalog.entity.ProductVariationOption;
+import com.delivery.upload.service.StorageUrlService;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
 /** Converts catalog entities to DTOs. */
 @Component
 public class CatalogMapper {
+    private final StorageUrlService storageUrlService;
+
+    public CatalogMapper(StorageUrlService storageUrlService) {
+        this.storageUrlService = storageUrlService;
+    }
+
     public ProductResponse toProductResponse(Product product) {
         return toProductResponse(product, List.of());
     }
@@ -28,10 +35,12 @@ public class CatalogMapper {
                 product.getCategoryId(),
                 product.getName(),
                 product.getDescription(),
+                product.getStatus(),
                 product.isRequiresPrescriptionMetadata(),
                 product.isProhibitedFuel(),
                 product.getAttributes(),
                 product.getPrimaryImageKey(),
+                storageUrlService.presignGet(product.getPrimaryImageKey()),
                 product.getImageGallery(),
                 skuResponses);
     }

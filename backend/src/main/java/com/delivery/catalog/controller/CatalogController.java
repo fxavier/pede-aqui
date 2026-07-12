@@ -7,6 +7,7 @@ import com.delivery.catalog.dto.CreateProductRequest;
 import com.delivery.catalog.dto.CreateSkuRequest;
 import com.delivery.catalog.dto.ProductResponse;
 import com.delivery.catalog.dto.SkuResponse;
+import com.delivery.catalog.dto.VendorPublicResponse;
 import com.delivery.catalog.service.CatalogService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -41,6 +42,9 @@ public class CatalogController {
 
     @GetMapping("/vendors/{vendorId}/products")
     public List<ProductResponse> listVendorProducts(@PathVariable UUID vendorId) { return service.listVendorProducts(vendorId); }
+
+    @GetMapping("/vendors/{vendorId}")
+    public VendorPublicResponse getVendorPublicProfile(@PathVariable UUID vendorId) { return service.getVendorPublicProfile(vendorId); }
 
     @GetMapping("/categories")
     public List<CategoryResponse> listCategories() { return service.listCategories(); }

@@ -95,7 +95,7 @@ export default function CatalogoPage() {
   return (
     <>
       {/* Header */}
-      <div className="bg-forest px-6 pb-6 pt-5">
+      <div className="bg-gradient-to-tr from-slate-900 to-brand-900 px-6 pb-6 pt-5">
         <div className="mx-auto max-w-5xl">
           <button
             onClick={() => navigate(-1)}
@@ -143,7 +143,7 @@ export default function CatalogoPage() {
             <p className="text-muted-foreground">Não foi possível carregar os estabelecimentos.</p>
             <button
               onClick={() => refetchVendors()}
-              className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white hover:bg-ember/90"
+              className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-500"
             >
               Tentar novamente
             </button>
@@ -179,7 +179,7 @@ export default function CatalogoPage() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1 font-semibold text-amber-600">
                         <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        {vendor.rating.toFixed(1)}
+                        {vendor.rating > 0 ? vendor.rating.toFixed(1) : 'Novo'}
                       </span>
                       {vendor.estimatedDeliveryMinutes && (
                         <span className="flex items-center gap-1">

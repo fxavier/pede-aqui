@@ -1,0 +1,11 @@
+# Perfil prod: AWS S3 real. Sem valores por defeito — se AWS_S3_BUCKET ou
+# AWS_REGION faltarem, o arranque falha imediatamente (fail-fast) em vez de
+# assinar presigned URLs para um bucket errado.
+# Credenciais: NÃO definir AWS_ACCESS_KEY_ID/SECRET no ambiente de prod se a
+# instância tiver IAM role — a cadeia por defeito do SDK (instance role) é usada
+# quando as keys estão ausentes (ver S3Config).
+app:
+  storage:
+    s3-bucket: ${AWS_S3_BUCKET}
+    s3-region: ${AWS_REGION}
+    s3-endpoint: "" # vazio = AWS real (virtual-hosted style)

@@ -7,6 +7,11 @@ export interface CartItem {
   skuName: string
   unitPrice: number
   quantity: number
+  /**
+   * Per-item note. Client-side only: the backend cart API accepts no notes
+   * field, so this is not persisted server-side and may be dropped on refetch.
+   */
+  notes?: string
 }
 
 interface CartState {

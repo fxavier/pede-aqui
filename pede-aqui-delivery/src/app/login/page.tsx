@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top — brand */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-forest px-6 py-12 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-brand-600 to-accent-orange px-6 py-12 text-center">
         <span className="text-6xl">🛵</span>
         <h1 className="font-display mt-4 text-4xl font-black text-white">Pede Aqui</h1>
         <p className="mt-2 font-body text-white/60">Entrega rápida em Maputo</p>
@@ -60,7 +60,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="o.teu@email.com"
-                className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ember"
+                className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-11 w-full rounded-xl border border-input bg-white px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ember"
+                  className="h-11 w-full rounded-xl border border-input bg-white px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <button
                   type="button"
@@ -95,7 +95,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-ember text-sm font-bold text-white shadow-warm-md transition-all hover:bg-ember/90 active:scale-[0.98] disabled:opacity-60"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-sm font-bold text-white shadow-warm-md transition-all hover:bg-brand-500 active:scale-[0.98] disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Entrar

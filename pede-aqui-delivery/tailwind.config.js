@@ -5,8 +5,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Fraunces', 'serif'],
-        body: ['Plus Jakarta Sans', 'sans-serif'],
+        // Ported from pede-aqui-delivery-ui: Plus Jakarta Sans is both the
+        // display and body face; Fraunces kept as an optional serif fallback.
+        display: ['Plus Jakarta Sans', 'DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        body: ['Plus Jakarta Sans', 'DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['Fraunces', 'serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -38,13 +42,20 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        /* brand palette */
-        forest: {
-          DEFAULT: '#1A2F1D',
-          dark: '#111F13',
-          light: '#2A4A2E',
+        /* Brand palette ported from pede-aqui-delivery-ui (rose scale) */
+        brand: {
+          50: '#fff1f2',
+          100: '#ffe4e6',
+          200: '#fecdd3',
+          300: '#fda4af',
+          400: '#fb7185',
+          500: '#f43f5e',
+          600: '#e11d48',
+          700: '#be123c',
+          800: '#9f1239',
+          900: '#881337',
         },
-        ember: '#E8430C',
+        'accent-orange': '#FF5A1F',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -71,11 +82,21 @@ export default {
           '0%':   { opacity: '0', transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        'slide-in-right': {
+          '0%':   { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        'spin-slow': {
+          '0%':   { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
-        'fade-up':   'fade-up 0.5s ease forwards',
-        'fade-in':   'fade-in 0.4s ease forwards',
-        'scale-in':  'scale-in 0.3s ease forwards',
+        'fade-up':        'fade-up 0.5s ease forwards',
+        'fade-in':        'fade-in 0.4s ease forwards',
+        'scale-in':       'scale-in 0.3s ease forwards',
+        'slide-in-right': 'slide-in-right 0.3s cubic-bezier(0.16,1,0.3,1) forwards',
+        'spin-slow':      'spin-slow 4s linear infinite',
       },
     },
   },

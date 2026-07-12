@@ -1,0 +1,4 @@
+# pnpm 10+ moved the build-script allowlist here (out of package.json's "pnpm" field).
+# esbuild (used by vite) needs its postinstall to fetch its native binary, else dev/build fail.
+allowBuilds:
+  esbuild: true

@@ -46,45 +46,45 @@ public class CourierController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS','COURIER')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','COURIER')")
     @ResponseStatus(HttpStatus.CREATED)
     public CourierResponse create(@Valid @RequestBody CreateCourierRequest request) {
         return courierService.create(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     public List<CourierResponse> listAll() {
         return courierService.listAll();
     }
 
     @GetMapping("/{courierId}")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     public CourierResponse getById(@PathVariable UUID courierId) {
         return courierService.getById(courierId);
     }
 
     @PostMapping("/{courierId}/documents")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     @ResponseStatus(HttpStatus.CREATED)
     public CourierDocumentResponse addDocument(@PathVariable UUID courierId, @Valid @RequestBody CreateCourierDocumentRequest request) {
         return courierService.addDocument(courierId, request);
     }
 
     @GetMapping("/{courierId}/documents")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     public List<CourierDocumentResponse> listDocuments(@PathVariable UUID courierId) {
         return courierService.listDocuments(courierId);
     }
 
     @PatchMapping("/{courierId}/approve")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     public CourierResponse approve(@PathVariable UUID courierId) {
         return courierService.approveCourier(courierId);
     }
 
     @PatchMapping("/{courierId}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATIONS')")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS')")
     public CourierResponse reject(@PathVariable UUID courierId) {
         return courierService.rejectCourier(courierId);
     }

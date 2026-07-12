@@ -1,13 +1,11 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2 } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { clearCart, cartTotal, cartItemCount } from '@/store/cart-slice'
+import { Minus, Plus, Trash2, ShoppingBag, ChevronRight } from 'lucide-react'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { clearCart, cartTotal, cartItemCount, setCartFromResponse } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { cartService } from '@/lib/api/services'
-import { setCartFromResponse } from '@/store/cart-slice'
 
 interface Props {
   open: boolean
@@ -19,34 +17,13 @@ export function CartDrawer({ open, onClose }: Props) {
   const navigate = useNavigate()
   const auth = useSelector((s: RootState) => s.auth)
   const cart = useSelector((s: RootState) => s.cart)
-  const total = cartTotal(cart.items)
+  const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
 
-  async function handleQuantityChange(skuId: string, productId: string, _productName: string, _skuName: string, _unitPrice: number, delta: number) {
+  async function increment(skuId: string, productId: string) {
     if (!auth.sub || !cart.vendorId) return
-    const current = cart.items.find((i) => i.skuId === skuId)
-    const newQty = (current?.quantity ?? 0) + delta
-    if (newQty <= 0) {
-      // Remove by setting qty to 0 — backend may not support this; optimistic local remove
-      const newItems = cart.items.filter((i) => i.skuId !== skuId)
-      if (newItems.length === 0) {
-        dispatch(clearCart())
-        return
-      }
-      dispatch(setCartFromResponse({
-        cartId: cart.cartId!,
-        vendorId: cart.vendorId,
-        vendorName: cart.vendorName ?? '',
-        items: newItems,
-      }))
-      return
-    }
     try {
-      const response = await cartService.addItem(auth.sub, {
-        vendorId: cart.vendorId,
-        skuId,
-        quantity: delta > 0 ? delta : 0,
-      })
+      const response = await cartService.addItem(auth.sub, { vendorId: cart.vendorId, skuId, quantity: 1 })
       dispatch(setCartFromResponse({
         cartId: response.id,
         vendorId: cart.vendorId,
@@ -58,79 +35,112 @@ export function CartDrawer({ open, onClose }: Props) {
           skuName: i.skuName,
           unitPrice: i.unitPrice,
           quantity: i.quantity,
+          notes: cart.items.find((c) => c.skuId === i.skuId)?.notes,
         })),
       }))
-    } catch {
-      /* optimistic update already applied */
-    }
+    } catch { /* keep current state on failure */ }
+  }
+
+  // Backend has no decrement/remove endpoint — optimistic local update.
+  function setQuantity(skuId: string, nextQty: number) {
+    if (!cart.cartId || !cart.vendorId) return
+    const nextItems = nextQty <= 0
+      ? cart.items.filter((i) => i.skuId !== skuId)
+      : cart.items.map((i) => (i.skuId === skuId ? { ...i, quantity: nextQty } : i))
+    if (nextItems.length === 0) { dispatch(clearCart()); return }
+    dispatch(setCartFromResponse({ cartId: cart.cartId, vendorId: cart.vendorId, vendorName: cart.vendorName ?? '', items: nextItems }))
   }
 
   function handleCheckout() {
     onClose()
-    if (auth.status !== 'authenticated') {
-      navigate('/login?redirect=/checkout')
-    } else {
-      navigate('/checkout')
-    }
+    navigate(auth.status !== 'authenticated' ? '/login?redirect=/checkout' : '/checkout')
   }
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Carrinho {count > 0 && `(${count})`}</SheetTitle>
-        </SheetHeader>
+      <SheetContent className="w-full max-w-md p-0 flex flex-col">
+        {/* Header */}
+        <div className="p-5 border-b border-slate-100 flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div className="text-left">
+            <h2 className="font-display font-extrabold text-slate-800 text-lg leading-tight">O Seu Carrinho</h2>
+            <p className="text-xs text-slate-400 font-semibold uppercase">{count} {count === 1 ? 'item' : 'itens'}</p>
+          </div>
+        </div>
 
-        <div className="mt-6 flex flex-col gap-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
           {cart.items.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 text-center text-muted-foreground">
-              <span className="text-4xl">🛒</span>
-              <p>O teu carrinho está vazio</p>
-              <Button variant="outline" onClick={onClose}>Ver restaurantes</Button>
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 pt-16">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl">🛒</div>
+              <div className="space-y-1">
+                <h3 className="font-display font-bold text-slate-800 text-lg">O seu carrinho está vazio</h3>
+                <p className="text-slate-400 text-xs font-medium max-w-xs mx-auto">Explore os menus e adicione as suas refeições favoritas.</p>
+              </div>
+              <button onClick={onClose} className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-full shadow-md shadow-brand-500/10 transition-all">Explorar Menus</button>
             </div>
           ) : (
-            cart.items.map((item) => (
-              <div key={item.skuId} className="flex items-start gap-3">
-                <div className="flex flex-1 flex-col">
-                  <span className="text-sm font-medium">{item.productName}</span>
-                  {item.skuName !== item.productName && (
-                    <span className="text-xs text-muted-foreground">{item.skuName}</span>
-                  )}
-                  <span className="mt-1 text-sm font-semibold text-primary">{formatMZN(item.unitPrice * item.quantity)}</span>
+            <>
+              {cart.vendorName && (
+                <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-left">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-lg capitalize">🏪</div>
+                  <div>
+                    <h4 className="font-display font-extrabold text-slate-800 text-sm leading-tight capitalize">{cart.vendorName}</h4>
+                    <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Pedido em andamento
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleQuantityChange(item.skuId, item.productId, item.productName, item.skuName, item.unitPrice, -1)}
-                  >
-                    {item.quantity === 1 ? <Trash2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  </Button>
-                  <span className="w-6 text-center text-sm">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleQuantityChange(item.skuId, item.productId, item.productName, item.skuName, item.unitPrice, 1)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
+              )}
+
+              <div className="space-y-4">
+                {cart.items.map((item) => (
+                  <div key={item.skuId} className="flex gap-3 py-3 border-b border-slate-100 text-left justify-between items-start">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>
+                    <div className="flex-1 space-y-1 min-w-0 pr-2">
+                      <h4 className="font-display font-bold text-slate-800 text-xs sm:text-sm tracking-tight truncate">{item.productName}</h4>
+                      {item.skuName !== item.productName && <p className="text-[10px] text-slate-400 font-medium truncate">{item.skuName}</p>}
+                      {item.notes && <p className="text-[10px] text-brand-600 font-semibold bg-brand-50 inline-block px-1.5 py-0.5 rounded italic truncate max-w-full">Obs: {item.notes}</p>}
+                      <div className="flex items-center gap-3 pt-1">
+                        <div className="border border-slate-200 rounded-lg flex items-center h-7 px-2 gap-2 text-xs font-bold text-slate-700 bg-slate-50">
+                          <button onClick={() => setQuantity(item.skuId, item.quantity - 1)} className="p-0.5 hover:bg-slate-200 rounded" aria-label="Diminuir"><Minus className="w-3 h-3" /></button>
+                          <span className="w-4 text-center">{item.quantity}</span>
+                          <button onClick={() => increment(item.skuId, item.productId)} className="p-0.5 hover:bg-slate-200 rounded" aria-label="Aumentar"><Plus className="w-3 h-3" /></button>
+                        </div>
+                        <button onClick={() => setQuantity(item.skuId, 0)} className="text-slate-400 hover:text-red-500 p-1 rounded-full transition-colors" aria-label="Remover"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                    <span className="font-display font-extrabold text-sm text-slate-800 flex-shrink-0">{formatMZN(item.unitPrice * item.quantity)}</span>
+                  </div>
+                ))}
               </div>
-            ))
+            </>
           )}
         </div>
 
+        {/* Footer summary. Fees/taxes/discounts are computed by the backend at
+            checkout, so here we only show the real item subtotal. */}
         {cart.items.length > 0 && (
-          <div className="mt-auto border-t pt-4">
-            <div className="flex justify-between text-sm font-medium mb-3">
-              <span>Total</span>
-              <span>{formatMZN(total)}</span>
+          <div className="p-5 bg-slate-50 border-t border-slate-100 space-y-4">
+            <div className="space-y-1.5 text-xs text-slate-500 font-semibold">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span className="text-slate-800 font-bold">{formatMZN(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Taxa de entrega</span>
+                <span className="text-slate-400">Calculada no checkout</span>
+              </div>
+              <div className="flex justify-between text-sm text-slate-800 font-extrabold pt-2 border-t border-slate-200/60">
+                <span>Total estimado</span>
+                <span className="text-brand-600">{formatMZN(subtotal)}</span>
+              </div>
             </div>
-            <Button className="w-full" onClick={handleCheckout}>
-              Finalizar Pedido
-            </Button>
+            <button onClick={handleCheckout} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition-all active:scale-[0.98]">
+              Continuar para checkout <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </SheetContent>

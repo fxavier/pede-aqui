@@ -24,10 +24,14 @@ import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.catalog.repository.ProductVariationGroupRepository;
 import com.delivery.catalog.repository.ProductVariationOptionRepository;
+import com.delivery.catalog.dto.VendorPublicResponse;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.entity.InventoryItem;
 import com.delivery.inventory.repository.InventoryItemRepository;
+import com.delivery.upload.service.StorageUrlService;
+import com.delivery.vendor.entity.Vendor;
+import com.delivery.vendor.repository.VendorRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,8 +52,10 @@ public class CatalogService {
     private final ProductVariationOptionRepository variationOptionRepository;
     private final CatalogMapper mapper;
     private final TenantContext tenantContext;
+    private final VendorRepository vendorRepository;
+    private final StorageUrlService storageUrlService;
 
-    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext) {
+    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext, VendorRepository vendorRepository, StorageUrlService storageUrlService) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.skuRepository = skuRepository;
@@ -58,6 +64,24 @@ public class CatalogService {
         this.variationOptionRepository = variationOptionRepository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+        this.vendorRepository = vendorRepository;
+        this.storageUrlService = storageUrlService;
+    }
+
+    /** Public vendor profile for the customer storefront; anonymous and cross-tenant by design. */
+    @Transactional(readOnly = true)
+    public VendorPublicResponse getVendorPublicProfile(UUID vendorId) {
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new BusinessException("vendor_not_found", "Vendor not found", HttpStatus.NOT_FOUND));
+        return new VendorPublicResponse(
+                vendor.getId(),
+                vendor.getName(),
+                vendor.getDescription(),
+                vendor.getAddress(),
+                vendor.getRating(),
+                vendor.isAvailable(),
+                vendor.getEstimatedDeliveryMinutes(),
+                storageUrlService.presignGet(vendor.getLogoStorageKey()));
     }
 
     /** Creates a product while blocking prohibited fuel listings. */
