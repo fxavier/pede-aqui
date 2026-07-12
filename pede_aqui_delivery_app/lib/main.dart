@@ -21,7 +21,7 @@ Future<void> main() async {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => getIt<AuthCubit>()),
+          BlocProvider(create: (_) => getIt<AuthCubit>()..restoreSession()),
           BlocProvider(create: (_) => getIt<CatalogCubit>()..loadHome()),
           BlocProvider(create: (_) => getIt<CartCubit>()..loadCart()),
           BlocProvider(create: (_) => getIt<OrderTrackingCubit>()),

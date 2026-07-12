@@ -3,18 +3,19 @@ import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 
 class ApiClient {
-  ApiClient()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: AppConfig.apiBaseUrl,
-            connectTimeout: AppConfig.requestTimeout,
-            receiveTimeout: AppConfig.requestTimeout,
-            headers: const {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          ),
-        ) {
+  ApiClient({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: AppConfig.apiBaseUrl,
+                connectTimeout: AppConfig.requestTimeout,
+                receiveTimeout: AppConfig.requestTimeout,
+                headers: const {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+              ),
+            ) {
     _dio.interceptors.add(_createInterceptor());
   }
 

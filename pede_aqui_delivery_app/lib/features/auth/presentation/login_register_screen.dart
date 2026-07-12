@@ -214,9 +214,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       return;
     }
 
-    if (password.length < 6) {
+    // Backend registration requires at least 8 characters.
+    final minLength = _register ? 8 : 6;
+    if (password.length < minLength) {
       setState(() => _validationError =
-          'A palavra-passe deve ter pelo menos 6 caracteres.');
+          'A palavra-passe deve ter pelo menos $minLength caracteres.');
       return;
     }
 

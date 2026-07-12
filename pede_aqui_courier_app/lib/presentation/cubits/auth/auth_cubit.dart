@@ -20,6 +20,21 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  /// Attempts auto-login from a persisted session at app startup.
+  Future<void> restoreSession() async {
+    try {
+      final result = await _repository.restoreSession();
+      if (result != null) {
+        emit(AuthAuthenticated(
+          courierId: result.courierId,
+          accessToken: result.accessToken,
+        ));
+      }
+    } catch (_) {
+      // No persisted session (or it expired): stay unauthenticated silently.
+    }
+  }
+
   Future<void> logout() async {
     await _repository.logout();
     emit(const AuthInitial());
