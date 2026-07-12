@@ -46,7 +46,7 @@ jobs:
           cache: npm
           cache-dependency-path: pede-aqui-delivery/package-lock.json
       - name: Delivery web checks
-        run: cd pede-aqui-delivery && npm ci && npm run typecheck && npm run build
+        run: cd pede-aqui-delivery && npm ci && npm run typecheck && npm test && npm run build
 
   delivery-app:
     runs-on: ubuntu-latest
