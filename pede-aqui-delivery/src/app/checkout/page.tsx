@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
@@ -34,10 +34,13 @@ export default function CheckoutPage() {
   const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
 
-  if (cart.items.length === 0) {
-    navigate('/', { replace: true })
-    return null
-  }
+  // Redirect away from an empty-cart checkout in an effect (never during render).
+  const isEmpty = cart.items.length === 0
+  useEffect(() => {
+    if (isEmpty) navigate('/', { replace: true })
+  }, [isEmpty, navigate])
+
+  if (isEmpty) return null
 
   function validate(): boolean {
     const e: Partial<AddressForm> = {}

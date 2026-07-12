@@ -1,12 +1,11 @@
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import {
   Award, MapPin, CreditCard, ChevronRight, Sparkles, LogOut,
   CheckCircle, Settings, HelpCircle, Gift,
 } from 'lucide-react'
-import type { RootState, AppDispatch } from '@/store'
-import { clearUser } from '@/store/auth-slice'
-import { userManager } from '@/features/auth/oidcConfig'
+import type { RootState } from '@/store'
+import { logout } from '@/features/auth/logout'
 
 function initials(name: string | null): string {
   if (!name) return 'PA'
@@ -16,7 +15,6 @@ function initials(name: string | null): string {
 
 export default function ProfilePage() {
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
   const { status, displayName, email } = useSelector((s: RootState) => s.auth)
 
   if (status !== 'authenticated') {
@@ -31,9 +29,8 @@ export default function ProfilePage() {
   }
 
   async function handleLogout() {
-    dispatch(clearUser())
-    await userManager.removeUser().catch(() => {})
-    navigate('/')
+    const redirecting = await logout()
+    if (!redirecting) navigate('/')
   }
 
   const name = displayName ?? 'Cliente Pede Aqui'

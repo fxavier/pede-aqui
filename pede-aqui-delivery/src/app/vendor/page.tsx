@@ -32,6 +32,7 @@ export default function VendorPage() {
   const [detailQty, setDetailQty] = useState(1)
   const [notes, setNotes] = useState('')
   const [pendingProduct, setPendingProduct] = useState<{ product: Product; qty: number; notes: string } | null>(null)
+  const [cartError, setCartError] = useState<string | null>(null)
 
   const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['products', vendorId],
@@ -89,19 +90,24 @@ export default function VendorPage() {
     const sku = product.skus.find((s) => s.active) ?? product.skus[0]
     if (!sku) return
 
-    const response = await cartService.addItem(auth.sub!, { vendorId: vendorId!, skuId: sku.id, quantity: qty })
-    const action = force ? replaceCart : setCartFromResponse
-    // Attach the client-side note to this sku (best-effort; not persisted server-side).
-    const items = response.items.map((i) => ({
-      skuId: i.skuId,
-      productId: product.id,
-      productName: i.productName,
-      skuName: i.skuName,
-      unitPrice: i.unitPrice,
-      quantity: i.quantity,
-      notes: i.skuId === sku.id ? (note || undefined) : cart.items.find((c) => c.skuId === i.skuId)?.notes,
-    }))
-    dispatch(action({ cartId: response.id, vendorId: vendorId!, vendorName, items }))
+    try {
+      const response = await cartService.addItem(auth.sub!, { vendorId: vendorId!, skuId: sku.id, quantity: qty })
+      const action = force ? replaceCart : setCartFromResponse
+      // Attach the client-side note to this sku (best-effort; not persisted server-side).
+      const items = response.items.map((i) => ({
+        skuId: i.skuId,
+        productId: product.id,
+        productName: i.productName,
+        skuName: i.skuName,
+        unitPrice: i.unitPrice,
+        quantity: i.quantity,
+        notes: i.skuId === sku.id ? (note || undefined) : cart.items.find((c) => c.skuId === i.skuId)?.notes,
+      }))
+      dispatch(action({ cartId: response.id, vendorId: vendorId!, vendorName, items }))
+      setCartError(null)
+    } catch {
+      setCartError('Não foi possível adicionar ao carrinho. Tente novamente.')
+    }
   }
 
   function decrement(skuId: string) {
@@ -211,6 +217,18 @@ export default function VendorPage() {
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Cart error ── */}
+      {cartError && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+            <span className="flex items-center gap-2"><AlertCircle className="h-4 w-4 flex-shrink-0" /> {cartError}</span>
+            <button onClick={() => setCartError(null)} className="p-1 rounded-full hover:bg-red-100 transition-colors" aria-label="Fechar">
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         </section>
       )}
