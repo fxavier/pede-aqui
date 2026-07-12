@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
@@ -9,6 +9,7 @@ import { checkoutService } from '@/lib/api/services'
 import { clearCart, cartTotal, cartItemCount } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
+import { useIdempotencyKey } from '@/lib/idempotency'
 
 interface AddressForm { street: string; number: string; neighbourhood: string; city: string; notes: string }
 const EMPTY: AddressForm = { street: '', number: '', neighbourhood: '', city: '', notes: '' }
@@ -29,7 +30,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Partial<AddressForm>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const idempotencyKey = useRef(crypto.randomUUID())
+  const idempotencyKey = useIdempotencyKey()
 
   const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
@@ -60,7 +61,7 @@ export default function CheckoutPage() {
     try {
       // Backend checkout only needs cartId + idempotencyKey. Address/payment are
       // collected for UX and future support but not sent in the current API.
-      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey: idempotencyKey.current })
+      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey })
       const history: unknown[] = JSON.parse(localStorage.getItem('pede-aqui:orders') ?? '[]')
       history.unshift(order)
       localStorage.setItem('pede-aqui:orders', JSON.stringify(history.slice(0, 50)))
