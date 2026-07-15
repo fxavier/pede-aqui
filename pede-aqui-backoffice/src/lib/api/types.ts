@@ -372,6 +372,234 @@ export interface VendorOpeningHourRequest {
   closed: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Spec 002 — Catalog edit & price moderation
+// (Backend DTO source of truth: backend/src/main/java/com/delivery/catalog/dto/*.
+//  The OpenAPI fragment names this "ProductResponse"; the backend returns the narrower
+//  single-SKU edit shape `ProductEditResponse`, distinct from the existing `Product` type
+//  used by the create/list catalog flows above.)
+export interface ProductEditResponse {
+  id: string;
+  vendorId: string;
+  categoryId: string;
+  name: string;
+  description: string | null;
+  status: string;
+  requiresPrescription: boolean;
+  imageUrl: string | null;
+  price: number;
+  pendingPrice: number | null;
+  updatedAt: string;
+}
+
+export interface UpdateProductRequest {
+  name?: string;
+  description?: string;
+  categoryId?: string;
+  requiresPrescription?: boolean;
+}
+
+export interface PriceUpdateResponse {
+  skuId: string;
+  currentPrice: number;
+  pendingPrice: number | null;
+  reviewRequired: boolean;
+}
+
+export interface PendingPriceChange {
+  skuId: string;
+  productId: string;
+  productName: string;
+  vendorId: string;
+  currentPrice: number;
+  pendingPrice: number;
+  deltaPercent: number;
+  submittedBy: string;
+  submittedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Spec 002 — Sales
+// (Backend DTO source of truth: backend/src/main/java/com/delivery/sales/dto/*.
+//  Diverges from the OpenAPI fragment: SalesRow/SaleDetail additionally carry
+//  `customerName` (masked for SUPPORT); SaleDetail carries `appliedPromotionId` (UUID) instead
+//  of an embedded `appliedPromotion` object, plus a `payments[]` array not in the fragment.)
+export interface SalesRow {
+  orderId: string;
+  reference: string;
+  createdAt: string;
+  vendorId: string;
+  vendorName: string;
+  customerName: string | null;
+  itemCount: number;
+  subtotal: number;
+  fees: number;
+  taxes: number;
+  discountTotal: number;
+  total: number;
+  orderStatus: string;
+  paymentStatus: string;
+  paymentProvider: string;
+}
+
+export interface SalesPage {
+  content: SalesRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+}
+
+export interface SaleLineItem {
+  productNameSnapshot: string;
+  unitPriceSnapshot: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface SalePayment {
+  id: string;
+  amount: number;
+  provider: string;
+  status: string;
+}
+
+export interface SaleRefund {
+  id: string;
+  amount: number;
+  status: string;
+}
+
+export interface SaleDetail extends SalesRow {
+  items: SaleLineItem[];
+  appliedPromotionId: string | null;
+  payments: SalePayment[];
+  refunds: SaleRefund[];
+  commission: number;
+}
+
+// Minimal acknowledgement returned by cancel/status-override (never carries the delivery OTP).
+export interface SalesActionResponse {
+  orderId: string;
+  reference: string;
+  orderStatus: string;
+}
+
+// Refund response diverges from the fragment: the backend delegates to the existing finance
+// path and returns `com.delivery.payment.dto.RefundResponse`, not a sales-specific shape.
+export interface RefundResponse {
+  id: string;
+  paymentId: string;
+  orderId: string;
+  amount: number;
+  reason: string;
+  status: string;
+}
+
+export interface SalesFilter {
+  from?: string;
+  to?: string;
+  status?: string;
+  vendorId?: string;
+  productId?: string;
+  skuId?: string;
+  paymentProvider?: string;
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
+export type SalesNotificationType = "CONFIRMATION" | "STATUS" | "DELIVERY_CODE";
+
+// ---------------------------------------------------------------------------
+// Spec 002 — Promotions
+// (Backend DTO source of truth: backend/src/main/java/com/delivery/marketing/dto/
+//  PromotionResponse.java / PromotionUpsertRequest.java. Named distinctly from the existing
+//  `Promotion`/`CreatePromotionPayload` types above, which back the older, separate
+//  `marketingService` coupon/promotion endpoints and do not share this shape.)
+export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT";
+export type PromotionScope = "ORDER" | "CATEGORY" | "PRODUCT";
+export type PromotionStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED";
+
+export interface PromotionUpsertRequest {
+  vendorId?: string | null;
+  name: string;
+  code?: string | null;
+  type: PromotionType;
+  value: number;
+  scope: PromotionScope;
+  targetCategoryId?: string | null;
+  targetProductId?: string | null;
+  minOrderTotal?: number | null;
+  maxDiscountAmount?: number | null;
+  startsAt: string;
+  endsAt: string;
+  usageLimit?: number | null;
+  perCustomerLimit?: number | null;
+}
+
+export interface PromotionResponse extends PromotionUpsertRequest {
+  id: string;
+  usedCount: number;
+  status: PromotionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Spec 002 — Sales reports
+// (Backend DTO source of truth: backend/src/main/java/com/delivery/report/dto/*.)
+export interface SalesSummary {
+  from: string;
+  to: string;
+  orderCount: number;
+  gross: number;
+  discountTotal: number;
+  refunds: number;
+  net: number;
+  commission: number;
+  averageOrderValue: number;
+  deliveredCount: number;
+  cancelledCount: number;
+}
+
+// SalesBucketResponse does not repeat `from`/`to` — only the bucket timestamp — diverging from
+// the fragment's `allOf: [SalesSummary, { bucket }]` composition.
+export interface SalesBucket {
+  bucket: string;
+  orderCount: number;
+  gross: number;
+  discountTotal: number;
+  refunds: number;
+  net: number;
+  commission: number;
+  averageOrderValue: number;
+  deliveredCount: number;
+  cancelledCount: number;
+}
+
+export interface DimensionRow {
+  key: string;
+  label: string;
+  gross: number;
+  refunds: number;
+  net: number;
+  commission: number;
+  sharePercent: number;
+}
+
+export interface ProductDimensionRow extends DimensionRow {
+  quantitySold: number;
+}
+
+export type ReportInterval = "day" | "week" | "month";
+export type SalesReportName = "summary" | "timeseries" | "by-vendor" | "by-product" | "by-category";
+
+export interface ReportRangeParams {
+  from: string;
+  to: string;
+  vendorId?: string;
+}
+
 // Upload types
 export interface UploadUrlResponse {
   uploadUrl: string;
