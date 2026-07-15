@@ -4,6 +4,7 @@ import com.delivery.marketing.dto.CouponResponse;
 import com.delivery.marketing.dto.PromotionResponse;
 import com.delivery.marketing.entity.Coupon;
 import com.delivery.marketing.entity.Promotion;
+import java.time.Instant;
 import org.springframework.stereotype.Component;
 
 /** Converts marketing entities to response DTOs. */
@@ -26,18 +27,27 @@ public class MarketingMapper {
                 coupon.getCreatedAt());
     }
 
+    /** Maps a promotion to its API shape, resolving EXPIRED from the validity window (AC-7.3). */
     public PromotionResponse toPromotionResponse(Promotion promotion) {
         return new PromotionResponse(
                 promotion.getId(),
-                promotion.getName(),
-                promotion.getDescription(),
-                promotion.getDiscountType(),
-                promotion.getDiscountValue(),
                 promotion.getVendorId(),
-                promotion.getAppliesTo(),
+                promotion.getName(),
+                promotion.getCode(),
+                promotion.getType(),
+                promotion.getValue(),
+                promotion.getScope(),
+                promotion.getTargetCategoryId(),
+                promotion.getTargetProductId(),
+                promotion.getMinOrderTotal(),
+                promotion.getMaxDiscountAmount(),
                 promotion.getStartsAt(),
                 promotion.getEndsAt(),
-                promotion.isActive(),
-                promotion.getCreatedAt());
+                promotion.getUsageLimit(),
+                promotion.getPerCustomerLimit(),
+                promotion.getUsedCount(),
+                promotion.effectiveStatus(Instant.now()),
+                promotion.getCreatedAt(),
+                promotion.getUpdatedAt());
     }
 }

@@ -1,6 +1,7 @@
 package com.delivery.cart.service;
 
 import com.delivery.cart.dto.PricingResponse;
+import com.delivery.common.pricing.PricingMath;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class PricingService {
         BigDecimal serviceFee = subtotal.multiply(SERVICE_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal tax = subtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal discount = "MVP10".equalsIgnoreCase(couponCode) ? subtotal.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        BigDecimal total = subtotal.add(deliveryFee).add(serviceFee).add(tax).subtract(discount).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = PricingMath.orderTotal(subtotal, deliveryFee.add(serviceFee), tax, discount);
         return new PricingResponse(subtotal, deliveryFee, serviceFee, tax, discount, total);
     }
 }

@@ -288,6 +288,112 @@ curl -X POST "http://localhost:8080/api/v1/payments/refunds/<refundId>/approve" 
   -H "X-Tenant-Id: <tenant-uuid>"
 ```
 
+## 7a. Backoffice Catalog, Sales, Promotions and Reports (Spec 002)
+
+Backoffice pages: `/catalogo` (edit drawer + moderation tab), `/sales`, `/marketing`
+(promotions), `/reports`. The equivalent API flows:
+
+### 7a.1 Catalog edit and price review
+
+```bash
+# Partial attribute update (VENDOR_ADMIN own vendor, OPS, ADMIN)
+curl -X PATCH "http://localhost:8080/api/v1/catalog/products/<productId>" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Novo nome","description":"..."}'
+
+# Single-SKU price change; over app.catalog.price-review.threshold-percent (20%) the
+# response returns reviewRequired=true and the product keeps selling at the old price
+curl -X PATCH "http://localhost:8080/api/v1/catalog/products/<productId>/price" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{"price": 250.00}'
+
+# Image: upload via /uploads/images/presigned-url first, then link the storageKey
+curl -X PUT "http://localhost:8080/api/v1/catalog/products/<productId>/image" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{"storageKey":"tenants/<tenant-uuid>/uploads/<file>"}'
+```
+
+### 7a.2 Price moderation (OPS/ADMIN)
+
+```bash
+curl -H "Authorization: Bearer <ops-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  "http://localhost:8080/api/v1/catalog/moderation/price-changes"
+
+curl -X POST "http://localhost:8080/api/v1/catalog/moderation/price-changes/<skuId>/approve" \
+  -H "Authorization: Bearer <ops-token>" -H "X-Tenant-Id: <tenant-uuid>"
+
+curl -X POST "http://localhost:8080/api/v1/catalog/moderation/price-changes/<skuId>/reject" \
+  -H "Authorization: Bearer <ops-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" -d '{"reason":"Aumento excessivo"}'
+```
+
+### 7a.3 Sales management
+
+```bash
+# Filterable search (date range, status, vendor, product, provider, free text)
+curl -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  "http://localhost:8080/api/v1/sales/orders?from=2026-07-01T00:00:00Z&status=DELIVERED&page=0&size=20"
+
+# Cancel (pre-dispatch only), refund (capped at paid − already refunded, idempotent),
+# resend notification (DELIVERY_CODE OTP is never echoed back or logged)
+curl -X POST "http://localhost:8080/api/v1/sales/orders/<orderId>/cancel" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" -d '{"reason":"Cliente desistiu"}'
+
+curl -X POST "http://localhost:8080/api/v1/sales/orders/<orderId>/refund" \
+  -H "Authorization: Bearer <finance-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Idempotency-Key: refund-001" \
+  -H "Content-Type: application/json" -d '{"amount": 100.00, "reason":"Item em falta"}'
+
+curl -X POST "http://localhost:8080/api/v1/sales/orders/<orderId>/resend-notification" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" -d '{"type":"CONFIRMATION"}'
+```
+
+`POST /sales/orders/{orderId}/status-override` (ADMIN/OPS) is gated by
+`app.sales.status-override.enabled` — shipped **disabled**; it returns 403 until enabled.
+
+### 7a.4 Promotions and coupons
+
+```bash
+# Create (DRAFT), then activate; coupon promotions carry a code, automatic ones do not
+curl -X POST "http://localhost:8080/api/v1/marketing/promotions" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Semana da pizza","code":"PIZZA10","type":"PERCENTAGE","value":10,
+       "scope":"ORDER","startsAt":"2026-07-01T00:00:00Z","endsAt":"2026-07-31T23:59:59Z",
+       "usageLimit":100,"perCustomerLimit":1}'
+
+curl -X POST "http://localhost:8080/api/v1/marketing/promotions/<promotionId>/activate" \
+  -H "Authorization: Bearer <token>" -H "X-Tenant-Id: <tenant-uuid>"
+
+# Customer attaches/removes a coupon on the cart; checkout re-validates it, applies the
+# single best discount (coupon wins over automatic) and records the redemption atomically
+curl -X POST "http://localhost:8080/api/v1/cart/<cartId>/coupon" \
+  -H "Authorization: Bearer <customer-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  -H "Content-Type: application/json" -d '{"code":"PIZZA10"}'
+```
+
+Order totals always reconcile as `total = subtotal + fees + taxes − discount_total`;
+legacy orders read as `discount_total = 0`.
+
+### 7a.5 Sales reports and CSV export (FINANCE/ADMIN/OPS; VENDOR_ADMIN scoped)
+
+```bash
+curl -H "Authorization: Bearer <finance-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  "http://localhost:8080/api/v1/reports/sales/summary?from=2026-07-01T00:00:00Z&to=2026-07-15T23:59:59Z"
+
+# Also: /timeseries?interval=day|week|month, /by-vendor, /by-product, /by-category
+curl -OJ -H "Authorization: Bearer <finance-token>" -H "X-Tenant-Id: <tenant-uuid>" \
+  "http://localhost:8080/api/v1/reports/sales/export?report=summary&from=2026-07-01T00:00:00Z&to=2026-07-15T23:59:59Z"
+```
+
+Figures are computed from `order_item` snapshots taken at checkout, so later price or
+category changes never rewrite historical reports.
+
 ## 8. Support Flow (US6)
 
 ### 8.1 Create ticket
@@ -340,9 +446,9 @@ curl -X PATCH "http://localhost:8080/api/v1/support/tickets/<ticketId>/resolve" 
 
 Role-based pages behind Keycloak login. Platform super-admins (ADMIN, no tenant) land on
 `/platform` to manage and impersonate tenants; tenant users land on `/` (dashboard). Main
-routes: `/empresa`, `/admin`, `/catalogo`, `/vendors`, `/users`, `/orders`, `/couriers`,
-`/finance`, `/support`, `/marketing`. All pages include loading, empty, error, and
-forbidden views.
+routes: `/empresa`, `/admin`, `/catalogo`, `/vendors`, `/users`, `/orders`, `/sales`,
+`/couriers`, `/finance`, `/reports`, `/support`, `/marketing`. All pages include loading,
+empty, error, and forbidden views.
 
 ### Customer Web App (`pede-aqui-delivery`)
 
@@ -385,3 +491,16 @@ It validates:
 - Backend health endpoint
 - OpenAPI endpoint availability
 - Critical MVP paths presence in OpenAPI
+
+Run the Spec-002 smoke script (dev stack only — compose postgres/keycloak/minio +
+`mvn spring-boot:run`):
+
+```bash
+scripts/spec-002-smoke.sh                          # OpenAPI checks + happy paths
+SPEC002_SMOKE_OPENAPI_ONLY=1 scripts/spec-002-smoke.sh   # OpenAPI checks only
+```
+
+It validates the catalog edit/moderation, sales, promotions, cart-coupon, and report
+endpoints in OpenAPI, then (with the seeded dev Keycloak admin and an existing tenant)
+runs a happy path per feature: moderation queue list, sales search, promotion
+create/list/delete, report summary, and CSV export headers.

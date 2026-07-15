@@ -34,5 +34,10 @@ export async function httpClient<T>(path: string, options: RequestOptions = {}):
     throw new Error(`Pedido à API falhou: ${response.status} ${response.statusText} ${text}`.trim());
   }
 
-  return response.json() as Promise<T>;
+  // 204s e respostas 2xx sem corpo (approve/reject, deletes, resend) não têm JSON para parsear
+  const body = await response.text();
+  if (!body) {
+    return undefined as T;
+  }
+  return JSON.parse(body) as T;
 }

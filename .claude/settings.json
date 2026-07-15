@@ -1,5 +1,8 @@
-{
+{ 
+  "$comment": "Spec-002 pipeline. Session runs on Fable 5. Permission matcher syntax is the current Bash(cmd:*) form; if your Claude Code version uses the older 'Bash(cmd *)' form, adjust accordingly. deny > ask > allow.",
+  "model": "claude-fable-5",
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(curl -s -X POST http://localhost:8081/realms/delivery/protocol/openid-connect/token -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=password&client_id=delivery-app&username=admin&password=admin')",
       "Bash(python3 -c \"import sys,json; users=json.load\\(sys.stdin\\); [print\\(u.get\\('username','?'\\), u.get\\('email',''\\)\\) for u in users]\")",
@@ -16,7 +19,52 @@
       "Bash(terraform apply *)",
       "Bash(rtk --version)",
       "Bash(rtk cat *)",
-      "Bash(rtk grep *)"
+      "Bash(rtk grep *)",
+       "Read",
+      "Edit",
+      "Write",
+      "Grep",
+      "Glob",
+      "Bash(mvn:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(git branch:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose config)",
+      "Bash(docker compose ps)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(lsof:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(gh pr:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fdx:*)",
+      "Bash(terraform:*)",
+      "Bash(aws:*)",
+      "Bash(kubectl:*)",
+      "Read(./.env)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(~/.aws/**)"
     ]
   }
 }

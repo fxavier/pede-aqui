@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.repository.CartRepository;
+import com.delivery.catalog.repository.ProductRepository;
+import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
@@ -17,6 +19,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.vendor.repository.VendorRepository;
@@ -118,7 +121,10 @@ class VendorFulfillmentTest {
                 mock(PaymentService.class),
                 auditLogService,
                 new OrderMapper(mock(AppUserProfileRepository.class), tenantContext),
-                tenantContext);
+                tenantContext,
+                mock(SkuRepository.class),
+                mock(ProductRepository.class),
+                (cart, customerId) -> CheckoutDiscount.none());
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {

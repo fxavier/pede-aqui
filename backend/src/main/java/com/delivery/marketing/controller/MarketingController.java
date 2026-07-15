@@ -2,8 +2,6 @@ package com.delivery.marketing.controller;
 
 import com.delivery.marketing.dto.CouponResponse;
 import com.delivery.marketing.dto.CreateCouponRequest;
-import com.delivery.marketing.dto.CreatePromotionRequest;
-import com.delivery.marketing.dto.PromotionResponse;
 import com.delivery.marketing.service.MarketingService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -39,16 +37,4 @@ public class MarketingController {
 
     @PatchMapping("/coupons/{id}/deactivate")
     public CouponResponse deactivateCoupon(@PathVariable UUID id) { return service.deactivateCoupon(id); }
-
-    @PostMapping("/promotions")
-    @ResponseStatus(HttpStatus.CREATED)
-    public PromotionResponse createPromotion(@Valid @RequestBody CreatePromotionRequest request) {
-        return service.createPromotion(request);
-    }
-
-    @GetMapping("/promotions")
-    public List<PromotionResponse> listPromotions() { return service.listPromotions(); }
-
-    @PatchMapping("/promotions/{id}/deactivate")
-    public PromotionResponse deactivatePromotion(@PathVariable UUID id) { return service.deactivatePromotion(id); }
 }

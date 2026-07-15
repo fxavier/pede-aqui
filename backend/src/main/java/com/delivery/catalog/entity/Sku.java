@@ -34,6 +34,12 @@ public class Sku {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "variant_selection", columnDefinition = "jsonb")
     private Map<String, Object> variantSelection = new HashMap<>(); // Selected variant options for this SKU
+    @Column(name = "pending_price")
+    private BigDecimal pendingPrice; // Price awaiting moderation; null = no change in flight
+    @Column(name = "pending_price_submitted_at")
+    private Instant pendingPriceSubmittedAt;
+    @Column(name = "pending_price_submitted_by")
+    private String pendingPriceSubmittedBy;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -62,6 +68,39 @@ public class Sku {
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
     public boolean isActive() { return active; }
+    public BigDecimal getPendingPrice() { return pendingPrice; }
+    public Instant getPendingPriceSubmittedAt() { return pendingPriceSubmittedAt; }
+    public String getPendingPriceSubmittedBy() { return pendingPriceSubmittedBy; }
+
+    public boolean hasPendingPrice() { return pendingPrice != null; }
+
+    /** Applies a price change immediately (review disabled or within threshold). */
+    public void applyPrice(BigDecimal newPrice) {
+        this.price = newPrice;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Stores an over-threshold price change awaiting moderation; the live price keeps selling. */
+    public void submitPendingPrice(BigDecimal newPrice, String submittedBy) {
+        this.pendingPrice = newPrice;
+        this.pendingPriceSubmittedAt = Instant.now();
+        this.pendingPriceSubmittedBy = submittedBy;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Promotes the pending price to the live price and clears the pending slot. */
+    public void approvePendingPrice() {
+        this.price = this.pendingPrice;
+        clearPendingPrice();
+    }
+
+    /** Discards the pending price without touching the live price. */
+    public void clearPendingPrice() {
+        this.pendingPrice = null;
+        this.pendingPriceSubmittedAt = null;
+        this.pendingPriceSubmittedBy = null;
+        this.updatedAt = Instant.now();
+    }
     public Map<String, Object> getVariantSelection() { return variantSelection; }
 
     public void setVariantSelection(Map<String, Object> variantSelection) {

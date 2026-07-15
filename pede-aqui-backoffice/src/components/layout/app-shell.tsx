@@ -11,6 +11,7 @@ import {
   BarChart3, Bell, Boxes, Building2, CreditCard,
   Headphones, LayoutDashboard, LayoutGrid, Menu, Search, ShieldCheck,
   LogOut, ChevronRight, Package, Truck, Users, ArrowLeft, Globe,
+  TrendingUp, PieChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +24,12 @@ const navigation = [
   { href: "/vendors", label: "Vendedores", icon: Building2, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
   { href: "/users", label: "Utilizadores", icon: Users, roles: ["ADMIN"] },
   { href: "/orders", label: "Encomendas", icon: Package, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "SUPPORT"] },
+  { href: "/sales", label: "Vendas", icon: TrendingUp, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "FINANCE", "SUPPORT"] },
+  { href: "/reports", label: "Relatórios", icon: PieChart, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "FINANCE"] },
   { href: "/couriers", label: "Estafetas", icon: Truck, roles: ["ADMIN", "OPS"] },
   { href: "/finance", label: "Finanças", icon: CreditCard, roles: ["ADMIN", "FINANCE"] },
   { href: "/support", label: "Apoio", icon: Headphones, roles: ["ADMIN", "SUPPORT"] },
-  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS"] },
+  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS", "VENDOR_ADMIN"] },
   { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes, roles: [] as string[] },
 ];
 

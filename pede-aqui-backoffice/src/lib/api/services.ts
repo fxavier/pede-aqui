@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, getAuthToken, getTenantId } from "./client";
 import type {
   AdminDashboard,
   VendorDashboard,
@@ -36,7 +36,39 @@ import type {
   MerchantRegistrationPayload,
   MerchantRegistrationResponse,
   PlatformStats,
+  ProductEditResponse,
+  UpdateProductRequest,
+  PriceUpdateResponse,
+  PendingPriceChange,
+  SalesPage,
+  SaleDetail,
+  SalesActionResponse,
+  RefundResponse,
+  SalesFilter,
+  SalesNotificationType,
+  PromotionResponse,
+  PromotionUpsertRequest,
+  PromotionStatus,
+  SalesSummary,
+  SalesBucket,
+  DimensionRow,
+  ProductDimensionRow,
+  ReportInterval,
+  SalesReportName,
+  ReportRangeParams,
 } from "./types";
+
+/** Serialises a flat params object into a query string, omitting undefined/null/empty values. */
+function toQueryString(params: Record<string, string | number | undefined | null>): string {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      search.append(key, String(value));
+    }
+  });
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
 
 // Platform super-admin (no tenant context)
 export const platformService = {
@@ -93,6 +125,113 @@ export const catalogService = {
   createSku: (data: CreateSkuPayload) => apiClient.post<Sku>("/catalog/skus", data),
   approveProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/approve`),
   rejectProduct: (productId: string) => apiClient.post<Product>(`/catalog/products/${productId}/reject`),
+
+  // Spec 002 — product attribute/price/image edit (VENDOR_ADMIN own vendor; OPS/ADMIN tenant-wide).
+  updateProduct: (productId: string, data: UpdateProductRequest) =>
+    apiClient.patch<ProductEditResponse>(`/catalog/products/${productId}`, data),
+  updateProductPrice: (productId: string, price: number) =>
+    apiClient.patch<PriceUpdateResponse>(`/catalog/products/${productId}/price`, { price }),
+  setProductImage: (productId: string, storageKey: string) =>
+    apiClient.put<ProductEditResponse>(`/catalog/products/${productId}/image`, { storageKey }),
+  deleteProductImage: (productId: string) => apiClient.delete<void>(`/catalog/products/${productId}/image`),
+
+  // Spec 002 — OPS/ADMIN price-change moderation queue.
+  listPendingPriceChanges: () => apiClient.get<PendingPriceChange[]>("/catalog/moderation/price-changes"),
+  approvePriceChange: (skuId: string) => apiClient.post<void>(`/catalog/moderation/price-changes/${skuId}/approve`),
+  rejectPriceChange: (skuId: string, reason: string) =>
+    apiClient.post<void>(`/catalog/moderation/price-changes/${skuId}/reject`, { reason }),
+};
+
+// Spec 002 — Sales (commercial lens over orders). VENDOR_ADMIN is forced to own vendor server-side.
+export const salesService = {
+  list: (filter: SalesFilter = {}) =>
+    apiClient.get<SalesPage>(
+      `/sales/orders${toQueryString({
+        from: filter.from,
+        to: filter.to,
+        status: filter.status,
+        vendorId: filter.vendorId,
+        productId: filter.productId,
+        skuId: filter.skuId,
+        paymentProvider: filter.paymentProvider,
+        q: filter.q,
+        page: filter.page,
+        size: filter.size,
+      })}`
+    ),
+  detail: (orderId: string) => apiClient.get<SaleDetail>(`/sales/orders/${orderId}`),
+  cancel: (orderId: string, reason: string) =>
+    apiClient.post<SalesActionResponse>(`/sales/orders/${orderId}/cancel`, { reason }),
+  // Idempotent; pass the same idempotencyKey to retry safely without double-refunding.
+  refund: (orderId: string, data: { amount?: number; reason: string }, idempotencyKey?: string) =>
+    apiClient.post<RefundResponse>(
+      `/sales/orders/${orderId}/refund`,
+      data,
+      idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined
+    ),
+  resendNotification: (orderId: string, type: SalesNotificationType) =>
+    apiClient.post<void>(`/sales/orders/${orderId}/resend-notification`, { type }),
+  // Config-gated (app.sales.status-override.enabled, default false); ADMIN/OPS only; allow-list enforced server-side.
+  statusOverride: (orderId: string, targetStatus: string, reason: string, idempotencyKey?: string) =>
+    apiClient.post<SalesActionResponse>(
+      `/sales/orders/${orderId}/status-override`,
+      { targetStatus, reason },
+      idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined
+    ),
+};
+
+// Spec 002 — Promotions (distinct from the legacy `marketingService` coupon/promotion CRUD above).
+export const promotionService = {
+  list: (params: { status?: PromotionStatus; vendorId?: string } = {}) =>
+    apiClient.get<PromotionResponse[]>(`/marketing/promotions${toQueryString({ ...params })}`),
+  create: (data: PromotionUpsertRequest) => apiClient.post<PromotionResponse>("/marketing/promotions", data),
+  update: (promotionId: string, data: PromotionUpsertRequest) =>
+    apiClient.patch<PromotionResponse>(`/marketing/promotions/${promotionId}`, data),
+  delete: (promotionId: string) => apiClient.delete<void>(`/marketing/promotions/${promotionId}`),
+  activate: (promotionId: string) => apiClient.post<PromotionResponse>(`/marketing/promotions/${promotionId}/activate`),
+  pause: (promotionId: string) => apiClient.post<PromotionResponse>(`/marketing/promotions/${promotionId}/pause`),
+};
+
+// Spec 002 — Sales reports (FINANCE/ADMIN/OPS; VENDOR_ADMIN scoped to own vendor server-side).
+export const reportService = {
+  summary: (params: ReportRangeParams) =>
+    apiClient.get<SalesSummary>(`/reports/sales/summary${toQueryString({ ...params })}`),
+  timeseries: (params: ReportRangeParams & { interval?: ReportInterval }) =>
+    apiClient.get<SalesBucket[]>(`/reports/sales/timeseries${toQueryString({ ...params })}`),
+  byVendor: (params: ReportRangeParams) =>
+    apiClient.get<DimensionRow[]>(`/reports/sales/by-vendor${toQueryString({ ...params })}`),
+  byProduct: (params: ReportRangeParams) =>
+    apiClient.get<ProductDimensionRow[]>(`/reports/sales/by-product${toQueryString({ ...params })}`),
+  byCategory: (params: ReportRangeParams) =>
+    apiClient.get<DimensionRow[]>(`/reports/sales/by-category${toQueryString({ ...params })}`),
+  // Builds the export query string (report/format/date-range/vendor/interval); callers combine
+  // it with `downloadExport` rather than linking directly, since the endpoint requires the
+  // Bearer/X-Tenant-Id headers a plain <a href> cannot attach.
+  buildExportQuery: (report: SalesReportName, params: ReportRangeParams & { interval?: ReportInterval }) =>
+    toQueryString({ report, format: "csv", ...params }),
+  // Streams the CSV export as a Blob using the same auth/tenant headers as the JSON client;
+  // callers turn the Blob into an object URL to trigger a browser download.
+  downloadExport: async (
+    report: SalesReportName,
+    params: ReportRangeParams & { interval?: ReportInterval }
+  ): Promise<Blob> => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!apiBase) {
+      throw new Error("API base URL not configured");
+    }
+    const query = toQueryString({ report, format: "csv", ...params });
+    const response = await fetch(`${apiBase}/reports/sales/export${query}`, {
+      method: "GET",
+      headers: {
+        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        ...(getTenantId() ? { "X-Tenant-Id": getTenantId()! } : {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Exportação falhou: ${response.status} ${response.statusText}`);
+    }
+    return response.blob();
+  },
 };
 
 // Verticals

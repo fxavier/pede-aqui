@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Minus, Plus, Trash2, ShoppingBag, ChevronRight } from 'lucide-react'
+import { AlertCircle, Minus, Plus, Trash2, ShoppingBag, ChevronRight } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { clearCart, cartTotal, cartItemCount, setCartFromResponse } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
@@ -19,6 +20,7 @@ export function CartDrawer({ open, onClose }: Props) {
   const cart = useSelector((s: RootState) => s.cart)
   const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
+  const [error, setError] = useState<string | null>(null)
 
   async function increment(skuId: string, productId: string) {
     if (!auth.sub || !cart.vendorId) return
@@ -38,7 +40,12 @@ export function CartDrawer({ open, onClose }: Props) {
           notes: cart.items.find((c) => c.skuId === i.skuId)?.notes,
         })),
       }))
-    } catch { /* keep current state on failure */ }
+      setError(null)
+    } catch {
+      // Local state is left untouched (still in sync with the server cart);
+      // surface the failure so the user knows the quantity was not updated.
+      setError('Não foi possível atualizar o carrinho. Tente novamente.')
+    }
   }
 
   // Backend has no decrement/remove endpoint — optimistic local update.
@@ -72,6 +79,11 @@ export function CartDrawer({ open, onClose }: Props) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          {error && (
+            <div className="flex items-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600 text-left">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" /> {error}
+            </div>
+          )}
           {cart.items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 pt-16">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl">🛒</div>

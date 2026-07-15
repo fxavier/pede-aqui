@@ -1,0 +1,517 @@
+openapi: 3.0.3
+info:
+  title: Pede Aqui — Backoffice Catalog, Sales & Reports (Spec 002)
+  version: 0.1.0
+  description: >
+    Contract fragment for Spec 002. Merge into the backend OpenAPI at /api/v1.
+    All endpoints require Bearer JWT; tenant resolved from JWT tenant_id or X-Tenant-Id.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: catalog
+  - name: catalog-moderation
+  - name: sales
+  - name: marketing
+  - name: reports
+
+paths:
+  /catalog/products/{productId}:
+    patch:
+      tags: [catalog]
+      summary: Edit product attributes (partial). VENDOR_ADMIN own vendor; OPS/ADMIN tenant-wide.
+      parameters: [{ $ref: '#/components/parameters/ProductId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductUpdateRequest' }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/ProductResponse' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /catalog/products/{productId}/price:
+    patch:
+      tags: [catalog]
+      summary: Edit the single-SKU price. May apply immediately or queue for review.
+      parameters: [{ $ref: '#/components/parameters/ProductId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PriceUpdateRequest' }
+      responses:
+        '200': { description: Applied or queued, content: { application/json: { schema: { $ref: '#/components/schemas/PriceUpdateResponse' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Pending change exists, or product is not single-active-SKU }
+
+  /catalog/products/{productId}/image:
+    put:
+      tags: [catalog]
+      summary: Set/replace product image from a presigned-upload storageKey.
+      parameters: [{ $ref: '#/components/parameters/ProductId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [storageKey]
+              properties:
+                storageKey: { type: string, maxLength: 512 }
+      responses:
+        '200': { description: Image set, content: { application/json: { schema: { $ref: '#/components/schemas/ProductResponse' } } } }
+        '400': { description: storageKey invalid or not owned by tenant }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [catalog]
+      summary: Clear product image.
+      parameters: [{ $ref: '#/components/parameters/ProductId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses:
+        '204': { description: Cleared }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /catalog/moderation/price-changes:
+    get:
+      tags: [catalog-moderation]
+      summary: List SKUs with a pending price change (OPS/ADMIN).
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PendingPriceChange' } } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /catalog/moderation/price-changes/{skuId}/approve:
+    post:
+      tags: [catalog-moderation]
+      summary: Approve a pending price change (price = pending_price).
+      parameters: [{ $ref: '#/components/parameters/SkuId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses:
+        '200': { description: Approved }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /catalog/moderation/price-changes/{skuId}/reject:
+    post:
+      tags: [catalog-moderation]
+      summary: Reject a pending price change (discard pending_price). Reason required.
+      parameters: [{ $ref: '#/components/parameters/SkuId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 1, maxLength: 500 } } }
+      responses:
+        '200': { description: Rejected }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /sales/orders:
+    get:
+      tags: [sales]
+      summary: Sales list (commercial lens over orders). VENDOR_ADMIN forced to own vendor.
+      parameters:
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: vendorId, in: query, schema: { type: string, format: uuid } }
+        - { name: productId, in: query, schema: { type: string, format: uuid } }
+        - { name: skuId, in: query, schema: { type: string, format: uuid } }
+        - { name: paymentProvider, in: query, schema: { type: string } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SalesPage' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /sales/orders/{orderId}:
+    get:
+      tags: [sales]
+      summary: Sale detail (snapshots, discount, payments, refunds, commission).
+      parameters: [{ $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SaleDetail' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /sales/orders/{orderId}/cancel:
+    post:
+      tags: [sales]
+      summary: Cancel a sale via the order state machine (pre-dispatch states only).
+      parameters: [{ $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [reason], properties: { reason: { type: string, maxLength: 500 } } } } }
+      responses:
+        '200': { description: Cancelled }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Not cancellable in current state }
+
+  /sales/orders/{orderId}/refund:
+    post:
+      tags: [sales]
+      summary: Full or partial refund via the finance/refund path. Idempotent.
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, format: double, description: "Omit for full refund; must be ≤ paid − alreadyRefunded" }
+                reason: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: Refund created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { description: Invalid amount }
+
+  /sales/orders/{orderId}/resend-notification:
+    post:
+      tags: [sales]
+      summary: Re-send a customer notification. DELIVERY_CODE never returns/logs the OTP.
+      parameters: [{ $ref: '#/components/parameters/OrderId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [type], properties: { type: { type: string, enum: [CONFIRMATION, STATUS, DELIVERY_CODE] } } }
+      responses:
+        '202': { description: Queued }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /sales/orders/{orderId}/status-override:
+    post:
+      tags: [sales]
+      summary: Config-gated manual transition (allow-list only, ADMIN/OPS, reason required).
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [targetStatus, reason], properties: { targetStatus: { type: string }, reason: { type: string, maxLength: 500 } } }
+      responses:
+        '200': { description: Transitioned }
+        '403': { description: Disabled or insufficient role }
+        '409': { description: Transition not in allow-list }
+
+  /marketing/promotions:
+    get:
+      tags: [marketing]
+      summary: List promotions (VENDOR_ADMIN own vendor; OPS/ADMIN all incl. tenant-wide).
+      parameters:
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: vendorId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Promotion' } } } } }
+    post:
+      tags: [marketing]
+      summary: Create a promotion. tenant-wide (vendor_id null) is OPS/ADMIN only.
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PromotionUpsert' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Promotion' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /marketing/promotions/{promotionId}:
+    patch:
+      tags: [marketing]
+      summary: Update a promotion.
+      parameters: [{ $ref: '#/components/parameters/PromotionId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PromotionUpsert' } } }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Promotion' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [marketing]
+      summary: Delete a DRAFT/PAUSED promotion.
+      parameters: [{ $ref: '#/components/parameters/PromotionId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Cannot delete an ACTIVE promotion }
+
+  /marketing/promotions/{promotionId}/activate:
+    post:
+      tags: [marketing]
+      parameters: [{ $ref: '#/components/parameters/PromotionId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses: { '200': { description: Activated }, '409': { description: Expired or invalid } }
+  /marketing/promotions/{promotionId}/pause:
+    post:
+      tags: [marketing]
+      parameters: [{ $ref: '#/components/parameters/PromotionId' }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses: { '200': { description: Paused } }
+
+  /cart/{cartId}/coupon:
+    post:
+      tags: [marketing]
+      summary: Apply a coupon code to a cart; returns updated pricing.
+      parameters: [{ name: cartId, in: path, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/TenantHeader' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [code], properties: { code: { type: string } } } } }
+      responses:
+        '200': { description: Applied, content: { application/json: { schema: { $ref: '#/components/schemas/CartPricing' } } } }
+        '422': { description: Coupon invalid, expired, or not eligible }
+    delete:
+      tags: [marketing]
+      summary: Remove the applied coupon/promotion from a cart.
+      parameters: [{ name: cartId, in: path, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/TenantHeader' }]
+      responses: { '200': { description: Removed, content: { application/json: { schema: { $ref: '#/components/schemas/CartPricing' } } } } }
+
+  /reports/sales/summary:
+    get:
+      tags: [reports]
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }, { $ref: '#/components/parameters/VendorIdQuery' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/SalesSummary' } } } }, '403': { $ref: '#/components/responses/Forbidden' } }
+
+  /reports/sales/timeseries:
+    get:
+      tags: [reports]
+      parameters:
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { $ref: '#/components/parameters/From' }
+        - { $ref: '#/components/parameters/To' }
+        - { $ref: '#/components/parameters/VendorIdQuery' }
+        - { name: interval, in: query, schema: { type: string, enum: [day, week, month], default: day } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SalesBucket' } } } } } }
+
+  /reports/sales/by-vendor:
+    get:
+      tags: [reports]
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/DimensionRow' } } } } } }
+
+  /reports/sales/by-product:
+    get:
+      tags: [reports]
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }, { $ref: '#/components/parameters/VendorIdQuery' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProductDimensionRow' } } } } } }
+
+  /reports/sales/by-category:
+    get:
+      tags: [reports]
+      parameters: [{ $ref: '#/components/parameters/TenantHeader' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }, { $ref: '#/components/parameters/VendorIdQuery' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/DimensionRow' } } } } } }
+
+  /reports/sales/export:
+    get:
+      tags: [reports]
+      summary: Stream a CSV of any report.
+      parameters:
+        - { $ref: '#/components/parameters/TenantHeader' }
+        - { name: report, in: query, required: true, schema: { type: string, enum: [summary, timeseries, by-vendor, by-product, by-category] } }
+        - { name: format, in: query, schema: { type: string, enum: [csv], default: csv } }
+        - { $ref: '#/components/parameters/From' }
+        - { $ref: '#/components/parameters/To' }
+        - { $ref: '#/components/parameters/VendorIdQuery' }
+      responses:
+        '200': { description: CSV stream, content: { text/csv: { schema: { type: string, format: binary } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    TenantHeader: { name: X-Tenant-Id, in: header, required: false, schema: { type: string, format: uuid } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: false, schema: { type: string } }
+    ProductId: { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+    SkuId: { name: skuId, in: path, required: true, schema: { type: string, format: uuid } }
+    OrderId: { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+    PromotionId: { name: promotionId, in: path, required: true, schema: { type: string, format: uuid } }
+    From: { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+    To: { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+    VendorIdQuery: { name: vendorId, in: query, required: false, schema: { type: string, format: uuid } }
+  responses:
+    BadRequest: { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/ProblemDetail' } } } }
+    Forbidden: { description: Insufficient role or cross-tenant/vendor access }
+    NotFound: { description: Not found in tenant scope }
+  schemas:
+    Money: { type: number, format: double, description: MZN, 2 decimals }
+    ProblemDetail:
+      type: object
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        errors: { type: object, additionalProperties: { type: string } }
+    ProductUpdateRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 140 }
+        description: { type: string, maxLength: 2000 }
+        categoryId: { type: string, format: uuid }
+        requiresPrescription: { type: boolean }
+    ProductResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vendorId: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        status: { type: string }
+        requiresPrescription: { type: boolean }
+        imageUrl: { type: string, nullable: true }
+        price: { $ref: '#/components/schemas/Money' }
+        pendingPrice: { allOf: [ { $ref: '#/components/schemas/Money' } ], nullable: true }
+        updatedAt: { type: string, format: date-time }
+    PriceUpdateRequest:
+      type: object
+      required: [price]
+      properties: { price: { $ref: '#/components/schemas/Money' } }
+    PriceUpdateResponse:
+      type: object
+      properties:
+        skuId: { type: string, format: uuid }
+        currentPrice: { $ref: '#/components/schemas/Money' }
+        pendingPrice: { allOf: [ { $ref: '#/components/schemas/Money' } ], nullable: true }
+        reviewRequired: { type: boolean }
+    PendingPriceChange:
+      type: object
+      properties:
+        skuId: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        productName: { type: string }
+        vendorId: { type: string, format: uuid }
+        currentPrice: { $ref: '#/components/schemas/Money' }
+        pendingPrice: { $ref: '#/components/schemas/Money' }
+        deltaPercent: { type: number, format: double }
+        submittedBy: { type: string }
+        submittedAt: { type: string, format: date-time }
+    SalesRow:
+      type: object
+      properties:
+        orderId: { type: string, format: uuid }
+        reference: { type: string }
+        createdAt: { type: string, format: date-time }
+        vendorId: { type: string, format: uuid }
+        vendorName: { type: string }
+        itemCount: { type: integer }
+        subtotal: { $ref: '#/components/schemas/Money' }
+        fees: { $ref: '#/components/schemas/Money' }
+        taxes: { $ref: '#/components/schemas/Money' }
+        discountTotal: { $ref: '#/components/schemas/Money' }
+        total: { $ref: '#/components/schemas/Money' }
+        orderStatus: { type: string }
+        paymentStatus: { type: string }
+        paymentProvider: { type: string }
+    SalesPage:
+      type: object
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/SalesRow' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+    SaleDetail:
+      allOf:
+        - $ref: '#/components/schemas/SalesRow'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  productNameSnapshot: { type: string }
+                  unitPriceSnapshot: { $ref: '#/components/schemas/Money' }
+                  quantity: { type: integer }
+                  lineTotal: { $ref: '#/components/schemas/Money' }
+            appliedPromotion: { allOf: [ { $ref: '#/components/schemas/Promotion' } ], nullable: true }
+            refunds:
+              type: array
+              items: { type: object, properties: { id: { type: string, format: uuid }, amount: { $ref: '#/components/schemas/Money' }, status: { type: string } } }
+            commission: { $ref: '#/components/schemas/Money' }
+    PromotionUpsert:
+      type: object
+      required: [name, type, value, scope, startsAt, endsAt]
+      properties:
+        vendorId: { type: string, format: uuid, nullable: true }
+        name: { type: string, maxLength: 140 }
+        code: { type: string, maxLength: 40, nullable: true }
+        type: { type: string, enum: [PERCENTAGE, FIXED_AMOUNT] }
+        value: { type: number, format: double }
+        scope: { type: string, enum: [ORDER, CATEGORY, PRODUCT] }
+        targetCategoryId: { type: string, format: uuid, nullable: true }
+        targetProductId: { type: string, format: uuid, nullable: true }
+        minOrderTotal: { allOf: [ { $ref: '#/components/schemas/Money' } ], nullable: true }
+        maxDiscountAmount: { allOf: [ { $ref: '#/components/schemas/Money' } ], nullable: true }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        usageLimit: { type: integer, nullable: true }
+        perCustomerLimit: { type: integer, nullable: true }
+    Promotion:
+      allOf:
+        - $ref: '#/components/schemas/PromotionUpsert'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            usedCount: { type: integer }
+            status: { type: string, enum: [DRAFT, ACTIVE, PAUSED, EXPIRED] }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    CartPricing:
+      type: object
+      properties:
+        cartId: { type: string, format: uuid }
+        subtotal: { $ref: '#/components/schemas/Money' }
+        fees: { $ref: '#/components/schemas/Money' }
+        taxes: { $ref: '#/components/schemas/Money' }
+        discountTotal: { $ref: '#/components/schemas/Money' }
+        total: { $ref: '#/components/schemas/Money' }
+        appliedPromotionId: { type: string, format: uuid, nullable: true }
+    SalesSummary:
+      type: object
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        orderCount: { type: integer, format: int64 }
+        gross: { $ref: '#/components/schemas/Money' }
+        discountTotal: { $ref: '#/components/schemas/Money' }
+        refunds: { $ref: '#/components/schemas/Money' }
+        net: { $ref: '#/components/schemas/Money' }
+        commission: { $ref: '#/components/schemas/Money' }
+        averageOrderValue: { $ref: '#/components/schemas/Money' }
+        deliveredCount: { type: integer, format: int64 }
+        cancelledCount: { type: integer, format: int64 }
+    SalesBucket:
+      allOf:
+        - $ref: '#/components/schemas/SalesSummary'
+        - type: object
+          properties: { bucket: { type: string, format: date-time } }
+    DimensionRow:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        gross: { $ref: '#/components/schemas/Money' }
+        refunds: { $ref: '#/components/schemas/Money' }
+        net: { $ref: '#/components/schemas/Money' }
+        commission: { $ref: '#/components/schemas/Money' }
+        sharePercent: { type: number, format: double }
+    ProductDimensionRow:
+      allOf:
+        - $ref: '#/components/schemas/DimensionRow'
+        - type: object
+          properties: { quantitySold: { type: integer, format: int64 } }

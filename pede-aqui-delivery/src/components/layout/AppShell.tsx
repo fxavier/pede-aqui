@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import {
   ShoppingCart, Search, MapPin, ChevronDown,
   Home, ClipboardList, User, LogOut,
 } from 'lucide-react'
 import { CartDrawer } from '@/components/CartDrawer'
-import { clearUser } from '@/store/auth-slice'
-import { userManager } from '@/features/auth/oidcConfig'
-import type { RootState, AppDispatch } from '@/store'
+import { logout } from '@/features/auth/logout'
+import type { RootState } from '@/store'
 import { cartItemCount } from '@/store/cart-slice'
 
 /** Deterministic initials avatar (backend supplies no avatar image). */
@@ -19,7 +18,6 @@ function initials(name: string | null): string {
 }
 
 export function AppShell() {
-  const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const location = useLocation()
   const { status, displayName } = useSelector((s: RootState) => s.auth)
@@ -35,9 +33,8 @@ export function AppShell() {
   const isProfile = path.startsWith('/profile')
 
   async function handleLogout() {
-    dispatch(clearUser())
-    await userManager.removeUser().catch(() => {})
-    navigate('/')
+    const redirecting = await logout()
+    if (!redirecting) navigate('/')
   }
 
   function runSearch() {

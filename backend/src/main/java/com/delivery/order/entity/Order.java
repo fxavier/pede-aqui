@@ -1,5 +1,6 @@
 package com.delivery.order.entity;
 
+import com.delivery.common.pricing.PricingMath;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +41,10 @@ public class Order {
     private BigDecimal taxes;
     @Column(nullable = false)
     private BigDecimal discounts;
+    @Column(name = "discount_total", nullable = false)
+    private BigDecimal discountTotal = BigDecimal.ZERO;
+    @Column(name = "applied_promotion_id")
+    private UUID appliedPromotionId;
     @Column(nullable = false)
     private BigDecimal total;
     @Column(name = "checkout_idempotency_key", nullable = false)
@@ -72,6 +77,7 @@ public class Order {
         this.fees = fees;
         this.taxes = taxes;
         this.discounts = discounts;
+        this.discountTotal = BigDecimal.ZERO;
         this.total = total;
         this.checkoutIdempotencyKey = checkoutIdempotencyKey;
         this.deliveryConfirmationCodeHash = codeHash;
@@ -81,6 +87,13 @@ public class Order {
     }
 
     public void addItem(OrderItem item) { items.add(item); }
+    /** Applies the checkout-resolved discount and recomputes the total via the canonical pricing formula. */
+    public void applyDiscount(UUID appliedPromotionId, BigDecimal discountTotal) {
+        this.appliedPromotionId = appliedPromotionId;
+        this.discountTotal = discountTotal;
+        this.total = PricingMath.orderTotal(this.subtotal, this.fees, this.taxes, discountTotal);
+        this.updatedAt = Instant.now();
+    }
     public void markPaymentConfirmed() { this.status = OrderStatus.PAYMENT_CONFIRMED; this.updatedAt = Instant.now(); }
     public void markAcceptedByVendor() { this.status = OrderStatus.ACCEPTED_BY_VENDOR; this.updatedAt = Instant.now(); }
     public void markPreparing() { this.status = OrderStatus.PREPARING; this.updatedAt = Instant.now(); }
@@ -102,6 +115,8 @@ public class Order {
     public BigDecimal getFees() { return fees; }
     public BigDecimal getTaxes() { return taxes; }
     public BigDecimal getDiscounts() { return discounts; }
+    public BigDecimal getDiscountTotal() { return discountTotal; }
+    public UUID getAppliedPromotionId() { return appliedPromotionId; }
     public BigDecimal getTotal() { return total; }
     public String getCheckoutIdempotencyKey() { return checkoutIdempotencyKey; }
     public String getDeliveryConfirmationCodeHash() { return deliveryConfirmationCodeHash; }

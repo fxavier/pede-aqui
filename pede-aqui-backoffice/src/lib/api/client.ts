@@ -1,6 +1,8 @@
 import { httpClient } from "../http-client";
 
-function getAuthToken(): string | undefined {
+// Exported so callers that need a raw fetch (e.g. blob/CSV downloads) can reuse the same
+// auth/tenant resolution as the JSON client instead of duplicating sessionStorage lookups.
+export function getAuthToken(): string | undefined {
   if (typeof window !== "undefined") {
     const token = sessionStorage.getItem("auth_token");
     return token ?? undefined;
@@ -8,7 +10,7 @@ function getAuthToken(): string | undefined {
   return undefined;
 }
 
-function getTenantId(): string | undefined {
+export function getTenantId(): string | undefined {
   if (typeof window !== "undefined") {
     const id = sessionStorage.getItem("tenant_id");
     return id ?? undefined;
@@ -23,12 +25,13 @@ class ApiClient {
     return httpClient<T>(`${this.basePath}${path}`, { authToken: getAuthToken(), tenantId: getTenantId() });
   }
 
-  async post<T>(path: string, data?: unknown): Promise<T> {
+  async post<T>(path: string, data?: unknown, headers?: Record<string, string>): Promise<T> {
     return httpClient<T>(`${this.basePath}${path}`, {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
       authToken: getAuthToken(),
       tenantId: getTenantId(),
+      headers,
     });
   }
 
