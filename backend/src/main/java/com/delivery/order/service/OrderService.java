@@ -5,6 +5,10 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.entity.Cart;
 import com.delivery.cart.entity.CartItem;
 import com.delivery.cart.repository.CartRepository;
+import com.delivery.catalog.entity.Product;
+import com.delivery.catalog.entity.Sku;
+import com.delivery.catalog.repository.ProductRepository;
+import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
@@ -56,9 +60,12 @@ public class OrderService {
     private final AuditLogService auditLogService;
     private final OrderMapper mapper;
     private final TenantContext tenantContext;
+    private final SkuRepository skuRepository;
+    private final ProductRepository productRepository;
+    private final CheckoutDiscountResolver discountResolver;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver) {
         this.cartRepository = cartRepository;
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
@@ -71,6 +78,9 @@ public class OrderService {
         this.auditLogService = auditLogService;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+        this.skuRepository = skuRepository;
+        this.productRepository = productRepository;
+        this.discountResolver = discountResolver;
     }
 
     /** Returns all orders for the current tenant with customer and vendor names resolved (admin/vendor safe). */
@@ -115,8 +125,14 @@ public class OrderService {
         }
         String code = generateUniqueDeliveryCode(tenantId);
         Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), cart.getFees(), cart.getTaxes(), cart.getDiscounts(), cart.getTotal(), idempotencyKey, hash(code), code);
+        Map<UUID, UUID> categoryBySkuId = resolveCategoryBySkuId(cart);
         for (CartItem item : cart.getItems()) {
-            order.addItem(new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(), item.getUnitPriceSnapshot(), item.getQuantity()));
+            order.addItem(new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(), item.getUnitPriceSnapshot(), item.getQuantity(), categoryBySkuId.get(item.getSkuId())));
+        }
+        // Discount seam (spec 002): the resolver defaults to zero, keeping legacy checkout totals untouched.
+        CheckoutDiscount discount = discountResolver.resolve(cart, currentCustomerId);
+        if (discount.discountTotal().signum() > 0) {
+            order.applyDiscount(discount.appliedPromotionId(), discount.discountTotal());
         }
         Order saved = orderRepository.save(order);
         paymentRepository.save(new Payment(UUID.randomUUID(), tenantId, saved.getId(), saved.getTotal(), idempotencyKey));
@@ -126,6 +142,18 @@ public class OrderService {
     }
 
     private String reference() { return "PA-" + System.currentTimeMillis() + "-" + random.nextInt(10_000); }
+
+    /** Snapshots the current product category per cart SKU so category reports stay stable over recategorisation. */
+    private Map<UUID, UUID> resolveCategoryBySkuId(Cart cart) {
+        Set<UUID> skuIds = cart.getItems().stream().map(CartItem::getSkuId).collect(Collectors.toSet());
+        Map<UUID, UUID> productBySkuId = skuRepository.findAllById(skuIds).stream()
+                .collect(Collectors.toMap(Sku::getId, Sku::getProductId));
+        Map<UUID, UUID> categoryByProductId = productRepository.findAllById(Set.copyOf(productBySkuId.values())).stream()
+                .collect(Collectors.toMap(Product::getId, Product::getCategoryId));
+        return productBySkuId.entrySet().stream()
+                .filter(entry -> categoryByProductId.containsKey(entry.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> categoryByProductId.get(entry.getValue())));
+    }
 
     private String generateUniqueDeliveryCode(UUID tenantId) {
         int maxAttempts = 10;

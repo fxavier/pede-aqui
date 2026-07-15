@@ -34,6 +34,8 @@ public class OrderItem {
     private int quantity;
     @Column(name = "line_total", nullable = false)
     private BigDecimal lineTotal;
+    @Column(name = "category_id_snapshot")
+    private UUID categoryIdSnapshot;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -45,6 +47,12 @@ public class OrderItem {
     public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; }
     public int getQuantity() { return quantity; }
     public BigDecimal getLineTotal() { return lineTotal; }
+    public UUID getCategoryIdSnapshot() { return categoryIdSnapshot; }
+
+    public OrderItem(UUID id, Order order, UUID tenantId, UUID skuId, String productNameSnapshot, String skuNameSnapshot, BigDecimal unitPriceSnapshot, int quantity, UUID categoryIdSnapshot) {
+        this(id, order, tenantId, skuId, productNameSnapshot, skuNameSnapshot, unitPriceSnapshot, quantity);
+        this.categoryIdSnapshot = categoryIdSnapshot;
+    }
 
     public OrderItem(UUID id, Order order, UUID tenantId, UUID skuId, String productNameSnapshot, String skuNameSnapshot, BigDecimal unitPriceSnapshot, int quantity) {
         this.id = id;
