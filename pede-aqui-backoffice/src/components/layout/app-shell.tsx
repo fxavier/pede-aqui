@@ -29,7 +29,7 @@ const navigation = [
   { href: "/couriers", label: "Estafetas", icon: Truck, roles: ["ADMIN", "OPS"] },
   { href: "/finance", label: "Finanças", icon: CreditCard, roles: ["ADMIN", "FINANCE"] },
   { href: "/support", label: "Apoio", icon: Headphones, roles: ["ADMIN", "SUPPORT"] },
-  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS"] },
+  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS", "VENDOR_ADMIN"] },
   { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes, roles: [] as string[] },
 ];
 
