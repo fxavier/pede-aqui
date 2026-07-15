@@ -56,7 +56,7 @@ public class CatalogMapper {
     }
 
     public SkuResponse toSkuResponse(Sku sku) {
-        return new SkuResponse(sku.getId(), sku.getSkuCode(), sku.getName(), sku.getPrice(), sku.isActive());
+        return new SkuResponse(sku.getId(), sku.getSkuCode(), sku.getName(), sku.getPrice(), sku.getPendingPrice(), sku.isActive());
     }
 
     public ProductVariationGroupResponse toProductVariationGroupResponse(ProductVariationGroup group) {

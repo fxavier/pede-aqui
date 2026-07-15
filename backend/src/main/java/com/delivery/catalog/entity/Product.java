@@ -85,6 +85,29 @@ public class Product {
     public Map<String, Object> getAttributes() { return attributes; }
     public String getPrimaryImageKey() { return primaryImageKey; }
     public java.util.List<String> getImageGallery() { return imageGallery; }
+    public Instant getUpdatedAt() { return updatedAt; }
+
+    public void setName(String name) {
+        this.name = name;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setCategoryId(UUID categoryId) {
+        this.categoryId = categoryId;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Toggles the prescription flag; manual validation mirrors it, matching markPrescriptionRequired(). */
+    public void setRequiresPrescription(boolean requiresPrescription) {
+        this.requiresPrescriptionMetadata = requiresPrescription;
+        this.manualValidationRequired = requiresPrescription;
+        this.updatedAt = Instant.now();
+    }
 
     public void setAttribute(String key, Object value) {
         this.attributes.put(key, value);
