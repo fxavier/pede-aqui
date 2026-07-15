@@ -11,6 +11,7 @@ import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.upload.service.StorageUrlService;
 import java.math.BigDecimal;
@@ -26,11 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 /** Backoffice product management: attribute edits, single-SKU price changes with review, and image linking. */
 @Service
 public class ProductService {
-    static final String ACTION_PRODUCT_UPDATED = "PRODUCT_UPDATED";
-    static final String ACTION_PRODUCT_PRICE_UPDATED = "PRODUCT_PRICE_UPDATED";
-    static final String ACTION_PRODUCT_PRICE_PENDING = "PRODUCT_PRICE_PENDING";
-    static final String ACTION_PRODUCT_IMAGE_SET = "PRODUCT_IMAGE_SET";
-    static final String ACTION_PRODUCT_IMAGE_CLEARED = "PRODUCT_IMAGE_CLEARED";
     // audit_logs.business_reference is VARCHAR(120)
     private static final int AUDIT_REFERENCE_MAX_LENGTH = 120;
     // Over-threshold sentinel used when the current price is zero and any change is a full change.
@@ -89,7 +85,7 @@ public class ProductService {
 
         if (!diff.isEmpty()) {
             productRepository.save(product);
-            auditLogService.log(ACTION_PRODUCT_UPDATED, "product", productId.toString(), truncate(String.join("; ", diff)), "SUCCESS");
+            auditLogService.log(AuditActions.PRODUCT_UPDATED, "product", productId.toString(), truncate(String.join("; ", diff)), "SUCCESS");
         }
         return toEditResponse(product, singleActiveSkuOrNull(tenantId, productId));
     }
@@ -117,14 +113,14 @@ public class ProductService {
             String submittedBy = tenantContext.currentKeycloakUserId().orElse("unknown");
             sku.submitPendingPrice(newPrice, submittedBy);
             skuRepository.save(sku);
-            auditLogService.log(ACTION_PRODUCT_PRICE_PENDING, "sku", sku.getId().toString(),
+            auditLogService.log(AuditActions.PRODUCT_PRICE_PENDING, "sku", sku.getId().toString(),
                     truncate("price " + currentPrice + " -> pending " + newPrice + " (reviewRequired=true)"), "SUCCESS");
             return new PriceUpdateResponse(sku.getId(), currentPrice, newPrice, true);
         }
 
         sku.applyPrice(newPrice);
         skuRepository.save(sku);
-        auditLogService.log(ACTION_PRODUCT_PRICE_UPDATED, "sku", sku.getId().toString(),
+        auditLogService.log(AuditActions.PRODUCT_PRICE_UPDATED, "sku", sku.getId().toString(),
                 truncate("price " + currentPrice + " -> " + newPrice + " (reviewRequired=false)"), "SUCCESS");
         return new PriceUpdateResponse(sku.getId(), newPrice, null, false);
     }
@@ -144,7 +140,7 @@ public class ProductService {
 
         product.setPrimaryImageKey(storageKey);
         productRepository.save(product);
-        auditLogService.log(ACTION_PRODUCT_IMAGE_SET, "product", productId.toString(), truncate(storageKey), "SUCCESS");
+        auditLogService.log(AuditActions.PRODUCT_IMAGE_SET, "product", productId.toString(), truncate(storageKey), "SUCCESS");
         return toEditResponse(product, singleActiveSkuOrNull(tenantId, productId));
     }
 
@@ -157,7 +153,7 @@ public class ProductService {
 
         product.setPrimaryImageKey(null);
         productRepository.save(product);
-        auditLogService.log(ACTION_PRODUCT_IMAGE_CLEARED, "product", productId.toString(), null, "SUCCESS");
+        auditLogService.log(AuditActions.PRODUCT_IMAGE_CLEARED, "product", productId.toString(), null, "SUCCESS");
     }
 
     private Product findProduct(UUID tenantId, UUID productId) {

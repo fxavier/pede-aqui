@@ -5,6 +5,7 @@ import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.marketing.dto.PromotionResponse;
 import com.delivery.marketing.dto.PromotionUpsertRequest;
@@ -77,7 +78,7 @@ public class PromotionService {
                 request.minOrderTotal(), request.maxDiscountAmount(), request.startsAt(), request.endsAt(),
                 request.usageLimit(), request.perCustomerLimit());
         Promotion saved = promotionRepository.save(promotion);
-        auditLogService.log("PROMOTION_CREATED", "promotion", saved.getId().toString(), saved.getName(), "SUCCESS");
+        auditLogService.log(AuditActions.PROMOTION_CREATED, "promotion", saved.getId().toString(), saved.getName(), "SUCCESS");
         return mapper.toPromotionResponse(saved);
     }
 
@@ -98,7 +99,7 @@ public class PromotionService {
                 request.scope(), request.targetCategoryId(), request.targetProductId(), request.minOrderTotal(),
                 request.maxDiscountAmount(), request.startsAt(), request.endsAt(), request.usageLimit(),
                 request.perCustomerLimit());
-        auditLogService.log("PROMOTION_UPDATED", "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
+        auditLogService.log(AuditActions.PROMOTION_UPDATED, "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
         return mapper.toPromotionResponse(promotion);
     }
 
@@ -113,7 +114,7 @@ public class PromotionService {
         if (promotion.getStatus() != PromotionStatus.ACTIVE) {
             promotion.activate();
         }
-        auditLogService.log("PROMOTION_ACTIVATED", "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
+        auditLogService.log(AuditActions.PROMOTION_ACTIVATED, "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
         return mapper.toPromotionResponse(promotion);
     }
 
@@ -128,7 +129,7 @@ public class PromotionService {
         if (promotion.getStatus() != PromotionStatus.PAUSED) {
             promotion.pause();
         }
-        auditLogService.log("PROMOTION_PAUSED", "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
+        auditLogService.log(AuditActions.PROMOTION_PAUSED, "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
         return mapper.toPromotionResponse(promotion);
     }
 
@@ -141,7 +142,7 @@ public class PromotionService {
             throw new BusinessException("promotion_not_deletable", "Only draft or paused promotions can be deleted", HttpStatus.CONFLICT);
         }
         promotionRepository.delete(promotion);
-        auditLogService.log("PROMOTION_DELETED", "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
+        auditLogService.log(AuditActions.PROMOTION_DELETED, "promotion", promotion.getId().toString(), promotion.getName(), "SUCCESS");
     }
 
     /** Loads a tenant promotion and enforces the vendor-scope guard for the current caller. */

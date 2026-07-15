@@ -203,14 +203,16 @@ Next.js App Router. All authenticated pages use `AppShell` from `src/components/
 | `/` | all | Dashboard; redirects to `/platform` for platform admins |
 | `/empresa` | VENDOR_ADMIN, ADMIN | Own company profile, logo, documents |
 | `/admin` | ADMIN | Orders overview, category/vertical management |
-| `/catalogo` | ADMIN, VENDOR_ADMIN, OPS | Product catalog, SKUs, categories, families |
+| `/catalogo` | ADMIN, VENDOR_ADMIN, OPS | Product catalog, SKUs, categories, families; product edit drawer (attributes/price/image) + OPS/ADMIN price-moderation queue |
 | `/vendors` | ADMIN, VENDOR_ADMIN, OPS | Vendor management |
 | `/users` | ADMIN | User profiles |
 | `/orders` | ADMIN, VENDOR_ADMIN, OPS, SUPPORT | Order management |
+| `/sales` | ADMIN, VENDOR_ADMIN, OPS, FINANCE, SUPPORT | Sales search/detail with cancel/refund/resend actions (RBAC-gated) |
 | `/couriers` | ADMIN, OPS | Courier management |
 | `/finance` | ADMIN, FINANCE | Settlements, earnings |
+| `/reports` | ADMIN, VENDOR_ADMIN, OPS, FINANCE | Sales reports + CSV export; VENDOR_ADMIN scoped to own vendor |
 | `/support` | ADMIN, SUPPORT | Ticket management |
-| `/marketing` | ADMIN, OPS | Campaigns |
+| `/marketing` | ADMIN, OPS, VENDOR_ADMIN | Campaigns and promotions (tenant-wide promotions are OPS/ADMIN only) |
 | `/screens` | all | HTML prototype viewer (not real features) |
 
 ### Auth flow

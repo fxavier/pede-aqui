@@ -5,6 +5,7 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.entity.Order;
@@ -199,7 +200,7 @@ public class SalesService {
         order.markCancelled();
         notificationService.create(order.getCustomerId(), "CUSTOMER", "order_cancelled", "Order Cancelled",
                 String.format("Your order %s was cancelled. Reason: %s", order.getReference(), reason), order.getReference());
-        auditLogService.log("SALE_CANCELLED", "order", orderId.toString(), order.getReference() + " reason=" + reason, "SUCCESS");
+        auditLogService.log(AuditActions.SALE_CANCELLED, "order", orderId.toString(), order.getReference() + " reason=" + reason, "SUCCESS");
         return new SalesActionResponse(order.getId(), order.getReference(), order.getStatus().name());
     }
 
@@ -239,7 +240,7 @@ public class SalesService {
         }
 
         RefundResponse response = paymentService.requestRefund(payment.getId(), new RefundRequest(effectiveAmount, reason, key));
-        auditLogService.log("SALE_REFUNDED", "order", orderId.toString(), order.getReference() + " amount=" + effectiveAmount + " reason=" + reason, "SUCCESS");
+        auditLogService.log(AuditActions.SALE_REFUNDED, "order", orderId.toString(), order.getReference() + " amount=" + effectiveAmount + " reason=" + reason, "SUCCESS");
         return response;
     }
 
@@ -258,7 +259,7 @@ public class SalesService {
             case DELIVERY_CODE -> notificationService.create(order.getCustomerId(), "CUSTOMER", "order_delivery_code", "Delivery Confirmation Code",
                     String.format("Your delivery confirmation code for order %s is %s.", order.getReference(), order.getDeliveryConfirmationCodeDisplay()), order.getReference());
         }
-        auditLogService.log("SALE_NOTIFICATION_RESENT", "order", orderId.toString(), order.getReference() + " type=" + type, "SUCCESS");
+        auditLogService.log(AuditActions.SALE_NOTIFICATION_RESENT, "order", orderId.toString(), order.getReference() + " type=" + type, "SUCCESS");
     }
 
     /** Config-gated manual transition restricted to the allow-list matrix; retries with the same target are no-ops. */
@@ -280,7 +281,7 @@ public class SalesService {
                     "Transition " + order.getStatus() + " -> " + target + " is not in the override allow-list", HttpStatus.CONFLICT);
         }
         applyOverride(order, target);
-        auditLogService.log("SALE_STATUS_OVERRIDDEN", "order", orderId.toString(),
+        auditLogService.log(AuditActions.SALE_STATUS_OVERRIDDEN, "order", orderId.toString(),
                 order.getReference() + " target=" + target + " reason=" + reason, "SUCCESS");
         return new SalesActionResponse(order.getId(), order.getReference(), order.getStatus().name());
     }

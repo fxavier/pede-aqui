@@ -7,6 +7,7 @@ import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,8 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 /** OPS/ADMIN moderation of over-threshold price changes: list, approve, or reject pending prices. */
 @Service
 public class PriceModerationService {
-    static final String ACTION_PRODUCT_PRICE_APPROVED = "PRODUCT_PRICE_APPROVED";
-    static final String ACTION_PRODUCT_PRICE_REJECTED = "PRODUCT_PRICE_REJECTED";
     // audit_logs.business_reference is VARCHAR(120)
     private static final int AUDIT_REFERENCE_MAX_LENGTH = 120;
 
@@ -71,7 +70,7 @@ public class PriceModerationService {
         BigDecimal newPrice = sku.getPendingPrice();
         sku.approvePendingPrice();
         skuRepository.save(sku);
-        auditLogService.log(ACTION_PRODUCT_PRICE_APPROVED, "sku", skuId.toString(),
+        auditLogService.log(AuditActions.PRODUCT_PRICE_APPROVED, "sku", skuId.toString(),
                 truncate("price " + oldPrice + " -> " + newPrice), "SUCCESS");
     }
 
@@ -82,7 +81,7 @@ public class PriceModerationService {
         BigDecimal rejectedPrice = sku.getPendingPrice();
         sku.clearPendingPrice();
         skuRepository.save(sku);
-        auditLogService.log(ACTION_PRODUCT_PRICE_REJECTED, "sku", skuId.toString(),
+        auditLogService.log(AuditActions.PRODUCT_PRICE_REJECTED, "sku", skuId.toString(),
                 truncate("rejected " + rejectedPrice + ": " + reason), "SUCCESS");
     }
 
