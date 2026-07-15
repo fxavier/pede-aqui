@@ -296,6 +296,7 @@ export interface Sku {
   name: string;
   price: number;
   active: boolean;
+  pendingPrice?: number | null;
 }
 
 export interface Product {
@@ -310,6 +311,7 @@ export interface Product {
   status?: string;
   attributes?: Record<string, any>;
   primaryImageKey?: string;
+  primaryImageUrl?: string | null;
   imageGallery?: string[];
 }
 
