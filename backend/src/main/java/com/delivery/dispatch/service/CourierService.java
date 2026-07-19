@@ -202,6 +202,6 @@ public class CourierService {
     private boolean isAdminOrOperations() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> "ROLE_ADMIN".equals(authority) || "ROLE_OPERATIONS".equals(authority));
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority) || "ROLE_OPS".equals(authority));
     }
 }
