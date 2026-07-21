@@ -36,6 +36,10 @@
       {
         "name": "SUPPORT",
         "description": "Support team"
+      },
+      {
+        "name": "provisioning:write",
+        "description": "M2M tenant provisioning"
       }
     ]
   },
@@ -77,6 +81,16 @@
       "enabled": true,
       "publicClient": false,
       "secret": "${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false
+    },
+    {
+      "clientId": "subscriptions-provisioner",
+      "name": "Subscriptions Provisioner",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KEYCLOAK_PROVISIONER_CLIENT_SECRET:provisioner-secret}",
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": false,
       "standardFlowEnabled": false
@@ -200,6 +214,15 @@
           "query-users"
         ]
       }
+    },
+    {
+      "username": "service-account-subscriptions-provisioner",
+      "email": "service-account-subscriptions-provisioner@localhost",
+      "enabled": true,
+      "serviceAccountClientId": "subscriptions-provisioner",
+      "realmRoles": [
+        "provisioning:write"
+      ]
     }
   ]
 }
