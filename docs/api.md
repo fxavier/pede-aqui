@@ -15,7 +15,7 @@ The backend REST API uses base path `/api/v1`.
 - `PATCH /api/v1/inventory/{inventoryItemId}/stock`: replaces available stock with a non-negative quantity.
 - `POST /api/v1/customers/{customerId}/cart/items`: adds an item to a single-vendor cart after stock validation.
 - `GET /api/v1/customers/{customerId}/cart/pricing`: calculates subtotal fees, tax, discount, and total.
-- `POST /api/v1/checkout`: converts an active cart into an order using a checkout idempotency key.
+- `POST /api/v1/checkout`: converts an active cart into an order using a checkout idempotency key. `201` on creation, `200` with the same order when the key is replayed for the same customer and cart; `409 idempotency_key_reused` when the key belongs to another cart/customer; `409 price_changed` (with `details.items[].{skuId, previousUnitPrice, currentUnitPrice}`; the cart is re-priced for reconfirmation), `409 sku_inactive` / `409 product_not_available` when a line is no longer orderable.
 - `POST /api/v1/payments/{paymentId}/confirm`: confirms a local/mock payment idempotently.
 - `GET /api/v1/orders/{orderId}/tracking`: returns order status and the customer delivery confirmation code.
 - `POST /api/v1/deliveries/{deliveryId}/complete`: completes delivery when the courier submits the matching 6-digit code.
@@ -63,7 +63,9 @@ The backend REST API uses base path `/api/v1`.
 
 ## Customer Flow Notes
 
-Customer carts are limited to one vendor for the MVP. Checkout reserves stock, creates an order reference, stores the delivery confirmation code hash, creates a mock payment record, and creates a delivery record in one transaction. The customer can see the 6-digit delivery code through order tracking; couriers submit the code to complete delivery, and invalid attempts are counted without logging the submitted code.
+Customer carts are limited to one vendor for the MVP. Checkout revalidates every line (active SKU, ACTIVE product, unchanged price), reserves stock, creates an order reference, stores the delivery confirmation code hash, creates a mock payment record, and creates a delivery record in one transaction. The customer can see the 6-digit delivery code through order tracking; couriers submit the code to complete delivery, and invalid attempts are counted without logging the submitted code.
+
+Reserved stock is released exactly once when the order is cancelled, rejected by the vendor, or fails delivery before pickup, and is consumed when the courier marks the delivery `PICKED_UP` (`orders.stock_status`: `RESERVED → RELEASED | COMMITTED`).
 
 OpenAPI UI is available at `/swagger-ui.html` when the backend is running.
 
