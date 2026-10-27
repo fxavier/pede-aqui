@@ -9,3 +9,15 @@ app:
     s3-bucket: ${AWS_S3_BUCKET}
     s3-region: ${AWS_REGION}
     s3-endpoint: "" # vazio = AWS real (virtual-hosted style)
+  # Fail-fast de segredos (SEC-07): application.yml não tem defaults para estes valores;
+  # RequiredSecretsProperties (@Validated @NotBlank) impede o arranque se vierem vazios.
+  secrets:
+    db-password: ${spring.datasource.password:}
+    keycloak-admin-client-secret: ${app.keycloak.admin.client-secret:}
+
+# Swagger UI / OpenAPI desligados em produção (SEC-21).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

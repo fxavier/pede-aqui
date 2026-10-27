@@ -19,7 +19,8 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/delivery}
     username: ${DB_USERNAME:delivery}
-    password: ${DB_PASSWORD:delivery}
+    # Sem default aqui (SEC-07): o valor de dev está em application-dev.yml; prod exige DB_PASSWORD.
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -88,7 +89,8 @@ app:
       server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}
       realm: ${KEYCLOAK_REALM:delivery}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
-      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+      # Sem default aqui (SEC-07): dev em application-dev.yml; prod exige KEYCLOAK_ADMIN_CLIENT_SECRET.
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

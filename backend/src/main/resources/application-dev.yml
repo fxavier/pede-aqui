@@ -9,3 +9,13 @@ app:
     s3-endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     s3-access-key: ${MINIO_ROOT_USER:minioadmin}
     s3-secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+  # Segredo LOCAL do cliente delivery-admin-service do realm de dev (keycloak/delivery-realm.json).
+  # Só existe no perfil dev; em prod KEYCLOAK_ADMIN_CLIENT_SECRET é obrigatório (SEC-07).
+  keycloak:
+    admin:
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+
+# Password LOCAL do Postgres do docker compose. Em prod DB_PASSWORD é obrigatório (SEC-07).
+spring:
+  datasource:
+    password: ${DB_PASSWORD:delivery}
