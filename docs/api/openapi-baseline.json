@@ -918,7 +918,7 @@
                 "VENDOR_STAFF",
                 "COURIER",
                 "ADMIN",
-                "OPERATIONS",
+                "OPS",
                 "FINANCE",
                 "SUPPORT"
               ],
@@ -1359,7 +1359,7 @@
                 "VENDOR_STAFF",
                 "COURIER",
                 "ADMIN",
-                "OPERATIONS",
+                "OPS",
                 "FINANCE",
                 "SUPPORT"
               ],
@@ -2755,6 +2755,82 @@
             "type": "string"
           },
           "subject": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TenantProvisioningRequest": {
+        "properties": {
+          "billingCycle": {
+            "example": "MONTHLY",
+            "type": "string"
+          },
+          "city": {
+            "example": "Maputo",
+            "type": "string"
+          },
+          "companyName": {
+            "example": "Restaurante Costa Nova",
+            "type": "string"
+          },
+          "contactName": {
+            "example": "Ana Machava",
+            "type": "string"
+          },
+          "email": {
+            "example": "ana@costanova.co.mz",
+            "type": "string"
+          },
+          "externalRef": {
+            "example": "sub_9f2c1a",
+            "type": "string"
+          },
+          "phone": {
+            "example": "+258-84-123-4567",
+            "type": "string"
+          },
+          "planSlug": {
+            "example": "pro-monthly",
+            "type": "string"
+          }
+        },
+        "required": [
+          "billingCycle",
+          "companyName",
+          "contactName",
+          "email",
+          "phone",
+          "planSlug"
+        ],
+        "type": "object"
+      },
+      "TenantProvisioningResponse": {
+        "properties": {
+          "alreadyExisted": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "ownerEmail": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "provisioned": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tenantId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "tenantSlug": {
             "type": "string"
           }
         },
@@ -7735,6 +7811,47 @@
         },
         "tags": [
           "platform-controller"
+        ]
+      }
+    },
+    "/api/v1/provisioning/tenants": {
+      "post": {
+        "operationId": "provisionTenant",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantProvisioningRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantProvisioningResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Provision (or return) a tenant and owner from a subscription lead; idempotent via Idempotency-Key",
+        "tags": [
+          "subscription-provisioning-controller"
         ]
       }
     },
