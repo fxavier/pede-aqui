@@ -124,13 +124,13 @@ class PaymentServiceTest {
         UUID refundId = UUID.randomUUID();
         Payment refundable = new Payment(paymentId, tenantId, orderId, new BigDecimal("100.00"), "pay-key-2");
         RefundRepository refundRepository = mock(RefundRepository.class);
-        when(paymentRepository.findByTenantIdAndId(tenantId, paymentId)).thenReturn(Optional.of(refundable));
+        when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId)).thenReturn(Optional.of(refundable));
 
         String idempotencyKey = "vendor-rejection-" + orderId;
         Refund refund = new Refund(refundId, tenantId, paymentId, orderId, new BigDecimal("100.00"),
                 "Vendor rejection: Sem ingredientes", RefundStatus.REQUESTED, idempotencyKey);
         when(refundRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)).thenReturn(Optional.empty());
-        when(refundRepository.save(any(Refund.class))).thenReturn(refund);
+        when(refundRepository.saveAndFlush(any(Refund.class))).thenReturn(refund);
 
         PaymentService refundService = new PaymentService(paymentRepository, mock(OrderRepository.class), refundRepository,
                 mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository, properties);
