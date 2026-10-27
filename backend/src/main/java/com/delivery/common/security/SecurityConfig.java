@@ -38,6 +38,7 @@ public class SecurityConfig {
                             "/api/v1/search/vendors"
                         ).permitAll()
                         .requestMatchers("/api/v1/tenants/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/provisioning/**").hasAuthority("ROLE_provisioning:write")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();

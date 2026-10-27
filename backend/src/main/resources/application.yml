@@ -65,6 +65,9 @@ logging:
 
 app:
   api-base-path: /api/v1
+  provisioning:
+    max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
+    max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}
   catalog:
     price-review:
       enabled: true          # false → all price edits apply in place, audit-only

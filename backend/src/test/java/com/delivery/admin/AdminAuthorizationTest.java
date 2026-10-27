@@ -4,6 +4,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.delivery.auth.service.AppUserProfileService;
 import com.delivery.common.security.SecurityConfig;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.geo.service.ZoneService;
@@ -32,6 +33,8 @@ class AdminAuthorizationTest {
     private PolicyService policyService;
     @MockBean
     private AuditLogService auditLogService;
+    @MockBean
+    private AppUserProfileService appUserProfileService;
     @MockBean
     private JwtDecoder jwtDecoder;
 
