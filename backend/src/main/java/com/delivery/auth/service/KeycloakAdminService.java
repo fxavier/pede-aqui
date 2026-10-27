@@ -169,6 +169,31 @@ public class KeycloakAdminService {
         }
     }
 
+    /**
+     * Adds the UPDATE_PASSWORD required action and triggers the execute-actions onboarding email
+     * so a provisioned owner sets their own password. Best-effort: failures are logged, not thrown,
+     * because the tenant is already provisioned and the email can be resent from Keycloak.
+     */
+    public void sendPasswordSetupEmail(String userId) {
+        try {
+            String adminToken = getAdminToken();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(adminToken);
+
+            String userUrl = serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+            Map<String, Object> update = Map.of("requiredActions", List.of("UPDATE_PASSWORD"));
+            restTemplate.exchange(userUrl, HttpMethod.PUT, new HttpEntity<>(update, headers), Void.class);
+
+            String emailUrl = userUrl + "/execute-actions-email";
+            restTemplate.exchange(emailUrl, HttpMethod.PUT,
+                    new HttpEntity<>(List.of("UPDATE_PASSWORD"), headers), Void.class);
+        } catch (Exception e) {
+            logger.warn("Failed to send password-setup email for Keycloak user {} - resend manually from Keycloak: {}",
+                    userId, e.getMessage());
+        }
+    }
+
     public void deleteUser(String userId) {
         try {
             String adminToken = getAdminToken();

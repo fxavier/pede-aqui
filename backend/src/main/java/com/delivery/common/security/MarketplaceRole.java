@@ -7,7 +7,7 @@ public enum MarketplaceRole {
     VENDOR_STAFF,
     COURIER,
     ADMIN,
-    OPERATIONS,
+    OPS,
     FINANCE,
     SUPPORT
 }

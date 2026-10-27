@@ -35,7 +35,8 @@ public class OpenApiConfig {
     @Bean
     OpenApiCustomizer tenantHeaderOpenApiCustomizer() {
         return openApi -> openApi.getPaths().forEach((path, pathItem) -> {
-            if (!path.startsWith("/api/v1/") || path.startsWith("/api/v1/tenants")) {
+            if (!path.startsWith("/api/v1/") || path.startsWith("/api/v1/tenants")
+                    || path.startsWith("/api/v1/provisioning")) {
                 return;
             }
             pathItem.readOperations().forEach(operation -> operation.addParametersItem(new Parameter()
