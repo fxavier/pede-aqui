@@ -1,11 +1,13 @@
 package com.delivery.payment.service;
 
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.PaymentResponse;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
@@ -29,6 +31,8 @@ public class PaymentService {
     private final AuditLogService auditLogService;
     private final PaymentMapper mapper;
     private final TenantContext tenantContext;
+    private final AppUserProfileRepository userProfileRepository;
+    private final PaymentMockConfirmationProperties mockConfirmationProperties;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -36,13 +40,17 @@ public class PaymentService {
             RefundRepository refundRepository,
             AuditLogService auditLogService,
             PaymentMapper mapper,
-            TenantContext tenantContext) {
+            TenantContext tenantContext,
+            AppUserProfileRepository userProfileRepository,
+            PaymentMockConfirmationProperties mockConfirmationProperties) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.refundRepository = refundRepository;
         this.auditLogService = auditLogService;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+        this.userProfileRepository = userProfileRepository;
+        this.mockConfirmationProperties = mockConfirmationProperties;
     }
 
     /** Confirms a pending mock payment once and returns the same result on duplicate calls. */
