@@ -300,7 +300,7 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 - **Delivery completion**: courier submits 6-digit OTP from customer; invalid attempts counted but OTP never logged.
 - **Vendor fulfillment state machine**: `PAYMENT_CONFIRMED → ACCEPTED_BY_VENDOR → PREPARING → READY_FOR_PICKUP`.
 - **Courier delivery state machine**: `ACCEPTED → ARRIVED_AT_VENDOR → PICKED_UP → ON_ROUTE_TO_CUSTOMER → ARRIVED_AT_CUSTOMER → DELIVERED | FAILED_DELIVERY`.
-- **Dispatch**: first eligible courier in `operatingZoneId` (APPROVED + online). Reassignment excludes prior courier.
+- **Dispatch**: only `READY_FOR_PICKUP` orders; offered to the first eligible courier in `operatingZoneId` (APPROVED + online) **without an active delivery**. Reassignment excludes the prior courier. Offers expire after `app.dispatch.offer-ttl` (default 60s) — expiry only blocks acceptance, there is no automatic re-offer job yet. Only the addressed courier can accept/reject (others get 404); accept is a conditional UPDATE so concurrent accepts have one winner (409 for the rest). Exclusivity is enforced in the DB by V035 partial unique indexes (one active job per delivery: `ASSIGNED|ACCEPTED|REASSIGNABLE`; one active delivery per courier: `ASSIGNED..ARRIVED_AT_CUSTOMER`) — keep `DispatchService.ACTIVE_JOB_STATUSES` / `COURIER_BUSY_DELIVERY_STATUSES` in sync with them. Job lists are tenant-scoped, paged (`page`/`size`, max 100) and courier-scoped for COURIER.
 - **Audit**: sensitive admin/ops/finance actions written to `audit_logs` (actor, target, action, result, timestamp).
 
 ## Architecture Constraints
