@@ -54,6 +54,7 @@ public class RateLimitConfig implements WebMvcConfigurer {
         private boolean isSensitive(HttpServletRequest request) {
             String path = request.getRequestURI();
             return path.contains("/checkout")
+                    || path.contains("/provisioning")
                     || path.contains("/payments/")
                     || path.contains("/refunds")
                     || path.contains("/deliveries/")
