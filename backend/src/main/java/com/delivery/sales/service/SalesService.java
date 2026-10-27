@@ -250,6 +250,10 @@ public class SalesService {
         UUID tenantId = tenantId();
         Order order = findOrder(tenantId, orderId);
         accessGuard.ensureOwnVendorOrder(tenantId, order.getVendorId());
+        if (type == SalesNotificationType.DELIVERY_CODE && order.getDeliveryConfirmationCodeDisplay() == null) {
+            // The plain PIN is cleared once the order is delivered or cancelled (INC-02, AS-08).
+            throw new BusinessException("delivery_code_unavailable", "Delivery code is no longer available for this order", HttpStatus.CONFLICT);
+        }
         switch (type) {
             case CONFIRMATION -> notificationService.create(order.getCustomerId(), "CUSTOMER", "order_confirmation", "Order Confirmation",
                     String.format("Your order %s was received. Total: %s MZN.", order.getReference(), order.getTotal()), order.getReference());

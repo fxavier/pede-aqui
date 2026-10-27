@@ -13,5 +13,4 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByTenantIdAndId(UUID tenantId, UUID id);
     Optional<Order> findByTenantIdAndCheckoutIdempotencyKey(UUID tenantId, String checkoutIdempotencyKey);
     List<Order> findByTenantIdAndStatus(UUID tenantId, OrderStatus status);
-    boolean existsByTenantIdAndDeliveryConfirmationCodeHash(UUID tenantId, String deliveryConfirmationCodeHash);
 }

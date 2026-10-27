@@ -31,6 +31,9 @@ public class Delivery {
     private String confirmationCodeHash;
     @Column(name = "confirmation_attempts", nullable = false)
     private int confirmationAttempts;
+    /** True for rows created before INC-02 whose hash is unsalted SHA-256 (verified via legacy fallback). */
+    @Column(name = "confirmation_code_legacy", nullable = false)
+    private boolean confirmationCodeLegacy;
     @Column(name = "proof_photo_storage_key")
     private String proofPhotoStorageKey;
     @Column(name = "cash_collected_amount")
@@ -52,6 +55,7 @@ public class Delivery {
         this.orderId = orderId;
         this.status = DeliveryStatus.DISPATCH_PENDING;
         this.confirmationCodeHash = confirmationCodeHash;
+        this.confirmationCodeLegacy = false;
         this.proximityNotified = false;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
@@ -63,6 +67,10 @@ public class Delivery {
     public void recordFailedAttempt() { 
         confirmationAttempts++; updatedAt = Instant.now(); 
     }
+    /** True once failed PIN submissions reached the configured limit. */
+    public boolean isCodeLocked(int maxAttempts) { return confirmationAttempts >= maxAttempts; }
+    /** OPS action: clears the failed-attempt counter so the courier can retry the PIN. */
+    public void resetConfirmationAttempts() { confirmationAttempts = 0; updatedAt = Instant.now(); }
     public void assignCourier(UUID courierId) {
         this.courierId = courierId;
         this.status = DeliveryStatus.ASSIGNED;
@@ -85,5 +93,6 @@ public class Delivery {
     public DeliveryStatus getStatus() { return status; }
     public String getConfirmationCodeHash() { return confirmationCodeHash; }
     public int getConfirmationAttempts() { return confirmationAttempts; }
+    public boolean isConfirmationCodeLegacy() { return confirmationCodeLegacy; }
     public Boolean getProximityNotified() { return proximityNotified; }
 }

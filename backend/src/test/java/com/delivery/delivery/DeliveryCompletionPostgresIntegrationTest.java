@@ -9,8 +9,12 @@ import ch.qos.logback.core.read.ListAppender;
 import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.mapper.DeliveryMapper;
+import com.delivery.delivery.service.DeliveryAccessGuard;
+import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.delivery.service.DeliveryService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -56,9 +60,11 @@ import org.testcontainers.DockerClientFactory;
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
+@TestPropertySource(properties = {"spring.jpa.hibernate.ddl-auto=validate",
+        "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret", "app.delivery.max-code-attempts=5"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class})
+@Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, DeliveryAccessGuard.class,
+        DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class})
 class DeliveryCompletionPostgresIntegrationTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
@@ -87,6 +93,8 @@ class DeliveryCompletionPostgresIntegrationTest {
     private DeliveryService service;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private DeliveryCodeHasher hasher;
 
     private UUID tenantId;
     private UUID orderId;
@@ -109,13 +117,13 @@ class DeliveryCompletionPostgresIntegrationTest {
                                     total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 'ASSIGNED_TO_COURIER', 10, 0, 0, 0, 10, ?, ?, ?, ?, ?)""",
-                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), UUID.randomUUID(), "key-" + orderId, storedHash(CODE), CODE, now(), now());
+                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), UUID.randomUUID(), "key-" + orderId, hasher.hash(CODE), CODE, now(), now());
         deliveryId = UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO deliveries (id, tenant_id, order_id, courier_id, status, confirmation_code_hash, confirmation_attempts,
                                         created_at, updated_at)
                 VALUES (?, ?, ?, ?, 'ARRIVED_AT_CUSTOMER', ?, 0, ?, ?)""",
-                deliveryId, tenantId, orderId, assignedCourierId, storedHash(CODE), now(), now());
+                deliveryId, tenantId, orderId, assignedCourierId, hasher.hash(CODE), now(), now());
     }
 
     @AfterEach
@@ -243,6 +251,43 @@ class DeliveryCompletionPostgresIntegrationTest {
     }
 
     @Test
+    void legacySha256DeliveriesStillValidate() {
+        // V038 flags every pre-existing row legacy; simulate one created by the old checkout.
+        jdbc.update("UPDATE deliveries SET confirmation_code_hash = ?, confirmation_code_legacy = TRUE WHERE id = ?", legacySha256(CODE), deliveryId);
+        authenticate(assignedCourierUser, "COURIER");
+
+        assertThat(service.complete(deliveryId, CODE).status()).isEqualTo(DeliveryStatus.DELIVERED);
+    }
+
+    @Test
+    void sha256HashIsRejectedForNonLegacyRows() {
+        jdbc.update("UPDATE deliveries SET confirmation_code_hash = ?, confirmation_code_legacy = FALSE WHERE id = ?", legacySha256(CODE), deliveryId);
+        authenticate(assignedCourierUser, "COURIER");
+
+        assertThatThrownBy(() -> service.complete(deliveryId, CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("invalid_delivery_code"));
+    }
+
+    @Test
+    void newDeliveriesDefaultToNonLegacy() {
+        assertThat(jdbc.queryForObject("SELECT confirmation_code_legacy FROM deliveries WHERE id = ?", Boolean.class, deliveryId)).isFalse();
+    }
+
+    @Test
+    void opsUnlockResetsAttemptsAndCourierCanThenComplete() {
+        jdbc.update("UPDATE deliveries SET confirmation_attempts = 5 WHERE id = ?", deliveryId);
+        authenticate("kc-ops-" + tenantId, "OPS");
+
+        assertThat(service.unlockCode(deliveryId).confirmationAttempts()).isZero();
+        assertThat(attempts()).isZero();
+        assertThat(events("CONFIRMATION_UNLOCKED")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_logs WHERE tenant_id = ? AND action = 'DELIVERY_CODE_UNLOCKED'", Integer.class, tenantId)).isEqualTo(1);
+
+        authenticate(assignedCourierUser, "COURIER");
+        assertThat(service.complete(deliveryId, CODE).status()).isEqualTo(DeliveryStatus.DELIVERED);
+    }
+
+    @Test
     void pinNeverAppearsInLogs() {
         Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
@@ -337,8 +382,8 @@ class DeliveryCompletionPostgresIntegrationTest {
         return jdbc.queryForObject("SELECT COUNT(*) FROM delivery_events WHERE delivery_id = ? AND event_type = ?", Integer.class, deliveryId, type);
     }
 
-    /** Hash as currently stored by checkout (legacy SHA-256). */
-    private static String storedHash(String code) {
+    /** Unsalted SHA-256 as stored for deliveries created before INC-02. */
+    private static String legacySha256(String code) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(code.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {

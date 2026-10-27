@@ -23,6 +23,8 @@ import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.config.DeliveryCodeProperties;
+import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
@@ -79,7 +81,14 @@ class CheckoutDiscountRegressionTest {
 
     private final OrderService service = new OrderService(cartRepository, orderRepository, paymentRepository,
             deliveryRepository, inventoryService, userProfileRepository, vendorRepository, notificationService,
-            paymentService, auditLogService, mapper, tenantContext, skuRepository, productRepository, discountResolver);
+            paymentService, auditLogService, mapper, tenantContext, skuRepository, productRepository, discountResolver,
+            testCodeHasher());
+
+    private static DeliveryCodeHasher testCodeHasher() {
+        DeliveryCodeProperties properties = new DeliveryCodeProperties();
+        properties.setCodeHmacSecret("test-only-hmac-secret");
+        return new DeliveryCodeHasher(properties);
+    }
 
     private Cart cart;
 
@@ -103,7 +112,6 @@ class CheckoutDiscountRegressionTest {
             return new com.delivery.order.dto.OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                     order.getTotal(), null, null, null, order.getCreatedAt(), List.of());
         });
-        when(orderRepository.existsByTenantIdAndDeliveryConfirmationCodeHash(any(), anyString())).thenReturn(false);
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(skuRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(new Sku(skuId, tenantId, productId, "SKU-1", "P1", new BigDecimal("50.00"))));

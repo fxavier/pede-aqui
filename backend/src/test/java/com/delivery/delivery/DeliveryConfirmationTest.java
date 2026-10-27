@@ -3,64 +3,216 @@ package com.delivery.delivery;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.delivery.auth.entity.AppUserProfile;
+import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.mapper.DeliveryMapper;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.service.DeliveryAccessGuard;
+import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.delivery.service.DeliveryService;
+import com.delivery.dispatch.entity.Courier;
+import com.delivery.dispatch.repository.CourierRepository;
 import com.delivery.order.entity.Order;
+import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
+/** Unit-level checks of DeliveryService completion, ownership, lockout and PIN hashing (INC-02). */
 class DeliveryConfirmationTest {
-    @Test
-    void correctCodeDeliversOrderAndDelivery() throws Exception {
-        UUID tenantId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
-        Delivery delivery = new Delivery(UUID.randomUUID(), tenantId, orderId, hash("123456"));
-        Order order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hash("123456"), "123456");
-        DeliveryService service = service(tenantId, delivery, order);
+    private static final String CODE = "482913";
+    private static final String WRONG = "000001";
+    private static final String COURIER_USER = "kc-courier";
 
-        assertThat(service.complete(delivery.getId(), "123456").status()).isEqualTo(DeliveryStatus.DELIVERED);
-    }
+    private final UUID tenantId = UUID.randomUUID();
+    private final UUID orderId = UUID.randomUUID();
+    private final UUID courierId = UUID.randomUUID();
+    private final UUID profileId = UUID.randomUUID();
+    private final DeliveryRepository deliveryRepository = mock(DeliveryRepository.class);
+    private final DeliveryEventRepository eventRepository = mock(DeliveryEventRepository.class);
+    private final OrderRepository orderRepository = mock(OrderRepository.class);
+    private final AppUserProfileRepository profileRepository = mock(AppUserProfileRepository.class);
+    private final CourierRepository courierRepository = mock(CourierRepository.class);
+    private final TenantContext tenantContext = mock(TenantContext.class);
+    private final AuditLogService auditLogService = mock(AuditLogService.class);
+    private final DeliveryCodeHasher hasher = hasher("unit-test-secret");
+    private DeliveryService service;
+    private Order order;
 
-    @Test
-    void incorrectCodeIsRejectedAndAttemptIsRecorded() throws Exception {
-        UUID tenantId = UUID.randomUUID();
-        Delivery delivery = new Delivery(UUID.randomUUID(), tenantId, UUID.randomUUID(), hash("123456"));
-        DeliveryService service = service(tenantId, delivery, null);
-
-        assertThatThrownBy(() -> service.complete(delivery.getId(), "000000"))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Delivery confirmation code is invalid");
-        assertThat(delivery.getConfirmationAttempts()).isEqualTo(1);
-    }
-
-    private DeliveryService service(UUID tenantId, Delivery delivery, Order order) {
-        DeliveryRepository deliveryRepository = mock(DeliveryRepository.class);
-        DeliveryEventRepository eventRepository = mock(DeliveryEventRepository.class);
-        OrderRepository orderRepository = mock(OrderRepository.class);
-        TenantContext tenantContext = mock(TenantContext.class);
+    @BeforeEach
+    void setUp() {
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
-        when(deliveryRepository.findByTenantIdAndId(tenantId, delivery.getId())).thenReturn(Optional.of(delivery));
         when(eventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        if (order != null) when(orderRepository.findByTenantIdAndId(tenantId, order.getId())).thenReturn(Optional.of(order));
-        return new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext);
+        DeliveryCodeProperties properties = new DeliveryCodeProperties();
+        properties.setMaxCodeAttempts(5);
+        service = new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext,
+                new DeliveryAccessGuard(profileRepository, courierRepository, tenantContext), hasher, properties, auditLogService);
+        order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hasher.hash(CODE), CODE);
+        when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
+        Courier courier = mock(Courier.class);
+        when(courier.getId()).thenReturn(courierId);
+        when(profileRepository.findByTenantIdAndKeycloakUserId(tenantId, COURIER_USER))
+                .thenReturn(Optional.of(new AppUserProfile(profileId, tenantId, COURIER_USER, "c@x.mz", "Courier", Set.of())));
+        when(courierRepository.findByTenantIdAndUserProfileId(tenantId, profileId)).thenReturn(Optional.of(courier));
     }
 
-    private static String hash(String value) throws Exception {
-        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+    @AfterEach
+    void clearSecurity() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void correctCodeFromAssignedCourierDeliversAndClearsPlainPin() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThat(service.complete(delivery.getId(), CODE).status()).isEqualTo(DeliveryStatus.DELIVERED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(order.getDeliveryConfirmationCodeDisplay()).isNull();
+    }
+
+    @Test
+    void incorrectCodeIsRejectedAndAttemptIsRecorded() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.complete(delivery.getId(), WRONG))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("invalid_delivery_code");
+                    assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                });
+        assertThat(delivery.getConfirmationAttempts()).isEqualTo(1);
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_CUSTOMER);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+    }
+
+    @Test
+    void lockedCodeRejectsEvenTheCorrectPin() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        ReflectionTestUtils.setField(delivery, "confirmationAttempts", 5);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.complete(delivery.getId(), CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("delivery_code_locked");
+                    assertThat(ex.getStatus()).isEqualTo(HttpStatus.LOCKED);
+                });
+        assertThat(delivery.getConfirmationAttempts()).isEqualTo(5);
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void unassignedCourierIsForbidden() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, UUID.randomUUID());
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.complete(delivery.getId(), CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_CUSTOMER);
+    }
+
+    @Test
+    void invalidLifecycleTransitionIsConflict() {
+        Delivery delivery = delivery(DeliveryStatus.ACCEPTED, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.PICKED_UP, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void assignedCourierAdvancesLifecycleWithoutAudit() {
+        Delivery delivery = delivery(DeliveryStatus.ACCEPTED, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThat(service.updateStatus(delivery.getId(), DeliveryStatus.ARRIVED_AT_VENDOR, null, null).status())
+                .isEqualTo(DeliveryStatus.ARRIVED_AT_VENDOR);
+        verify(auditLogService, never()).log(anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void opsStatusUpdateIsAudited() {
+        Delivery delivery = delivery(DeliveryStatus.ACCEPTED, courierId);
+        actAs("kc-ops", "ROLE_OPS");
+
+        service.updateStatus(delivery.getId(), DeliveryStatus.ARRIVED_AT_VENDOR, null, null);
+
+        verify(auditLogService).log(eq("DELIVERY_STATUS_UPDATED"), eq("delivery"), eq(delivery.getId().toString()), eq("ACCEPTED->ARRIVED_AT_VENDOR"), eq("SUCCESS"));
+    }
+
+    @Test
+    void unlockResetsCounterAndIsAudited() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        ReflectionTestUtils.setField(delivery, "confirmationAttempts", 5);
+        actAs("kc-ops", "ROLE_OPS");
+
+        assertThat(service.unlockCode(delivery.getId()).confirmationAttempts()).isZero();
+        verify(auditLogService).log(eq("DELIVERY_CODE_UNLOCKED"), eq("delivery"), eq(delivery.getId().toString()), eq("attempts=5"), eq("SUCCESS"));
+    }
+
+    @Test
+    void hasherUsesHmacAndAcceptsSha256OnlyForLegacyRows() throws Exception {
+        String sha256 = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(CODE.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        assertThat(hasher.hash(CODE)).isNotEqualTo(sha256).hasSize(64);
+        assertThat(hasher.hash(CODE)).isNotEqualTo(hasher("another-secret").hash(CODE));
+        assertThat(hasher.matches(CODE, hasher.hash(CODE), false)).isTrue();
+        assertThat(hasher.matches(WRONG, hasher.hash(CODE), false)).isFalse();
+        assertThat(hasher.matches(CODE, sha256, true)).isTrue();
+        assertThat(hasher.matches(CODE, sha256, false)).isFalse();
+        assertThat(hasher.matches(null, sha256, true)).isFalse();
+        assertThat(hasher.generateCode()).matches("[0-9]{6}");
+    }
+
+    @Test
+    void hasherRefusesToStartWithoutSecret() {
+        assertThatThrownBy(() -> hasher(" ")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> hasher(null)).isInstanceOf(IllegalStateException.class);
+    }
+
+    private Delivery delivery(DeliveryStatus status, UUID assignedCourierId) {
+        Delivery delivery = new Delivery(UUID.randomUUID(), tenantId, orderId, hasher.hash(CODE));
+        delivery.assignCourier(assignedCourierId);
+        delivery.updateStatus(status);
+        when(deliveryRepository.findByTenantIdAndId(tenantId, delivery.getId())).thenReturn(Optional.of(delivery));
+        return delivery;
+    }
+
+    private void actAs(String keycloakUserId, String... authorities) {
+        when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(keycloakUserId));
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(keycloakUserId, "n/a", List.of(authorities).toArray(String[]::new));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    private static DeliveryCodeHasher hasher(String secret) {
+        DeliveryCodeProperties properties = new DeliveryCodeProperties();
+        properties.setCodeHmacSecret(secret);
+        return new DeliveryCodeHasher(properties);
     }
 }

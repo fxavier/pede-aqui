@@ -89,6 +89,12 @@ app:
       realm: ${KEYCLOAK_REALM:delivery}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
       client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+  delivery:
+    # Failed PIN submissions before the delivery code locks (OPS unlocks via /ops/deliveries/{id}/unlock-code).
+    max-code-attempts: ${APP_DELIVERY_MAX_CODE_ATTEMPTS:5}
+    # HMAC-SHA256 key for delivery PIN hashes. Empty here on purpose: only the dev profile has a
+    # default; prod must set APP_DELIVERY_CODE_HMAC_SECRET or startup fails.
+    code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:}
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

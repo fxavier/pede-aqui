@@ -9,3 +9,6 @@ app:
     s3-endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     s3-access-key: ${MINIO_ROOT_USER:minioadmin}
     s3-secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+  delivery:
+    # Dev-only default (never use in prod); override with APP_DELIVERY_CODE_HMAC_SECRET.
+    code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:dev-only-delivery-code-hmac-secret}
