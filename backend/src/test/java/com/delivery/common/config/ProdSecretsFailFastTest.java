@@ -107,4 +107,15 @@ class ProdSecretsFailFastTest {
                     assertThat(ctx.getEnvironment().getProperty("springdoc.swagger-ui.enabled")).isEqualTo("false");
                 });
     }
+
+    @Test
+    void prodServesActuatorOnSeparateManagementPort() {
+        runner("prod")
+                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x")
+                .run(ctx -> {
+                    assertThat(ctx.getEnvironment().getProperty("management.server.port")).isEqualTo("8091");
+                    assertThat(ctx.getEnvironment().getProperty("management.endpoint.health.probes.add-additional-paths"))
+                            .isEqualTo("true");
+                });
+    }
 }

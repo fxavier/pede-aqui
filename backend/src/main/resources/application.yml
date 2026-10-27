@@ -44,6 +44,8 @@ server:
   servlet:
     context-path: /
 
+# Exposição: health público; metrics/prometheus só para ADMIN na porta da aplicação, ou sem token
+# na porta de gestão interna quando MANAGEMENT_SERVER_PORT está definida (SEC-19, ver SecurityConfig).
 management:
   endpoints:
     web:
@@ -53,6 +55,9 @@ management:
     health:
       probes:
         enabled: true
+        # /livez e /readyz também na porta da aplicação: as probes continuam a funcionar quando o
+        # actuator vive numa porta de gestão separada (MANAGEMENT_SERVER_PORT, ver application-prod.yml).
+        add-additional-paths: true
 
 springdoc:
   api-docs:

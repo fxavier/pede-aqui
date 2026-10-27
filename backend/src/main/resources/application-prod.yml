@@ -21,3 +21,12 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+# Actuator numa porta de gestão separada (SEC-19 / PROD-01): só a rede interna (Prometheus,
+# orquestrador) a alcança, pelo que o scrape não precisa de token. A porta pública da API
+# deixa de servir /actuator/*; as probes ficam em /livez e /readyz na porta pública
+# (management.endpoint.health.probes.add-additional-paths, em application.yml).
+# NÃO publicar MANAGEMENT_SERVER_PORT no ingress/load balancer.
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:8091}
