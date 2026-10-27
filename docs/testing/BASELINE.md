@@ -4,7 +4,8 @@
 |---|---|
 | Data | 2026-10-27 |
 | Incremento | INC-00 — Baseline ([CLAUDE-CODE-PROMPTS.md](../refactoring/CLAUDE-CODE-PROMPTS.md)) |
-| Commit medido | `7e93a8d` (merge do PR #1, `feat/spec-002-backoffice-catalog-sales` → `main`) |
+| Base medida | `feat/spec-002-backoffice-catalog-sales` @ `54be398` (inclui a migração `V034__provisioning_idempotency.sql`), integrada por merge em `refactor/INC-00-baseline` |
+| Base anterior (só referência) | `main` @ `7e93a8d` — backend medido primeiro aqui (ver 3.5); os resultados de frontend/Flutter foram medidos nesta base e não são afetados pelos 3 commits adicionais, que só tocam backend, realm Keycloak e openspec |
 | Branch | `refactor/INC-00-baseline` |
 | Código de produção alterado | Nenhum |
 
@@ -29,8 +30,8 @@
 
 | Suite | Comando | Resultado | Duração |
 |---|---|---|---|
-| Backend | `mvn clean verify` | **FALHA** — 186 testes, 3 falhas, 1 erro; 3 classes Testcontainers com 0 testes executados | 51 s |
-| Backend (Docker API forçada) | `mvn clean verify -DargLine=-Dapi.version=1.44` | **FALHA** — 202 testes, 3 falhas, 1 erro | 77 s |
+| Backend (**comando de referência**) | `mvn clean verify -DargLine=-Dapi.version=1.44` | **OK** — 221 testes, 0 falhas, 0 erros, 0 ignorados | 119 s |
+| Backend (comando padrão) | `mvn clean verify` | BUILD SUCCESS **enganador** — 202 testes; 4 classes Testcontainers (19 testes) não executam, sem aviso | 53 s |
 | Backoffice | `npm ci` | OK | 83 s |
 | Backoffice | `npm run validate` | **FALHA** no passo `lint` (7 erros, 23 avisos); `typecheck` OK | 15 s |
 | Backoffice | `npm run validate:screens` (isolado) | **FALHA** — `ENOENT src/features/screens/generated-screens.ts` | <5 s |
@@ -49,48 +50,63 @@
 
 ## 3. Backend (`backend/`)
 
+Medido sobre `feat/spec-002-backoffice-catalog-sales` @ `54be398`, com 34 migrações (V001–V034,
+incluindo a nova `V034__provisioning_idempotency.sql`).
+
 ### 3.1 Comandos
 
 ```bash
 export JAVA_HOME=/Users/xavier/Library/Java/JavaVirtualMachines/ms-21.0.8/Contents/Home
-cd backend && mvn clean verify
-# Re-execução com Testcontainers funcional (ver 3.3):
+# Comando de referência — OBRIGATÓRIO neste ambiente (ver 3.3):
 cd backend && mvn clean verify -DargLine=-Dapi.version=1.44
+# Comando padrão — registado como achado; NÃO serve de quality gate:
+cd backend && mvn clean verify
 ```
 
 ### 3.2 Resultado
 
-- Execução padrão: `Tests run: 186, Failures: 3, Errors: 1, Skipped: 0` → BUILD FAILURE.
-- Com `-Dapi.version=1.44`: `Tests run: 202, Failures: 3, Errors: 1, Skipped: 0` → BUILD FAILURE.
-  Os 16 testes adicionais são os das classes Testcontainers (todos passaram):
-  `MigrationValidationTest` (1 — as migrações V001…V033 aplicam-se e o `ddl-auto: validate` passa),
-  `SalesReportAggregationTest` (9), `SalesReportCsvExportTest` (6).
-- As 4 falhas são idênticas nas duas execuções.
+- **Com `-DargLine=-Dapi.version=1.44`:** `Tests run: 221, Failures: 0, Errors: 0, Skipped: 0` →
+  **BUILD SUCCESS** (1 min 56 s). Inclui as classes Testcontainers:
+  `MigrationValidationTest` (1 — as 34 migrações aplicam-se e o `ddl-auto: validate` passa),
+  `ProvisioningPostgresIntegrationTest` (3), `SalesReportAggregationTest` (9),
+  `SalesReportCsvExportTest` (6).
+- **Sem o override (`mvn clean verify`):** `Tests run: 202, Failures: 0, Errors: 0, Skipped: 0` →
+  BUILD SUCCESS, **mas** essas 4 classes reportam `Tests run: 0`: 19 testes, incluindo a
+  validação de migrações, não correm e o build fica verde na mesma (verde falso).
+- Não há falhas pré-existentes no backend nesta base.
 
-### 3.3 Falhas pré-existentes e causa provável
+### 3.3 Achado/bloqueio: Testcontainers vs Docker Engine 29
 
-| Teste | Sintoma | Causa provável |
-|---|---|---|
-| `dispatch.OperationsReassignmentTest.opsCanReassignAndNonOpsCannot` | esperado 200, obtido 403 | O teste autentica com `ROLE_OPERATIONS`, papel que o realm nunca emite (o realm usa `OPS`). Associado: `CourierService.isAdminOrOperations()` compara com `ROLE_OPERATIONS`, pelo que utilizadores `OPS` reais são negados (SEC-14). |
-| `admin.AdminAuthorizationTest.rejectsNonAdminRoles` | `IllegalStateException: Failed to load ApplicationContext` | Slice `@WebMvcTest` sem `@MockBean AppUserProfileService`; o construtor de `AdminController` exige esse bean. Defeito do teste, não de produção. |
-| `cart.CartSecurityApiTest.preventsCustomerFromAddingToAnotherCustomersCart` | esperado 403, obtido 200 | Slice `@WebMvcTest` com o serviço mockado: o controlador devolve o sucesso por omissão e a asserção de propriedade nunca é exercida. O `addItem` é auto-scoped ao JWT (o `{customerId}` do path é inerte). Defeito do teste. |
-| `order.CheckoutSecurityApiTest.preventsCustomerFromCheckingOutAnotherCustomersCart` | esperado 403, obtido 201 | Mesmo padrão: a verificação de propriedade do carrinho vive em `OrderService.createOrder`, que está mockado no slice. Defeito do teste. |
-
-Nota: estas quatro falhas já têm correção no branch `feat/spec-002-backoffice-catalog-sales`
-(commits `3a060eb` e `6ddb4f5`), que **não** fazem parte do commit medido (`7e93a8d`). Um
-incremento que parta de `main` herda estas falhas; um que parta do branch de feature não.
-
-### 3.4 Bloqueio: Testcontainers vs Docker Engine 29
-
-- Na execução padrão, o Testcontainers do BOM do Spring Boot 3.3.5 falha a deteção do Docker:
+- O Testcontainers gerido pelo BOM do Spring Boot 3.3.5 falha a deteção do Docker:
   `Could not find a valid Docker environment … BadRequestException (Status 400 …)`. O cliente
-  docker-java negocia uma versão de API inferior à mínima aceite pelo Engine 29 (1.40).
-- As classes protegidas por `Assumptions`/`isDockerAvailable()` reportam **0 testes executados**
-  em vez de falharem — ou seja, o `mvn clean verify` padrão **não valida as migrações** neste
-  ambiente, silenciosamente.
-- Contorno verificado (sem alterar código): `-DargLine=-Dapi.version=1.44`. Correção duradoura
-  (fora do âmbito do INC-00): atualizar Testcontainers (≥ 1.21.x) ou fixar `api.version` na
-  configuração do Surefire / `~/.docker-java.properties`.
+  docker-java usa uma versão de API inferior à mínima aceite pelo Engine 29 (1.40).
+- As classes Testcontainers protegem-se com `Assumptions`/`isDockerAvailable()`, por isso são
+  **ignoradas em silêncio** (0 testes) em vez de falharem. O `mvn clean verify` padrão não valida
+  migrações nem os testes de integração com PostgreSQL.
+- **Contorno obrigatório** (sem alterar código): `-DargLine=-Dapi.version=1.44`. Os incrementos
+  seguintes devem usar este comando como quality gate e confirmar que `MigrationValidationTest`
+  reporta `Tests run: 1`.
+- Correção duradoura (fora do âmbito do INC-00): atualizar Testcontainers (≥ 1.21.x) ou fixar
+  `api.version` na configuração do Surefire / `~/.docker-java.properties`.
+
+### 3.4 Falhas pré-existentes
+
+Nenhuma nesta base.
+
+### 3.5 Referência: medição anterior sobre `main` @ `7e93a8d`
+
+O backend foi medido primeiro sobre `main` (`7e93a8d`, 33 migrações): 202 testes com o override
+(186 sem ele), **3 falhas e 1 erro**:
+
+| Teste | Sintoma | Causa |
+|---|---|---|
+| `dispatch.OperationsReassignmentTest` | 403 em vez de 200 | Teste (e `CourierService.isAdminOrOperations()`) usavam `ROLE_OPERATIONS`, que o realm não emite (SEC-14). |
+| `admin.AdminAuthorizationTest` | contexto não carrega | Faltava `@MockBean AppUserProfileService` no slice. |
+| `cart.CartSecurityApiTest` | 200 em vez de 403 | Slice com o serviço mockado; a regra de propriedade nunca era exercida. |
+| `order.CheckoutSecurityApiTest` | 201 em vez de 403 | Idem; a verificação vive em `OrderService.createOrder`. |
+
+Todas estão corrigidas pelos commits `3a060eb` e `6ddb4f5`, presentes na base atual. Um
+incremento que parta de `main` herda estas falhas.
 
 ## 4. Backoffice (`pede-aqui-backoffice/`)
 
@@ -172,7 +188,8 @@ real ou integração.
 
 - Ficheiro: [`docs/api/openapi-baseline.json`](../api/openapi-baseline.json) (JSON normalizado com
   chaves ordenadas e indentação de 2 espaços, para diffs estáveis).
-- Conteúdo: OpenAPI 3.0.1, 122 paths, 147 operações, 123 schemas.
+- Conteúdo: OpenAPI 3.0.1, 123 paths, 148 operações, 125 schemas — gerado sobre `54be398`
+  (inclui o endpoint M2M de provisionamento de tenants).
 - Como foi gerado (sem colidir com outros serviços nas portas 5432/8080/8081):
 
   ```bash
@@ -186,17 +203,17 @@ real ou integração.
   ```
 
 - Keycloak, Redis e MinIO não foram necessários: `/api-docs` é público, o JWK é obtido de forma
-  lazy e o Redis/S3 não são contactados no arranque. Flyway aplicou 33 migrações numa base vazia.
+  lazy e o Redis/S3 não são contactados no arranque. Flyway aplicou 34 migrações (até V034) numa base vazia.
 - O campo `servers[0].url` contém `http://localhost:18080` (porta usada na geração) — ignorar ao
   comparar contratos.
 - O backend **não** foi arrancado via serviço `backend` do compose porque esse serviço exige o
   ficheiro `.env` na raiz (não versionado) e publica a porta 8082.
 
-## 9. Bloqueios e limitações
+## 9. Bloqueios, riscos e limitações
 
-| Bloqueio | Impacto | Comando para reproduzir/contornar |
+| Bloqueio / risco | Impacto | Comando para reproduzir/contornar |
 |---|---|---|
-| Testcontainers incompatível com Docker Engine 29 | `mvn clean verify` padrão salta silenciosamente 16 testes (incl. validação de migrações) | `mvn clean verify -DargLine=-Dapi.version=1.44` |
-| Ficheiros fonte ignorados pelo `.gitignore` | Apps Flutter e `validate:screens` não verificáveis a partir do git | — (requer versionar os ficheiros) |
+| Testcontainers incompatível com Docker Engine 29 | `mvn clean verify` padrão salta em silêncio 19 testes (incl. validação de migrações) e fica verde | Usar sempre `mvn clean verify -DargLine=-Dapi.version=1.44` |
+| **Risco:** `.gitignore` da raiz exclui código-fonte (`data/` e `screens/` não ancorados — ver 7.1) | Um clone limpo não compila as apps Flutter; `validate:screens` falha; ficheiros novos nesses diretórios ficam fora dos commits sem aviso | — (ancorar os padrões e versionar os ficheiros em falta, em incremento próprio) |
 | `java` predefinido é JDK 25 | Builds devem exportar `JAVA_HOME` para JDK 21 | `export JAVA_HOME=…/ms-21.0.8/Contents/Home` |
 | Sem `.env.local` nos frontends num clone limpo | Não afetou typecheck/test/build | — |
