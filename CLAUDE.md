@@ -53,6 +53,8 @@ cd backend && mvn clean verify
 
 Spring profiles: `dev` is the default (`spring.profiles.default`) and points storage at local MinIO — no AWS needed. `prod` (`SPRING_PROFILES_ACTIVE=prod`) targets real AWS S3 and fails fast if `AWS_S3_BUCKET`/`AWS_REGION` are missing. See the Storage section.
 
+Secrets: `application.yml` has **no literal defaults** for `DB_PASSWORD` or `KEYCLOAK_ADMIN_CLIENT_SECRET` — the local values live only in `application-dev.yml`. In `prod`, `RequiredSecretsProperties` (`@Validated @NotBlank`, bound via `app.secrets.*` in `application-prod.yml`) aborts startup if either is blank, and every `DataSource` depends on it so the error surfaces before Flyway touches the DB. New secrets follow the same pattern (no default in base yml, dev default in `application-dev.yml`, field in `RequiredSecretsProperties`). `prod` also disables `/api-docs` and Swagger UI.
+
 ### Customer web app (React + Vite)
 
 ```bash
@@ -157,7 +159,9 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 ### Security
 
 - Keycloak JWT tokens. `JwtRoleConverter` maps `realm_access.roles` into `ROLE_<name>` Spring authorities.
-- `SecurityConfig` opens: `/actuator/health/**`, `/api-docs/**`, `/swagger-ui/**`, `/api/v1/register`, `/api/v1/customers/register`, and the three public browse endpoints: `/api/v1/catalog/categories`, `/api/v1/catalog/vendors/*/products`, `/api/v1/search/vendors`. Everything else requires a valid JWT.
+- `SecurityConfig` opens: `/actuator/health/**`, `/livez`, `/readyz`, `/api-docs/**`, `/swagger-ui/**`, `/api/v1/register`, `/api/v1/customers/register`, and the three public browse endpoints: `/api/v1/catalog/categories`, `/api/v1/catalog/vendors/*/products`, `/api/v1/search/vendors`. Everything else requires a valid JWT.
+- Actuator: on the application port everything except health/probes (`metrics`, `prometheus`, `info`) requires `ADMIN`. When `MANAGEMENT_SERVER_PORT` is set (default `8091` in `prod`; compose sets it too) actuator moves to that internal port, where `/actuator/**` needs no token so Prometheus can scrape (`prometheus.yml` → `backend:8091`). That port must never be published by ingress/LB; on the public port probes are `/livez` and `/readyz`.
+- Keycloak realm (`keycloak/delivery-realm.json`): `sslRequired: external`, brute-force protection on. `delivery-app` (backoffice) and `pede-aqui-web` (customer web) are public clients with PKCE S256 enforced for the code flow but **still allow ROPC** (`directAccessGrantsEnabled`), which both web apps use to log in. `pede-aqui-mobile` / `pede-aqui-courier-mobile` are code+PKCE only (no ROPC). The Flutter apps still call ROPC on `delivery-app` / `courier-app` (the latter is not in the realm) — migrating them and the web apps to PKCE is pending.
 - Fine-grained access uses `@PreAuthorize` annotations in service or controller methods.
 - Roles: `ADMIN`, `OPS`, `VENDOR_ADMIN`, `COURIER`, `CUSTOMER`, `FINANCE`, `SUPPORT`.
 

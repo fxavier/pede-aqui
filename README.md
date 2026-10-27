@@ -115,7 +115,9 @@ Notas:
 
 - `DB_URL`: JDBC URL for PostgreSQL.
 - `DB_USERNAME`: PostgreSQL username.
-- `DB_PASSWORD`: PostgreSQL password.
+- `DB_PASSWORD`: PostgreSQL password. **Required in `prod`** (startup fails if blank); the `dev` profile defaults to the compose value.
+- `KEYCLOAK_ADMIN_CLIENT_SECRET`: secret of the `delivery-admin-service` Keycloak client. **Required in `prod`**; `dev` defaults to the local realm value.
+- `MANAGEMENT_SERVER_PORT`: separate internal port for actuator (`prod` default `8091`; compose sets `8091`). Never expose it publicly.
 - `KEYCLOAK_ISSUER_URI`: Keycloak realm issuer URI.
 - `SERVER_PORT`: backend port, default `8080`.
 - `SPRING_PROFILES_ACTIVE`: optional Spring profile selector.
@@ -135,7 +137,7 @@ Notas:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: local database container settings.
 - `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`: local object storage credentials.
 - `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`: local Keycloak admin bootstrap credentials.
-- OpenAPI local endpoints: `/api-docs` and `/swagger-ui.html`.
+- OpenAPI local endpoints: `/api-docs` and `/swagger-ui.html` (disabled in the `prod` profile).
 
 Do not commit real secrets. Use local `.env` files only for developer machines.
 
