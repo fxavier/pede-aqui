@@ -1,6 +1,8 @@
 package com.delivery.common.config;
 
 import jakarta.validation.constraints.NotBlank;
+import javax.sql.DataSource;
+import org.springframework.boot.autoconfigure.AbstractDependsOnBeanFactoryPostProcessor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,18 @@ public class RequiredSecretsProperties {
     /** Client secret of the Keycloak admin service account (KEYCLOAK_ADMIN_CLIENT_SECRET). */
     @NotBlank
     private String keycloakAdminClientSecret;
+
+    /**
+     * Makes every DataSource wait for this validation, so a missing secret is reported as such before
+     * Flyway/JPA touch the database (otherwise the first error would be an opaque JDBC auth failure).
+     */
+    @Component
+    @Profile("prod")
+    static class DataSourceDependsOnRequiredSecrets extends AbstractDependsOnBeanFactoryPostProcessor {
+        DataSourceDependsOnRequiredSecrets() {
+            super(DataSource.class, "requiredSecretsProperties");
+        }
+    }
 
     public String getDbPassword() { return dbPassword; }
     public void setDbPassword(String dbPassword) { this.dbPassword = dbPassword; }

@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration;
 import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
@@ -42,6 +44,20 @@ class ProdSecretsFailFastTest {
                             .isInstanceOf(BindValidationException.class)
                             .hasMessageContaining("dbPassword")
                             .hasMessageContaining("keycloakAdminClientSecret");
+                });
+    }
+
+    @Test
+    void prodValidatesSecretsBeforeAnyDataSourceIsCreated() {
+        // Flyway/JPA must not open a connection before the secrets check: every DataSource depends on it.
+        runner("prod")
+                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x")
+                .withBean("dataSource", DataSource.class, () -> Mockito.mock(DataSource.class))
+                .withUserConfiguration(RequiredSecretsProperties.DataSourceDependsOnRequiredSecrets.class)
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    assertThat(ctx.getBeanFactory().getBeanDefinition("dataSource").getDependsOn())
+                            .contains("requiredSecretsProperties");
                 });
     }
 
