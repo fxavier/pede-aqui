@@ -20,4 +20,9 @@ public class BusinessException extends RuntimeException {
     public HttpStatus getStatus() {
         return status;
     }
+
+    /** Optional machine-readable context serialized as ErrorResponse.details; null (omitted) by default. */
+    public Object getDetails() {
+        return null;
+    }
 }
