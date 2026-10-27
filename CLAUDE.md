@@ -51,7 +51,7 @@ Full verify (compile + tests):
 cd backend && mvn clean verify
 ```
 
-Spring profiles: `dev` is the default (`spring.profiles.default`) and points storage at local MinIO — no AWS needed. `prod` (`SPRING_PROFILES_ACTIVE=prod`) targets real AWS S3 and fails fast if `AWS_S3_BUCKET`/`AWS_REGION` are missing. See the Storage section.
+Spring profiles: `dev` is the default (`spring.profiles.default`) and points storage at local MinIO — no AWS needed. `prod` (`SPRING_PROFILES_ACTIVE=prod`) targets real AWS S3 and fails fast if `AWS_S3_BUCKET`/`AWS_REGION` are missing. See the Storage section. `prod` also fails fast without `APP_DELIVERY_CODE_HMAC_SECRET` (delivery-PIN HMAC key; only `dev` has a default).
 
 ### Customer web app (React + Vite)
 
@@ -297,9 +297,9 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 
 - **Product lifecycle**: products are created `PENDING` and only become visible after admin approval (`Product.approve()` → `ACTIVE`). Vendor search (`/search/vendors`) derives its vendor list from products with status `ACTIVE` — an empty storefront usually means no ACTIVE products, not a broken endpoint. Vendor name/rating in search results are currently pseudo-generated stubs (see `SearchService.createVendorResponse`).
 - **Checkout**: cart → checkout (idempotency key) → mock payment → delivery record — all in one transaction.
-- **Delivery completion**: courier submits 6-digit OTP from customer; invalid attempts counted but OTP never logged.
+- **Delivery completion** (`POST /deliveries/{id}/complete`, `DeliveryService.complete`): only the **assigned courier** (caller's profile → courier in tenant must equal `delivery.courierId`; OPS/ADMIN cannot complete with the PIN) submits the customer's 6-digit PIN, and only from `ARRIVED_AT_CUSTOMER` or `ACCEPTED` (the courier app posts `/complete` straight after accepting the job — narrow to `ARRIVED_AT_CUSTOMER` once the app PATCHes intermediate statuses). Already `DELIVERED` → 409, other states → 409. A wrong PIN commits only the attempt counter + `CONFIRMATION_FAILED` event (`InvalidDeliveryCodeException`, `noRollbackFor`); at `app.delivery.max-code-attempts` (default 5) it locks: 423 `delivery_code_locked`, `CONFIRMATION_LOCKED` event, audit `DELIVERY_CODE_LOCKED`. OPS/ADMIN unlock via `POST /ops/deliveries/{id}/unlock-code` (audited). PIN hash is HMAC-SHA256 (`app.delivery.code-hmac-secret`), constant-time compare; rows created before V038 are flagged `confirmation_code_legacy` and also accept the old unsalted SHA-256. PINs are not unique per tenant (V037 dropped that constraint). The plain PIN (`orders.delivery_confirmation_code_display`, shown to the customer while active) is nulled when the order becomes `DELIVERED`/`CANCELLED` (incl. failed delivery). PIN never logged.
 - **Vendor fulfillment state machine**: `PAYMENT_CONFIRMED → ACCEPTED_BY_VENDOR → PREPARING → READY_FOR_PICKUP`.
-- **Courier delivery state machine**: `ACCEPTED → ARRIVED_AT_VENDOR → PICKED_UP → ON_ROUTE_TO_CUSTOMER → ARRIVED_AT_CUSTOMER → DELIVERED | FAILED_DELIVERY`.
+- **Courier delivery state machine**: `ACCEPTED → ARRIVED_AT_VENDOR → PICKED_UP → ON_ROUTE_TO_CUSTOMER → ARRIVED_AT_CUSTOMER → DELIVERED | FAILED_DELIVERY`. `PATCH /deliveries/{id}/status` is limited to the assigned courier or OPS/ADMIN (audited `DELIVERY_STATUS_UPDATED`), answers 409 on invalid transitions, and cannot reach `DELIVERED` (PIN required via `/complete`). `FAILED_DELIVERY` cancels the order (no refund/stock release yet).
 - **Dispatch**: first eligible courier in `operatingZoneId` (APPROVED + online). Reassignment excludes prior courier.
 - **Audit**: sensitive admin/ops/finance actions written to `audit_logs` (actor, target, action, result, timestamp).
 
