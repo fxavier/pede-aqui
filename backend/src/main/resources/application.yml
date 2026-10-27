@@ -89,6 +89,9 @@ app:
       realm: ${KEYCLOAK_REALM:delivery}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
       client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+  payments:
+    mock-confirmation:
+      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

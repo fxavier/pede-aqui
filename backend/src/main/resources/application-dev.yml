@@ -9,3 +9,7 @@ app:
     s3-endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     s3-access-key: ${MINIO_ROOT_USER:minioadmin}
     s3-secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+  # Sem PSP: a confirmação manual do pagamento mock só existe em dev (dono da encomenda ou OPS/ADMIN).
+  payments:
+    mock-confirmation:
+      enabled: true
