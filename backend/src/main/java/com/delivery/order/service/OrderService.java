@@ -15,6 +15,7 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.inventory.service.InventoryService;
+import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.entity.Order;
@@ -40,6 +41,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrderService {
     private static final Set<OrderStatus> VENDOR_REJECTION_ALLOWED_STATUSES = Set.of(OrderStatus.PAYMENT_CONFIRMED, OrderStatus.ACCEPTED_BY_VENDOR);
+    private static final int MAX_PAGE_SIZE = 100;
     private final CartRepository cartRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
@@ -89,6 +95,10 @@ public class OrderService {
         List<Order> orders = tenantContext.isPlatformAdmin()
                 ? orderRepository.findAll()
                 : orderRepository.findByTenantId(tenantId());
+        return toAdminResponses(orders);
+    }
+
+    private List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
         Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
         Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
         Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()
@@ -100,6 +110,18 @@ public class OrderService {
                         customerNames.getOrDefault(o.getCustomerId(), "Unknown"),
                         vendorNames.getOrDefault(o.getVendorId(), "Unknown")))
                 .toList();
+    }
+
+    /** Returns one page of orders for the current context (newest first, size capped). */
+    @Transactional(readOnly = true)
+    public AdminOrderPageResponse listPageForCurrentContext(int page, int size) {
+        int effectiveSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int effectivePage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(effectivePage, effectiveSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> result = tenantContext.isPlatformAdmin()
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findByTenantId(tenantId(), pageable);
+        return new AdminOrderPageResponse(toAdminResponses(result.getContent()), effectivePage, effectiveSize, result.getTotalElements());
     }
 
     /** Creates an order, reserves stock, and creates local payment/delivery records idempotently. */

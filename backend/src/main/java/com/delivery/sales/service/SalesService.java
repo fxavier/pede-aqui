@@ -322,12 +322,7 @@ public class SalesService {
 
     /** Masks a person's name for SUPPORT: keeps the first letter of each word ("Ana Lima" -> "A*** L***"). */
     static String maskName(String name) {
-        if (name == null || name.isBlank()) {
-            return name;
-        }
-        return java.util.Arrays.stream(name.trim().split("\\s+"))
-                .map(word -> word.charAt(0) + "***")
-                .collect(Collectors.joining(" "));
+        return SalesAccessGuard.maskName(name);
     }
 
     private Map<UUID, String> vendorNames(List<Order> orders) {
