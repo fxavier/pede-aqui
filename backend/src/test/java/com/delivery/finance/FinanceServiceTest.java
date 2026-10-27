@@ -17,6 +17,7 @@ import com.delivery.payment.entity.Refund;
 import com.delivery.payment.entity.RefundStatus;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
+import com.delivery.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +48,7 @@ class FinanceServiceTest {
         when(cashRepository.findByTenantIdAndStatus(tenantId, "PENDING")).thenReturn(List.of(
                 new CashReconciliation(UUID.randomUUID(), tenantId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("25.00"), "PENDING")));
 
-        FinanceService service = new FinanceService(paymentRepository, commissionRepository, cashRepository, refundRepository, new FinanceMapper(), tenantContext);
+        FinanceService service = new FinanceService(paymentRepository, commissionRepository, cashRepository, refundRepository, new FinanceMapper(), tenantContext, mock(PaymentService.class));
         var summary = service.summary();
 
         assertThat(summary.confirmedPaymentsTotal()).isEqualByComparingTo("200.00");
