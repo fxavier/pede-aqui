@@ -12,6 +12,7 @@ import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.OrderStockService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,8 +31,10 @@ public class DeliveryService {
     private final OrderRepository orderRepository;
     private final DeliveryMapper mapper;
     private final TenantContext tenantContext;
+    private final OrderStockService orderStockService;
 
-    public DeliveryService(DeliveryRepository deliveryRepository, DeliveryEventRepository eventRepository, OrderRepository orderRepository, DeliveryMapper mapper, TenantContext tenantContext) {
+    public DeliveryService(DeliveryRepository deliveryRepository, DeliveryEventRepository eventRepository, OrderRepository orderRepository, DeliveryMapper mapper, TenantContext tenantContext, OrderStockService orderStockService) {
+        this.orderStockService = orderStockService;
         this.deliveryRepository = deliveryRepository;
         this.eventRepository = eventRepository;
         this.orderRepository = orderRepository;
@@ -69,9 +72,11 @@ public class DeliveryService {
             delivery.recordCashCollected(cashCollectedAmount);
         }
         delivery.updateStatus(status);
+        if (status == DeliveryStatus.PICKED_UP) orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).ifPresent(orderStockService::commit); // INC-07 (COR-01)
         if (status == DeliveryStatus.FAILED_DELIVERY) {
             Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
             order.markCancelled();
+            orderStockService.release(order); // INC-07 (COR-01): no-op once pickup committed the stock
         }
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), EVENT_STATUS_UPDATE, "Delivery moved to " + status));
         return mapper.toResponse(delivery);

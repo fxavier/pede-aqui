@@ -79,7 +79,9 @@ class CheckoutDiscountRegressionTest {
 
     private final OrderService service = new OrderService(cartRepository, orderRepository, paymentRepository,
             deliveryRepository, inventoryService, userProfileRepository, vendorRepository, notificationService,
-            paymentService, auditLogService, mapper, tenantContext, skuRepository, productRepository, discountResolver);
+            paymentService, auditLogService, mapper, tenantContext, skuRepository, productRepository, discountResolver,
+            mock(com.delivery.order.service.OrderStockService.class), mock(com.delivery.cart.service.CartService.class),
+            mock(org.springframework.transaction.PlatformTransactionManager.class));
 
     private Cart cart;
 
@@ -94,7 +96,7 @@ class CheckoutDiscountRegressionTest {
         cart.addItem(new CartItem(UUID.randomUUID(), cart, tenantId, skuId, "P1", "P1", new BigDecimal("50.00"), 2));
         // subtotal 100.00, fees 10.00, taxes 8.00 → undiscounted total 118.00
         cart.updateTotals(new BigDecimal("10.00"), new BigDecimal("8.00"), BigDecimal.ZERO, new BigDecimal("118.00"));
-        when(cartRepository.findByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(cart));
+        when(cartRepository.lockByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(cart));
 
         when(orderRepository.findByTenantIdAndCheckoutIdempotencyKey(any(), anyString())).thenReturn(Optional.empty());
         // A non-null mapped response is required: checkout relies on Optional.map over it for the idempotent path.
@@ -109,6 +111,12 @@ class CheckoutDiscountRegressionTest {
                 .thenReturn(List.of(new Sku(skuId, tenantId, productId, "SKU-1", "P1", new BigDecimal("50.00"))));
         when(productRepository.findAllById(anyCollection()))
                 .thenReturn(List.of(new Product(productId, tenantId, vendorId, categoryId, "P1", null)));
+        // INC-07: checkout revalidates each line against the current SKU (active, same price) and an ACTIVE product.
+        when(skuRepository.findByTenantIdAndId(tenantId, skuId))
+                .thenReturn(Optional.of(new Sku(skuId, tenantId, productId, "SKU-1", "P1", new BigDecimal("50.00"))));
+        Product activeProduct = new Product(productId, tenantId, vendorId, categoryId, "P1", null);
+        activeProduct.approve();
+        when(productRepository.findByTenantIdAndId(tenantId, productId)).thenReturn(Optional.of(activeProduct));
     }
 
     @Test
