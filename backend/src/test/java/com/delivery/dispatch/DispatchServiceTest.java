@@ -1,66 +1,81 @@
 package com.delivery.dispatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.delivery.common.exception.BusinessException;
+import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.dispatch.entity.Courier;
 import com.delivery.dispatch.entity.DispatchJob;
+import com.delivery.dispatch.entity.DispatchJobStatus;
 import com.delivery.dispatch.mapper.DispatchMapper;
 import com.delivery.dispatch.repository.DispatchJobRepository;
 import com.delivery.dispatch.service.CourierService;
 import com.delivery.dispatch.service.DispatchService;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.common.service.AuditLogService;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 
+/** Unit coverage of DispatchService guards (INC-03: SEC-02, COR-02, COR-08) with mocked persistence. */
 class DispatchServiceTest {
     private final UUID tenantId = UUID.randomUUID();
     private final UUID zoneId = UUID.randomUUID();
+    private final UUID orderId = UUID.randomUUID();
+    private final UUID deliveryId = UUID.randomUUID();
 
-    @Test
-    void coversAssignmentRejectionAndReassignment() {
-        UUID orderId = UUID.randomUUID();
-        UUID deliveryId = UUID.randomUUID();
-        UUID firstCourierId = UUID.randomUUID();
-        UUID secondCourierId = UUID.randomUUID();
-        UUID jobId = UUID.randomUUID();
+    private CourierService courierService;
+    private DispatchJobRepository jobRepository;
+    private DeliveryRepository deliveryRepository;
+    private OrderRepository orderRepository;
+    private Courier first;
+    private Courier second;
+    private Order order;
+    private Delivery delivery;
+    private DispatchService service;
 
-        Courier first = new Courier(firstCourierId, tenantId, UUID.randomUUID(), zoneId);
-        first.approve();
-        first.setAvailable(true);
-        Courier second = new Courier(secondCourierId, tenantId, UUID.randomUUID(), zoneId);
-        second.approve();
-        second.setAvailable(true);
-
-        CourierService courierService = mock(CourierService.class);
+    @BeforeEach
+    void setUp() {
+        first = approvedCourier();
+        second = approvedCourier();
+        courierService = mock(CourierService.class);
         when(courierService.eligibleInZone(zoneId)).thenReturn(List.of(first, second));
+        when(courierService.requireMine()).thenReturn(first);
 
-        DispatchJobRepository jobRepository = mock(DispatchJobRepository.class);
+        jobRepository = mock(DispatchJobRepository.class);
         when(jobRepository.save(any(DispatchJob.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jobRepository.saveAndFlush(any(DispatchJob.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DeliveryRepository deliveryRepository = mock(DeliveryRepository.class);
-        Delivery delivery = new Delivery(deliveryId, tenantId, orderId, "hash");
+        deliveryRepository = mock(DeliveryRepository.class);
+        delivery = new Delivery(deliveryId, tenantId, orderId, "hash");
         when(deliveryRepository.findByTenantIdAndId(tenantId, deliveryId)).thenReturn(Optional.of(delivery));
 
-        OrderRepository orderRepository = mock(OrderRepository.class);
-        Order order = new Order(orderId, tenantId, "PA-1", UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("10"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("10"), "k", "h", "111111");
+        orderRepository = mock(OrderRepository.class);
+        order = new Order(orderId, tenantId, "PA-1", UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("10"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("10"), "k", "h", "111111");
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
 
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        DispatchService service = new DispatchService(
+        service = new DispatchService(
                 jobRepository,
                 courierService,
                 deliveryRepository,
@@ -68,18 +83,103 @@ class DispatchServiceTest {
                 orderRepository,
                 new DispatchMapper(),
                 mock(AuditLogService.class),
-                tenantContext);
+                tenantContext,
+                Duration.ofSeconds(60));
+    }
 
+    private Courier approvedCourier() {
+        Courier courier = new Courier(UUID.randomUUID(), tenantId, UUID.randomUUID(), zoneId);
+        courier.approve();
+        courier.setAvailable(true);
+        return courier;
+    }
+
+    /** Characterization: the happy path assign → reject (by the assignee) → reassign still works. */
+    @Test
+    void coversAssignmentRejectionAndReassignment() {
+        order.markReadyForPickup();
         var assigned = service.assign(orderId, deliveryId, zoneId);
+        UUID jobId = UUID.randomUUID();
         DispatchJob job = new DispatchJob(jobId, tenantId, orderId, deliveryId, assigned.courierId());
         when(jobRepository.findByTenantIdAndId(tenantId, jobId)).thenReturn(Optional.of(job));
 
         var rejected = service.reject(jobId, "Muito longe");
         var reassigned = service.reassign(jobId, zoneId);
 
-        assertThat(assigned.status().name()).isEqualTo("ASSIGNED");
-        assertThat(rejected.status().name()).isEqualTo("REASSIGNABLE");
-        assertThat(reassigned.status().name()).isEqualTo("ASSIGNED");
-        assertThat(reassigned.courierId()).isEqualTo(secondCourierId);
+        assertThat(assigned.status()).isEqualTo(DispatchJobStatus.ASSIGNED);
+        assertThat(assigned.courierId()).isEqualTo(first.getId());
+        assertThat(rejected.status()).isEqualTo(DispatchJobStatus.REASSIGNABLE);
+        assertThat(reassigned.status()).isEqualTo(DispatchJobStatus.ASSIGNED);
+        assertThat(reassigned.courierId()).isEqualTo(second.getId());
+    }
+
+    @Test
+    void acceptOfJobAssignedToAnotherCourierIsNotFound() {
+        UUID jobId = UUID.randomUUID();
+        DispatchJob job = new DispatchJob(jobId, tenantId, orderId, deliveryId, second.getId());
+        when(jobRepository.findByTenantIdAndId(tenantId, jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> service.accept(jobId)).isInstanceOf(NotFoundException.class);
+        assertThat(job.getStatus()).isEqualTo(DispatchJobStatus.ASSIGNED);
+    }
+
+    @Test
+    void rejectOfJobAssignedToAnotherCourierIsNotFound() {
+        UUID jobId = UUID.randomUUID();
+        DispatchJob job = new DispatchJob(jobId, tenantId, orderId, deliveryId, second.getId());
+        when(jobRepository.findByTenantIdAndId(tenantId, jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> service.reject(jobId, "x")).isInstanceOf(NotFoundException.class);
+        assertThat(job.getStatus()).isEqualTo(DispatchJobStatus.ASSIGNED);
+    }
+
+    @Test
+    void rejectOfAcceptedJobIsConflict() {
+        UUID jobId = UUID.randomUUID();
+        DispatchJob job = new DispatchJob(jobId, tenantId, orderId, deliveryId, first.getId());
+        job.accept();
+        when(jobRepository.findByTenantIdAndId(tenantId, jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> service.reject(jobId, "x"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+        assertThat(job.getStatus()).isEqualTo(DispatchJobStatus.ACCEPTED);
+    }
+
+    @Test
+    void exclusivityIndexViolationsAreMappedToConflictButOtherIntegrityErrorsPropagate() {
+        order.markReadyForPickup();
+        doThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_deliveries_active_courier\""))
+                .when(jobRepository).flush();
+        assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> {
+                    assertThat(((BusinessException) e).getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(((BusinessException) e).getCode()).isEqualTo("courier_busy");
+                });
+
+        order.markReadyForPickup();
+        doThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_dispatch_jobs_active_delivery\""))
+                .when(jobRepository).flush();
+        assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getCode()).isEqualTo("dispatch_job_already_active"));
+
+        order.markReadyForPickup();
+        doThrow(new DataIntegrityViolationException("violates foreign key constraint \"fk_other\""))
+                .when(jobRepository).flush();
+        assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void assignOfOrderNotReadyForPickupIsConflictAndCreatesNoJob() {
+        order.markPreparing();
+
+        assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getStatus()).isEqualTo(HttpStatus.CONFLICT));
+        verify(jobRepository, never()).save(any(DispatchJob.class));
+        verify(jobRepository, never()).saveAndFlush(any(DispatchJob.class));
     }
 }
