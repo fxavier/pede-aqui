@@ -1,0 +1,11 @@
+-- Seller rejection after a partial refund (product decision): an order cancelled because the seller
+-- rejected it records WHY it was cancelled, separately from the free-text rejection_reason.
+-- Nullable and without default: legacy rows and other cancellation paths keep NULL, so ADD COLUMN is a
+-- catalog-only change on PostgreSQL (brief ACCESS EXCLUSIVE lock, no table rewrite, no scan).
+-- Backward compatible: the previous application version does not map the column and keeps working.
+-- Values are constrained by the CancellationReason enum (EnumType.STRING); deliberately no CHECK
+-- constraint so a new reason needs no migration. payments.status has no CHECK constraint either, so the
+-- new PaymentStatus.FULLY_REFUNDED value needs no DDL.
+-- Rollback / forward-fix: roll the application back first (the current version validates this column via
+-- ddl-auto=validate), then `ALTER TABLE orders DROP COLUMN cancellation_reason;`.
+ALTER TABLE orders ADD COLUMN cancellation_reason VARCHAR(40);

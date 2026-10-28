@@ -66,7 +66,8 @@ public class SalesService {
             PaymentStatus.CONFIRMED,
             PaymentStatus.REFUND_PENDING,
             PaymentStatus.PARTIALLY_REFUNDED,
-            PaymentStatus.REFUNDED);
+            PaymentStatus.REFUNDED,
+            PaymentStatus.FULLY_REFUNDED);
     /** Allow-list transition matrix for the gated status override (plan §3.3). */
     private static final Map<OrderStatus, OrderStatus> OVERRIDE_ALLOW_LIST = Map.of(
             OrderStatus.PAYMENT_CONFIRMED, OrderStatus.CANCELLED,

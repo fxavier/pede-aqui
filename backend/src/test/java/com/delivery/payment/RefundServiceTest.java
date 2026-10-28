@@ -19,6 +19,7 @@ import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.Payment;
+import com.delivery.payment.entity.PaymentStatus;
 import com.delivery.payment.entity.Refund;
 import com.delivery.payment.entity.RefundStatus;
 import com.delivery.payment.mapper.PaymentMapper;
@@ -208,6 +209,47 @@ class RefundServiceTest {
         service.approveRefund(refund.id());
         assertThat(service.approveRefund(refund.id()).status()).isEqualTo(RefundStatus.REFUNDED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+
+    // ---- seller rejection after partial refund: financial state on Payment ----
+
+    @Test
+    void approvalsMovePaymentToPartiallyThenFullyRefunded() {
+        RefundResponse first = request("40.00", "k1");
+        RefundResponse second = request("60.00", "k2");
+        stubTenantLookup();
+
+        service.approveRefund(first.id());
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
+
+        service.approveRefund(second.id());
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FULLY_REFUNDED);
+    }
+
+    @Test
+    void cancelledOrderStaysCancelledOnFullApproval() {
+        order.markCancelledBySellerRejection("Sem stock");
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FULLY_REFUNDED);
+        verify(auditLogService, never()).log(org.mockito.ArgumentMatchers.eq("ORDER_REFUNDED"), any(), any(), any(), any());
+    }
+
+    @Test
+    void remainingRefundCoversOnlyWhatIsLeftAndNothingWhenFullyCovered() {
+        request("30.00", "k1");
+
+        assertThat(service.requestRemainingRefund(payment.getId(), "reject", "seller-reject"))
+                .hasValueSatisfying(r -> assertThat(r.amount()).isEqualByComparingTo("70.00"));
+        // Same key again: the existing refund, no duplicate.
+        assertThat(service.requestRemainingRefund(payment.getId(), "reject", "seller-reject"))
+                .hasValueSatisfying(r -> assertThat(r.amount()).isEqualByComparingTo("70.00"));
+        assertThat(service.requestRemainingRefund(payment.getId(), "reject", "other-key")).isEmpty();
+        assertThat(stored).hasSize(2);
     }
 
     private RefundResponse request(String amount, String key) {

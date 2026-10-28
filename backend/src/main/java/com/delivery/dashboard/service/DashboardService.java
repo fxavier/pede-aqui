@@ -155,7 +155,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public FinanceDashboardResponse finance() {
         UUID tenantId = tenantId();
-        BigDecimal transactionsTotal = paymentRepository.findByTenantIdAndStatus(tenantId, PaymentStatus.CONFIRMED).stream()
+        BigDecimal transactionsTotal = paymentRepository.findByTenantIdAndStatusIn(tenantId, PaymentStatus.CAPTURED).stream()
                 .map(payment -> payment.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal commissionsTotal = commissionRepository.findByTenantId(tenantId).stream()

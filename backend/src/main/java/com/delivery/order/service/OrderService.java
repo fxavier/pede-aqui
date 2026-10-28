@@ -19,6 +19,7 @@ import com.delivery.inventory.service.InventoryService;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
@@ -31,10 +32,13 @@ import com.delivery.vendor.repository.VendorRepository;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.payment.service.PaymentService;
 import com.delivery.payment.dto.RefundRequest;
+import com.delivery.payment.dto.RefundResponse;
 import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.cart.service.CartService;
 import com.delivery.order.dto.CheckoutResult;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -304,42 +308,73 @@ public class OrderService {
         return mapper.toResponse(order);
     }
 
-    /** Rejects an order with a required reason when still in vendor-owned states. */
+    /**
+     * Rejects an order with a required reason while still in vendor-owned states, in one transaction
+     * (status change + stock release + refund request + notification + audit; any failure rolls back all).
+     * The payment row is locked first so concurrent rejections (and refund requests/approvals) of the same
+     * order are serialized and the second caller sees the committed outcome.
+     * - No refund on the payment yet (INC-04): order → REJECTED_BY_VENDOR and a refund of the full amount.
+     * - Payment already carries refunds (REFUNDED or pending): order → CANCELLED with reason SELLER_REJECTED
+     *   and only the remaining refundable amount is requested (none when nothing remains). Repeating it is
+     *   idempotent: the same response, no new refund, audit entry or notification.
+     */
     @Transactional
     public OrderResponse rejectByVendor(UUID orderId, String reason) {
         if (reason == null || reason.isBlank()) {
             throw new BusinessException("rejection_reason_required", "A rejection reason is required", HttpStatus.BAD_REQUEST);
         }
+        // Lock before the order is read, so the order state below is the committed state after any concurrent rejection.
+        Payment payment = paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId(), orderId).orElse(null);
         Order order = findOrder(orderId);
+        if (order.getStatus() == OrderStatus.CANCELLED && order.getCancellationReason() == CancellationReason.SELLER_REJECTED) {
+            return mapper.toResponse(order); // idempotent repeat of a seller rejection
+        }
         if (!VENDOR_REJECTION_ALLOWED_STATUSES.contains(order.getStatus())) {
             throw new BusinessException("invalid_order_transition", "Order cannot be rejected in the current status", HttpStatus.BAD_REQUEST);
         }
-        
-        // Mark order as rejected by vendor with reason
+        if (payment == null) {
+            throw new NotFoundException("Payment was not found for order");
+        }
+        if (paymentService.hasCommittedRefunds(payment.getId())) {
+            return cancelBySellerRejection(order, payment, reason);
+        }
+
         order.markRejectedByVendor(reason);
         orderStockService.release(order); // INC-07 (COR-01): rejected orders give their reservation back
-        
-        // Send notification to customer
-        notificationService.create(
-            order.getCustomerId(), 
-            "CUSTOMER", 
-            "order_rejected", 
-            "Order Rejected", 
-            String.format("Your order %s has been rejected by the vendor. Reason: %s", order.getReference(), reason), 
-            order.getReference()
-        );
-        
-        // Initiate refund process
-        Payment payment = paymentRepository.findByTenantIdAndOrderId(tenantId(), orderId)
-            .orElseThrow(() -> new NotFoundException("Payment was not found for order"));
-        
-        String refundIdempotencyKey = "vendor-rejection-" + orderId.toString();
+        notifyRejected(order, reason);
+        String refundIdempotencyKey = "vendor-rejection-" + orderId;
         paymentService.requestRefund(payment.getId(), new RefundRequest(payment.getAmount(), "Vendor rejection: " + reason, refundIdempotencyKey));
-        
         // COR-07: the order stays REJECTED_BY_VENDOR; the refund is tracked only on the Refund record.
         auditLogService.log("ORDER_REJECTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
-        
         return mapper.toResponse(order);
+    }
+
+    /**
+     * Seller rejection after a partial refund: cancel with SELLER_REJECTED and refund only the remainder
+     * (payment − refunds already REFUNDED or pending). The refund is created REQUESTED here; a future PSP
+     * payout runs after commit (see PaymentService#requestRemainingRefund) and can never undo this cancellation.
+     */
+    private OrderResponse cancelBySellerRejection(Order order, Payment payment, String reason) {
+        order.markCancelledBySellerRejection(reason);
+        orderStockService.release(order); // INC-07 (COR-01)
+        BigDecimal refunded = paymentService.requestRemainingRefund(payment.getId(), "Vendor rejection: " + reason, "seller-reject-" + order.getId())
+                .map(RefundResponse::amount)
+                .orElse(BigDecimal.ZERO);
+        notifyRejected(order, reason);
+        // No PII: the order id identifies the target; the business reference carries only the refunded remainder.
+        auditLogService.log("ORDER_CANCELLED_SELLER_REJECTED", "order", order.getId().toString(),
+                "refund_remaining=" + refunded.setScale(2, RoundingMode.HALF_UP).toPlainString(), "SUCCESS");
+        return mapper.toResponse(order);
+    }
+
+    private void notifyRejected(Order order, String reason) {
+        notificationService.create(
+                order.getCustomerId(),
+                "CUSTOMER",
+                "order_rejected",
+                "Order Rejected",
+                String.format("Your order %s has been rejected by the vendor. Reason: %s", order.getReference(), reason),
+                order.getReference());
     }
 
     /** Marks an accepted order as preparing. */
