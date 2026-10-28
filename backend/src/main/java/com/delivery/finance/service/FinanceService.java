@@ -78,7 +78,7 @@ public class FinanceService {
     @Transactional(readOnly = true)
     public FinanceSummaryResponse summary() {
         UUID tenantId = tenantId();
-        BigDecimal confirmedPaymentsTotal = paymentRepository.findByTenantIdAndStatus(tenantId, PaymentStatus.CONFIRMED).stream()
+        BigDecimal confirmedPaymentsTotal = paymentRepository.findByTenantIdAndStatusIn(tenantId, PaymentStatus.CAPTURED).stream()
                 .map(payment -> payment.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal commissionTotal = commissionRepository.findByTenantId(tenantId).stream()

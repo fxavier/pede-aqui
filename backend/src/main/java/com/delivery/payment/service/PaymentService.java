@@ -21,6 +21,7 @@ import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -137,10 +138,43 @@ public class PaymentService {
     }
 
     /**
+     * True when the payment already carries a refund that still counts against it (REQUESTED/APPROVED/REFUNDED,
+     * i.e. anything not REJECTED). Callers that branch on this hold the payment row lock (findByTenantIdAndOrderIdForUpdate).
+     */
+    @Transactional(readOnly = true)
+    public boolean hasCommittedRefunds(UUID paymentId) {
+        return committedRefunds(tenantId(), paymentId).signum() > 0;
+    }
+
+    /**
+     * Requests a refund of whatever is still refundable on the payment: amount − Σ(non-rejected refunds), so
+     * completed and pending refunds are never duplicated. Returns empty (no refund row) when nothing remains.
+     * Runs on the same locked path as {@link #requestRefund}; reusing the idempotency key returns the existing refund.
+     *
+     * PSP seam: there is no PSP yet, so the refund is only created REQUESTED inside the caller's transaction.
+     * When a PSP is integrated, the payout call must run AFTER COMMIT (never inside this transaction), be
+     * idempotent by the refund's idempotency key, and record a PSP failure on the refund itself (a retryable
+     * state) — a PSP failure must never roll back the order cancellation that created the refund.
+     */
+    @Transactional
+    public Optional<RefundResponse> requestRemainingRefund(UUID paymentId, String reason, String idempotencyKey) {
+        UUID tenantId = tenantId();
+        Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
+        boolean keyUsed = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey).isPresent();
+        BigDecimal remaining = payment.getAmount().subtract(committedRefunds(tenantId, paymentId));
+        if (!keyUsed && remaining.signum() <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(requestRefund(paymentId, new RefundRequest(remaining, reason, idempotencyKey)));
+    }
+
+    /**
      * Approves a pending refund once (tenant-scoped; another tenant's refund is a 404).
      * There is no PSP yet: approval is an administrative record only — NO money is returned to the
-     * customer by this call. When the approved refunds cover the full payment the order becomes
-     * REFUNDED; a partial approval leaves the order status unchanged.
+     * customer by this call. The payment carries the financial state: PARTIALLY_REFUNDED while approved
+     * refunds cover part of the amount, FULLY_REFUNDED once they cover all of it. On full coverage the
+     * order becomes REFUNDED, except a CANCELLED order, which stays CANCELLED (order and financial state
+     * are independent); a partial approval leaves the order status unchanged.
      */
     @Transactional
     public RefundResponse approveRefund(UUID refundId) {
@@ -156,10 +190,15 @@ public class PaymentService {
             refund.approve();
             auditLogService.log("REFUND_APPROVED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
             if (approvedRefunds(tenantId, payment.getId(), refund).compareTo(payment.getAmount()) >= 0) {
+                payment.markFullyRefunded();
                 Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
                         .orElseThrow(() -> new NotFoundException("Order was not found"));
-                order.markRefunded();
-                auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
+                if (order.getStatus() != OrderStatus.CANCELLED) {
+                    order.markRefunded();
+                    auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
+                }
+            } else {
+                payment.markPartiallyRefunded();
             }
         }
         return toRefundResponse(refund);

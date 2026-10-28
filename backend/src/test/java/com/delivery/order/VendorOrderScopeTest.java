@@ -184,7 +184,7 @@ class VendorOrderScopeTest {
         UUID paymentId = UUID.randomUUID();
         when(payment.getId()).thenReturn(paymentId);
         when(payment.getAmount()).thenReturn(new BigDecimal("115.00"));
-        when(paymentRepository.findByTenantIdAndOrderId(tenantId, order.getId())).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId, order.getId())).thenReturn(Optional.of(payment));
 
         var response = service.rejectByVendor(order.getId(), "Sem ingredientes");
 
@@ -203,7 +203,7 @@ class VendorOrderScopeTest {
         authenticate(vendorA, "ROLE_VENDOR_ADMIN");
         Order order = stored(paymentConfirmed(vendorA));
         Payment payment = new Payment(UUID.randomUUID(), tenantId, order.getId(), new BigDecimal("115.00"), "pay-idem");
-        when(paymentRepository.findByTenantIdAndOrderId(tenantId, order.getId())).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId, order.getId())).thenReturn(Optional.of(payment));
         when(paymentRepository.findByTenantIdAndId(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         RefundRepository refundRepository = mock(RefundRepository.class);
         when(refundRepository.findByTenantIdAndIdempotencyKey(any(), anyString())).thenReturn(Optional.empty());

@@ -58,7 +58,7 @@ class VendorFulfillmentTest {
         Payment payment = mock(Payment.class);
         when(payment.getId()).thenReturn(UUID.randomUUID());
         when(payment.getAmount()).thenReturn(new BigDecimal("115.00"));
-        when(paymentRepository.findByTenantIdAndOrderId(tenantId, orderId)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId, orderId)).thenReturn(Optional.of(payment));
         AuditLogService auditLogService = mock(AuditLogService.class);
         
         OrderService service = serviceWithAuditService(orderRepository, paymentRepository, auditLogService);

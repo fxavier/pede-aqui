@@ -54,6 +54,10 @@ public class Payment {
     }
 
     public void confirm() { this.status = PaymentStatus.CONFIRMED; this.confirmedAt = Instant.now(); this.updatedAt = confirmedAt; }
+    /** Financial state after a refund approval: approved refunds cover part of the amount. */
+    public void markPartiallyRefunded() { this.status = PaymentStatus.PARTIALLY_REFUNDED; this.updatedAt = Instant.now(); }
+    /** Financial state after a refund approval: approved refunds cover the full amount. */
+    public void markFullyRefunded() { this.status = PaymentStatus.FULLY_REFUNDED; this.updatedAt = Instant.now(); }
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
     public UUID getOrderId() { return orderId; }

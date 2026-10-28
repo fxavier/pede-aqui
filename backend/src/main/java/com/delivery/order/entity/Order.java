@@ -60,6 +60,10 @@ public class Order {
     private Instant updatedAt;
     @Column(name = "rejection_reason")
     private String rejectionReason;
+    /** Why the order was cancelled (V044); null unless a cancellation path records one. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancellation_reason")
+    private CancellationReason cancellationReason;
     @Column(name = "cart_id")
     private UUID cartId;
     @Enumerated(EnumType.STRING)
@@ -120,6 +124,14 @@ public class Order {
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
+    /** Seller rejection once the payment already carries refunds: CANCELLED with reason SELLER_REJECTED (financial state lives on Payment). */
+    public void markCancelledBySellerRejection(String reason) {
+        this.status = OrderStatus.CANCELLED;
+        this.cancellationReason = CancellationReason.SELLER_REJECTED;
+        this.rejectionReason = reason;
+        this.deliveryConfirmationCodeDisplay = null;
+        this.updatedAt = Instant.now();
+    }
     public void markRejectedByVendor(String reason) { this.status = OrderStatus.REJECTED_BY_VENDOR; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
     public void markDelivered() { this.status = OrderStatus.DELIVERED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
 
@@ -141,6 +153,7 @@ public class Order {
     public String getDeliveryConfirmationCodeDisplay() { return deliveryConfirmationCodeDisplay; }
     public Instant getCreatedAt() { return createdAt; }
     public String getRejectionReason() { return rejectionReason; }
+    public CancellationReason getCancellationReason() { return cancellationReason; }
     public UUID getCartId() { return cartId; }
     public StockStatus getStockStatus() { return stockStatus; }
     public List<OrderItem> getItems() { return items; }

@@ -35,7 +35,7 @@ class FinanceServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        when(paymentRepository.findByTenantIdAndStatus(tenantId, PaymentStatus.CONFIRMED)).thenReturn(List.of(
+        when(paymentRepository.findByTenantIdAndStatusIn(tenantId, PaymentStatus.CAPTURED)).thenReturn(List.of(
                 new Payment(UUID.randomUUID(), tenantId, UUID.randomUUID(), new BigDecimal("120.00"), "k1"),
                 new Payment(UUID.randomUUID(), tenantId, UUID.randomUUID(), new BigDecimal("80.00"), "k2")));
 
