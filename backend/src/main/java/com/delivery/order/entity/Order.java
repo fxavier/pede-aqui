@@ -51,7 +51,8 @@ public class Order {
     private String checkoutIdempotencyKey;
     @Column(name = "delivery_confirmation_code_hash", nullable = false)
     private String deliveryConfirmationCodeHash;
-    @Column(name = "delivery_confirmation_code_display", nullable = false)
+    /** Plain PIN shown to the customer while the delivery is active; cleared (null) once the order is delivered or cancelled. */
+    @Column(name = "delivery_confirmation_code_display")
     private String deliveryConfirmationCodeDisplay;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -101,9 +102,9 @@ public class Order {
     public void markAssignedToCourier() { this.status = OrderStatus.ASSIGNED_TO_COURIER; this.updatedAt = Instant.now(); }
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
-    public void markCancelled() { this.status = OrderStatus.CANCELLED; this.updatedAt = Instant.now(); }
+    public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
     public void markRejectedByVendor(String reason) { this.status = OrderStatus.REJECTED_BY_VENDOR; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
-    public void markDelivered() { this.status = OrderStatus.DELIVERED; this.updatedAt = Instant.now(); }
+    public void markDelivered() { this.status = OrderStatus.DELIVERED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }

@@ -124,7 +124,8 @@ class VendorFulfillmentTest {
                 tenantContext,
                 mock(SkuRepository.class),
                 mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(),
+                mock(com.delivery.delivery.service.DeliveryCodeHasher.class));
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {
