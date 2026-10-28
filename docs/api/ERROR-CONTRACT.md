@@ -4,7 +4,7 @@
 |---|---|
 | Incremento | INC-14 (AS-15, AS-17) |
 | Estado | Em vigor no backend; janela de compatibilidade aberta (ver §5) |
-| Código | `common/exception/ApiProblems.java`, `common/exception/GlobalExceptionHandler.java`, `common/security/ProblemDetailSecurityHandlers.java`, `common/config/CorrelationIdFilter.java` |
+| Código | `common/exception/ApiProblems.java`, `common/exception/GlobalExceptionHandler.java`, `common/security/ProblemDetailSecurityHandlers.java`, `common/security/TenantRequestFilter.java`, `common/config/CorrelationIdFilter.java` |
 
 ## 1. Resumo
 
@@ -15,6 +15,9 @@ Todas as respostas de erro da API (`4xx`/`5xx`) passam a ser um **documento de p
 - exceções-padrão do Spring MVC (rota inexistente, método não suportado, `Content-Type` não suportado,
   JSON malformado, parâmetro em falta ou com tipo inválido, validação Bean Validation);
 - `401`/`403` decididos pela cadeia de segurança (token ausente/inválido, regras por URL);
+- `400`/`404` do `TenantRequestFilter` (INC-11) quando um administrador de plataforma envia um `X-Tenant-Id`
+  malformado ou de um tenant inexistente — o filtro corre depois da cadeia de segurança e escreve o corpo
+  diretamente via `ApiProblems.create(...)`;
 - `429` do limitador de pedidos sensíveis.
 
 Os campos do formato antigo (`code`, `message`, `correlationId`, `timestamp`, `fieldErrors`, `details`)
@@ -67,9 +70,12 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | 400 | `missing_parameter` | Parâmetro, header ou parte multipart obrigatório em falta. |
 | 400 | `invalid_parameter` | Parâmetro de caminho/query com tipo inválido (ex.: UUID inválido). |
 | 400 | `bad_request` | Outros 400 do framework (inclui pedido bearer malformado). |
+| 400 | `invalid_tenant_header` | Administrador de plataforma com `X-Tenant-Id` que não é um UUID (`TenantRequestFilter`, INC-11). |
 | 401 | `unauthorized` | Sem token ou token inválido/expirado. Header `WWW-Authenticate` inalterado. |
 | 403 | `forbidden` | Papel insuficiente (regra por URL ou `@PreAuthorize`). |
+| 403 | `tenant_required` | Pedido autenticado sem tenant resolúvel (ver "Tenant model" em `CLAUDE.md`). |
 | 404 | `not_found` | Recurso inexistente/fora do âmbito **e** rota inexistente (`NoResourceFoundException`; inclui `/api-docs`, Swagger e `/actuator/health` na porta pública em `prod`). Antes devolvia **500**. |
+| 404 | `tenant_not_found` | Administrador de plataforma com `X-Tenant-Id` de um tenant que não existe (`TenantRequestFilter`, INC-11). |
 | 405 | `method_not_allowed` | Método HTTP não suportado; header `Allow` presente. Antes 500. |
 | 406 | `not_acceptable` | `Accept` impossível de satisfazer. |
 | 409 | `conflict` | Violação de unicidade/integridade (sem nomes de constraint). |
@@ -127,5 +133,21 @@ campo com os `status` de recursos (ex.: estado de encomenda).
   houver onde publicar as páginas.
 - Tracing distribuído (Micrometer Tracing + OTel): `traceId` passa a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
-- Filtros que escrevam respostas diretamente (ex.: o `TenantRequestFilter` proposto em INC-11) devem usar
-  `ApiProblems.create(...)` para produzir o mesmo corpo.
+
+## 7. Cobertura: quem escreve corpos de erro
+
+Só três sítios produzem corpos de erro, todos via `ApiProblems`:
+
+| Origem | Como | Teste |
+|---|---|---|
+| `GlobalExceptionHandler` | exceções MVC/aplicação | `ErrorContractApiTest` |
+| `ProblemDetailSecurityHandlers` | 401/403 da cadeia de segurança | `ErrorContractApiTest` |
+| `TenantRequestFilter` | 400/404 de impersonação de tenant (corre **depois** da cadeia de segurança) | `TenantRequestFilterProblemDetailTest`, `CustomerTenantResolutionE2ETest` |
+
+O limitador (`RateLimitConfig`) lança `BusinessException`, pelo que cai no handler. Qualquer novo filtro ou
+interceptor que tenha de responder diretamente deve usar `ApiProblems.create(...)` e
+`Content-Type: application/problem+json`, nunca JSON escrito à mão.
+
+Fora deste contrato fica apenas o `/error` do Spring Boot (`BasicErrorController`), que só é atingido se um
+filtro chamar `response.sendError(...)` ou se um erro escapar à cadeia de filtros; nenhum código da aplicação
+faz isso hoje. Não há `ErrorController` próprio nem propriedades `server.error.*` configuradas.

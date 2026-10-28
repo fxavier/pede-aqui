@@ -1,8 +1,7 @@
 package com.delivery.common.security;
 
 import com.delivery.auth.service.CustomerProfileProvisioningService;
-import com.delivery.common.config.CorrelationIdFilter;
-import com.delivery.common.dto.ErrorResponse;
+import com.delivery.common.exception.ApiProblems;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.tenant.repository.TenantRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -99,12 +99,19 @@ public class TenantRequestFilter extends OncePerRequestFilter {
         return true;
     }
 
-    private void writeError(HttpServletRequest request, HttpServletResponse response, HttpStatus status, String code, String message) throws IOException {
-        Object correlationId = request.getAttribute(CorrelationIdFilter.CORRELATION_ID_ATTRIBUTE);
+    /**
+     * Same RFC 9457 body as every other error (INC-14): the filter answers before MVC, so it cannot throw a
+     * BusinessException and must build the problem document itself via {@link ApiProblems}.
+     */
+    private void writeError(HttpServletRequest request, HttpServletResponse response, HttpStatus status, String code, String detail) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        ProblemDetail problem = ApiProblems.create(status, code, detail, request);
         response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(),
-                ErrorResponse.of(code, message, correlationId == null ? null : correlationId.toString()));
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getOutputStream(), problem);
     }
 
     private static String displayName(Jwt jwt) {
