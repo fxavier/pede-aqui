@@ -1,7 +1,6 @@
 package com.delivery.finance.service;
 
 import com.delivery.common.exception.BusinessException;
-import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.finance.dto.CashReconciliationResponse;
 import com.delivery.finance.dto.CommissionResponse;
@@ -13,10 +12,12 @@ import com.delivery.finance.dto.TransactionResponse;
 import com.delivery.finance.mapper.FinanceMapper;
 import com.delivery.finance.repository.CashReconciliationRepository;
 import com.delivery.finance.repository.CommissionRepository;
+import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;
 import com.delivery.payment.entity.RefundStatus;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
+import com.delivery.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class FinanceService {
     private final RefundRepository refundRepository;
     private final FinanceMapper financeMapper;
     private final TenantContext tenantContext;
+    private final PaymentService paymentService;
 
     public FinanceService(
             PaymentRepository paymentRepository,
@@ -40,13 +42,15 @@ public class FinanceService {
             CashReconciliationRepository cashReconciliationRepository,
             RefundRepository refundRepository,
             FinanceMapper financeMapper,
-            TenantContext tenantContext) {
+            TenantContext tenantContext,
+            PaymentService paymentService) {
         this.paymentRepository = paymentRepository;
         this.commissionRepository = commissionRepository;
         this.cashReconciliationRepository = cashReconciliationRepository;
         this.refundRepository = refundRepository;
         this.financeMapper = financeMapper;
         this.tenantContext = tenantContext;
+        this.paymentService = paymentService;
     }
 
     /** Returns payment transactions visible to finance for the current tenant. */
@@ -89,24 +93,23 @@ public class FinanceService {
         return new FinanceSummaryResponse(confirmedPaymentsTotal, commissionTotal, refundsTotal, unreconciledCashTotal);
     }
 
-    /** Approves a pending refund, marking it as refunded. */
+    /**
+     * Approves a pending refund through PaymentService so status guards, audit and the full-refund →
+     * order REFUNDED transition apply (INC-06). Administrative record only: no money moves (no PSP).
+     */
     @Transactional
     public RefundFinanceResponse approveRefund(UUID id) {
-        UUID tenantId = tenantId();
-        com.delivery.payment.entity.Refund refund = refundRepository.findByTenantIdAndId(tenantId, id)
-                .orElseThrow(() -> new NotFoundException("Refund not found"));
-        refund.approve();
-        return financeMapper.toRefundFinanceResponse(refundRepository.save(refund));
+        return toRefundFinanceResponse(paymentService.approveRefund(id));
     }
 
-    /** Rejects a pending refund request. */
+    /** Rejects a pending refund through PaymentService (same guards and audit as /payments/refunds). */
     @Transactional
     public RefundFinanceResponse rejectRefund(UUID id) {
-        UUID tenantId = tenantId();
-        com.delivery.payment.entity.Refund refund = refundRepository.findByTenantIdAndId(tenantId, id)
-                .orElseThrow(() -> new NotFoundException("Refund not found"));
-        refund.reject();
-        return financeMapper.toRefundFinanceResponse(refundRepository.save(refund));
+        return toRefundFinanceResponse(paymentService.rejectRefund(id));
+    }
+
+    private static RefundFinanceResponse toRefundFinanceResponse(RefundResponse refund) {
+        return new RefundFinanceResponse(refund.id(), refund.paymentId(), refund.orderId(), refund.amount(), refund.reason(), refund.status());
     }
 
     /** Returns tenant refunds for finance review workflows. */

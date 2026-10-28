@@ -20,7 +20,9 @@ import com.delivery.payment.entity.RefundStatus;
 import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
+import java.math.BigDecimal;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,7 +30,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Handles local/mock payment confirmation with idempotency. */
+/** Handles local/mock payment confirmation and the administrative refund workflow (no PSP: refunds are records only). */
 @Service
 public class PaymentService {
     private final PaymentRepository paymentRepository;
@@ -99,37 +101,74 @@ public class PaymentService {
         return mapper.toResponse(payment);
     }
 
-    /** Creates a refund request idempotently for finance/admin review. */
+    /**
+     * Creates a refund request idempotently for finance/admin review (INC-06, COR-04).
+     * The payment row is locked (SELECT ... FOR UPDATE) so concurrent requests are serialized: the
+     * amount must be positive and the sum of non-rejected refunds may never exceed payment.amount (422).
+     * Reusing a key returns the existing refund; a key bound to another payment is a 409.
+     */
     @Transactional
     public RefundResponse requestRefund(UUID paymentId, RefundRequest request) {
         UUID tenantId = tenantId();
-        Payment payment = paymentRepository.findByTenantIdAndId(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
-        Refund refund = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, request.idempotencyKey())
-                .orElseGet(() -> refundRepository.save(new Refund(UUID.randomUUID(), tenantId, paymentId, payment.getOrderId(), request.amount(), request.reason(), RefundStatus.REQUESTED, request.idempotencyKey())));
-        if (!refund.getPaymentId().equals(paymentId)) {
+        Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
+        Refund existing = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, request.idempotencyKey()).orElse(null);
+        if (existing != null) {
+            if (!existing.getPaymentId().equals(paymentId)) {
+                throw new BusinessException("idempotency_conflict", "Idempotency key belongs to another refund", HttpStatus.CONFLICT);
+            }
+            return toRefundResponse(existing);
+        }
+        BigDecimal amount = request.amount();
+        BigDecimal refundable = payment.getAmount().subtract(committedRefunds(tenantId, paymentId));
+        if (amount == null || amount.signum() <= 0 || amount.compareTo(refundable) > 0) {
+            throw new BusinessException("invalid_refund_amount",
+                    "Refund amount must be positive and not exceed the payment minus refunds already requested (" + refundable + ")",
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        Refund refund;
+        try {
+            refund = refundRepository.saveAndFlush(new Refund(UUID.randomUUID(), tenantId, paymentId, payment.getOrderId(), amount,
+                    request.reason(), RefundStatus.REQUESTED, request.idempotencyKey()));
+        } catch (DataIntegrityViolationException e) {
+            // uq_refunds_tenant_idempotency (V040): the key was taken concurrently by a refund of another payment.
             throw new BusinessException("idempotency_conflict", "Idempotency key belongs to another refund", HttpStatus.CONFLICT);
         }
         return toRefundResponse(refund);
     }
 
-    /** Approves a pending refund and marks it refunded once. */
+    /**
+     * Approves a pending refund once (tenant-scoped; another tenant's refund is a 404).
+     * There is no PSP yet: approval is an administrative record only — NO money is returned to the
+     * customer by this call. When the approved refunds cover the full payment the order becomes
+     * REFUNDED; a partial approval leaves the order status unchanged.
+     */
     @Transactional
     public RefundResponse approveRefund(UUID refundId) {
-        Refund refund = refundRepository.findById(refundId).orElseThrow(() -> new NotFoundException("Refund was not found"));
+        UUID tenantId = tenantId();
+        Refund refund = refundRepository.findByTenantIdAndId(tenantId, refundId).orElseThrow(() -> new NotFoundException("Refund was not found"));
         if (refund.getStatus() == RefundStatus.REJECTED) {
             throw new BusinessException("refund_rejected", "Rejected refunds cannot be approved", HttpStatus.CONFLICT);
         }
         if (refund.getStatus() != RefundStatus.REFUNDED) {
+            // Lock the payment so concurrent approvals of partial refunds see each other when summing.
+            Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, refund.getPaymentId())
+                    .orElseThrow(() -> new NotFoundException("Payment was not found"));
             refund.approve();
             auditLogService.log("REFUND_APPROVED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
+            if (approvedRefunds(tenantId, payment.getId(), refund).compareTo(payment.getAmount()) >= 0) {
+                Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
+                        .orElseThrow(() -> new NotFoundException("Order was not found"));
+                order.markRefunded();
+                auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
+            }
         }
         return toRefundResponse(refund);
     }
 
-    /** Rejects a pending refund once and audits the decision. */
+    /** Rejects a pending refund once (tenant-scoped; another tenant's refund is a 404) and audits the decision. */
     @Transactional
     public RefundResponse rejectRefund(UUID refundId) {
-        Refund refund = refundRepository.findById(refundId).orElseThrow(() -> new NotFoundException("Refund was not found"));
+        Refund refund = refundRepository.findByTenantIdAndId(tenantId(), refundId).orElseThrow(() -> new NotFoundException("Refund was not found"));
         if (refund.getStatus() == RefundStatus.REFUNDED) {
             throw new BusinessException("refund_completed", "Refund already completed", HttpStatus.CONFLICT);
         }
@@ -138,6 +177,24 @@ public class PaymentService {
             auditLogService.log("REFUND_REJECTED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
         }
         return toRefundResponse(refund);
+    }
+
+    /** Sum of refunds for the payment that still count against it (anything not REJECTED). */
+    private BigDecimal committedRefunds(UUID tenantId, UUID paymentId) {
+        return refundRepository.findByTenantIdAndPaymentId(tenantId, paymentId).stream()
+                .filter(refund -> refund.getStatus() != RefundStatus.REJECTED)
+                .map(Refund::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Sum of REFUNDED refunds for the payment, always counting {@code justApproved}. */
+    private BigDecimal approvedRefunds(UUID tenantId, UUID paymentId, Refund justApproved) {
+        BigDecimal others = refundRepository.findByTenantIdAndPaymentId(tenantId, paymentId).stream()
+                .filter(refund -> !refund.getId().equals(justApproved.getId()))
+                .filter(refund -> refund.getStatus() == RefundStatus.REFUNDED)
+                .map(Refund::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return others.add(justApproved.getAmount());
     }
 
     private RefundResponse toRefundResponse(Refund refund) {

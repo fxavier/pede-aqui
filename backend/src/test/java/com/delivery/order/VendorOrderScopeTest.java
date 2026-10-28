@@ -18,7 +18,9 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.dto.AdminOrderPageResponse;
@@ -29,6 +31,7 @@ import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
+import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.entity.Refund;
@@ -78,7 +81,13 @@ class VendorOrderScopeTest {
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
                 paymentService, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher());
+    }
+
+    private static DeliveryCodeHasher testCodeHasher() {
+        DeliveryCodeProperties properties = new DeliveryCodeProperties();
+        properties.setCodeHmacSecret("test-only-hmac-secret");
+        return new DeliveryCodeHasher(properties);
     }
 
     @AfterEach
@@ -192,19 +201,22 @@ class VendorOrderScopeTest {
         RefundRepository refundRepository = mock(RefundRepository.class);
         when(refundRepository.findByTenantIdAndIdempotencyKey(any(), anyString())).thenReturn(Optional.empty());
         when(refundRepository.save(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(refundRepository.saveAndFlush(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         PaymentService realPayments = new PaymentService(paymentRepository, orderRepository, refundRepository,
-                mock(AuditLogService.class), new PaymentMapper(), tenantContext);
+                mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository,
+                new PaymentMockConfirmationProperties());
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
                 realPayments, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher());
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 
         ArgumentCaptor<Refund> saved = ArgumentCaptor.forClass(Refund.class);
-        verify(refundRepository).save(saved.capture());
+        verify(refundRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo(RefundStatus.REQUESTED);
         assertThat(saved.getValue().getAmount()).isEqualByComparingTo("115.00");
         assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
