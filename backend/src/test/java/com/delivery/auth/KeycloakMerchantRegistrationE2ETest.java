@@ -23,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,6 +43,9 @@ import org.testcontainers.utility.MountableFile;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+// Own context (different issuer/admin properties): close it after the class and keep its pool tiny so the shared
+// Postgres container's max_connections is not exhausted by cached contexts later in the full verify.
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class KeycloakMerchantRegistrationE2ETest {
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
     private static final Path REALM = Paths.get("..", "keycloak", "delivery-realm.json").toAbsolutePath().normalize();
@@ -76,6 +80,7 @@ class KeycloakMerchantRegistrationE2ETest {
         registry.add("spring.datasource.url", PostgresTestContainerConfig.POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", PostgresTestContainerConfig.POSTGRES::getUsername);
         registry.add("spring.datasource.password", PostgresTestContainerConfig.POSTGRES::getPassword);
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "3");
         registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> keycloakUrl() + "/realms/delivery");
         registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", () -> keycloakUrl() + "/realms/delivery/protocol/openid-connect/certs");
         registry.add("app.keycloak.admin.server-url", KeycloakMerchantRegistrationE2ETest::keycloakUrl);
