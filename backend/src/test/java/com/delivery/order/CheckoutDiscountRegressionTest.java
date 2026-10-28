@@ -84,7 +84,7 @@ class CheckoutDiscountRegressionTest {
             paymentService, auditLogService, mapper, tenantContext, skuRepository, productRepository, discountResolver,
             testCodeHasher(),
             mock(com.delivery.order.service.OrderStockService.class), mock(com.delivery.cart.service.CartService.class),
-            mock(org.springframework.transaction.PlatformTransactionManager.class));
+            mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true));
 
     private static DeliveryCodeHasher testCodeHasher() {
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
@@ -112,7 +112,7 @@ class CheckoutDiscountRegressionTest {
         when(mapper.toResponse(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             return new com.delivery.order.dto.OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                    order.getTotal(), null, null, null, order.getCreatedAt(), List.of());
+                    order.getTotal(), null, null, null, order.getCreatedAt(), List.of(), null);
         });
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(skuRepository.findAllById(anyCollection()))

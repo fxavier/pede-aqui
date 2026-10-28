@@ -4,6 +4,7 @@ import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.security.TenantContext;
 import com.delivery.order.dto.AdminOrderResponse;
+import com.delivery.order.dto.DeliveryAddressResponse;
 import com.delivery.order.dto.OrderItemResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
@@ -28,11 +29,11 @@ public class OrderMapper {
         this.tenantContext = tenantContext;
     }
 
-    /** Customer-only response that includes delivery code - only for order owners */
+    /** Customer-only response that includes delivery code and delivery address - only for order owners */
     public OrderResponse toCustomerResponse(Order order) {
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                null, null, null, null);
+                null, null, null, null, DeliveryAddressResponse.from(order.getDeliveryAddress()));
     }
 
     /** Customer-only response with names - only for order owners */
@@ -42,7 +43,7 @@ public class OrderMapper {
                 .toList();
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                customerName, vendorName, order.getCreatedAt(), items);
+                customerName, vendorName, order.getCreatedAt(), items, DeliveryAddressResponse.from(order.getDeliveryAddress()));
     }
 
     /** Admin/vendor response that excludes delivery code */
@@ -51,7 +52,8 @@ public class OrderMapper {
                 .map(this::toItemResponse)
                 .toList();
         return new AdminOrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                order.getTotal(), customerName, vendorName, order.getCreatedAt(), items);
+                order.getTotal(), customerName, vendorName, order.getCreatedAt(), items,
+                order.getDeliveryAddress() == null ? null : order.getDeliveryAddress().getCity());
     }
 
     /** Context-aware response that includes delivery code only for the customer who owns the order */
@@ -59,9 +61,9 @@ public class OrderMapper {
         if (isCustomerOwner(order.getCustomerId())) {
             return toCustomerResponse(order);
         }
-        // For non-owners, return response without delivery code
+        // For non-owners, return response without delivery code or delivery address
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                order.getTotal(), null, null, null, null, null);
+                order.getTotal(), null, null, null, null, null, null);
     }
 
     /** Context-aware response with names that includes delivery code only for the customer who owns the order */
@@ -69,12 +71,12 @@ public class OrderMapper {
         if (isCustomerOwner(order.getCustomerId())) {
             return toCustomerResponse(order, customerName, vendorName);
         }
-        // For non-owners, return response without delivery code
+        // For non-owners, return response without delivery code or delivery address
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(this::toItemResponse)
                 .toList();
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                order.getTotal(), null, customerName, vendorName, order.getCreatedAt(), items);
+                order.getTotal(), null, customerName, vendorName, order.getCreatedAt(), items, null);
     }
 
     public OrderItemResponse toItemResponse(OrderItem item) {

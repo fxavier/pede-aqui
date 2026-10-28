@@ -20,6 +20,7 @@ import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.entity.CancellationReason;
+import com.delivery.order.entity.DeliveryAddressSnapshot;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
@@ -85,9 +86,11 @@ public class OrderService {
     private final CartService cartService;
     private final TransactionTemplate transactionTemplate;
     private final TransactionTemplate readOnlyTransactionTemplate;
+    private final DeliveryAddressResolver addressResolver;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver) {
+        this.addressResolver = addressResolver;
         this.orderStockService = orderStockService;
         this.cartService = cartService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -171,15 +174,23 @@ public class OrderService {
      * back and re-read the winner in a fresh transaction instead of failing with a 500.
      */
     public CheckoutResult checkout(UUID cartId, String idempotencyKey) {
+        return checkout(cartId, idempotencyKey, null);
+    }
+
+    /**
+     * Checkout with a delivery address (INC-12): the customer's own address is copied into an immutable order
+     * snapshot. A null addressId is the legacy request shape, accepted only while the compatibility window is open.
+     */
+    public CheckoutResult checkout(UUID cartId, String idempotencyKey, UUID addressId) {
         UUID tenantId = tenantId();
         UUID customerId = getCurrentCustomerId();
         try {
-            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey));
+            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey, addressId));
         } catch (DataIntegrityViolationException race) {
             // Another request with this key committed first and our INSERT hit uq_orders_tenant_checkout_key.
             CheckoutResult replay = readOnlyTransactionTemplate.execute(status -> orderRepository
                     .findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey)
-                    .map(existing -> replay(existing, customerId, cartId))
+                    .map(existing -> replay(existing, customerId, cartId, addressId))
                     .orElse(null));
             if (replay == null) {
                 throw race; // not an idempotency race (e.g. another constraint): surfaces as a neutral 409
@@ -193,10 +204,10 @@ public class OrderService {
         }
     }
 
-    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey) {
+    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey, UUID addressId) {
         Optional<Order> existing = orderRepository.findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey);
         if (existing.isPresent()) {
-            return replay(existing.get(), customerId, cartId);
+            return replay(existing.get(), customerId, cartId, addressId);
         }
         // Row lock serializes concurrent checkouts of the same cart (double click, client retries).
         Cart cart = cartRepository.lockByTenantIdAndId(tenantId, cartId).orElseThrow(() -> new NotFoundException("Cart was not found"));
@@ -206,17 +217,21 @@ public class OrderService {
         // A duplicate request may have committed while this one waited for the cart lock.
         existing = orderRepository.findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey);
         if (existing.isPresent()) {
-            return replay(existing.get(), customerId, cartId);
+            return replay(existing.get(), customerId, cartId, addressId);
         }
-        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey)), false);
+        Optional<DeliveryAddressSnapshot> deliveryAddress = addressResolver.resolve(tenantId, customerId, addressId);
+        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey, deliveryAddress)), false);
     }
 
-    /** Returns the order already created for this key, but only to the same customer and cart (409 otherwise). */
-    private CheckoutResult replay(Order existing, UUID customerId, UUID cartId) {
+    /** Returns the order already created for this key, but only to the same customer, cart and address (409 otherwise). */
+    private CheckoutResult replay(Order existing, UUID customerId, UUID cartId, UUID addressId) {
         boolean sameCustomer = existing.getCustomerId().equals(customerId);
         // Legacy orders (before V041) carry no cart link; for them only the customer can be compared.
         boolean sameCart = existing.getCartId() == null || existing.getCartId().equals(cartId);
-        if (!sameCustomer || !sameCart) {
+        // A retry may omit addressId (legacy shape); a different address under the same key is a different checkout.
+        boolean sameAddress = addressId == null || existing.getDeliveryAddress() == null
+                || addressId.equals(existing.getDeliveryAddress().getSourceAddressId());
+        if (!sameCustomer || !sameCart || !sameAddress) {
             throw new BusinessException("idempotency_key_reused", "This idempotency key was already used for a different checkout", HttpStatus.CONFLICT);
         }
         return new CheckoutResult(mapper.toResponse(existing), true);
@@ -242,7 +257,7 @@ public class OrderService {
         }
     }
 
-    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey) {
+    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey, Optional<DeliveryAddressSnapshot> deliveryAddress) {
         if (!"ACTIVE".equals(cart.getStatus()) || cart.getItems().isEmpty()) {
             throw new BusinessException("invalid_cart", "Cart must be active and contain items", HttpStatus.BAD_REQUEST);
         }
@@ -256,6 +271,7 @@ public class OrderService {
         String code = deliveryCodeHasher.generateCode();
         Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), cart.getFees(), cart.getTaxes(), cart.getDiscounts(), cart.getTotal(), idempotencyKey, deliveryCodeHasher.hash(code), code);
         order.linkCart(cart.getId());
+        deliveryAddress.ifPresent(order::recordDeliveryAddress);
         Map<UUID, UUID> categoryBySkuId = resolveCategoryBySkuId(cart);
         for (CartItem item : cart.getItems()) {
             order.addItem(new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(), item.getUnitPriceSnapshot(), item.getQuantity(), categoryBySkuId.get(item.getSkuId())));

@@ -6,7 +6,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Order response returned after checkout, tracking, and list requests. */
+/**
+ * Order response returned after checkout, tracking, and list requests. {@code deliveryCode} and
+ * {@code deliveryAddress} are filled only for the customer who owns the order.
+ */
 public record OrderResponse(
         UUID id,
         String reference,
@@ -16,4 +19,5 @@ public record OrderResponse(
         String customerName,
         String vendorName,
         Instant createdAt,
-        List<OrderItemResponse> items) {}
+        List<OrderItemResponse> items,
+        DeliveryAddressResponse deliveryAddress) {}

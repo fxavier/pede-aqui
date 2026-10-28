@@ -63,13 +63,13 @@ class CheckoutSecurityApiTest {
 
     @org.junit.jupiter.api.BeforeEach
     void stubCreatedCheckout() {
-        when(orderService.checkout(any(), any())).thenReturn(new CheckoutResult(response(), false));
+        when(orderService.checkout(any(), any(), any())).thenReturn(new CheckoutResult(response(), false));
     }
 
     @Test
     void replayedIdempotencyKeyAnswers200WithTheSameOrder() throws Exception {
         OrderResponse existing = response();
-        when(orderService.checkout(cart1Id, "retry-key")).thenReturn(new CheckoutResult(existing, true));
+        when(orderService.checkout(cart1Id, "retry-key", null)).thenReturn(new CheckoutResult(existing, true));
 
         mockMvc.perform(post("/api/v1/checkout")
                         .with(jwt().jwt(createJwt("customer1-keycloak-id")).authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER")))
@@ -82,7 +82,7 @@ class CheckoutSecurityApiTest {
     @Test
     void changedPriceAnswers409WithTheNewPrices() throws Exception {
         UUID skuId = UUID.randomUUID();
-        when(orderService.checkout(cart1Id, "price-key")).thenThrow(new PriceChangedException(java.util.List.of(
+        when(orderService.checkout(cart1Id, "price-key", null)).thenThrow(new PriceChangedException(java.util.List.of(
                 new PriceChangedException.PriceChange(skuId, new java.math.BigDecimal("100.00"), new java.math.BigDecimal("120.00")))));
 
         mockMvc.perform(post("/api/v1/checkout")
@@ -97,7 +97,7 @@ class CheckoutSecurityApiTest {
 
     @Test
     void dataIntegrityViolationAnswersNeutral409WithoutConstraintNames() throws Exception {
-        when(orderService.checkout(cart1Id, "dup-key")).thenThrow(new org.springframework.dao.DataIntegrityViolationException(
+        when(orderService.checkout(cart1Id, "dup-key", null)).thenThrow(new org.springframework.dao.DataIntegrityViolationException(
                 "duplicate key value violates unique constraint \"uq_orders_tenant_checkout_key\""));
 
         mockMvc.perform(post("/api/v1/checkout")
@@ -115,7 +115,7 @@ class CheckoutSecurityApiTest {
 
     private OrderResponse response() {
         return new OrderResponse(UUID.randomUUID(), "PA-1", com.delivery.order.entity.OrderStatus.PAYMENT_PENDING,
-                java.math.BigDecimal.TEN, null, null, null, Instant.now(), java.util.List.of());
+                java.math.BigDecimal.TEN, null, null, null, Instant.now(), java.util.List.of(), null);
     }
 
     @Test
@@ -137,7 +137,7 @@ class CheckoutSecurityApiTest {
                         .content(requestBody))
                 .andExpect(status().isCreated());
 
-        verify(orderService).checkout(cart2Id, "test-key-123");
+        verify(orderService).checkout(cart2Id, "test-key-123", null);
     }
 
     @Test
@@ -164,7 +164,7 @@ class CheckoutSecurityApiTest {
                         .content(requestBody))
                 .andExpect(status().isCreated());
 
-        verify(orderService).checkout(cart1Id, "test-key-123");
+        verify(orderService).checkout(cart1Id, "test-key-123", null);
     }
 
     @Test
