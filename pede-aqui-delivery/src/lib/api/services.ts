@@ -4,6 +4,8 @@ import type {
   CartResponse,
   Category,
   CheckoutRequest,
+  CustomerAddress,
+  CustomerAddressRequest,
   MeResponse,
   OrderResponse,
   Product,
@@ -71,6 +73,18 @@ export const catalogService = {
 export const cartService = {
   addItem: (customerId: string, req: AddCartItemRequest) =>
     apiClient.post<CartResponse>(`/customers/${customerId}/cart/items`, req).then((r) => r.data),
+}
+
+export const addressService = {
+  list: () => apiClient.get<CustomerAddress[]>('/customers/me/addresses').then((r) => r.data),
+
+  create: (req: CustomerAddressRequest) =>
+    apiClient.post<CustomerAddress>('/customers/me/addresses', req).then((r) => r.data),
+
+  update: (id: string, req: CustomerAddressRequest) =>
+    apiClient.put<CustomerAddress>(`/customers/me/addresses/${id}`, req).then((r) => r.data),
+
+  remove: (id: string) => apiClient.delete(`/customers/me/addresses/${id}`).then(() => undefined),
 }
 
 export const checkoutService = {

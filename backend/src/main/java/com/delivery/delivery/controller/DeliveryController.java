@@ -4,9 +4,11 @@ import com.delivery.delivery.dto.CompleteDeliveryRequest;
 import com.delivery.delivery.dto.DeliveryResponse;
 import com.delivery.delivery.dto.UpdateDeliveryStatusRequest;
 import com.delivery.delivery.service.DeliveryService;
+import com.delivery.order.dto.DeliveryAddressResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +28,13 @@ public class DeliveryController {
     @PreAuthorize("hasRole('COURIER')")
     public DeliveryResponse complete(@PathVariable UUID deliveryId, @Valid @RequestBody CompleteDeliveryRequest request) {
         return service.complete(deliveryId, request.confirmationCode());
+    }
+
+    /** Full delivery address for the assigned courier only (403 for anyone else, incl. other couriers). */
+    @GetMapping("/{deliveryId}/address")
+    @PreAuthorize("hasRole('COURIER')")
+    public DeliveryAddressResponse address(@PathVariable UUID deliveryId) {
+        return service.getAddressForAssignedCourier(deliveryId);
     }
 
     @PatchMapping("/{deliveryId}/status")

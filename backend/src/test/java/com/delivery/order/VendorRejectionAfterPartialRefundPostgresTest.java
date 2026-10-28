@@ -82,7 +82,7 @@ import org.testcontainers.DockerClientFactory;
 @Import({OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
-        DeliveryCodeHasher.class, DeliveryCodeProperties.class})
+        DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class})
 class VendorRejectionAfterPartialRefundPostgresTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();

@@ -5,6 +5,8 @@ import com.delivery.order.dto.CheckoutResult;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.service.OrderService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,14 +18,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/checkout")
 public class CheckoutController {
+    private static final Logger log = LoggerFactory.getLogger(CheckoutController.class);
     private final OrderService service;
 
     public CheckoutController(OrderService service) { this.service = service; }
 
-    /** 201 when the order is created; 200 with the same order when the idempotency key is replayed. */
+    /**
+     * 201 when the order is created; 200 with the same order when the idempotency key is replayed.
+     * The legacy request shape without addressId gets a Deprecation header while the INC-12 window is open.
+     */
     @PostMapping
     public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
-        CheckoutResult result = service.checkout(request.cartId(), request.idempotencyKey());
-        return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED).body(result.order());
+        CheckoutResult result = service.checkout(request.cartId(), request.idempotencyKey(), request.addressId());
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED);
+        if (request.addressId() == null) {
+            // Counted in logs to know when the last legacy caller is gone (no PII in the message).
+            log.warn("Checkout without addressId accepted under the INC-12 legacy compatibility window");
+            response.header("Deprecation", "true");
+        }
+        return response.body(result.order());
     }
 }

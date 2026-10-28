@@ -113,6 +113,11 @@ app:
     # HMAC-SHA256 key for delivery PIN hashes. Empty here on purpose: only the dev profile has a
     # default; prod must set APP_DELIVERY_CODE_HMAC_SECRET or startup fails.
     code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:}
+  checkout:
+    # INC-12 compatibility window: accept POST /checkout without addressId (order gets no address
+    # snapshot, response carries "Deprecation: true"). Set to false to close the window once every
+    # client sends addressId — see docs/api/API-MIGRATION.md.
+    legacy-without-address-enabled: ${APP_CHECKOUT_LEGACY_WITHOUT_ADDRESS_ENABLED:true}
   payments:
     mock-confirmation:
       enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)

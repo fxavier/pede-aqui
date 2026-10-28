@@ -91,6 +91,43 @@ export interface CartResponse {
 export interface CheckoutRequest {
   cartId: string
   idempotencyKey: string
+  /** One of the customer's saved addresses (required by the current API version, INC-12). */
+  addressId: string
+}
+
+// Customer addresses (/api/v1/customers/me/addresses)
+export interface CustomerAddressRequest {
+  label: string
+  recipientName: string
+  phone: string | null
+  line1: string
+  line2: string | null
+  city: string
+  state: string | null
+  postalCode: string | null
+  latitude: number | null
+  longitude: number | null
+  deliveryInstructions: string | null
+}
+
+export interface CustomerAddress extends CustomerAddressRequest {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** Immutable delivery address snapshot taken at checkout (only returned to the order's customer). */
+export interface DeliveryAddress {
+  recipientName: string
+  phone: string | null
+  line1: string
+  line2: string | null
+  city: string
+  state: string | null
+  postalCode: string | null
+  latitude: number | null
+  longitude: number | null
+  instructions: string | null
 }
 
 // Orders
@@ -113,6 +150,7 @@ export interface OrderResponse {
   vendorName: string | null
   createdAt: string | null
   items: OrderItemResponse[] | null
+  deliveryAddress: DeliveryAddress | null
 }
 
 // Tracking (GET /api/v1/orders/{orderId}/tracking)

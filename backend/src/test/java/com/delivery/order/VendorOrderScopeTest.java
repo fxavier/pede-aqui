@@ -86,7 +86,7 @@ class VendorOrderScopeTest {
                 paymentService, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class));
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true));
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -219,7 +219,7 @@ class VendorOrderScopeTest {
                 realPayments, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class));
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 

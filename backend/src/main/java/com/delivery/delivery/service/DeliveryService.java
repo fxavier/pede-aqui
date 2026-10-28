@@ -13,6 +13,7 @@ import com.delivery.delivery.exception.InvalidDeliveryCodeException;
 import com.delivery.delivery.mapper.DeliveryMapper;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.order.dto.DeliveryAddressResponse;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.OrderStockService;
@@ -35,6 +36,12 @@ public class DeliveryService {
      * the job without PATCHing intermediate statuses (INC-02 decision B; narrow once the app does).
      */
     private static final Set<DeliveryStatus> COMPLETABLE_STATUSES = Set.of(DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_CUSTOMER);
+    /**
+     * States in which the assigned courier sees the customer's address: from accepting the job until arrival.
+     * Not while merely offered (ASSIGNED, could still reject) nor after the delivery finished (data minimisation).
+     */
+    private static final Set<DeliveryStatus> ADDRESS_VISIBLE_STATUSES = Set.of(DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_VENDOR,
+            DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER, DeliveryStatus.ARRIVED_AT_CUSTOMER);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryEventRepository eventRepository;
@@ -101,6 +108,27 @@ public class DeliveryService {
         orderStockService.commit(order);
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), "DELIVERED", "Delivery completed with customer code"));
         return mapper.toResponse(delivery);
+    }
+
+    /**
+     * Returns the full delivery address (order checkout snapshot) to the courier currently assigned to the
+     * delivery, and only while that courier is working it (accepted, not yet finished). Anyone else gets 403
+     * through the access guard; a reassigned courier loses access with the assignment (AS-02, INC-12).
+     */
+    @Transactional(readOnly = true)
+    public DeliveryAddressResponse getAddressForAssignedCourier(UUID deliveryId) {
+        UUID tenantId = tenantId();
+        Delivery delivery = findDelivery(tenantId, deliveryId);
+        accessGuard.ensureAssignedCourier(tenantId, delivery);
+        if (!ADDRESS_VISIBLE_STATUSES.contains(delivery.getStatus())) {
+            throw new BusinessException("delivery_address_unavailable", "The delivery address is only available while the delivery is in progress", HttpStatus.CONFLICT);
+        }
+        Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
+        DeliveryAddressResponse address = DeliveryAddressResponse.from(order.getDeliveryAddress());
+        if (address == null) {
+            throw new NotFoundException("Delivery address was not recorded for this order");
+        }
+        return address;
     }
 
     /**
