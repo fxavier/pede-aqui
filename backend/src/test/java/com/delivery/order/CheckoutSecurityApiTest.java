@@ -115,7 +115,7 @@ class CheckoutSecurityApiTest {
 
     private OrderResponse response() {
         return new OrderResponse(UUID.randomUUID(), "PA-1", com.delivery.order.entity.OrderStatus.PAYMENT_PENDING,
-                java.math.BigDecimal.TEN, null, null, null, Instant.now(), java.util.List.of(), null);
+                java.math.BigDecimal.TEN, null, null, null, Instant.now(), java.util.List.of(), null, null);
     }
 
     @Test

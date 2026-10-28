@@ -359,6 +359,52 @@ class DeliveryCompletionPostgresIntegrationTest {
         }
     }
 
+    // --- Order no longer deliverable: 409 order_not_deliverable, nothing persisted ---
+
+    @Test
+    void refundedOrderCannotBeCompletedOrProgressedByCourierOrOps() {
+        // Refund after pickup: the delivery is left in place (goods out), but the order is REFUNDED.
+        jdbc.update("UPDATE orders SET status = 'REFUNDED', delivery_confirmation_code_display = NULL WHERE id = ?", orderId);
+        authenticate(assignedCourierUser, "COURIER");
+
+        for (String pin : List.of(CODE, WRONG)) {
+            assertThatThrownBy(() -> service.complete(deliveryId, pin)).isInstanceOfSatisfying(BusinessException.class, ex -> {
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(ex.getCode()).isEqualTo("order_not_deliverable");
+            });
+        }
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+        authenticate("kc-ops-" + tenantId, "OPS");
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+
+        assertThat(deliveryStatus()).isEqualTo("ARRIVED_AT_CUSTOMER");
+        assertThat(attempts()).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM delivery_events WHERE delivery_id = ?", Integer.class, deliveryId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM orders WHERE id = ?", String.class, orderId)).isEqualTo("REFUNDED");
+        assertThat(jdbc.queryForObject("SELECT stock_status FROM orders WHERE id = ?", String.class, orderId)).isEqualTo("RESERVED");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_logs WHERE tenant_id = ?", Integer.class, tenantId)).isZero();
+    }
+
+    @Test
+    void sellerRejectedOrderWithAnUnretiredDeliveryCannotBeCompletedOrPickedUp() {
+        // A row cancelled before deliveries were retired (or by any path that left the delivery live).
+        jdbc.update("UPDATE orders SET status = 'CANCELLED', cancellation_reason = 'SELLER_REJECTED', rejection_reason = 'Sem stock' WHERE id = ?", orderId);
+        jdbc.update("UPDATE deliveries SET status = 'ACCEPTED' WHERE id = ?", deliveryId);
+        authenticate(assignedCourierUser, "COURIER");
+
+        assertThatThrownBy(() -> service.complete(deliveryId, CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.ARRIVED_AT_VENDOR, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+
+        assertThat(deliveryStatus()).isEqualTo("ACCEPTED");
+        assertThat(attempts()).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM delivery_events WHERE delivery_id = ?", Integer.class, deliveryId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM orders WHERE id = ?", String.class, orderId)).isEqualTo("CANCELLED");
+    }
+
     // --- helpers ---
 
     private UUID insertCourier(String keycloakUserId) {

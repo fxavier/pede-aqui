@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,6 +28,7 @@ import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;
 import com.delivery.payment.entity.Refund;
 import com.delivery.payment.entity.RefundStatus;
+import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.service.PaymentService;
 import com.delivery.sales.repository.PaymentSummary;
 import com.delivery.sales.config.SalesStatusOverrideProperties;
@@ -50,6 +52,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -73,12 +76,14 @@ class SalesServiceTest {
     private VendorRepository vendorRepository;
     private AppUserProfileRepository userProfileRepository;
     private PaymentService paymentService;
+    private PaymentRepository paymentRepository;
     private NotificationService notificationService;
     private AuditLogService auditLogService;
     private TenantContext tenantContext;
     private SalesStatusOverrideProperties overrideProperties;
     private SalesService service;
     private com.delivery.order.service.OrderStockService orderStockService;
+    private com.delivery.delivery.service.DeliveryRetirementService deliveryRetirementService;
 
     @BeforeEach
     void setUp() {
@@ -90,11 +95,13 @@ class SalesServiceTest {
         vendorRepository = mock(VendorRepository.class);
         userProfileRepository = mock(AppUserProfileRepository.class);
         paymentService = mock(PaymentService.class);
+        paymentRepository = mock(PaymentRepository.class);
         notificationService = mock(NotificationService.class);
         orderStockService = new com.delivery.order.service.OrderStockService(mock(com.delivery.inventory.service.InventoryService.class));
         auditLogService = mock(AuditLogService.class);
         tenantContext = mock(TenantContext.class);
         overrideProperties = new SalesStatusOverrideProperties();
+        deliveryRetirementService = mock(com.delivery.delivery.service.DeliveryRetirementService.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
@@ -132,6 +139,8 @@ class SalesServiceTest {
             assertThat(response.orderStatus()).isEqualTo("CANCELLED");
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RELEASED);
+            // The order's delivery (created DISPATCH_PENDING at checkout) is retired so no courier can pick it up.
+            verify(deliveryRetirementService).retireBeforePickup(eq(tenantId), eq(order.getId()), anyString());
         }
         verify(auditLogService, org.mockito.Mockito.times(5)).log(eq("SALE_CANCELLED"), eq("order"), anyString(), anyString(), eq("SUCCESS"));
     }
@@ -146,6 +155,48 @@ class SalesServiceTest {
             assertThat(order.getStatus()).isEqualTo(status);
             assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RESERVED);
         }
+        org.mockito.Mockito.verifyNoInteractions(deliveryRetirementService);
+    }
+
+    // --- Lock order rule: payment row FOR UPDATE before the order is read (same order as the vendor rejection) ---
+
+    @Test
+    void cancelLocksThePaymentRowBeforeReadingTheOrder() {
+        Order order = order(OrderStatus.PAYMENT_CONFIRMED);
+
+        service.cancel(order.getId(), "customer asked");
+
+        assertPaymentLockedBeforeOrderRead(order);
+    }
+
+    @Test
+    void refundLocksThePaymentRowBeforeReadingTheOrder() {
+        Order order = order(OrderStatus.DELIVERED);
+        PaymentSummary payment = payment(order, "115.00", PaymentStatus.CONFIRMED);
+        when(paymentReadRepository.findByTenantIdAndOrderId(tenantId, order.getId())).thenReturn(List.of(payment));
+        when(refundReadRepository.findByTenantIdAndIdempotencyKey(eq(tenantId), anyString())).thenReturn(Optional.empty());
+        when(paymentService.requestRefund(eq(payment.getId()), any())).thenReturn(
+                new RefundResponse(UUID.randomUUID(), payment.getId(), order.getId(), new BigDecimal("10.00"), "r", RefundStatus.REQUESTED));
+
+        service.refund(order.getId(), new BigDecimal("10.00"), "r", "k-lock");
+
+        assertPaymentLockedBeforeOrderRead(order);
+    }
+
+    @Test
+    void statusOverrideLocksThePaymentRowBeforeReadingTheOrder() {
+        overrideProperties.setEnabled(true);
+        Order order = order(OrderStatus.PAYMENT_CONFIRMED);
+
+        service.statusOverride(order.getId(), "CANCELLED", "stuck");
+
+        assertPaymentLockedBeforeOrderRead(order);
+    }
+
+    private void assertPaymentLockedBeforeOrderRead(Order order) {
+        InOrder inOrder = inOrder(paymentRepository, orderRepository);
+        inOrder.verify(paymentRepository).findByTenantIdAndOrderIdForUpdate(tenantId, order.getId());
+        inOrder.verify(orderRepository).findByTenantIdAndId(tenantId, order.getId());
     }
 
     // --- C7: refund cap + idempotency ---
@@ -278,6 +329,7 @@ class SalesServiceTest {
 
         Order confirmed = order(OrderStatus.PAYMENT_CONFIRMED);
         assertThat(service.statusOverride(confirmed.getId(), "CANCELLED", "refund path").orderStatus()).isEqualTo("CANCELLED");
+        verify(deliveryRetirementService).retireBeforePickup(eq(tenantId), eq(confirmed.getId()), anyString());
 
         Order accepted = order(OrderStatus.ACCEPTED_BY_VENDOR);
         assertThat(service.statusOverride(accepted.getId(), "PREPARING", "unstick vendor").orderStatus()).isEqualTo("PREPARING");
@@ -287,6 +339,20 @@ class SalesServiceTest {
 
         Order delivering = order(OrderStatus.DELIVERING);
         assertThat(service.statusOverride(delivering.getId(), "DELIVERED", "courier device died").orderStatus()).isEqualTo("DELIVERED");
+    }
+
+    @Test
+    void statusOverrideToDeliveredCommitsTheStockAndClearsThePlainPin() {
+        overrideProperties.setEnabled(true);
+        Order delivering = order(OrderStatus.DELIVERING);
+        assertThat(delivering.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RESERVED);
+
+        service.statusOverride(delivering.getId(), "DELIVERED", "courier device died");
+
+        // Same closure as DeliveryService.complete: the manual DELIVERED is a real delivery for stock purposes.
+        assertThat(delivering.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(delivering.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.COMMITTED);
+        assertThat(delivering.getDeliveryConfirmationCodeDisplay()).isNull();
     }
 
     @Test

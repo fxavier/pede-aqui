@@ -15,8 +15,10 @@ import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.dto.DeliveryAddressResponse;
 import com.delivery.order.entity.Order;
+import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.OrderStockService;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -42,6 +44,16 @@ public class DeliveryService {
      */
     private static final Set<DeliveryStatus> ADDRESS_VISIBLE_STATUSES = Set.of(DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_VENDOR,
             DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER, DeliveryStatus.ARRIVED_AT_CUSTOMER);
+
+    /**
+     * Order statuses in which the goods must not move any further: REFUNDED (money returned; pre-pickup deliveries are
+     * retired by PaymentService.approveRefund), CANCELLED (sales cancel, override-cancel, seller rejection, failed
+     * delivery) and the legacy REJECTED_BY_VENDOR. All three are terminal: no code path leaves them. REFUND_PENDING is
+     * not included: no code path writes it, and a pending refund may still be rejected. DELIVERED is guarded by the
+     * delivery's own status (delivery_already_completed).
+     */
+    private static final Set<OrderStatus> NON_DELIVERABLE_ORDER_STATUSES =
+            EnumSet.of(OrderStatus.REFUNDED, OrderStatus.CANCELLED, OrderStatus.REJECTED_BY_VENDOR);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryEventRepository eventRepository;
@@ -85,6 +97,8 @@ public class DeliveryService {
         if (!COMPLETABLE_STATUSES.contains(delivery.getStatus())) {
             throw new BusinessException("invalid_delivery_transition", "Delivery cannot be completed from its current status", HttpStatus.CONFLICT);
         }
+        // Checked before the lockout and the PIN compare, so a refused call has no side effect (no counter, no event).
+        Order order = findDeliverableOrder(tenantId, delivery);
         int maxAttempts = codeProperties.getMaxCodeAttempts();
         if (delivery.isCodeLocked(maxAttempts)) {
             throw new BusinessException("delivery_code_locked", "Delivery confirmation code is locked after too many failed attempts", HttpStatus.LOCKED);
@@ -101,7 +115,6 @@ public class DeliveryService {
             throw InvalidDeliveryCodeException.invalid();
         }
         delivery.markDelivered();
-        Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
         order.markDelivered();
         // INC-07 (COR-01) x INC-02: complete() is also allowed straight from ACCEPTED (no PICKED_UP PATCH),
         // so close the stock lifecycle here too; no-op when pickup already committed it.
@@ -145,6 +158,7 @@ public class DeliveryService {
         }
         DeliveryStatus previous = delivery.getStatus();
         validateTransition(previous, status);
+        Order order = findDeliverableOrder(tenantId, delivery);
         if (proofPhotoStorageKey != null && !proofPhotoStorageKey.isBlank()) {
             delivery.setProofPhotoStorageKey(proofPhotoStorageKey);
         }
@@ -152,9 +166,8 @@ public class DeliveryService {
             delivery.recordCashCollected(cashCollectedAmount);
         }
         delivery.updateStatus(status);
-        if (status == DeliveryStatus.PICKED_UP) orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).ifPresent(orderStockService::commit); // INC-07 (COR-01)
+        if (status == DeliveryStatus.PICKED_UP) orderStockService.commit(order); // INC-07 (COR-01)
         if (status == DeliveryStatus.FAILED_DELIVERY) {
-            Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
             order.markCancelled();
             orderStockService.release(order); // INC-07 (COR-01): no-op once pickup committed the stock
         }
@@ -193,6 +206,19 @@ public class DeliveryService {
         if (!valid) {
             throw new BusinessException("invalid_delivery_transition", "Invalid delivery status transition", HttpStatus.CONFLICT);
         }
+    }
+
+    /**
+     * Loads the delivery's order and refuses (409 order_not_deliverable) when it was refunded or cancelled: the goods
+     * must not leave the store or be handed over for an order whose sale was undone. Called after the ownership and
+     * delivery-state checks and before any mutation.
+     */
+    private Order findDeliverableOrder(UUID tenantId, Delivery delivery) {
+        Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
+        if (NON_DELIVERABLE_ORDER_STATUSES.contains(order.getStatus())) {
+            throw new BusinessException("order_not_deliverable", "The order was " + order.getStatus() + " and can no longer be delivered", HttpStatus.CONFLICT);
+        }
+        return order;
     }
 
     private Delivery findDelivery(UUID tenantId, UUID deliveryId) {

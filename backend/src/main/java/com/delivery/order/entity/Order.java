@@ -143,9 +143,17 @@ public class Order {
     public void markReadyForPickup() { this.status = OrderStatus.READY_FOR_PICKUP; this.updatedAt = Instant.now(); }
     public void markAssignedToCourier() { this.status = OrderStatus.ASSIGNED_TO_COURIER; this.updatedAt = Instant.now(); }
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
-    public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
+    /**
+     * Full refund approved (PaymentService.approveRefund). The plain PIN is always cleared: DeliveryService refuses to
+     * progress or complete a REFUNDED order (409 order_not_deliverable), so no courier can still need it.
+     */
+    public void markRefunded() {
+        this.status = OrderStatus.REFUNDED;
+        this.deliveryConfirmationCodeDisplay = null;
+        this.updatedAt = Instant.now();
+    }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
-    /** Seller rejection once the payment already carries refunds: CANCELLED with reason SELLER_REJECTED (financial state lives on Payment). */
+    /** Seller rejection: CANCELLED with reason SELLER_REJECTED plus the vendor's text; the financial state lives on Payment. */
     public void markCancelledBySellerRejection(String reason) {
         this.status = OrderStatus.CANCELLED;
         this.cancellationReason = CancellationReason.SELLER_REJECTED;
@@ -153,7 +161,6 @@ public class Order {
         this.deliveryConfirmationCodeDisplay = null;
         this.updatedAt = Instant.now();
     }
-    public void markRejectedByVendor(String reason) { this.status = OrderStatus.REJECTED_BY_VENDOR; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
     public void markDelivered() { this.status = OrderStatus.DELIVERED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }

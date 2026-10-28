@@ -44,6 +44,79 @@ affected, and whether existing clients break.
 - Reports already count `REJECTED_BY_VENDOR` as a post-payment outcome; the dashboard
   "rejected" counter (`DashboardService`) now actually counts vendor rejections (it was always 0).
 
+## Unified seller rejection (product decision; supersedes the INC-04 "Order status after vendor rejection" note)
+
+### `PATCH /api/v1/vendor/orders/{id}/reject` (behaviour change)
+
+- Every seller rejection now ends with `status: "CANCELLED"` and the new additive field
+  `cancellationReason: "SELLER_REJECTED"`. `REJECTED_BY_VENDOR` is **no longer produced** by any
+  endpoint; the enum value remains valid in responses for orders rejected before this change.
+- The refund is still a `Refund` record (`REQUESTED`) visible through sales detail / finance
+  endpoints, but it now covers only the eligible remainder (`payment.amount − refunds already
+  requested or completed`): the full amount when nothing was refunded before, and no refund row at
+  all when the payment is already fully covered. Its idempotency key is `seller-reject-<orderId>`
+  (legacy rows carry `vendor-rejection-<orderId>`). Audit action: `ORDER_CANCELLED_SELLER_REJECTED`
+  (the former `ORDER_REJECTED` is no longer written).
+- Idempotent: repeating the call on an order that is already `CANCELLED` (for any reason) or in the
+  legacy `REJECTED_BY_VENDOR` status answers **200** with the current order and no side effects
+  (previously a repeat on `REJECTED_BY_VENDOR` was a 400). Other non-rejectable statuses still
+  answer **400** `invalid_order_transition`.
+- The customer `order_rejected` notification and the free-text `rejection_reason` are unchanged.
+
+### `OrderResponse` / `AdminOrderResponse` (additive)
+
+- New nullable field `cancellationReason` (currently the only value is `SELLER_REJECTED`; null for
+  non-cancelled orders and for cancellations by ops/support or status override). Returned by every
+  endpoint that serialises these DTOs (`/orders`, `/orders/page`, `/orders/{id}`, `/checkout`,
+  `/vendor/orders/{id}/*`).
+
+### Clients / consumers to review
+
+- Backoffice: `CANCELLED` is already labelled "Cancelado" (`src/app/orders/page.tsx`,
+  `src/components/ui/status-badge.tsx`, `src/components/sales/status-maps.ts`, `src/lib/utils.ts`,
+  `src/app/vendors/page.tsx` `cancelledStatuses`). Seller rejections will now show as "Cancelado"
+  instead of "Rejeitado" until the UI reads `cancellationReason` (no UI shows `rejectionReason`
+  today). Keep the `REJECTED_BY_VENDOR` label for legacy rows.
+- Customer web (`pede-aqui-delivery/src/lib/orderStatusLabels.ts`) and the Flutter apps: they
+  label `CANCELLED` and had no label for `REJECTED_BY_VENDOR`, so a rejected order now renders a
+  proper "Cancelado" state instead of a raw/fallback status. They may optionally read
+  `cancellationReason` to say "rejeitado pelo vendedor".
+- Dashboard `GET /dashboard/vendor` `rejectedOrdersCount` and reports `cancelledCount`
+  (`/reports/sales/summary|timeseries` + CSV) count `CANCELLED + SELLER_REJECTED` plus legacy
+  `REJECTED_BY_VENDOR` rows, so the figures mean the same before and after the change. Note that
+  `cancelledCount` therefore now includes seller rejections (it previously did not).
+
+## Refunded / cancelled orders can no longer be delivered (follow-up to the PIN/stock gaps fix)
+
+### `POST /api/v1/deliveries/{id}/complete` and `PATCH /api/v1/deliveries/{id}/status` (new 409 code)
+
+- New error **409 `order_not_deliverable`** when the delivery's order is `REFUNDED`, `CANCELLED`
+  (sales cancel, override-cancel, seller rejection, failed delivery) or the legacy
+  `REJECTED_BY_VENDOR`. Applies to the assigned courier and to OPS/ADMIN on `/status`.
+- Check order: 404 (delivery not in tenant) → 403 `delivery_access_denied` (not the assigned
+  courier) → the existing delivery-state 409s (`delivery_already_completed`,
+  `invalid_delivery_transition`) → **409 `order_not_deliverable`** → 423 `delivery_code_locked` →
+  PIN check. A refused call has no side effect: no attempt counter increment, no delivery event,
+  no audit, no stock movement.
+- A full refund (`FULLY_REFUNDED`), a sales cancel, an override to `CANCELLED` or a seller rejection
+  now **retire** a delivery whose goods are still in the store: the delivery moves to `CANCELLED`
+  (`delivery_events.event_type = RETIRED`) and its active dispatch job (`ASSIGNED`/`ACCEPTED`/
+  `REASSIGNABLE`) to `CANCELLED`, which also frees the courier. A courier acting on a retired
+  delivery gets the existing **409 `invalid_delivery_transition`**. After pickup the delivery is
+  not touched; the courier then gets `order_not_deliverable` on a refunded order.
+- A full refund now always clears the customer's plain PIN (`orders.delivery_confirmation_code_display`),
+  also when a courier is engaged.
+
+### Clients / consumers to review (delivery 409)
+
+- Courier app (`pede_aqui_courier_app`): only calls `POST /deliveries/{id}/complete`
+  (`remote_courier_data_source.dart` `confirmDelivery`) and never PATCHes `/status`.
+  `DeliveryCubit.confirmDelivery` catches every error with a generic "Não foi possível confirmar a
+  entrega." — it does not read the error `code`, so `order_not_deliverable` shows that generic
+  message. Recommended: map 409 `order_not_deliverable` / `invalid_delivery_transition` to "Pedido
+  cancelado/reembolsado — não entregar" and drop the job from the courier's list. Not changed here.
+- Backoffice / ops tools calling `PATCH /deliveries/{id}/status`: handle the new code.
+
 ## INC-14 — Error contract and correlation (AS-15, AS-17)
 
 Full contract: [ERROR-CONTRACT.md](ERROR-CONTRACT.md).

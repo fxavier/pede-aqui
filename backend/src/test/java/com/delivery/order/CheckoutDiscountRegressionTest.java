@@ -113,7 +113,7 @@ class CheckoutDiscountRegressionTest {
         when(mapper.toResponse(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             return new com.delivery.order.dto.OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                    order.getTotal(), null, null, null, order.getCreatedAt(), List.of(), null);
+                    order.getTotal(), null, null, null, order.getCreatedAt(), List.of(), null, null);
         });
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(skuRepository.findAllById(anyCollection()))

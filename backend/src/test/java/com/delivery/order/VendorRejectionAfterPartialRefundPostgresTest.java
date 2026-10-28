@@ -32,6 +32,11 @@ import com.delivery.order.service.ZeroCheckoutDiscountResolver;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.service.PaymentService;
+import com.delivery.common.exception.BusinessException;
+import com.delivery.sales.config.SalesStatusOverrideProperties;
+import com.delivery.sales.dto.SalesActionResponse;
+import com.delivery.sales.service.SalesAccessGuard;
+import com.delivery.sales.service.SalesService;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -68,11 +73,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.DockerClientFactory;
 
 /**
- * Real-Postgres tests for a vendor rejection when the payment already carries refunds (INC-04 x INC-06 x INC-07,
- * product decision "seller rejection after partial refund"): the order is CANCELLED with reason SELLER_REJECTED,
- * only the remaining refundable amount (payment − REFUNDED − pending refunds) is requested, nothing is created when
- * nothing remains, stock is released once, and a repeated or concurrent rejection is idempotent. A rejection with no
- * prior refund keeps the INC-04 behaviour (REJECTED_BY_VENDOR + full refund).
+ * Real-Postgres tests for the unified seller rejection (INC-04 x INC-06 x INC-07, product decision "every seller
+ * rejection is a cancellation"): the order is CANCELLED with reason SELLER_REJECTED, only the remaining refundable
+ * amount (payment − REFUNDED − pending refunds; the full amount when nothing was refunded) is requested, nothing is
+ * created when nothing remains, stock is released once, the plain PIN is cleared, and a repeated or concurrent
+ * rejection — or one racing an ops cancellation — is idempotent and never deadlocks. Legacy REJECTED_BY_VENDOR rows
+ * and orders cancelled by other paths are returned as-is.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -83,7 +89,8 @@ import org.testcontainers.DockerClientFactory;
         com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
-        DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class})
+        DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class,
+        SalesService.class, SalesAccessGuard.class, SalesStatusOverrideProperties.class})
 class VendorRejectionAfterPartialRefundPostgresTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
@@ -107,6 +114,7 @@ class VendorRejectionAfterPartialRefundPostgresTest {
     }
 
     @Autowired private OrderService orderService;
+    @Autowired private SalesService salesService;
     @Autowired private PaymentService paymentService;
     @Autowired private JdbcTemplate jdbc;
     @MockitoBean private TenantContext tenantContext;
@@ -324,18 +332,121 @@ class VendorRejectionAfterPartialRefundPostgresTest {
     }
 
     @Test
-    void rejectionWithoutPriorRefundKeepsTheInc04Behaviour() {
+    void rejectionWithoutPriorRefundCancelsOrderAndRefundsTheFullAmount() {
         refund("30.00", "REJECTED"); // a rejected refund does not count as a prior refund
 
         OrderResponse response = orderService.rejectByVendor(orderId, "Sem stock");
 
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.cancellationReason()).isEqualTo(com.delivery.order.entity.CancellationReason.SELLER_REJECTED);
+        assertCancelledBySeller(); // CANCELLED + SELLER_REJECTED + vendor text + PIN cleared
+        assertStockReleasedOnce();
+        assertThat(jdbc.queryForList("SELECT amount, status FROM refunds WHERE idempotency_key = ?", "seller-reject-" + orderId)).singleElement().satisfies(r -> {
+            assertThat((BigDecimal) r.get("amount")).isEqualByComparingTo("100.00");
+            assertThat(r).containsEntry("status", "REQUESTED");
+        });
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refunds WHERE idempotency_key = ?", Integer.class, "vendor-rejection-" + orderId)).isZero();
+        assertThat(refundTotal()).isEqualByComparingTo("100.00");
+        assertThat(paymentStatus()).isEqualTo("CONFIRMED"); // financial state moves only on refund approval
+        verify(auditLogService).log(AUDIT_ACTION, "order", orderId.toString(), "refund_remaining=100.00", "SUCCESS");
+        verify(auditLogService, never()).log(eq("ORDER_REJECTED"), anyString(), anyString(), anyString(), anyString());
+        verify(notificationService, times(1)).create(org.mockito.ArgumentMatchers.any(), eq("CUSTOMER"), eq("order_rejected"), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void legacyRejectedOrderIsReturnedAsIsOnRepeatRejection() {
+        // Row written by the pre-unification path: REJECTED_BY_VENDOR + full refund keyed vendor-rejection-<orderId>.
+        jdbc.update("UPDATE orders SET status = 'REJECTED_BY_VENDOR', rejection_reason = 'Antigo', stock_status = 'RELEASED' WHERE id = ?", orderId);
+        jdbc.update("UPDATE inventory_items SET quantity_available = 100, quantity_reserved = 0 WHERE sku_id = ?", skuId);
+        jdbc.update("INSERT INTO refunds (id, tenant_id, payment_id, order_id, amount, reason, status, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 100.00, 'legacy', 'REQUESTED', ?, now(), now())",
+                UUID.randomUUID(), tenantId, paymentId, orderId, "vendor-rejection-" + orderId);
+
+        OrderResponse response = orderService.rejectByVendor(orderId, "Outro motivo");
+
         assertThat(response.status()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
-        Map<String, Object> order = jdbc.queryForMap("SELECT status, cancellation_reason, stock_status FROM orders WHERE id = ?", orderId);
-        assertThat(order).containsEntry("status", "REJECTED_BY_VENDOR").containsEntry("stock_status", "RELEASED");
+        assertThat(response.cancellationReason()).isNull();
+        Map<String, Object> order = jdbc.queryForMap("SELECT status, cancellation_reason, rejection_reason FROM orders WHERE id = ?", orderId);
+        assertThat(order).containsEntry("status", "REJECTED_BY_VENDOR").containsEntry("rejection_reason", "Antigo");
         assertThat(order.get("cancellation_reason")).isNull();
-        assertThat(jdbc.queryForObject("SELECT amount FROM refunds WHERE idempotency_key = ?", BigDecimal.class, "vendor-rejection-" + orderId))
-                .isEqualByComparingTo("100.00");
-        verify(auditLogService).log("ORDER_REJECTED", "order", orderId.toString(), "ref-" + orderId, "SUCCESS");
+        assertThat(refundCount()).isEqualTo(1);
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+        verify(auditLogService, never()).log(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(notificationService, never()).create(org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void orderCancelledByOpsIsReturnedAsIsOnRejection() {
+        salesService.cancel(orderId, "cliente desistiu");
+        org.mockito.Mockito.clearInvocations(auditLogService, notificationService);
+
+        OrderResponse response = orderService.rejectByVendor(orderId, "Sem stock");
+
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.cancellationReason()).isNull();
+        Map<String, Object> order = jdbc.queryForMap("SELECT status, cancellation_reason, rejection_reason FROM orders WHERE id = ?", orderId);
+        assertThat(order).containsEntry("status", "CANCELLED");
+        assertThat(order.get("cancellation_reason")).isNull();
+        assertThat(order.get("rejection_reason")).isNull();
+        assertThat(refundCount()).isZero(); // an ops cancellation creates no refund; the rejection must not either
+        assertStockReleasedOnce();
+        verify(auditLogService, never()).log(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(notificationService, never()).create(org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void concurrentRejectionAndSalesCancelProduceExactlyOneTerminalOutcomeWithoutDeadlock() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        Future<Object> rejection;
+        Future<Object> cancellation;
+        try {
+            rejection = pool.submit(() -> race(start, () -> orderService.rejectByVendor(orderId, "Sem stock")));
+            cancellation = pool.submit(() -> race(start, () -> salesService.cancel(orderId, "cliente desistiu")));
+            start.countDown();
+            Object rejectionOutcome = rejection.get(30, TimeUnit.SECONDS);
+            Object cancellationOutcome = cancellation.get(30, TimeUnit.SECONDS);
+
+            // Neither side may fail on locking (deadlock / lock timeout): the payment row is the common lock.
+            for (Object outcome : List.of(rejectionOutcome, cancellationOutcome)) {
+                assertThat(outcome).isNotInstanceOf(org.springframework.dao.PessimisticLockingFailureException.class);
+                assertThat(outcome).isNotInstanceOf(org.springframework.dao.CannotAcquireLockException.class);
+                assertThat(outcome).isNotInstanceOf(org.springframework.dao.DeadlockLoserDataAccessException.class);
+            }
+            // Exactly one terminal outcome: the seller rejection or the ops cancellation, never a blend.
+            Map<String, Object> order = jdbc.queryForMap("SELECT status, cancellation_reason, delivery_confirmation_code_display FROM orders WHERE id = ?", orderId);
+            assertThat(order).containsEntry("status", "CANCELLED");
+            assertThat(order.get("delivery_confirmation_code_display")).isNull();
+            if ("SELLER_REJECTED".equals(order.get("cancellation_reason"))) {
+                assertThat(rejectionOutcome).isInstanceOfSatisfying(OrderResponse.class, r -> assertThat(r.status()).isEqualTo(OrderStatus.CANCELLED));
+                assertThat(cancellationOutcome).isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getCode()).isEqualTo("sale_not_cancellable"));
+                assertThat(refundCount()).isEqualTo(1);
+                assertThat(refundTotal()).isEqualByComparingTo("100.00");
+                verify(auditLogService, times(1)).log(eq(AUDIT_ACTION), anyString(), anyString(), anyString(), anyString());
+                verify(auditLogService, never()).log(eq("SALE_CANCELLED"), anyString(), anyString(), anyString(), anyString());
+            } else {
+                assertThat(order.get("cancellation_reason")).isNull();
+                assertThat(cancellationOutcome).isInstanceOfSatisfying(SalesActionResponse.class, r -> assertThat(r.orderStatus()).isEqualTo("CANCELLED"));
+                assertThat(rejectionOutcome).isInstanceOfSatisfying(OrderResponse.class, r -> assertThat(r.status()).isEqualTo(OrderStatus.CANCELLED));
+                assertThat(refundCount()).isZero();
+                verify(auditLogService, never()).log(eq(AUDIT_ACTION), anyString(), anyString(), anyString(), anyString());
+                verify(auditLogService, times(1)).log(eq("SALE_CANCELLED"), anyString(), anyString(), anyString(), anyString());
+            }
+            assertStockReleasedOnce();
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    private static Object race(CountDownLatch start, java.util.concurrent.Callable<Object> action) throws Exception {
+        authenticate(null, "ROLE_OPS");
+        start.await();
+        try {
+            return action.call();
+        } catch (RuntimeException e) {
+            return e;
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private UUID refund(String amount, String status) {

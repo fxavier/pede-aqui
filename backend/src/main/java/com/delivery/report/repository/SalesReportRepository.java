@@ -28,8 +28,8 @@ public class SalesReportRepository {
     /**
      * Revenue basis (spec AC-8.2): every status at or after PAYMENT_CONFIRMED. PENDING and
      * PAYMENT_PENDING are the only pre-payment states in the order state machine; CANCELLED,
-     * REJECTED_BY_VENDOR, REFUND_PENDING and REFUNDED are post-payment outcomes in this
-     * codebase (checkout confirms payment synchronously), so they stay in gross and are
+     * REJECTED_BY_VENDOR (legacy rows), REFUND_PENDING and REFUNDED are post-payment outcomes in
+     * this codebase (checkout confirms payment synchronously), so they stay in gross and are
      * netted out via refunds.
      */
     public static final List<String> CONFIRMED_STATUSES = List.of(
@@ -39,6 +39,13 @@ public class SalesReportRepository {
 
     /** Approved/settled refund statuses that reduce net revenue. */
     public static final List<String> COUNTED_REFUND_STATUSES = List.of("APPROVED", "REFUNDED");
+
+    /**
+     * Orders counted as cancelled: CANCELLED (which since the seller-rejection unification includes
+     * cancellation_reason SELLER_REJECTED) plus legacy REJECTED_BY_VENDOR rows, so the figure means
+     * the same before and after that change.
+     */
+    public static final List<String> CANCELLED_STATUSES = List.of("CANCELLED", "REJECTED_BY_VENDOR");
 
     private static final int STREAM_FETCH_SIZE = 500;
 
@@ -56,7 +63,7 @@ public class SalesReportRepository {
             COALESCE(SUM(rf.amount), 0) AS refunds,
             COALESCE(SUM(cm.amount), 0) AS commission,
             COUNT(o.id) FILTER (WHERE o.status = 'DELIVERED') AS delivered_count,
-            COUNT(o.id) FILTER (WHERE o.status = 'CANCELLED') AS cancelled_count""";
+            COUNT(o.id) FILTER (WHERE o.status IN (:cancelledStatuses)) AS cancelled_count""";
 
     private static final RowMapper<SummaryRow> SUMMARY_MAPPER = (rs, rowNum) -> new SummaryRow(
             rs.getLong("order_count"),
@@ -245,6 +252,7 @@ public class SalesReportRepository {
         params.put("tenantId", tenantId);
         params.put("confirmedStatuses", CONFIRMED_STATUSES);
         params.put("refundStatuses", COUNTED_REFUND_STATUSES);
+        params.put("cancelledStatuses", CANCELLED_STATUSES);
         params.put("fromTs", Timestamp.from(from));
         params.put("toTs", Timestamp.from(to));
         if (vendorId != null) {

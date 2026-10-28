@@ -50,7 +50,7 @@ public class DispatchService {
     public static final int MAX_PAGE_SIZE = 100;
 
     /** Job statuses that keep a delivery "taken"; must match the predicate of uq_dispatch_jobs_active_delivery (V035). */
-    static final Set<DispatchJobStatus> ACTIVE_JOB_STATUSES =
+    public static final Set<DispatchJobStatus> ACTIVE_JOB_STATUSES =
             EnumSet.of(DispatchJobStatus.ASSIGNED, DispatchJobStatus.ACCEPTED, DispatchJobStatus.REASSIGNABLE);
 
     /** Delivery statuses in which the courier is busy; must match the predicate of uq_deliveries_active_courier (V035). */
