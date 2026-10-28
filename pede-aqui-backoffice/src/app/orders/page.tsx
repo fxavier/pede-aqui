@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShoppingBag, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
+import { orderStatusLabel } from "@/lib/utils";
 
 const STATUS_LABELS: Record<string, string> = {
   PAYMENT_PENDING: "Pag. Pendente",
@@ -151,7 +152,7 @@ export default function OrdersPage() {
               <TableCell>{order.vendorName ?? "—"}</TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANT[order.status] ?? "outline"}>
-                  {STATUS_LABELS[order.status] ?? order.status}
+                  {orderStatusLabel(order.status, order.cancellationReason, STATUS_LABELS)}
                 </Badge>
               </TableCell>
               <TableCell className="text-right font-medium">{fmt(order.total)}</TableCell>
@@ -240,7 +241,7 @@ export default function OrdersPage() {
                   <Button variant="ghost" size="sm" onClick={() => { setSelected(null); setActionError(null); }}>✕</Button>
                 </div>
                 <Badge variant={STATUS_VARIANT[selected.status] ?? "outline"} className="w-fit">
-                  {STATUS_LABELS[selected.status] ?? selected.status}
+                  {orderStatusLabel(selected.status, selected.cancellationReason, STATUS_LABELS)}
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">

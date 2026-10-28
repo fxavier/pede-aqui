@@ -1,8 +1,10 @@
-import { cn } from "@/lib/utils";
+import { cn, orderStatusLabel } from "@/lib/utils";
 
 
 interface StatusBadgeProps {
   status: string;
+  /** Order cancellation reason; "SELLER_REJECTED" on a CANCELLED order shows "Rejeitado pelo vendedor". */
+  cancellationReason?: string | null;
   className?: string;
 }
 
@@ -60,8 +62,8 @@ const statusLabels: Record<string, string> = {
   CLOSED: "Fechado",
 };
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const label = statusLabels[status] ?? status;
+export function StatusBadge({ status, cancellationReason, className }: StatusBadgeProps) {
+  const label = orderStatusLabel(status, cancellationReason, statusLabels);
   const style = statusStyles[status] ?? "bg-surface-container-high text-on-surface-variant";
 
   return (

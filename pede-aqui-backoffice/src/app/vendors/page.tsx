@@ -382,7 +382,7 @@ export default function VendorsPage() {
                               <td className="py-3 pr-4 font-bold text-on-surface">{order.reference}</td>
                               <td className="py-3 pr-4 text-on-surface-variant">{order.customerName}</td>
                               <td className="py-3 pr-4 font-bold">{formatCurrency(order.total)}</td>
-                              <td className="py-3 pr-4"><StatusBadge status={order.status} /></td>
+                              <td className="py-3 pr-4"><StatusBadge status={order.status} cancellationReason={order.cancellationReason} /></td>
                               <td className="py-3 pr-4 text-on-surface-variant">{order.createdAt ? formatDate(order.createdAt) : "—"}</td>
                             </tr>
                           ))}

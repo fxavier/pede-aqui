@@ -32,6 +32,8 @@ const TX_STATUS_LABELS: Record<string, string> = {
   FAILED: "Falhou",
   REFUNDED: "Reembolsado",
   REFUND_PENDING: "Reemb. Pendente",
+  PARTIALLY_REFUNDED: "Parcialmente reembolsado",
+  FULLY_REFUNDED: "Reembolsado",
 };
 
 function shortId(id: string) {

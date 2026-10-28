@@ -3,6 +3,8 @@
 // also be editing concurrently; values mirror backend/src/main/java/com/delivery/order/entity/
 // OrderStatus.java, PaymentStatus.java and RefundStatus.java.
 
+import { orderStatusLabel as sharedOrderStatusLabel } from "@/lib/utils";
+
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendente",
   PAYMENT_PENDING: "Pag. Pendente",
@@ -46,8 +48,9 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   FAILED: "Falhou",
   CANCELLED: "Cancelado",
   REFUND_PENDING: "Reemb. Pendente",
-  PARTIALLY_REFUNDED: "Parc. Reembolsado",
+  PARTIALLY_REFUNDED: "Parcialmente reembolsado",
   REFUNDED: "Reembolsado",
+  FULLY_REFUNDED: "Reembolsado",
 };
 
 export const PAYMENT_STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive" | "success"> = {
@@ -59,6 +62,7 @@ export const PAYMENT_STATUS_VARIANT: Record<string, "default" | "secondary" | "o
   REFUND_PENDING: "secondary",
   PARTIALLY_REFUNDED: "secondary",
   REFUNDED: "secondary",
+  FULLY_REFUNDED: "secondary",
 };
 
 export const REFUND_STATUS_LABELS: Record<string, string> = {
@@ -85,8 +89,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   DELIVERY_CODE: "Código de Entrega",
 };
 
-export function orderStatusLabel(status: string): string {
-  return ORDER_STATUS_LABELS[status] ?? status;
+/** Sales rows don't carry `cancellationReason` today; pass it when available so seller
+ *  rejections (CANCELLED + SELLER_REJECTED) read "Rejeitado pelo vendedor". */
+export function orderStatusLabel(status: string, cancellationReason?: string | null): string {
+  return sharedOrderStatusLabel(status, cancellationReason, ORDER_STATUS_LABELS);
 }
 
 export function orderStatusVariant(status: string): "default" | "secondary" | "outline" | "destructive" | "success" {
