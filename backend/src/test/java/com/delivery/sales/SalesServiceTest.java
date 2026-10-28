@@ -78,6 +78,7 @@ class SalesServiceTest {
     private TenantContext tenantContext;
     private SalesStatusOverrideProperties overrideProperties;
     private SalesService service;
+    private com.delivery.order.service.OrderStockService orderStockService;
 
     @BeforeEach
     void setUp() {
@@ -90,13 +91,14 @@ class SalesServiceTest {
         userProfileRepository = mock(AppUserProfileRepository.class);
         paymentService = mock(PaymentService.class);
         notificationService = mock(NotificationService.class);
+        orderStockService = new com.delivery.order.service.OrderStockService(mock(com.delivery.inventory.service.InventoryService.class));
         auditLogService = mock(AuditLogService.class);
         tenantContext = mock(TenantContext.class);
         overrideProperties = new SalesStatusOverrideProperties();
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
-                auditLogService, tenantContext, overrideProperties, new SalesAccessGuard(vendorRepository));
+                auditLogService, tenantContext, overrideProperties, new SalesAccessGuard(vendorRepository), orderStockService);
         authenticateWithRoles("ROLE_ADMIN");
     }
 
@@ -128,6 +130,7 @@ class SalesServiceTest {
             var response = service.cancel(order.getId(), "customer asked");
             assertThat(response.orderStatus()).isEqualTo("CANCELLED");
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RELEASED);
         }
         verify(auditLogService, org.mockito.Mockito.times(5)).log(eq("SALE_CANCELLED"), eq("order"), anyString(), anyString(), eq("SUCCESS"));
     }
@@ -140,6 +143,7 @@ class SalesServiceTest {
             assertThatThrownBy(() -> service.cancel(order.getId(), "too late"))
                     .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT));
             assertThat(order.getStatus()).isEqualTo(status);
+            assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RESERVED);
         }
     }
 

@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -35,9 +37,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ErrorResponse> handleBusiness(BusinessException exception, HttpServletRequest request) {
-        return ResponseEntity.status(exception.getStatus()).body(ErrorResponse.of(
+        return ResponseEntity.status(exception.getStatus()).body(ErrorResponse.withDetails(
                 exception.getCode(),
                 exception.getMessage(),
+                correlationId(request),
+                exception.getDetails()));
+    }
+
+    /** Unique/foreign-key conflicts become a neutral 409; constraint names and SQL never reach the client (COR-06). */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException exception, HttpServletRequest request) {
+        log.warn("Data integrity conflict on {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(
+                "conflict",
+                "The request conflicts with the current state of the resource",
+                correlationId(request)));
+    }
+
+    /** @Version conflicts between concurrent writers become 409 so the client can re-read and retry (COR-06). */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException exception, HttpServletRequest request) {
+        log.warn("Concurrent modification on {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.of(
+                "concurrent_modification",
+                "The resource was modified concurrently; reload and try again",
                 correlationId(request)));
     }
 

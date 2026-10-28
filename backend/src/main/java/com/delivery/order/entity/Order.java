@@ -59,6 +59,11 @@ public class Order {
     private Instant updatedAt;
     @Column(name = "rejection_reason")
     private String rejectionReason;
+    @Column(name = "cart_id")
+    private UUID cartId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stock_status", nullable = false)
+    private StockStatus stockStatus = StockStatus.RESERVED;
     @Version
     private long version;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -87,6 +92,18 @@ public class Order {
     }
 
     public void addItem(OrderItem item) { items.add(item); }
+    /** Records the cart this order was checked out from (idempotency-key reuse detection). */
+    public void linkCart(UUID cartId) { this.cartId = cartId; }
+    /** Moves RESERVED stock to RELEASED; returns false when stock was already released or committed. */
+    public boolean markStockReleased() { return transitionStock(StockStatus.RELEASED); }
+    /** Moves RESERVED stock to COMMITTED; returns false when stock was already released or committed. */
+    public boolean markStockCommitted() { return transitionStock(StockStatus.COMMITTED); }
+    private boolean transitionStock(StockStatus target) {
+        if (stockStatus != StockStatus.RESERVED) return false;
+        stockStatus = target;
+        updatedAt = Instant.now();
+        return true;
+    }
     /** Applies the checkout-resolved discount and recomputes the total via the canonical pricing formula. */
     public void applyDiscount(UUID appliedPromotionId, BigDecimal discountTotal) {
         this.appliedPromotionId = appliedPromotionId;
@@ -123,5 +140,7 @@ public class Order {
     public String getDeliveryConfirmationCodeDisplay() { return deliveryConfirmationCodeDisplay; }
     public Instant getCreatedAt() { return createdAt; }
     public String getRejectionReason() { return rejectionReason; }
+    public UUID getCartId() { return cartId; }
+    public StockStatus getStockStatus() { return stockStatus; }
     public List<OrderItem> getItems() { return items; }
 }

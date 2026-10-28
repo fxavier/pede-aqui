@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class VendorFulfillmentTest {
+    private final com.delivery.order.service.OrderStockService orderStockService = mock(com.delivery.order.service.OrderStockService.class);
     private final UUID tenantId = UUID.randomUUID();
 
     @Test
@@ -67,6 +68,7 @@ class VendorFulfillmentTest {
         assertThat(response.status()).isEqualTo(OrderStatus.REFUND_PENDING);
         assertThat(order.getRejectionReason()).isEqualTo("Sem ingredientes");
         verify(auditLogService).log("ORDER_REJECTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
+        verify(orderStockService).release(order); // INC-07 (COR-01)
     }
 
     @Test
@@ -124,7 +126,10 @@ class VendorFulfillmentTest {
                 tenantContext,
                 mock(SkuRepository.class),
                 mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(),
+                orderStockService,
+                mock(com.delivery.cart.service.CartService.class),
+                mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {

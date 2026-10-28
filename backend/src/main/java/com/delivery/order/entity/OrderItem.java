@@ -42,6 +42,7 @@ public class OrderItem {
     protected OrderItem() {}
 
     public UUID getId() { return id; }
+    public UUID getSkuId() { return skuId; }
     public String getProductNameSnapshot() { return productNameSnapshot; }
     public String getSkuNameSnapshot() { return skuNameSnapshot; }
     public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; }

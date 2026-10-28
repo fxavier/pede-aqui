@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class DeliveryConfirmationTest {
+    private final com.delivery.order.service.OrderStockService orderStockService = mock(com.delivery.order.service.OrderStockService.class);
     @Test
     void correctCodeDeliversOrderAndDelivery() throws Exception {
         UUID tenantId = UUID.randomUUID();
@@ -57,7 +58,7 @@ class DeliveryConfirmationTest {
         when(deliveryRepository.findByTenantIdAndId(tenantId, delivery.getId())).thenReturn(Optional.of(delivery));
         when(eventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         if (order != null) when(orderRepository.findByTenantIdAndId(tenantId, order.getId())).thenReturn(Optional.of(order));
-        return new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext);
+        return new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext, orderStockService);
     }
 
     private static String hash(String value) throws Exception {
