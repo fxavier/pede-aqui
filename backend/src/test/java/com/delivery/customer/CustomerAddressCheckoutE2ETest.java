@@ -14,8 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.delivery.auth.service.KeycloakAdminService;
-import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.PostgresApiE2ETestBase;
 import com.delivery.common.security.TenancyProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
@@ -25,23 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.testcontainers.DockerClientFactory;
 
 /**
  * End-to-end API test of INC-12 (AS-02, FR-003) on the full application context with real Postgres (Flyway
@@ -49,35 +39,15 @@ import org.testcontainers.DockerClientFactory;
  * no-address window, and who may read the delivery address (assigned courier only; vendor gets the area).
  * Keycloak is replaced only at the JwtDecoder and admin-client seams, as in CustomerTenantResolutionE2ETest.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-class CustomerAddressCheckoutE2ETest {
-    private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
+class CustomerAddressCheckoutE2ETest extends PostgresApiE2ETestBase {
     private static final String ADDRESSES = "/api/v1/customers/me/addresses";
 
-    @BeforeAll
-    static void requiresDockerOrExternalDatabase() {
-        Assumptions.assumeTrue(DOCKER_AVAILABLE || System.getenv("SPRING_DATASOURCE_URL") != null,
-                "Skipping address E2E test: no Docker environment and no SPRING_DATASOURCE_URL override");
-    }
 
-    @DynamicPropertySource
-    static void datasourceProperties(DynamicPropertyRegistry registry) {
-        if (!DOCKER_AVAILABLE) {
-            return;
-        }
-        PostgresTestContainerConfig.POSTGRES.start();
-        registry.add("spring.datasource.url", PostgresTestContainerConfig.POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", PostgresTestContainerConfig.POSTGRES::getUsername);
-        registry.add("spring.datasource.password", PostgresTestContainerConfig.POSTGRES::getPassword);
-    }
 
     @Autowired private org.springframework.test.web.servlet.MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private TenancyProperties tenancyProperties;
-    @MockitoBean private KeycloakAdminService keycloakAdminService;
-    @MockitoBean private JwtDecoder jwtDecoder;
 
     private final Map<String, Jwt> tokens = new ConcurrentHashMap<>();
     private UUID tenant;
