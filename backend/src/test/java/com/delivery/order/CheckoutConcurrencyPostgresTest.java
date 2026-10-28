@@ -54,7 +54,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -111,12 +111,12 @@ class CheckoutConcurrencyPostgresTest {
     @Autowired private SalesService salesService;
     @Autowired private DeliveryService deliveryService;
 
-    @MockBean private TenantContext tenantContext;
-    @MockBean private NotificationService notificationService;
-    @MockBean private PaymentService paymentService;
-    @MockBean private AuditLogService auditLogService;
-    @MockBean private SalesAccessGuard salesAccessGuard;
-    @MockBean private SalesStatusOverrideProperties salesStatusOverrideProperties;
+    @MockitoBean private TenantContext tenantContext;
+    @MockitoBean private NotificationService notificationService;
+    @MockitoBean private PaymentService paymentService;
+    @MockitoBean private AuditLogService auditLogService;
+    @MockitoBean private SalesAccessGuard salesAccessGuard;
+    @MockitoBean private SalesStatusOverrideProperties salesStatusOverrideProperties;
 
     private UUID tenantId;
     private UUID vendorId;
