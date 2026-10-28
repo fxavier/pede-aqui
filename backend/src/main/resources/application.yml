@@ -96,7 +96,8 @@ app:
       server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}
       realm: ${KEYCLOAK_REALM:delivery}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
-      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+      # Sem default aqui (SEC-07): dev em application-dev.yml; prod exige KEYCLOAK_ADMIN_CLIENT_SECRET.
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
   delivery:
     # Failed PIN submissions before the delivery code locks (OPS unlocks via /ops/deliveries/{id}/unlock-code).
     max-code-attempts: ${APP_DELIVERY_MAX_CODE_ATTEMPTS:5}

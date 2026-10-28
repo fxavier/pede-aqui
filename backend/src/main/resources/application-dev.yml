@@ -12,7 +12,17 @@ app:
   delivery:
     # Dev-only default (never use in prod); override with APP_DELIVERY_CODE_HMAC_SECRET.
     code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:dev-only-delivery-code-hmac-secret}
+  # Segredo LOCAL do cliente delivery-admin-service do realm de dev (keycloak/delivery-realm.json).
+  # Só existe no perfil dev; em prod KEYCLOAK_ADMIN_CLIENT_SECRET é obrigatório (SEC-07).
+  keycloak:
+    admin:
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
   # Sem PSP: a confirmação manual do pagamento mock só existe em dev (dono da encomenda ou OPS/ADMIN).
   payments:
     mock-confirmation:
       enabled: true
+
+# Password LOCAL do Postgres do docker compose. Em prod DB_PASSWORD é obrigatório (SEC-07).
+spring:
+  datasource:
+    password: ${DB_PASSWORD:delivery}

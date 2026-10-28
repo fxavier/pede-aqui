@@ -12,3 +12,24 @@ app:
   delivery:
     # Sem valor por defeito: o arranque falha se APP_DELIVERY_CODE_HMAC_SECRET não estiver definido.
     code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET}
+  # Fail-fast de segredos (SEC-07): application.yml não tem defaults para estes valores;
+  # RequiredSecretsProperties (@Validated @NotBlank) impede o arranque se vierem vazios.
+  secrets:
+    db-password: ${spring.datasource.password:}
+    keycloak-admin-client-secret: ${app.keycloak.admin.client-secret:}
+
+# Swagger UI / OpenAPI desligados em produção (SEC-21).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Actuator numa porta de gestão separada (SEC-19 / PROD-01): só a rede interna (Prometheus,
+# orquestrador) a alcança, pelo que o scrape não precisa de token. A porta pública da API
+# deixa de servir /actuator/*; as probes ficam em /livez e /readyz na porta pública
+# (management.endpoint.health.probes.add-additional-paths, em application.yml).
+# NÃO publicar MANAGEMENT_SERVER_PORT no ingress/load balancer.
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:8091}

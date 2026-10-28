@@ -137,7 +137,7 @@ Notas:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: local database container settings.
 - `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`: local object storage credentials.
 - `KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD`: local Keycloak 26 admin bootstrap credentials (replace the deprecated `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD`).
-- OpenAPI local endpoints: `/api-docs` and `/swagger-ui.html`.
+- OpenAPI local endpoints: `/api-docs` and `/swagger-ui.html` (disabled in the `prod` profile).
 
 Do not commit real secrets. Use local `.env` files only for developer machines.
 
