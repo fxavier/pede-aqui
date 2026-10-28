@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -203,12 +205,23 @@ class CustomerTenantResolutionE2ETest extends PostgresApiE2ETestBase {
     void platformAdminCannotImpersonateAnUnknownOrMalformedTenant() throws Exception {
         String token = token("platform-admin-" + UUID.randomUUID(), Map.of("azp", "delivery-app"), "ADMIN");
 
-        mockMvc.perform(withBearer(get("/api/v1/admin/zones"), token).header(TenantContext.TENANT_ID_HEADER, UUID.randomUUID().toString()))
+        // Both are RFC 9457 problem documents with the correlation id in body and header (INC-14).
+        mockMvc.perform(withBearer(get("/api/v1/admin/zones"), token).header(TenantContext.TENANT_ID_HEADER, UUID.randomUUID().toString())
+                        .header("X-Correlation-Id", "e2e-tenant-404"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("tenant_not_found"));
-        mockMvc.perform(withBearer(get("/api/v1/admin/zones"), token).header(TenantContext.TENANT_ID_HEADER, "not-a-uuid"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(header().string("X-Correlation-Id", "e2e-tenant-404"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("tenant_not_found"))
+                .andExpect(jsonPath("$.correlationId").value("e2e-tenant-404"));
+        mockMvc.perform(withBearer(get("/api/v1/admin/zones"), token).header(TenantContext.TENANT_ID_HEADER, "not-a-uuid")
+                        .header("X-Correlation-Id", "e2e-tenant-400"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("invalid_tenant_header"));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(header().string("X-Correlation-Id", "e2e-tenant-400"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("invalid_tenant_header"))
+                .andExpect(jsonPath("$.correlationId").value("e2e-tenant-400"));
     }
 
     @Test
