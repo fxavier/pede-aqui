@@ -54,7 +54,7 @@ export default function OrderDetailPage() {
             <ArrowLeft className="w-3.5 h-3.5" /> Encomendas
           </Link>
           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${active ? 'bg-emerald-100 text-emerald-800 animate-pulse' : 'bg-slate-100 text-slate-600'}`}>
-            ● {active ? 'EM ANDAMENTO' : statusLabel(currentStatus)}
+            ● {active ? 'EM ANDAMENTO' : statusLabel(currentStatus, cached?.cancellationReason)}
           </span>
           <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-slate-800 tracking-tight leading-none mt-1.5 capitalize">
             {cached?.vendorName ?? 'Acompanhar Encomenda'}
