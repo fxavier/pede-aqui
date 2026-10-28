@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Exposes product variation (families) management endpoints. */
+/** Exposes product variation (families) management endpoints; writes are VENDOR_ADMIN (own vendor)/OPS/ADMIN (INC-05). */
 @RestController
 @RequestMapping("/api/v1/catalog")
 public class ProductVariationController {
@@ -36,6 +37,7 @@ public class ProductVariationController {
 
     @Operation(summary = "Create a product variation group (family)")
     @PostMapping("/product-variation-groups")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductVariationGroupResponse createProductVariationGroup(@Valid @RequestBody CreateProductVariationGroupRequest request) {
         return catalogService.createProductVariationGroup(request);
@@ -55,12 +57,14 @@ public class ProductVariationController {
 
     @Operation(summary = "Update a product variation group")
     @PutMapping("/product-variation-groups/{groupId}")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     public ProductVariationGroupResponse updateProductVariationGroup(@PathVariable UUID groupId, @Valid @RequestBody UpdateProductVariationGroupRequest request) {
         return catalogService.updateProductVariationGroup(groupId, request);
     }
 
     @Operation(summary = "Delete a product variation group")
     @DeleteMapping("/product-variation-groups/{groupId}")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProductVariationGroup(@PathVariable UUID groupId) {
         catalogService.deleteProductVariationGroup(groupId);
@@ -70,6 +74,7 @@ public class ProductVariationController {
 
     @Operation(summary = "Create a product variation option")
     @PostMapping("/product-variation-options")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductVariationOptionResponse createProductVariationOption(@Valid @RequestBody CreateProductVariationOptionRequest request) {
         return catalogService.createProductVariationOption(request);
@@ -89,12 +94,14 @@ public class ProductVariationController {
 
     @Operation(summary = "Update a product variation option")
     @PutMapping("/product-variation-options/{optionId}")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     public ProductVariationOptionResponse updateProductVariationOption(@PathVariable UUID optionId, @Valid @RequestBody UpdateProductVariationOptionRequest request) {
         return catalogService.updateProductVariationOption(optionId, request);
     }
 
     @Operation(summary = "Delete a product variation option")
     @DeleteMapping("/product-variation-options/{optionId}")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProductVariationOption(@PathVariable UUID optionId) {
         catalogService.deleteProductVariationOption(optionId);
