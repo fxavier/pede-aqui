@@ -302,6 +302,7 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 - **Vendor fulfillment state machine**: `PAYMENT_CONFIRMED → ACCEPTED_BY_VENDOR → PREPARING → READY_FOR_PICKUP`.
 - **Courier delivery state machine**: `ACCEPTED → ARRIVED_AT_VENDOR → PICKED_UP → ON_ROUTE_TO_CUSTOMER → ARRIVED_AT_CUSTOMER → DELIVERED | FAILED_DELIVERY`.
 - **Dispatch**: first eligible courier in `operatingZoneId` (APPROVED + online). Reassignment excludes prior courier.
+- **Refunds (no PSP)**: `PaymentService.requestRefund` → `REQUESTED`; `approveRefund`/`rejectRefund` (FINANCE/ADMIN, reachable via `/payments/refunds/*` and `/finance/refunds/*`, both funnel through `PaymentService`). **Approval is an administrative record only — no money is returned to the customer; there is no PSP call.** Lookups are tenant-scoped (another tenant's refund → 404). A request locks the payment row (`SELECT … FOR UPDATE`) and must satisfy `0 < amount ≤ payment.amount − Σ non-REJECTED refunds` (else 422); idempotency key is UNIQUE per tenant (V040) — same key returns the same refund, a key bound to another payment → 409. When approved (`REFUNDED`) refunds cover the full payment the order becomes `REFUNDED`; a partial approval leaves the order status unchanged.
 - **Audit**: sensitive admin/ops/finance actions written to `audit_logs` (actor, target, action, result, timestamp).
 
 ## Architecture Constraints
