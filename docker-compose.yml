@@ -80,6 +80,9 @@ services:
       DB_PASSWORD: delivery
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/delivery
       SPRING_DATA_REDIS_HOST: redis
+      # Actuator numa porta de gestão interna (SEC-19/PROD-01): o Prometheus faz scrape em
+      # backend:8091 sem token; esta porta não é publicada no host.
+      MANAGEMENT_SERVER_PORT: "8091"
       # Storage: perfil dev (MinIO) por defeito — ver application-dev.yml.
       # O endpoint fica localhost:9000 (default) de propósito: o presign não
       # faz chamadas de rede e o browser é quem faz o PUT, a partir do host.
