@@ -21,4 +21,4 @@ Para alterar uma decisão aceite, cria-se um ADR novo que a substitui, em vez de
 ## Convenções
 
 - Nome do ficheiro: `ADR-NNNN-<slug>.md`, numeração sequencial.
-- As afirmações sobre o estado atual citam ficheiros do código; os IDs `AS-xx`, `SEC-xx`, `COR-xx` e `Dx` referem-se a `docs/assessment/AS-IS-ARCHITECTURE.md`, `docs/assessment/FEATURE-INVENTORY.md` e `AUDIT.md`.
+- As afirmações sobre o estado atual citam ficheiros do código; os IDs `AS-xx`, `SEC-xx`, `COR-xx` e `Dx` referem-se a `docs/assessment/AS-IS-ARCHITECTURE.md`, `docs/assessment/FEATURE-INVENTORY.md` e `docs/history/AUDIT.md`.
