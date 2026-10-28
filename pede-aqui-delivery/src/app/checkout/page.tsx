@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronLeft, MapPin, CreditCard, Smartphone, Coins,
-  MessageSquare, ShieldCheck, ShoppingBag, Sparkles,
+  LocateFixed, ShieldCheck, ShoppingBag, Sparkles, Plus,
 } from 'lucide-react'
-import { checkoutService } from '@/lib/api/services'
+import { addressService, checkoutService } from '@/lib/api/services'
 import { clearCart, cartTotal, cartItemCount } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { useIdempotencyKey } from '@/lib/idempotency'
+import {
+  type AddressForm, type AddressFormErrors,
+  emptyAddressForm, formatAddress, toAddressRequest, validateAddressForm,
+} from '@/lib/address'
 
-interface AddressForm { street: string; number: string; neighbourhood: string; city: string; notes: string }
-const EMPTY: AddressForm = { street: '', number: '', neighbourhood: '', city: '', notes: '' }
+/** Picker value for "add a new address" (any other value is a saved address id). */
+const NEW_ADDRESS = 'new'
 
 /* Cosmetic: no payment integration on the backend yet. */
 const PAYMENTS = [
@@ -24,13 +29,25 @@ const PAYMENTS = [
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
+  const queryClient = useQueryClient()
   const cart = useSelector((s: RootState) => s.cart)
-  const [address, setAddress] = useState<AddressForm>(EMPTY)
+  const displayName = useSelector((s: RootState) => s.auth.displayName)
+  const [address, setAddress] = useState<AddressForm>(() => emptyAddressForm(displayName ?? ''))
+  // Saved address chosen for delivery, or NEW_ADDRESS to fill the form (null until the list loads).
+  const [selected, setSelected] = useState<string | null>(null)
+  const [locating, setLocating] = useState(false)
   const [payment, setPayment] = useState<string>('mpesa')
-  const [errors, setErrors] = useState<Partial<AddressForm>>({})
+  const [errors, setErrors] = useState<AddressFormErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const idempotencyKey = useIdempotencyKey()
+
+  const addresses = useQuery({ queryKey: ['customer-addresses'], queryFn: addressService.list })
+  const saved = addresses.data ?? []
+  // Default to the first saved address; with none saved, open the new-address form.
+  useEffect(() => {
+    if (selected === null && addresses.isSuccess) setSelected(saved.length > 0 ? saved[0].id : NEW_ADDRESS)
+  }, [selected, addresses.isSuccess, saved])
 
   const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
@@ -43,25 +60,42 @@ export default function CheckoutPage() {
 
   if (isEmpty) return null
 
-  function validate(): boolean {
-    const e: Partial<AddressForm> = {}
-    if (!address.street.trim()) e.street = 'Obrigatório'
-    if (!address.number.trim()) e.number = 'Obrigatório'
-    if (!address.neighbourhood.trim()) e.neighbourhood = 'Obrigatório'
-    if (!address.city.trim()) e.city = 'Obrigatório'
+  function pinCurrentLocation() {
+    if (!navigator.geolocation) return
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setAddress((a) => ({ ...a, latitude: pos.coords.latitude, longitude: pos.coords.longitude }))
+        setLocating(false)
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    )
+  }
+
+  /** Saved address id to deliver to, creating the new address first when that option is chosen. */
+  async function resolveAddressId(): Promise<string | null> {
+    if (selected && selected !== NEW_ADDRESS) return selected
+    const e = validateAddressForm(address)
     setErrors(e)
-    return Object.keys(e).length === 0
+    if (Object.keys(e).length > 0) return null
+    const created = await addressService.create(toAddressRequest(address))
+    // Keep it selected: a retry after a failed checkout must not create the address twice.
+    setSelected(created.id)
+    await queryClient.invalidateQueries({ queryKey: ['customer-addresses'] })
+    return created.id
   }
 
   async function handleConfirm() {
-    if (!validate()) return
     if (!cart.cartId) { setSubmitError('Carrinho inválido. Recarregue a página.'); return }
+    if (selected === null) return
     setSubmitting(true)
     setSubmitError(null)
     try {
-      // Backend checkout only needs cartId + idempotencyKey. Address/payment are
-      // collected for UX and future support but not sent in the current API.
-      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey })
+      const addressId = await resolveAddressId()
+      if (!addressId) return
+      // Payment method is still cosmetic (no PSP yet); the address goes as a saved-address reference.
+      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey, addressId })
       const history: unknown[] = JSON.parse(localStorage.getItem('pede-aqui:orders') ?? '[]')
       history.unshift(order)
       localStorage.setItem('pede-aqui:orders', JSON.stringify(history.slice(0, 50)))
@@ -95,12 +129,56 @@ export default function CheckoutPage() {
               <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600"><MapPin className="w-4 h-4" /></div>
               <h2 className="font-display font-extrabold text-slate-800 text-base">1. Morada de Entrega</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TextField label="Rua / Avenida" value={address.street} error={errors.street} onChange={(v) => setAddress({ ...address, street: v })} placeholder="Av. Julius Nyerere" />
-              <TextField label="Número" value={address.number} error={errors.number} onChange={(v) => setAddress({ ...address, number: v })} placeholder="1200" />
-              <TextField label="Bairro" value={address.neighbourhood} error={errors.neighbourhood} onChange={(v) => setAddress({ ...address, neighbourhood: v })} placeholder="Polana" />
-              <TextField label="Cidade" value={address.city} error={errors.city} onChange={(v) => setAddress({ ...address, city: v })} placeholder="Maputo" />
-            </div>
+            {addresses.isLoading && <p className="text-xs text-slate-400">A carregar moradas…</p>}
+            {addresses.isError && <p className="text-xs text-destructive font-medium">Não foi possível carregar as suas moradas.</p>}
+
+            {saved.length > 0 && (
+              <div className="space-y-2" role="radiogroup" aria-label="Moradas guardadas">
+                {saved.map((a) => (
+                  <AddressOption key={a.id} active={selected === a.id} onSelect={() => setSelected(a.id)}
+                    title={a.label} detail={formatAddress(a)} note={a.deliveryInstructions} />
+                ))}
+                <AddressOption active={selected === NEW_ADDRESS} onSelect={() => setSelected(NEW_ADDRESS)}
+                  title="Nova morada" detail="Adicionar e guardar uma morada" icon />
+              </div>
+            )}
+
+            {selected === NEW_ADDRESS && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <TextField label="Nome da morada" value={address.label} error={errors.label} onChange={(v) => setAddress({ ...address, label: v })} placeholder="Casa" />
+                  <TextField label="Quem recebe" value={address.recipientName} error={errors.recipientName} onChange={(v) => setAddress({ ...address, recipientName: v })} placeholder="Nome completo" />
+                  <TextField label="Rua / Avenida" value={address.street} error={errors.street} onChange={(v) => setAddress({ ...address, street: v })} placeholder="Av. Julius Nyerere" />
+                  <TextField label="Número" value={address.number} error={errors.number} onChange={(v) => setAddress({ ...address, number: v })} placeholder="1200" />
+                  <TextField label="Bairro" value={address.neighbourhood} error={errors.neighbourhood} onChange={(v) => setAddress({ ...address, neighbourhood: v })} placeholder="Polana" />
+                  <TextField label="Cidade" value={address.city} error={errors.city} onChange={(v) => setAddress({ ...address, city: v })} placeholder="Maputo" />
+                  <TextField label="Telefone (opcional)" value={address.phone} error={errors.phone} onChange={(v) => setAddress({ ...address, phone: v })} placeholder="+258 84 000 0000" />
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Localização GPS (opcional)</span>
+                    <button
+                      type="button"
+                      onClick={pinCurrentLocation}
+                      disabled={locating}
+                      className="w-full border border-slate-200 rounded-xl p-3 text-xs text-slate-700 flex items-center gap-2 hover:border-brand-500 transition-colors"
+                    >
+                      <LocateFixed className="w-4 h-4 text-brand-600" />
+                      {locating ? 'A obter localização…' : address.latitude !== null ? 'Localização marcada ✓' : 'Usar a minha localização atual'}
+                    </button>
+                    {errors.latitude && <p className="text-[10px] text-red-500 font-semibold">{errors.latitude}</p>}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Instruções para o estafeta</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Ex: campainha avariada, ligar ao chegar à porta..."
+                    value={address.notes}
+                    onChange={(e) => setAddress({ ...address, notes: e.target.value })}
+                    className="w-full border border-slate-200 rounded-2xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-700"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Payment (cosmetic) */}
@@ -133,20 +211,6 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-sm space-y-4 text-left">
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-50">
-              <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600"><MessageSquare className="w-4 h-4" /></div>
-              <h2 className="font-display font-extrabold text-slate-800 text-base">3. Instruções Adicionais</h2>
-            </div>
-            <textarea
-              rows={3}
-              placeholder="Ex: campainha avariada, ligar ao chegar à porta..."
-              value={address.notes}
-              onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-              className="w-full border border-slate-200 rounded-2xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-700"
-            />
-          </div>
         </div>
 
         {/* Right — summary (real) */}
@@ -187,7 +251,7 @@ export default function CheckoutPage() {
 
             <button
               onClick={handleConfirm}
-              disabled={submitting}
+              disabled={submitting || selected === null}
               className={`w-full bg-brand-600 hover:bg-brand-500 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}
             >
               {submitting ? (
@@ -216,5 +280,30 @@ function TextField({ label, value, error, onChange, placeholder }: { label: stri
       />
       {error && <p className="text-[10px] text-red-500 font-semibold">{error}</p>}
     </div>
+  )
+}
+
+function AddressOption({ active, onSelect, title, detail, note, icon }: { active: boolean; onSelect: () => void; title: string; detail: string; note?: string | null; icon?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onSelect}
+      className={`w-full p-3 rounded-2xl border text-left flex items-start gap-3 transition-all ${
+        active ? 'border-brand-500 bg-brand-50/40 ring-2 ring-brand-500/10' : 'border-slate-100 hover:border-slate-200 bg-white'
+      }`}
+    >
+      <span className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center ${active ? 'border-brand-600' : 'border-slate-300'}`}>
+        {active && <span className="w-2 h-2 rounded-full bg-brand-600" />}
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="font-display font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1">
+          {icon && <Plus className="w-3.5 h-3.5" />}{title}
+        </span>
+        <span className="block text-slate-500 text-[11px] truncate">{detail}</span>
+        {note && <span className="block text-slate-400 text-[10px] truncate">{note}</span>}
+      </span>
+    </button>
   )
 }
