@@ -118,7 +118,7 @@ class MerchantRegistrationE2ETest extends PostgresApiE2ETestBase {
     private static String registration(String email, String slug) {
         return "{\"companyName\":\"Loja Nova\",\"companySlug\":\"" + slug + "\",\"defaultCurrency\":\"MZN\",\"country\":\"MZ\","
                 + "\"city\":\"Maputo\",\"firstName\":\"Ana\",\"lastName\":\"Machava\",\"email\":\"" + email + "\","
-                + "\"password\":\"segredo-123\"}";
+                + "\"password\":\"Segredo-1234\"}";
     }
 
     private String merchantToken(String subject) {

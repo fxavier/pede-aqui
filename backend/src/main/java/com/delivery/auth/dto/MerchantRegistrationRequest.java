@@ -1,12 +1,13 @@
 package com.delivery.auth.dto;
 
+import com.delivery.auth.validation.PasswordPolicy;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 /** Request for merchant self-registration. */
+@PasswordPolicy
 public record MerchantRegistrationRequest(
         @Schema(example = "Acme Restaurant")
         @NotBlank String companyName,
@@ -40,10 +41,10 @@ public record MerchantRegistrationRequest(
         @NotBlank @Email String email,
         @Schema(example = "+1-555-0124")
         String phone,
-        @Schema(example = "securePassword123")
-        @NotBlank @Size(min = 8) String password,
+        @Schema(example = "SecurePassword123", description = "Min 10 chars, at least one digit, upper- and lower-case letter; not equal to the e-mail")
+        @NotBlank String password,
         @Schema(example = "FRIEND2024")
         String referralCode,
         @Schema(example = "WELCOME10")
-        String promoCode) {
+        String promoCode) implements PasswordPolicy.Credentials {
 }
