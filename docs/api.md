@@ -66,7 +66,7 @@ The backend REST API uses base path `/api/v1`.
 
 Customer carts are limited to one vendor for the MVP. Checkout revalidates every line (active SKU, ACTIVE product, unchanged price), reserves stock, creates an order reference, stores the delivery confirmation code hash, creates a mock payment record, and creates a delivery record in one transaction. The customer can see the 6-digit delivery code through order tracking; couriers submit the code to complete delivery, and invalid attempts are counted without logging the submitted code.
 
-Reserved stock is released exactly once when the order is cancelled, rejected by the vendor, or fails delivery before pickup, and is consumed when the courier marks the delivery `PICKED_UP` (`orders.stock_status`: `RESERVED → RELEASED | COMMITTED`).
+Reserved stock is released exactly once when the order is cancelled, rejected by the vendor, fails delivery before pickup, or is fully refunded before pickup (refund approval while the delivery is absent or not yet `PICKED_UP`), and is consumed when the courier marks the delivery `PICKED_UP`, completes it with the PIN, or ops override the order to `DELIVERED` (`orders.stock_status`: `RESERVED → RELEASED | COMMITTED`).
 
 OpenAPI UI is available at `/swagger-ui.html` when the backend is running.
 
