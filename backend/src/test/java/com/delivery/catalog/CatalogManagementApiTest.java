@@ -30,7 +30,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -42,13 +42,13 @@ class CatalogManagementApiTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private ProductService productService;
 
-    @MockBean
+    @MockitoBean
     private PriceModerationService moderationService;
 
-    @MockBean
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     private final UUID productId = UUID.randomUUID();
