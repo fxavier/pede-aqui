@@ -189,6 +189,67 @@ class DeliveryConfirmationTest {
         verify(auditLogService).log(eq("DELIVERY_CODE_UNLOCKED"), eq("delivery"), eq(delivery.getId().toString()), eq("attempts=5"), eq("SUCCESS"));
     }
 
+    // --- Order no longer deliverable (refunded / cancelled / legacy rejected): 409 order_not_deliverable, no effects ---
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = OrderStatus.class, names = {"REFUNDED", "CANCELLED", "REJECTED_BY_VENDOR"})
+    void completionOnANonDeliverableOrderIsConflictWithoutEffects(OrderStatus terminal) {
+        ReflectionTestUtils.setField(order, "status", terminal);
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        // Correct PIN and wrong PIN alike: refused before the PIN is compared, so the counter never moves.
+        for (String pin : List.of(CODE, WRONG)) {
+            assertThatThrownBy(() -> service.complete(delivery.getId(), pin))
+                    .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                        assertThat(ex.getCode()).isEqualTo("order_not_deliverable");
+                        assertThat(ex.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    });
+        }
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_CUSTOMER);
+        assertThat(delivery.getConfirmationAttempts()).isZero();
+        assertThat(order.getStatus()).isEqualTo(terminal);
+        verify(eventRepository, never()).save(any());
+        verify(orderStockService, never()).commit(any());
+        verify(auditLogService, never()).log(anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = OrderStatus.class, names = {"REFUNDED", "CANCELLED", "REJECTED_BY_VENDOR"})
+    void statusUpdateOnANonDeliverableOrderIsConflictWithoutEffectsForCourierAndOps(OrderStatus terminal) {
+        ReflectionTestUtils.setField(order, "status", terminal);
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_VENDOR, courierId);
+
+        actAs(COURIER_USER, "ROLE_COURIER");
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.PICKED_UP, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("order_not_deliverable");
+                    assertThat(ex.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+                });
+        actAs("kc-ops", "ROLE_OPS");
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.PICKED_UP, "proof-key", BigDecimal.ONE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_VENDOR);
+        assertThat(order.getStatus()).isEqualTo(terminal);
+        verify(eventRepository, never()).save(any());
+        verify(orderStockService, never()).commit(any());
+        verify(orderStockService, never()).release(any());
+        verify(auditLogService, never()).log(anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void ownershipIsCheckedBeforeTheOrderDeliverabilityConflict() {
+        ReflectionTestUtils.setField(order, "status", OrderStatus.REFUNDED);
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, UUID.randomUUID());
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.complete(delivery.getId(), CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
     @Test
     void hasherUsesHmacAndAcceptsSha256OnlyForLegacyRows() throws Exception {
         String sha256 = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(CODE.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
