@@ -29,7 +29,7 @@ web/coverage/
 **/coverage/
 
 # Local infrastructure
-data/
+/data/
 minio-data/
 postgres-data/
 redis-data/
@@ -47,4 +47,4 @@ crash.*.log
 *.xlsx
 
 ### screens folder #####
-screens/
+/screens/
