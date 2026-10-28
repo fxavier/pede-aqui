@@ -335,6 +335,20 @@ class SalesServiceTest {
     }
 
     @Test
+    void statusOverrideToDeliveredCommitsTheStockAndClearsThePlainPin() {
+        overrideProperties.setEnabled(true);
+        Order delivering = order(OrderStatus.DELIVERING);
+        assertThat(delivering.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RESERVED);
+
+        service.statusOverride(delivering.getId(), "DELIVERED", "courier device died");
+
+        // Same closure as DeliveryService.complete: the manual DELIVERED is a real delivery for stock purposes.
+        assertThat(delivering.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(delivering.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.COMMITTED);
+        assertThat(delivering.getDeliveryConfirmationCodeDisplay()).isNull();
+    }
+
+    @Test
     void statusOverrideRejectsTransitionsOutsideTheAllowList() {
         overrideProperties.setEnabled(true);
         Order order = order(OrderStatus.PAYMENT_CONFIRMED);

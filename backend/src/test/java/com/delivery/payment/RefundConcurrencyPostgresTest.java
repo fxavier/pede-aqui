@@ -4,10 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.delivery.catalog.service.CatalogAccessGuard;
 import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.inventory.mapper.InventoryMapper;
+import com.delivery.inventory.service.InventoryService;
+import com.delivery.order.service.OrderStockService;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
@@ -54,7 +58,8 @@ import org.testcontainers.DockerClientFactory;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
-@Import({PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class})
+@Import({PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
+        OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RefundConcurrencyPostgresTest {
 

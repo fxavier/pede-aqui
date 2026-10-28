@@ -143,7 +143,18 @@ public class Order {
     public void markReadyForPickup() { this.status = OrderStatus.READY_FOR_PICKUP; this.updatedAt = Instant.now(); }
     public void markAssignedToCourier() { this.status = OrderStatus.ASSIGNED_TO_COURIER; this.updatedAt = Instant.now(); }
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
-    public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
+    /**
+     * Full refund approved (PaymentService.approveRefund). The plain PIN is cleared unless a courier is still engaged on
+     * the delivery ({@code DeliveryStatus.isCourierEngaged}): completion checks only the delivery status, so an engaged
+     * courier may still need the PIN. The caller decides because only it can see the delivery row (V042 rule).
+     */
+    public void markRefunded(boolean courierEngaged) {
+        this.status = OrderStatus.REFUNDED;
+        if (!courierEngaged) {
+            this.deliveryConfirmationCodeDisplay = null;
+        }
+        this.updatedAt = Instant.now();
+    }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
     /** Seller rejection: CANCELLED with reason SELLER_REJECTED plus the vendor's text; the financial state lives on Payment. */
     public void markCancelledBySellerRejection(String reason) {

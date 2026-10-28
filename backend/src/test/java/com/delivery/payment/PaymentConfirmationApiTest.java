@@ -67,6 +67,8 @@ class PaymentConfirmationApiTest {
         @MockBean AuditLogService auditLogService;
         @MockBean AppUserProfileRepository userProfileRepository;
         @MockBean JwtDecoder jwtDecoder;
+        @MockBean com.delivery.delivery.repository.DeliveryRepository deliveryRepository;
+        @MockBean com.delivery.order.service.OrderStockService orderStockService;
 
         Payment payment;
         Order order;

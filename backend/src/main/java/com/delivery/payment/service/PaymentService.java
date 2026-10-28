@@ -6,9 +6,13 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.entity.Delivery;
+import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.OrderStockService;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.PaymentResponse;
 import com.delivery.payment.dto.RefundRequest;
@@ -21,7 +25,9 @@ import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
 import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -34,6 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
 /** Handles local/mock payment confirmation and the administrative refund workflow (no PSP: refunds are records only). */
 @Service
 public class PaymentService {
+    /** Order statuses that by themselves mean the goods left the store (V043 COMMIT set) — covers rows without a delivery. */
+    private static final Set<OrderStatus> ORDER_STATUSES_PAST_PICKUP = EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.DELIVERING, OrderStatus.DELIVERED);
+
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final RefundRepository refundRepository;
@@ -42,6 +51,8 @@ public class PaymentService {
     private final TenantContext tenantContext;
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
+    private final DeliveryRepository deliveryRepository;
+    private final OrderStockService orderStockService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -51,7 +62,10 @@ public class PaymentService {
             PaymentMapper mapper,
             TenantContext tenantContext,
             AppUserProfileRepository userProfileRepository,
-            PaymentMockConfirmationProperties mockConfirmationProperties) {
+            PaymentMockConfirmationProperties mockConfirmationProperties,
+            DeliveryRepository deliveryRepository,
+            OrderStockService orderStockService) {
+        this.orderStockService = orderStockService;
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.refundRepository = refundRepository;
@@ -60,6 +74,7 @@ public class PaymentService {
         this.tenantContext = tenantContext;
         this.userProfileRepository = userProfileRepository;
         this.mockConfirmationProperties = mockConfirmationProperties;
+        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -166,6 +181,12 @@ public class PaymentService {
      * refunds cover part of the amount, FULLY_REFUNDED once they cover all of it. On full coverage the
      * order becomes REFUNDED, except a CANCELLED order, which stays CANCELLED (order and financial state
      * are independent); a partial approval leaves the order status unchanged.
+     *
+     * Full coverage also closes what the order's delivery row allows (lock order: payment row first, then the
+     * order, then inventory): the plain PIN is cleared unless a courier is engaged on the delivery
+     * ({@link DeliveryStatus#isCourierEngaged}, V042 rule), and the stock reservation is released unless the goods
+     * already left the store ({@link DeliveryStatus#isGoodsLeftTheStore}, or an order status past pickup — V043
+     * rule). The release is idempotent (stock_status), so an order cancelled earlier is not released twice.
      */
     @Transactional
     public RefundResponse approveRefund(UUID refundId) {
@@ -184,9 +205,17 @@ public class PaymentService {
                 payment.markFullyRefunded();
                 Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
                         .orElseThrow(() -> new NotFoundException("Order was not found"));
+                // One delivery per order (uq_deliveries_tenant_order); absent before dispatch.
+                Optional<DeliveryStatus> deliveryStatus = deliveryRepository.findByTenantIdAndOrderId(tenantId, order.getId()).map(Delivery::getStatus);
+                // Decide on the stock before markRefunded() changes the order status it reads.
+                boolean goodsLeftTheStore = deliveryStatus.map(DeliveryStatus::isGoodsLeftTheStore).orElse(false)
+                        || ORDER_STATUSES_PAST_PICKUP.contains(order.getStatus());
                 if (order.getStatus() != OrderStatus.CANCELLED) {
-                    order.markRefunded();
+                    order.markRefunded(deliveryStatus.map(DeliveryStatus::isCourierEngaged).orElse(false));
                     auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
+                }
+                if (!goodsLeftTheStore) {
+                    orderStockService.release(order); // INC-07 (COR-01): the sale is undone before pickup; no-op if already released/committed
                 }
             } else {
                 payment.markPartiallyRefunded();

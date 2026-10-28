@@ -12,9 +12,13 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.entity.Delivery;
+import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.OrderStockService;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
@@ -46,6 +50,8 @@ class RefundServiceTest {
     private OrderRepository orderRepository;
     private TenantContext tenantContext;
     private AuditLogService auditLogService;
+    private DeliveryRepository deliveryRepository;
+    private OrderStockService orderStockService;
     private PaymentService service;
     private Payment payment;
     private Order order;
@@ -58,8 +64,12 @@ class RefundServiceTest {
         orderRepository = mock(OrderRepository.class);
         tenantContext = mock(TenantContext.class);
         auditLogService = mock(AuditLogService.class);
+        deliveryRepository = mock(DeliveryRepository.class);
+        orderStockService = mock(OrderStockService.class);
+        stored.clear();
         service = new PaymentService(paymentRepository, orderRepository, refundRepository, auditLogService,
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties());
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(),
+                deliveryRepository, orderStockService);
 
         payment = new Payment(UUID.randomUUID(), tenantA, orderId, new BigDecimal("100.00"), "pay-key");
         payment.confirm();
@@ -239,6 +249,144 @@ class RefundServiceTest {
         verify(auditLogService, never()).log(org.mockito.ArgumentMatchers.eq("ORDER_REFUNDED"), any(), any(), any(), any());
     }
 
+    // ---- V042 follow-up: the plain PIN on a fully refunded order ----
+
+    @Test
+    void fullApprovalClearsThePlainPinWhenNoCourierIsEngaged() {
+        // No delivery row at all (refund before dispatch).
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+        assertThat(order.getDeliveryConfirmationCodeDisplay()).isNull();
+    }
+
+    @Test
+    void fullApprovalClearsThePlainPinWhenTheDeliveryIsNoLongerCourierEngaged() {
+        for (DeliveryStatus status : List.of(DeliveryStatus.DISPATCH_PENDING, DeliveryStatus.REJECTED, DeliveryStatus.DELIVERED,
+                DeliveryStatus.FAILED_DELIVERY, DeliveryStatus.CANCELLED)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN cleared when delivery is %s", status).isNull();
+        }
+    }
+
+    @Test
+    void fullApprovalKeepsThePlainPinWhileACourierIsEngaged() {
+        // DeliveryService.complete checks only the delivery status, so an engaged courier may still complete with the PIN.
+        for (DeliveryStatus status : List.of(DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_VENDOR,
+                DeliveryStatus.REASSIGNED, DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER, DeliveryStatus.ARRIVED_AT_CUSTOMER)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN kept while delivery is %s", status).isEqualTo("000000");
+        }
+    }
+
+    // ---- V043 follow-up: the stock reservation of a fully refunded order ----
+
+    @Test
+    void fullApprovalBeforeDispatchReleasesTheReservation() {
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+        verify(orderStockService).release(order);
+    }
+
+    @Test
+    void fullApprovalBeforePickupReleasesTheReservationEvenWithACourierEngaged() {
+        for (DeliveryStatus status : List.of(DeliveryStatus.DISPATCH_PENDING, DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED,
+                DeliveryStatus.ARRIVED_AT_VENDOR, DeliveryStatus.REASSIGNED, DeliveryStatus.REJECTED, DeliveryStatus.CANCELLED)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            verify(orderStockService, org.mockito.Mockito.description("release when delivery is " + status)).release(order);
+        }
+    }
+
+    @Test
+    void fullApprovalAfterPickupNeverReleasesTheReservation() {
+        // Goods already left the store: the reservation is consumed (commit), never returned to available.
+        for (DeliveryStatus status : List.of(DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER,
+                DeliveryStatus.ARRIVED_AT_CUSTOMER, DeliveryStatus.DELIVERED, DeliveryStatus.FAILED_DELIVERY)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+            verify(orderStockService, never()).release(any());
+        }
+    }
+
+    @Test
+    void fullApprovalOfAnOrderAlreadyPastPickupByStatusNeverReleasesTheReservation() {
+        // No delivery row but the order itself says the goods left (legacy / override rows, V043 COMMIT set).
+        for (OrderStatus status : List.of(OrderStatus.PICKED_UP, OrderStatus.DELIVERING, OrderStatus.DELIVERED)) {
+            setUp();
+            org.springframework.test.util.ReflectionTestUtils.setField(order, "status", status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            verify(orderStockService, never()).release(any());
+        }
+    }
+
+    @Test
+    void partialApprovalDoesNotTouchTheReservation() {
+        RefundResponse first = request("40.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(first.id());
+
+        verify(orderStockService, never()).release(any());
+    }
+
+    @Test
+    void fullApprovalOfACancelledOrderStillAsksForTheIdempotentRelease() {
+        order.markCancelledBySellerRejection("Sem stock");
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        verify(orderStockService).release(order); // no-op in practice: the cancellation already released (stock_status)
+    }
+
+    @Test
+    void partialApprovalLeavesThePlainPinAlone() {
+        RefundResponse first = request("40.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(first.id());
+
+        assertThat(order.getDeliveryConfirmationCodeDisplay()).isEqualTo("000000");
+    }
+
     @Test
     void remainingRefundCoversOnlyWhatIsLeftAndNothingWhenFullyCovered() {
         request("30.00", "k1");
@@ -250,6 +398,13 @@ class RefundServiceTest {
                 .hasValueSatisfying(r -> assertThat(r.amount()).isEqualByComparingTo("70.00"));
         assertThat(service.requestRemainingRefund(payment.getId(), "reject", "other-key")).isEmpty();
         assertThat(stored).hasSize(2);
+    }
+
+    /** The order's single delivery row (uq_deliveries_tenant_order) in the given status. */
+    private void stubDelivery(DeliveryStatus status) {
+        Delivery delivery = new Delivery(UUID.randomUUID(), tenantA, orderId, "hash");
+        delivery.updateStatus(status);
+        when(deliveryRepository.findByTenantIdAndOrderId(tenantA, orderId)).thenReturn(Optional.of(delivery));
     }
 
     private RefundResponse request(String amount, String key) {

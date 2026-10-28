@@ -308,7 +308,9 @@ public class SalesService {
             case CANCELLED -> { order.markCancelled(); orderStockService.release(order); }
             case PREPARING -> order.markPreparing();
             case ASSIGNED_TO_COURIER -> order.markAssignedToCourier();
-            case DELIVERED -> order.markDelivered();
+            // INC-07 (COR-01): a manual DELIVERED is a delivery for stock purposes — same closure as DeliveryService.complete
+            // (no-op when the courier's PICKED_UP already committed it). markDelivered() also clears the plain PIN.
+            case DELIVERED -> { order.markDelivered(); orderStockService.commit(order); }
             default -> throw new BusinessException("transition_not_allowed", "Unsupported override target " + target, HttpStatus.CONFLICT);
         }
     }
