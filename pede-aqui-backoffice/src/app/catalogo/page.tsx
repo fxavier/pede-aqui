@@ -81,6 +81,7 @@ export default function CatalogoPage() {
           purpose: "product_image",
           fileName: productForm.imageFile.name,
           contentType: productForm.imageFile.type,
+          contentLength: productForm.imageFile.size,
         });
         await uploadService.uploadToS3(uploadUrl, productForm.imageFile);
         primaryImageKey = storageKey;

@@ -608,7 +608,9 @@ export interface ReportRangeParams {
 export interface UploadUrlResponse {
   uploadUrl: string;
   storageKey: string;
-  expiresIn: number;
+  expiresInSeconds: number;
+  /** Size limit in bytes for this kind of upload (LAC-12). */
+  maxBytes: number;
 }
 
 // Error

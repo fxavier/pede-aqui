@@ -156,6 +156,7 @@ export default function VendorsPage() {
         purpose: "vendor-logo",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       
       await uploadService.uploadToS3(uploadUrl, file);
@@ -176,6 +177,7 @@ export default function VendorsPage() {
         purpose: "vendor-document",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       
       await uploadService.uploadToS3(uploadUrl, file);

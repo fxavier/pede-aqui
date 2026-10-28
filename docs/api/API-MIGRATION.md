@@ -225,3 +225,25 @@ Not removed yet; removal lands once step 5 has run in every environment and the 
   unchanged. Vertical writes were already OPS/ADMIN.
 - Backoffice: `/catalogo/categorias` and `/catalogo/verticais` hide create/edit/delete for roles other
   than OPS/ADMIN. A merchant that needs a new category asks OPS.
+
+### LAC-12 — Upload presign: role gate, required size, signed limits (breaking for upload clients)
+
+- `POST /api/v1/uploads/images/presigned-url` now requires `ADMIN`, `OPS`, `VENDOR_ADMIN`, `VENDOR_STAFF` or
+  `COURIER` (same as documents); any other role → **403**.
+- Both presign requests now **require** `contentLength` (file size in bytes, `> 0`): missing → **400**
+  validation error. Above the limit (images 5 MB, documents 10 MB; `APP_UPLOAD_MAX_IMAGE_BYTES` /
+  `APP_UPLOAD_MAX_DOCUMENT_BYTES`) → **400** `upload_too_large`. Wrong type → 400 `invalid_content_type`.
+- Response gains `maxBytes` (additive): `{ uploadUrl, storageKey, expiresInSeconds, maxBytes }`.
+- The presigned PUT signs `Content-Type` and `Content-Length`: the client must PUT exactly the declared
+  file with the declared `Content-Type` (browsers set `Content-Length` from the body). Any mismatch is a
+  **403** from S3/MinIO (`SignatureDoesNotMatch`).
+- Linking a `storageKey` (`POST /catalog/products` `primaryImageKey`/`imageGallery`,
+  `PUT /catalog/products/{id}/image`, vendor create/update `logoStorageKey`, `POST /vendors/{id}/documents`,
+  `POST /couriers/{id}/documents`, `PATCH /deliveries/{id}/status` `proofPhotoStorageKey`) now checks the
+  key namespace (`tenants/{tenant}/uploads/` images, `tenants/{tenant}/documents/` documents) and the stored
+  object via HeadObject: **400** `invalid_storage_key` (other tenant / wrong kind), `upload_not_found`,
+  `upload_too_large`, `invalid_content_type`; **503** `storage_unavailable` if storage cannot be reached.
+  Vendor/courier documents must now come from the documents presign endpoint.
+- Clients: the backoffice now sends `contentLength: file.size` (all six upload call sites). The customer
+  web app and the Flutter apps do not call these endpoints today; when the courier app starts uploading
+  proof photos it must send `contentLength` and PUT the exact bytes.

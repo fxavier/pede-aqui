@@ -4,6 +4,7 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.upload.service.StoredUploadValidator;
 import com.delivery.vendor.dto.CreateVendorRequest;
 import com.delivery.vendor.dto.CreateVendorDocumentRequest;
 import com.delivery.vendor.dto.UpdateVendorAvailabilityRequest;
@@ -35,6 +36,7 @@ public class VendorService {
     private final VendorMapper vendorMapper;
     private final TenantContext tenantContext;
     private final AppUserProfileRepository appUserProfileRepository;
+    private final StoredUploadValidator uploadValidator;
 
     public VendorService(
             VendorRepository vendorRepository,
@@ -42,19 +44,24 @@ public class VendorService {
             VendorOpeningHourRepository vendorOpeningHourRepository,
             VendorMapper vendorMapper,
             TenantContext tenantContext,
-            AppUserProfileRepository appUserProfileRepository) {
+            AppUserProfileRepository appUserProfileRepository,
+            StoredUploadValidator uploadValidator) {
         this.vendorRepository = vendorRepository;
         this.vendorDocumentRepository = vendorDocumentRepository;
         this.vendorOpeningHourRepository = vendorOpeningHourRepository;
         this.vendorMapper = vendorMapper;
         this.tenantContext = tenantContext;
         this.appUserProfileRepository = appUserProfileRepository;
+        this.uploadValidator = uploadValidator;
     }
 
     /** Registers a vendor profile for the current tenant. */
     @Transactional
     public VendorResponse create(CreateVendorRequest request) {
         UUID tenantId = tenantId();
+        if (request.logoStorageKey() != null && !request.logoStorageKey().isBlank()) {
+            uploadValidator.requireImage(tenantId, request.logoStorageKey()); // LAC-12
+        }
         Vendor vendor = new Vendor(UUID.randomUUID(), tenantId, request.name(), request.categoryId(), 
                 request.latitude(), request.longitude(), request.ownerName(), request.nif(), 
                 request.phone(), request.address(), request.description(), request.logoStorageKey());
@@ -92,7 +99,12 @@ public class VendorService {
     /** Updates the core vendor profile fields. */
     @Transactional
     public VendorResponse updateProfile(UUID vendorId, UpdateVendorProfileRequest request) {
-        Vendor vendor = vendorRepository.findByTenantIdAndId(tenantId(), vendorId).orElseThrow(() -> new NotFoundException("Vendor was not found"));
+        UUID tenantId = tenantId();
+        Vendor vendor = vendorRepository.findByTenantIdAndId(tenantId, vendorId).orElseThrow(() -> new NotFoundException("Vendor was not found"));
+        String logoKey = request.logoStorageKey();
+        if (logoKey != null && !logoKey.isBlank() && !logoKey.equals(vendor.getLogoStorageKey())) {
+            uploadValidator.requireImage(tenantId, logoKey); // LAC-12: only a newly linked logo is checked
+        }
         vendor.updateProfile(request.name(), request.categoryId(), request.latitude(), request.longitude(),
                 request.ownerName(), request.nif(), request.phone(), request.address(), request.description(), request.logoStorageKey());
         return vendorMapper.toResponse(vendor);
@@ -109,6 +121,7 @@ public class VendorService {
             throw new BusinessException("invalid_document_type", "Invalid vendor document type. Allowed: BUSINESS_LICENCE, TAX_CERTIFICATE, HEALTH_PERMIT, OTHER", HttpStatus.BAD_REQUEST);
         }
         
+        uploadValidator.requireDocument(tenantId, request.storageKey()); // LAC-12
         VendorDocument document = new VendorDocument(UUID.randomUUID(), tenantId, vendorId, request.documentType(), request.storageKey());
         return vendorMapper.toDocumentResponse(vendorDocumentRepository.save(document));
     }

@@ -106,6 +106,9 @@ app:
     s3-access-key: ${AWS_ACCESS_KEY_ID:}
     s3-secret-key: ${AWS_SECRET_ACCESS_KEY:}
     presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS:900}
+    # LAC-12: upload size caps (bytes). Signed into the presigned PUT and re-checked by HeadObject on link.
+    max-image-bytes: ${APP_UPLOAD_MAX_IMAGE_BYTES:5242880}
+    max-document-bytes: ${APP_UPLOAD_MAX_DOCUMENT_BYTES:10485760}
   keycloak:
     admin:
       server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}

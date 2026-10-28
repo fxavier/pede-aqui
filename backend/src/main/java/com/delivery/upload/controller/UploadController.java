@@ -21,6 +21,8 @@ public class UploadController {
 
     public UploadController(UploadService uploadService) { this.uploadService = uploadService; }
 
+    // LAC-12: same callers as documents (backoffice staff/merchants, courier proof photos); never CUSTOMER/anonymous.
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF','COURIER')")
     @PostMapping("/images/presigned-url")
     @ResponseStatus(HttpStatus.CREATED)
     public UploadUrlResponse createImageUploadUrl(@Valid @RequestBody CreateUploadUrlRequest request) {

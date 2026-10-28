@@ -1,5 +1,6 @@
 package com.delivery.vendor;
 
+import com.delivery.upload.service.StoredUploadValidator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,7 +33,7 @@ class VendorServiceTest {
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         when(repository.save(any(Vendor.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        VendorService service = new VendorService(repository, mock(VendorDocumentRepository.class), mock(VendorOpeningHourRepository.class), new VendorMapper(), tenantContext, mock(AppUserProfileRepository.class));
+        VendorService service = new VendorService(repository, mock(VendorDocumentRepository.class), mock(VendorOpeningHourRepository.class), new VendorMapper(), tenantContext, mock(AppUserProfileRepository.class), mock(StoredUploadValidator.class));
 
         var response = service.create(new CreateVendorRequest("Mercado Central", UUID.randomUUID(), -25.9, 32.6, null, null, "000000000", null, null, null));
 

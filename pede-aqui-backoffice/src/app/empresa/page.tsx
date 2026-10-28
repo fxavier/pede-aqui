@@ -172,6 +172,7 @@ export default function EmpresaPage() {
         purpose: "vendor-logo",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       await uploadService.uploadToS3(uploadUrl, file);
       setProfile((p) => ({ ...p, logoStorageKey: storageKey, logoPreview: URL.createObjectURL(file) }));
@@ -190,6 +191,7 @@ export default function EmpresaPage() {
         purpose: "vendor-document",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       await uploadService.uploadToS3(uploadUrl, file);
       const doc = await vendorService.uploadDocument(vendor.id, { documentType, storageKey });

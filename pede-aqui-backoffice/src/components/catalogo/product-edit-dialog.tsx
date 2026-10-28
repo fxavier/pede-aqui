@@ -131,6 +131,7 @@ export function ProductEditDialog({ product, categories, open, onOpenChange }: P
         purpose: "product_image",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       await uploadService.uploadToS3(uploadUrl, file);
       await setImageMutation.mutateAsync(storageKey);

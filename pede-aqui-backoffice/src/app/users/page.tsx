@@ -112,6 +112,7 @@ export default function UsersPage() {
         purpose: "user-avatar",
         fileName: file.name,
         contentType: file.type,
+        contentLength: file.size,
       });
       
       await uploadService.uploadToS3(uploadUrl, file);

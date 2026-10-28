@@ -32,6 +32,7 @@ import com.delivery.common.service.AuditLogService;
 import com.delivery.inventory.entity.InventoryItem;
 import com.delivery.inventory.repository.InventoryItemRepository;
 import com.delivery.upload.service.StorageUrlService;
+import com.delivery.upload.service.StoredUploadValidator;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
 import java.util.List;
@@ -58,8 +59,10 @@ public class CatalogService {
     private final StorageUrlService storageUrlService;
     private final CatalogAccessGuard accessGuard;
     private final AuditLogService auditLogService;
+    private final StoredUploadValidator uploadValidator;
 
-    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext, VendorRepository vendorRepository, StorageUrlService storageUrlService, CatalogAccessGuard accessGuard, AuditLogService auditLogService) {
+    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext, VendorRepository vendorRepository, StorageUrlService storageUrlService, CatalogAccessGuard accessGuard, AuditLogService auditLogService, StoredUploadValidator uploadValidator) {
+        this.uploadValidator = uploadValidator;
         this.accessGuard = accessGuard;
         this.auditLogService = auditLogService;
         this.categoryRepository = categoryRepository;
@@ -113,9 +116,11 @@ public class CatalogService {
         
         // Set product images
         if (request.primaryImageKey() != null) {
+            uploadValidator.requireImage(tenantId, request.primaryImageKey()); // LAC-12
             product.setPrimaryImageKey(request.primaryImageKey());
         }
         if (request.imageGallery() != null) {
+            request.imageGallery().forEach(key -> uploadValidator.requireImage(tenantId, key)); // LAC-12
             product.setImageGallery(request.imageGallery());
         }
         

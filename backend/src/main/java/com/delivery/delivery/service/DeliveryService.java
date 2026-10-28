@@ -3,6 +3,7 @@ package com.delivery.delivery.service;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.upload.service.StoredUploadValidator;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.dto.DeliveryResponse;
@@ -65,11 +66,13 @@ public class DeliveryService {
     private final DeliveryCodeProperties codeProperties;
     private final AuditLogService auditLogService;
     private final OrderStockService orderStockService;
+    private final StoredUploadValidator uploadValidator;
 
     public DeliveryService(DeliveryRepository deliveryRepository, DeliveryEventRepository eventRepository, OrderRepository orderRepository, DeliveryMapper mapper, TenantContext tenantContext,
                            DeliveryAccessGuard accessGuard, DeliveryCodeHasher codeHasher, DeliveryCodeProperties codeProperties, AuditLogService auditLogService,
-                           OrderStockService orderStockService) {
+                           OrderStockService orderStockService, StoredUploadValidator uploadValidator) {
         this.orderStockService = orderStockService;
+        this.uploadValidator = uploadValidator;
         this.deliveryRepository = deliveryRepository;
         this.eventRepository = eventRepository;
         this.orderRepository = orderRepository;
@@ -160,6 +163,7 @@ public class DeliveryService {
         validateTransition(previous, status);
         Order order = findDeliverableOrder(tenantId, delivery);
         if (proofPhotoStorageKey != null && !proofPhotoStorageKey.isBlank()) {
+            uploadValidator.requireImage(tenantId, proofPhotoStorageKey); // LAC-12
             delivery.setProofPhotoStorageKey(proofPhotoStorageKey);
         }
         if (cashCollectedAmount != null) {
