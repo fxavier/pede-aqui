@@ -90,8 +90,9 @@ class SubscriptionProvisioningServiceTest {
     }
 
     private void stubSuccessfulSaga() {
-        when(merchantRegistrationService.register(any())).thenReturn(new MerchantRegistrationResponse(
-                tenantId, "restaurante-costa-nova", userProfileId, "ana@costanova.co.mz", "Ana Machava"));
+        when(merchantRegistrationService.provisionTenant(any())).thenReturn(new MerchantRegistrationResponse(
+                tenantId, "restaurante-costa-nova", userProfileId, "ana@costanova.co.mz", "Ana Machava",
+                UUID.randomUUID(), "PENDING"));
         when(appUserProfileRepository.findById(userProfileId)).thenReturn(Optional.of(new AppUserProfile(
                 userProfileId, tenantId, "kc-user-1", "ana@costanova.co.mz", "Ana Machava",
                 Set.of(MarketplaceRole.VENDOR_ADMIN))));
@@ -104,7 +105,7 @@ class SubscriptionProvisioningServiceTest {
         TenantProvisioningResponse response = service.provision("key-1", lead());
 
         ArgumentCaptor<MerchantRegistrationRequest> captor = ArgumentCaptor.forClass(MerchantRegistrationRequest.class);
-        verify(merchantRegistrationService).register(captor.capture());
+        verify(merchantRegistrationService).provisionTenant(captor.capture());
         MerchantRegistrationRequest mapped = captor.getValue();
         assertEquals("MZN", mapped.defaultCurrency());
         assertEquals("MZ", mapped.country());
@@ -133,7 +134,7 @@ class SubscriptionProvisioningServiceTest {
         service.provision("key-1", lead());
 
         ArgumentCaptor<MerchantRegistrationRequest> captor = ArgumentCaptor.forClass(MerchantRegistrationRequest.class);
-        verify(merchantRegistrationService).register(captor.capture());
+        verify(merchantRegistrationService).provisionTenant(captor.capture());
         assertEquals("restaurante-costa-nova-2", captor.getValue().companySlug());
     }
 
@@ -146,7 +147,7 @@ class SubscriptionProvisioningServiceTest {
         service.provision("key-1", request);
 
         ArgumentCaptor<MerchantRegistrationRequest> captor = ArgumentCaptor.forClass(MerchantRegistrationRequest.class);
-        verify(merchantRegistrationService).register(captor.capture());
+        verify(merchantRegistrationService).provisionTenant(captor.capture());
         assertEquals("Ana", captor.getValue().firstName());
         assertEquals("Ana", captor.getValue().lastName());
     }
@@ -166,7 +167,7 @@ class SubscriptionProvisioningServiceTest {
         assertTrue(response.alreadyExisted());
         assertFalse(response.provisioned());
         assertEquals(tenantId, response.tenantId());
-        verify(merchantRegistrationService, never()).register(any());
+        verify(merchantRegistrationService, never()).provisionTenant(any());
         verify(keycloakAdminService, never()).sendPasswordSetupEmail(anyString());
     }
 
@@ -183,12 +184,12 @@ class SubscriptionProvisioningServiceTest {
 
         assertTrue(response.alreadyExisted());
         assertEquals(tenantId, response.tenantId());
-        verify(merchantRegistrationService, never()).register(any());
+        verify(merchantRegistrationService, never()).provisionTenant(any());
     }
 
     @Test
     void provision_KeycloakFailure_RecordsFailedAttemptAndMapsToDownstreamIdp() {
-        when(merchantRegistrationService.register(any()))
+        when(merchantRegistrationService.provisionTenant(any()))
                 .thenThrow(new BusinessException("keycloak_error", "boom", HttpStatus.INTERNAL_SERVER_ERROR));
 
         BusinessException thrown = assertThrows(BusinessException.class,
@@ -203,7 +204,7 @@ class SubscriptionProvisioningServiceTest {
 
     @Test
     void provision_EmailExistsRace_FallsBackToExistingTenant() {
-        when(merchantRegistrationService.register(any()))
+        when(merchantRegistrationService.provisionTenant(any()))
                 .thenThrow(new BusinessException("email_exists", "exists", HttpStatus.CONFLICT));
         AppUserProfile profile = new AppUserProfile(
                 userProfileId, tenantId, "kc-user-1", "ana@costanova.co.mz", "Ana Machava",
@@ -228,6 +229,6 @@ class SubscriptionProvisioningServiceTest {
                 () -> service.provision("key-1", lead()));
 
         assertEquals("rate_limited", thrown.getCode());
-        verify(merchantRegistrationService, never()).register(any());
+        verify(merchantRegistrationService, never()).provisionTenant(any());
     }
 }

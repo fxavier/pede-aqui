@@ -64,6 +64,16 @@ class ProvisioningPostgresIntegrationTest {
         ObjectMapper provisioningObjectMapper() {
             return new ObjectMapper();
         }
+
+        /** Operator tenant seeded by V045 (ADR-0001); the saga needs it for the self-service path's constructor. */
+        @Bean
+        com.delivery.common.security.TenancyProperties tenancyProperties() {
+            com.delivery.common.security.TenancyProperties properties = new com.delivery.common.security.TenancyProperties();
+            UUID operator = UUID.fromString("5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c");
+            properties.setOperatorTenantId(operator);
+            properties.setCustomerClients(java.util.Map.of("pede-aqui-web", operator));
+            return properties;
+        }
     }
 
     @BeforeAll
