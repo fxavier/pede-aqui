@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Provides inventory persistence access for SKU stock. */
 public interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
     Optional<InventoryItem> findByTenantIdAndSkuId(UUID tenantId, UUID skuId);
+    Optional<InventoryItem> findByTenantIdAndId(UUID tenantId, UUID id);
 }

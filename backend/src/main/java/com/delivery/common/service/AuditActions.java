@@ -10,6 +10,10 @@ public final class AuditActions {
     public static final String PRODUCT_PRICE_REJECTED = "PRODUCT_PRICE_REJECTED";
     public static final String PRODUCT_IMAGE_SET = "PRODUCT_IMAGE_SET";
     public static final String PRODUCT_IMAGE_CLEARED = "PRODUCT_IMAGE_CLEARED";
+    public static final String PRODUCT_APPROVED = "PRODUCT_APPROVED";
+    public static final String PRODUCT_REJECTED = "PRODUCT_REJECTED";
+    // Inventory
+    public static final String INVENTORY_STOCK_UPDATED = "INVENTORY_STOCK_UPDATED";
     // Sales
     public static final String SALE_CANCELLED = "SALE_CANCELLED";
     public static final String SALE_REFUNDED = "SALE_REFUNDED";

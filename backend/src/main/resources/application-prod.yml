@@ -9,3 +9,6 @@ app:
     s3-bucket: ${AWS_S3_BUCKET}
     s3-region: ${AWS_REGION}
     s3-endpoint: "" # vazio = AWS real (virtual-hosted style)
+  delivery:
+    # Sem valor por defeito: o arranque falha se APP_DELIVERY_CODE_HMAC_SECRET não estiver definido.
+    code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET}
