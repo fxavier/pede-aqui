@@ -41,9 +41,9 @@ class CheckoutPromotionScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadii.card),
               boxShadow: [BoxShadow(color: AppColors.green.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 10))],
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 CircleAvatar(backgroundColor: Colors.white24, child: Icon(Icons.percent_rounded, color: Colors.white)),
                 SizedBox(width: 12),
                 Expanded(
@@ -71,8 +71,8 @@ class CheckoutPromotionScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.home_rounded, color: AppColors.primary),
                 SizedBox(width: 12),
                 Expanded(
@@ -138,12 +138,12 @@ class CheckoutPromotionScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppRadii.lg), border: Border.all(color: AppColors.border, width: 0.5), boxShadow: AppShadows.warm),
-            child: Row(children: const [
+            child: const Row(children: [
               Icon(Icons.mobile_friendly_rounded, color: AppColors.blue),
               SizedBox(width: 12),
               Expanded(child: Text('M-Pesa • +258 84 123 4567', style: TextStyle(fontWeight: FontWeight.w900))),
               Icon(Icons.chevron_right_rounded),
-            ]),
+            ],),
           ),
           const SizedBox(height: 18),
           Container(
@@ -158,7 +158,7 @@ class CheckoutPromotionScreen extends StatelessWidget {
                 Row(children: [
                   const Expanded(child: Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
                   MoneyText(summary.total, large: true),
-                ]),
+                ],),
               ],
             ),
           ),
@@ -201,7 +201,7 @@ class _PromoRow extends StatelessWidget {
       child: Row(children: [
         Expanded(child: Text(label, style: const TextStyle(color: AppColors.mutedText))),
         MoneyText(value, color: AppColors.text),
-      ]),
+      ],),
     );
   }
 }
@@ -219,7 +219,7 @@ class _PromoTextRow extends StatelessWidget {
       child: Row(children: [
         Expanded(child: Text(label, style: const TextStyle(color: AppColors.mutedText))),
         Text(value, style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w900)),
-      ]),
+      ],),
     );
   }
 }

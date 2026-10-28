@@ -41,9 +41,9 @@ class CheckoutScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: AppColors.greenSoft, borderRadius: BorderRadius.circular(AppRadii.card)),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Icon(Icons.verified_rounded, color: AppColors.green),
                 SizedBox(width: 12),
                 Expanded(
@@ -77,9 +77,9 @@ class CheckoutScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                _CheckoutLine(emoji: '💊', title: 'Amoxicilina 500mg', subtitle: 'Qtd: 1', value: 450),
+                const _CheckoutLine(emoji: '💊', title: 'Amoxicilina 500mg', subtitle: 'Qtd: 1', value: 450),
                 const SizedBox(height: 10),
-                _CheckoutLine(emoji: '🍊', title: 'Vitamina C + Zinco', subtitle: 'Qtd: 2', value: 320),
+                const _CheckoutLine(emoji: '🍊', title: 'Vitamina C + Zinco', subtitle: 'Qtd: 2', value: 320),
                 const Divider(height: 26),
                 _AmountRow(label: 'Subtotal', value: summary?.subtotal ?? 1090),
                 _AmountRow(label: 'Taxa de Entrega', value: summary?.deliveryFee ?? 120),
@@ -165,7 +165,7 @@ class _CheckoutLine extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
             Text(subtitle, style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
-          ]),
+          ],),
         ),
         MoneyText(value, color: AppColors.text),
       ],
@@ -187,7 +187,7 @@ class _AmountRow extends StatelessWidget {
       child: Row(children: [
         Expanded(child: Text(label, style: TextStyle(color: strong ? AppColors.text : AppColors.mutedText, fontWeight: strong ? FontWeight.w900 : FontWeight.w600))),
         MoneyText(value, color: strong ? AppColors.primary : AppColors.text),
-      ]),
+      ],),
     );
   }
 }
@@ -221,7 +221,7 @@ class _PaymentOption extends StatelessWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
             Text(subtitle, style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
-          ])),
+          ],),),
           Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, color: selected ? AppColors.green : AppColors.border),
         ],
       ),

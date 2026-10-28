@@ -16,7 +16,7 @@ class MockCatalogRepository implements CatalogRepository {
     Category(id: 'super', name: 'Super', icon: Icons.shopping_bag_rounded, color: AppColors.secondary),
     Category(id: 'pharmacy', name: 'Farmácias', icon: Icons.medication_rounded, color: AppColors.tertiary),
     Category(id: 'convenience', name: 'Conveniência', icon: Icons.local_cafe_rounded, color: AppColors.warning),
-    Category(id: 'tech', name: 'Tecnologia', icon: Icons.phone_iphone_rounded, color: const Color(0xFF1B1B1D)),
+    Category(id: 'tech', name: 'Tecnologia', icon: Icons.phone_iphone_rounded, color: Color(0xFF1B1B1D)),
   ];
 
   static const _vendors = [
@@ -74,7 +74,7 @@ class ApiCatalogRepository implements CatalogRepository {
       name: e.key,
       icon: e.value,
       color: AppColors.primary,
-    )).toList();
+    ),).toList();
   }
 
   @override

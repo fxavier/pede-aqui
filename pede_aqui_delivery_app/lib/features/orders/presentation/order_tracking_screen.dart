@@ -134,7 +134,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     ...order.lines.map((line) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _OrderLineTile(line: line),
-                        )),
+                        ),),
                     const Divider(height: 24),
                     _AmountRow(label: 'Subtotal', value: order.subtotal),
                     _AmountRow(label: 'Taxa de Entrega', value: order.deliveryFee),
@@ -241,7 +241,7 @@ class _AmountRow extends StatelessWidget {
       child: Row(children: [
         Expanded(child: Text(label, style: TextStyle(color: strong ? AppColors.text : AppColors.mutedText, fontWeight: strong ? FontWeight.w900 : FontWeight.w600))),
         MoneyText(value, large: strong, color: strong ? AppColors.primary : AppColors.text),
-      ]),
+      ],),
     );
   }
 }

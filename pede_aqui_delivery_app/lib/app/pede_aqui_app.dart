@@ -53,7 +53,7 @@ class PedeAquiApp extends StatelessWidget {
       themeMode: settings.themeMode,
       locale: const Locale('pt', 'MZ'),
       supportedLocales: const [Locale('pt', 'MZ'), Locale('pt', 'PT')],
-      localizationsDelegates: [
+      localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

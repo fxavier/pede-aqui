@@ -69,9 +69,9 @@ class OnboardingScreen extends StatelessWidget {
             style: TextStyle(color: AppColors.mutedText, height: 1.45, fontSize: 15),
           ),
           const SizedBox(height: 32),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               _Dot(active: true),
               _Dot(active: false),
               _Dot(active: false),
