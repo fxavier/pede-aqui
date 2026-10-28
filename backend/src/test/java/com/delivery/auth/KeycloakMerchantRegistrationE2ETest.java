@@ -97,7 +97,8 @@ class KeycloakMerchantRegistrationE2ETest {
         UUID operatorTenant = tenancyProperties.getOperatorTenantId();
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String email = "loja-" + suffix + "@example.test";
-        String password = "Segredo-" + suffix + "!";
+        // Must satisfy the realm passwordPolicy (length 10, upper, lower, digit): the hex suffix alone may have no digit.
+        String password = "Segredo1-" + suffix + "!";
         long tenantsBefore = jdbc.queryForObject("SELECT COUNT(*) FROM tenants", Long.class);
 
         // 1. Register through the real admin client: Keycloak user with tenant_id attribute + VENDOR_ADMIN role.

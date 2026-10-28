@@ -33,7 +33,10 @@ services:
     ports:
       - "8081:8080"
     volumes:
+      # Realm neutro (sem utilizadores humanos) + seed de utilizadores SÓ de dev. O import por directório
+      # do Keycloak lê `<realm>-realm.json` e depois `<realm>-users-<n>.json` (por isso o nome no contentor).
       - ./keycloak/delivery-realm.json:/opt/keycloak/data/import/delivery-realm.json:ro
+      - ./keycloak/dev-users.json:/opt/keycloak/data/import/delivery-users-0.json:ro
 
   minio:
     image: minio/minio:RELEASE.2024-10-13T13-34-11Z
