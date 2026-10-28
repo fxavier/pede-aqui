@@ -1,0 +1,131 @@
+# Contrato de erros e correlação da API
+
+| Campo | Valor |
+|---|---|
+| Incremento | INC-14 (AS-15, AS-17) |
+| Estado | Em vigor no backend; janela de compatibilidade aberta (ver §5) |
+| Código | `common/exception/ApiProblems.java`, `common/exception/GlobalExceptionHandler.java`, `common/security/ProblemDetailSecurityHandlers.java`, `common/config/CorrelationIdFilter.java` |
+
+## 1. Resumo
+
+Todas as respostas de erro da API (`4xx`/`5xx`) passam a ser um **documento de problema RFC 9457**
+(`Content-Type: application/problem+json`), seja qual for a origem do erro:
+
+- exceções da aplicação (`BusinessException`, `NotFoundException` e subclasses);
+- exceções-padrão do Spring MVC (rota inexistente, método não suportado, `Content-Type` não suportado,
+  JSON malformado, parâmetro em falta ou com tipo inválido, validação Bean Validation);
+- `401`/`403` decididos pela cadeia de segurança (token ausente/inválido, regras por URL);
+- `429` do limitador de pedidos sensíveis.
+
+Os campos do formato antigo (`code`, `message`, `correlationId`, `timestamp`, `fieldErrors`, `details`)
+continuam presentes **em paralelo**, pelo que os clientes atuais não precisam de alterações.
+
+## 2. Forma do corpo
+
+```json
+{
+  "type": "about:blank",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "Prices changed since the items were added to the cart; review the cart and confirm again",
+  "instance": "/api/v1/checkout",
+
+  "code": "price_changed",
+  "details": { "items": [ { "skuId": "…", "currentUnitPrice": 120.00 } ] },
+  "correlationId": "3f2c1a8e-1b2c-4d5e-8f90-0123456789ab",
+  "traceId": "3f2c1a8e-1b2c-4d5e-8f90-0123456789ab",
+
+  "message": "Prices changed since the items were added to the cart; review the cart and confirm again",
+  "timestamp": "2026-10-28T17:30:16.629Z",
+  "fieldErrors": []
+}
+```
+
+| Membro | Origem | Sempre presente | Significado |
+|---|---|---|---|
+| `type` | RFC 9457 | sim | Por agora sempre `about:blank`; a semântica está em `code` (ver §6). |
+| `title` | RFC 9457 | sim | Frase-padrão do estado HTTP (`Not Found`, `Conflict`, …). Não traduzida. |
+| `status` | RFC 9457 | sim | Estado HTTP numérico, igual ao da resposta. |
+| `detail` | RFC 9457 | sim | Mensagem legível (hoje em inglês, como antes em `message`), segura para mostrar. Nunca contém SQL, nomes de constraints, stack traces nem a mensagem de exceções inesperadas. |
+| `instance` | RFC 9457 | sim | Caminho do pedido (**sem** query string, que pode conter dados pessoais). |
+| `code` | extensão | sim | Código estável, `snake_case` minúsculo. **É o campo em que os clientes devem decidir.** |
+| `details` | extensão | não | Contexto estruturado opcional (ex.: `price_changed` → itens e preços atuais). Omitido quando não há. |
+| `correlationId` | extensão | sim | Igual ao header `X-Correlation-Id` da resposta e ao campo `correlationId` dos logs. |
+| `traceId` | extensão | sim | Id de trace distribuído. Enquanto não houver Micrometer Tracing/OTel, é igual ao `correlationId` (lê `traceId` do MDC quando existir). |
+| `message` | legado | sim | Cópia de `detail`. **Obsoleto** — usar `detail`. |
+| `timestamp` | legado | sim | Instante ISO-8601 (UTC). **Obsoleto.** |
+| `fieldErrors` | legado | sim | Lista `[{ "field", "message" }]`; vazia exceto em `validation_failed`. Mantém-se até existir substituto acordado. |
+
+## 3. Códigos
+
+### 3.1 Genéricos (derivados do estado HTTP)
+
+| Estado | `code` | Quando |
+|---|---|---|
+| 400 | `validation_failed` | Bean Validation no corpo (`@Valid`) ou nos parâmetros do método; `fieldErrors` preenchido no primeiro caso. |
+| 400 | `malformed_request` | Corpo ilegível (JSON malformado, tipo errado num campo). |
+| 400 | `missing_parameter` | Parâmetro, header ou parte multipart obrigatório em falta. |
+| 400 | `invalid_parameter` | Parâmetro de caminho/query com tipo inválido (ex.: UUID inválido). |
+| 400 | `bad_request` | Outros 400 do framework (inclui pedido bearer malformado). |
+| 401 | `unauthorized` | Sem token ou token inválido/expirado. Header `WWW-Authenticate` inalterado. |
+| 403 | `forbidden` | Papel insuficiente (regra por URL ou `@PreAuthorize`). |
+| 404 | `not_found` | Recurso inexistente/fora do âmbito **e** rota inexistente (`NoResourceFoundException`; inclui `/api-docs`, Swagger e `/actuator/health` na porta pública em `prod`). Antes devolvia **500**. |
+| 405 | `method_not_allowed` | Método HTTP não suportado; header `Allow` presente. Antes 500. |
+| 406 | `not_acceptable` | `Accept` impossível de satisfazer. |
+| 409 | `conflict` | Violação de unicidade/integridade (sem nomes de constraint). |
+| 409 | `concurrent_modification` | Conflito de `@Version` (recarregar e repetir). |
+| 413 | `payload_too_large` | Upload acima do limite. |
+| 415 | `unsupported_media_type` | `Content-Type` não suportado. Antes 500. |
+| 429 | `rate_limited` | Limitador de endpoints sensíveis (inalterado, agora no formato comum). |
+| 500 | `internal_error` | Qualquer exceção não mapeada; `detail` = `Unexpected error`. |
+
+### 3.2 De negócio
+
+Os códigos de `BusinessException` mantêm-se exatamente iguais (ex.: `not_found`, `price_changed`,
+`idempotency_key_reused`, `delivery_code_locked`, `vendor_scope_unresolved`, `tenant_slug_exists`,
+`email_exists`). Este incremento **não** renomeia nenhum código.
+
+## 4. Correlação (`X-Correlation-Id`)
+
+- O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
+  por isso **todas** as respostas — sucesso ou erro, incluindo 401/403 — levam o header
+  `X-Correlation-Id`.
+- Se o pedido trouxer `X-Correlation-Id` com valor são (`[A-Za-z0-9._:-]`, 1–128 caracteres; cobre UUIDs e
+  `traceparent` W3C), o valor é reutilizado; caso contrário é gerado um UUID. Valores com espaços, aspas,
+  quebras de linha ou demasiado longos são descartados, para não injetar conteúdo no log JSON nem no header.
+- O valor fica no MDC (`correlationId`) durante o pedido e aparece em cada linha de log
+  (`logback-spring.xml`). O filtro não regista nada: nenhum token, header ou dado pessoal é logado por ele.
+- CORS: `X-Correlation-Id` está nos headers permitidos (o cliente pode enviá-lo) e nos **expostos** (o
+  browser pode lê-lo da resposta).
+
+**Para suporte:** pedir ao utilizador o `correlationId` mostrado no erro e procurar esse valor nos logs.
+
+## 5. Consumidores e compatibilidade
+
+Análise feita sobre o código atual de cada cliente:
+
+| Cliente | Como lê o erro | Impacto |
+|---|---|---|
+| Backoffice (`pede-aqui-backoffice/src/lib/http-client.ts`) | `response.text()` + `JSON.parse`, lança o objeto. Os chamadores leem `code`, `message`, `fieldErrors` (`register/page.tsx`, `catalogo/catalog-view.ts`, `sales/status-maps.ts`) e `detail`/`title`/`errors` (`marketing/promotion-errors.ts`). | Nenhuma alteração necessária. `promotion-errors.ts`, que já esperava `ProblemDetail`, passa a mostrar a mensagem do backend (antes caía no texto genérico). `errors` (mapa campo→mensagem) **não** é emitido: os erros de campo continuam em `fieldErrors`. |
+| Backoffice `ApiError` (`src/lib/api/types.ts`) | Tipo `{ code, message, fieldErrors?, correlationId }`. | Continua válido (subconjunto do corpo). |
+| Web cliente (`pede-aqui-delivery/src/lib/api/client.ts`, Axios) | Só usa `error.response.status === 401`. Axios faz `JSON.parse` independentemente do `Content-Type`. | Nenhum. |
+| App cliente Flutter (`auth_repository.dart`, Dio 5) | Em registo lê `data['message'] ?? data['error']`. Dio 5 descodifica `application/*+json` como JSON. | Nenhum: `message` continua presente. |
+| App estafeta Flutter (`remote_auth_data_source.dart`) | Só usa `statusCode == 401`. | Nenhum. |
+
+**Janela de compatibilidade:** `message`, `timestamp` e `fieldErrors` mantêm-se pelo menos até todos os
+clientes lerem `detail` (e um eventual substituto de `fieldErrors`). A remoção será anunciada em
+`docs/api/API-MIGRATION.md` com um incremento próprio. Novos clientes devem usar `code`, `detail`,
+`details`, `correlationId` e `status`.
+
+**Atenção a `status`:** o corpo de erro passa a ter um membro `status` numérico. Nenhum cliente atual lê
+`status` do corpo de erro (todos usam o estado HTTP da resposta), mas código novo não deve confundir este
+campo com os `status` de recursos (ex.: estado de encomenda).
+
+## 6. Trabalho futuro
+
+- `type` por código (URI estável por `code`, ex.: `https://api.pede-aqui.mz/problems/price-changed`) quando
+  houver onde publicar as páginas.
+- Tracing distribuído (Micrometer Tracing + OTel): `traceId` passa a ser o id do trace sem mudar o contrato.
+- Remover os campos legados após a janela de compatibilidade.
+- Filtros que escrevam respostas diretamente (ex.: o `TenantRequestFilter` proposto em INC-11) devem usar
+  `ApiProblems.create(...)` para produzir o mesmo corpo.

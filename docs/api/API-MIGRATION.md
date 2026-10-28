@@ -43,3 +43,32 @@ affected, and whether existing clients break.
   (raw/fallback status).
 - Reports already count `REJECTED_BY_VENDOR` as a post-payment outcome; the dashboard
   "rejected" counter (`DashboardService`) now actually counts vendor rejections (it was always 0).
+
+## INC-14 — Error contract and correlation (AS-15, AS-17)
+
+Full contract: [ERROR-CONTRACT.md](ERROR-CONTRACT.md).
+
+### All error responses (additive, non-breaking)
+
+- Every 4xx/5xx body is now an RFC 9457 problem document (`application/problem+json` when the
+  client accepts it): `type`, `title`, `status`, `detail`, `instance`, plus extension members
+  `code`, `details` (optional), `correlationId`, `traceId`.
+- The legacy fields `code`, `message`, `correlationId`, `timestamp`, `fieldErrors` and `details`
+  keep their names, types and values. `message` and `timestamp` are deprecated (use `detail`);
+  removal will be announced here.
+- 401/403 decided by the security chain now carry the same body (previously empty);
+  `WWW-Authenticate` is unchanged. The 429 `rate_limited` body gains the common members.
+
+### Status code changes (previously all 500 `internal_error`)
+
+- Unknown path → **404** `not_found` (also `/api-docs`, Swagger UI and public-port
+  `/actuator/health` in `prod`).
+- Unsupported method → **405** `method_not_allowed` (with `Allow`).
+- Unsupported `Content-Type` → **415** `unsupported_media_type`.
+- Malformed JSON → **400** `malformed_request`; missing parameter/header → **400**
+  `missing_parameter`; mistyped path/query parameter → **400** `invalid_parameter`.
+
+### `X-Correlation-Id`
+
+- Returned on every response (including 401/403). A client-supplied value is reused only if it
+  matches `[A-Za-z0-9._:-]{1,128}`; otherwise a UUID is generated. Allowed and exposed in CORS.
