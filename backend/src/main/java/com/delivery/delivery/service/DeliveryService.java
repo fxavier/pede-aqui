@@ -15,6 +15,7 @@ import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.OrderStockService;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -44,9 +45,12 @@ public class DeliveryService {
     private final DeliveryCodeHasher codeHasher;
     private final DeliveryCodeProperties codeProperties;
     private final AuditLogService auditLogService;
+    private final OrderStockService orderStockService;
 
     public DeliveryService(DeliveryRepository deliveryRepository, DeliveryEventRepository eventRepository, OrderRepository orderRepository, DeliveryMapper mapper, TenantContext tenantContext,
-                           DeliveryAccessGuard accessGuard, DeliveryCodeHasher codeHasher, DeliveryCodeProperties codeProperties, AuditLogService auditLogService) {
+                           DeliveryAccessGuard accessGuard, DeliveryCodeHasher codeHasher, DeliveryCodeProperties codeProperties, AuditLogService auditLogService,
+                           OrderStockService orderStockService) {
+        this.orderStockService = orderStockService;
         this.deliveryRepository = deliveryRepository;
         this.eventRepository = eventRepository;
         this.orderRepository = orderRepository;
@@ -92,6 +96,9 @@ public class DeliveryService {
         delivery.markDelivered();
         Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
         order.markDelivered();
+        // INC-07 (COR-01) x INC-02: complete() is also allowed straight from ACCEPTED (no PICKED_UP PATCH),
+        // so close the stock lifecycle here too; no-op when pickup already committed it.
+        orderStockService.commit(order);
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), "DELIVERED", "Delivery completed with customer code"));
         return mapper.toResponse(delivery);
     }
@@ -117,9 +124,11 @@ public class DeliveryService {
             delivery.recordCashCollected(cashCollectedAmount);
         }
         delivery.updateStatus(status);
+        if (status == DeliveryStatus.PICKED_UP) orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).ifPresent(orderStockService::commit); // INC-07 (COR-01)
         if (status == DeliveryStatus.FAILED_DELIVERY) {
             Order order = orderRepository.findByTenantIdAndId(tenantId, delivery.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
             order.markCancelled();
+            orderStockService.release(order); // INC-07 (COR-01): no-op once pickup committed the stock
         }
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), EVENT_STATUS_UPDATE, "Delivery moved to " + status));
         if (operatorOverride) {

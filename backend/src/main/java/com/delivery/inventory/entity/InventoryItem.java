@@ -57,6 +57,32 @@ public class InventoryItem {
         updatedAt = Instant.now();
     }
 
+    /**
+     * Returns reserved units to available (order cancelled/rejected before pickup). Clamped to the
+     * current reservation so legacy rows (stock set manually) never violate the >= 0 check; returns
+     * the number of units actually released.
+     */
+    public int release(int quantity) {
+        if (quantity <= 0) throw new BusinessException("invalid_quantity", "Quantity must be positive", HttpStatus.BAD_REQUEST);
+        int released = Math.min(quantity, quantityReserved);
+        quantityReserved -= released;
+        quantityAvailable += released;
+        updatedAt = Instant.now();
+        return released;
+    }
+
+    /**
+     * Consumes reserved units at pickup. reserve() already removed them from available, so only the
+     * reservation drains (physical on-hand = available + reserved). Clamped like release().
+     */
+    public int commit(int quantity) {
+        if (quantity <= 0) throw new BusinessException("invalid_quantity", "Quantity must be positive", HttpStatus.BAD_REQUEST);
+        int committed = Math.min(quantity, quantityReserved);
+        quantityReserved -= committed;
+        updatedAt = Instant.now();
+        return committed;
+    }
+
     public void updateAvailable(int quantityAvailable) {
         if (quantityAvailable < 0) throw new BusinessException("negative_stock", "Stock cannot be negative", HttpStatus.BAD_REQUEST);
         this.quantityAvailable = quantityAvailable;

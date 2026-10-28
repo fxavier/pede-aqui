@@ -56,7 +56,9 @@ class CheckoutOwnershipTest {
                 mock(InventoryService.class), userProfileRepository, mock(VendorRepository.class),
                 mock(NotificationService.class), mock(PaymentService.class), mock(AuditLogService.class),
                 mock(OrderMapper.class), tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class));
+                mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class),
+                mock(com.delivery.order.service.OrderStockService.class),
+                mock(com.delivery.cart.service.CartService.class), mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     private void stubCaller() {
@@ -72,7 +74,7 @@ class CheckoutOwnershipTest {
     void rejectsCheckoutOfAnotherCustomersCart() {
         stubCaller();
         Cart foreignCart = new Cart(cartId, tenantId, otherCustomerId, vendorId);
-        when(cartRepository.findByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(foreignCart));
+        when(cartRepository.lockByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(foreignCart));
 
         BusinessException ex = catchThrowableOfType(
                 () -> newService().checkout(cartId, idempotencyKey), BusinessException.class);
@@ -88,7 +90,7 @@ class CheckoutOwnershipTest {
         // Caller owns this cart; it is empty, so the ownership gate passes and the flow
         // fails later on the invalid-cart check — proving access was NOT denied.
         Cart ownCart = new Cart(cartId, tenantId, callerId, vendorId);
-        when(cartRepository.findByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(ownCart));
+        when(cartRepository.lockByTenantIdAndId(tenantId, cartId)).thenReturn(Optional.of(ownCart));
 
         assertThatThrownBy(() -> newService().checkout(cartId, idempotencyKey))
                 .isInstanceOfSatisfying(BusinessException.class,
