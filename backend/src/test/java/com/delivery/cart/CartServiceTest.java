@@ -186,6 +186,6 @@ class CartServiceTest {
         when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(keycloakUserId));
         when(userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId)).thenReturn(Optional.of(userProfile));
         
-        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), new PricingService(), tenantContext, inventoryRepository, userProfileRepository);
+        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, inventoryRepository, userProfileRepository);
     }
 }

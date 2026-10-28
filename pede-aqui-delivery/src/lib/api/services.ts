@@ -3,6 +3,7 @@ import type {
   AddCartItemRequest,
   CartResponse,
   Category,
+  CheckoutQuote,
   CheckoutRequest,
   CustomerAddress,
   CustomerAddressRequest,
@@ -90,6 +91,12 @@ export const addressService = {
 export const checkoutService = {
   checkout: (req: CheckoutRequest) =>
     apiClient.post<OrderResponse>('/checkout', req).then((r) => r.data),
+
+  /** Fees and total checkout will charge for this cart and address (base-fee estimate without an address). */
+  quote: (cartId: string, addressId?: string) =>
+    apiClient
+      .get<CheckoutQuote>('/checkout/quote', { params: addressId ? { cartId, addressId } : { cartId } })
+      .then((r) => r.data),
 }
 
 export const orderService = {

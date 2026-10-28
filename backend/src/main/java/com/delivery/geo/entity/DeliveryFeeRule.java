@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+/** Vendor distance band [min_km, max_km] with its delivery fee; read by the pricing engine (INC-13). */
 @Entity
 @Table(name = "delivery_fee_rules")
 public class DeliveryFeeRule {
@@ -35,6 +36,10 @@ public class DeliveryFeeRule {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Optimistic lock; also the rule version recorded on order pricing quotes. */
+    @Version
+    private long version;
 
     protected DeliveryFeeRule() {
     }
@@ -104,6 +109,10 @@ public class DeliveryFeeRule {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     public Instant getUpdatedAt() {

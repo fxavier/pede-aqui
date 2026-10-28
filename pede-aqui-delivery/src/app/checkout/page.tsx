@@ -52,6 +52,15 @@ export default function CheckoutPage() {
   const subtotal = cartTotal(cart.items)
   const count = cartItemCount(cart.items)
 
+  // Server quote for the chosen saved address (same engine as checkout); a new, unsaved address is quoted
+  // without coordinates (base delivery fee) until it is saved at confirmation.
+  const quotedAddressId = selected && selected !== NEW_ADDRESS ? selected : undefined
+  const quote = useQuery({
+    queryKey: ['checkout-quote', cart.cartId, quotedAddressId, subtotal],
+    queryFn: () => checkoutService.quote(cart.cartId as string, quotedAddressId),
+    enabled: !!cart.cartId && cart.items.length > 0,
+  })
+
   // Redirect away from an empty-cart checkout in an effect (never during render).
   const isEmpty = cart.items.length === 0
   useEffect(() => {
@@ -236,9 +245,23 @@ export default function CheckoutPage() {
 
             <div className="space-y-2 text-xs text-slate-500 font-semibold">
               <div className="flex justify-between"><span>Subtotal</span><span className="text-slate-800 font-bold">{formatMZN(subtotal)}</span></div>
-              <div className="flex justify-between"><span>Taxa de entrega</span><span className="text-slate-400">Confirmada no pedido</span></div>
+              {quote.data ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Taxa de entrega{quote.data.deliveryFeeBasis === 'DISTANCE_RULE' ? '' : ' (estimativa)'}</span>
+                    <span className="text-slate-800 font-bold">{formatMZN(quote.data.deliveryFee)}</span>
+                  </div>
+                  <div className="flex justify-between"><span>Taxa de serviço</span><span className="text-slate-800 font-bold">{formatMZN(quote.data.serviceFee)}</span></div>
+                  <div className="flex justify-between"><span>IVA</span><span className="text-slate-800 font-bold">{formatMZN(quote.data.taxes)}</span></div>
+                  {quote.data.discountTotal > 0 && (
+                    <div className="flex justify-between"><span>Desconto</span><span className="text-emerald-600 font-bold">−{formatMZN(quote.data.discountTotal)}</span></div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between"><span>Taxa de entrega</span><span className="text-slate-400">Confirmada no pedido</span></div>
+              )}
               <div className="flex justify-between text-base text-slate-800 font-extrabold pt-3 border-t border-slate-100">
-                <span>Total</span><span className="text-brand-600 text-lg">{formatMZN(subtotal)}</span>
+                <span>Total</span><span className="text-brand-600 text-lg">{formatMZN(quote.data ? quote.data.total : subtotal)}</span>
               </div>
             </div>
 

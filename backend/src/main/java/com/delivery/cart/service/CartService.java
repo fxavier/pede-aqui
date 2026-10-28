@@ -70,8 +70,9 @@ public class CartService {
                 .orElseThrow(() -> new BusinessException("insufficient_stock", "Not enough stock is available", HttpStatus.CONFLICT));
         CartItem item = new CartItem(UUID.randomUUID(), cart, tenantId, skuId, sku.getName(), sku.getName(), sku.getPrice(), quantity);
         cart.addItem(item);
-        var pricing = pricingService.calculate(cart.getSubtotal(), null);
-        cart.updateTotals(pricing.deliveryFee().add(pricing.serviceFee()), pricing.tax(), pricing.discount(), pricing.total());
+        // No address yet: the quote uses the tenant base delivery fee; checkout re-quotes with the delivery address (INC-13).
+        var quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), null);
+        cart.updateTotals(quote.fees(), quote.taxes(), BigDecimal.ZERO, quote.total());
         return mapper.toResponse(cartRepository.save(cart));
     }
 
@@ -83,8 +84,8 @@ public class CartService {
     public void repriceItems(UUID tenantId, UUID cartId, Map<UUID, BigDecimal> currentPriceBySkuId) {
         cartRepository.findByTenantIdAndId(tenantId, cartId).ifPresent(cart -> {
             currentPriceBySkuId.forEach(cart::repriceItem);
-            var pricing = pricingService.calculate(cart.getSubtotal(), null);
-            cart.updateTotals(pricing.deliveryFee().add(pricing.serviceFee()), pricing.tax(), pricing.discount(), pricing.total());
+            var quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), null);
+            cart.updateTotals(quote.fees(), quote.taxes(), BigDecimal.ZERO, quote.total());
         });
     }
 
