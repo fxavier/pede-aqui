@@ -2,10 +2,13 @@ package com.delivery.vendor.repository;
 
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.entity.VendorVerificationStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Provides tenant-scoped vendor persistence queries. */
 public interface VendorRepository extends JpaRepository<Vendor, UUID> {
@@ -16,4 +19,28 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     List<Vendor> findByTenantIdAndCategoryId(UUID tenantId, UUID categoryId);
     List<Vendor> findByTenantIdAndVerificationStatus(UUID tenantId, VendorVerificationStatus verificationStatus);
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);
+
+    /**
+     * Server-side straight-line (geodesic, PostGIS geography) distance in km from each vendor to a point (INC-13).
+     * Vendors without usable coordinates (missing, (0,0) placeholder or out of range) are not returned.
+     */
+    @Query(value = """
+            SELECT v.id AS "vendorId",
+                   ST_Distance(CAST(ST_SetSRID(ST_MakePoint(v.longitude, v.latitude), 4326) AS geography),
+                               CAST(ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326) AS geography)) / 1000.0 AS "distanceKm"
+              FROM vendors v
+             WHERE v.id IN (:vendorIds)
+               AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
+               AND NOT (v.latitude = 0 AND v.longitude = 0)
+               AND v.latitude BETWEEN -90 AND 90 AND v.longitude BETWEEN -180 AND 180
+            """, nativeQuery = true)
+    List<VendorDistance> straightLineDistancesKm(@Param("vendorIds") Collection<UUID> vendorIds,
+                                                 @Param("latitude") double latitude,
+                                                 @Param("longitude") double longitude);
+
+    /** Projection row of {@link #straightLineDistancesKm}. */
+    interface VendorDistance {
+        UUID getVendorId();
+        Double getDistanceKm();
+    }
 }

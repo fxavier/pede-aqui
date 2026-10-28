@@ -3,11 +3,11 @@ package com.delivery.cart.service;
 import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.dto.CartPricingResponse;
-import com.delivery.cart.dto.PricingResponse;
 import com.delivery.cart.entity.Cart;
 import com.delivery.cart.repository.CartRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pricing.PriceQuote;
 import com.delivery.common.pricing.PricingMath;
 import com.delivery.common.security.TenantContext;
 import com.delivery.marketing.service.PromotionResolver;
@@ -57,10 +57,9 @@ public class CartCouponService {
 
     /** Recomputes fees/taxes and the canonical total including the cart's pending discount. */
     private void recomputeTotals(Cart cart) {
-        PricingResponse pricing = pricingService.calculate(cart.getSubtotal(), null);
-        BigDecimal fees = pricing.deliveryFee().add(pricing.serviceFee());
-        BigDecimal total = PricingMath.orderTotal(cart.getSubtotal(), fees, pricing.tax(), cart.getDiscountTotal());
-        cart.updateTotals(fees, pricing.tax(), pricing.discount(), total);
+        PriceQuote quote = pricingService.quote(cart.getTenantId(), cart.getVendorId(), cart.getSubtotal(), null);
+        BigDecimal total = PricingMath.orderTotal(cart.getSubtotal(), quote.fees(), quote.taxes(), cart.getDiscountTotal());
+        cart.updateTotals(quote.fees(), quote.taxes(), BigDecimal.ZERO, total);
     }
 
     private CartPricingResponse toPricing(Cart cart) {

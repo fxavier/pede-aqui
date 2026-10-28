@@ -37,6 +37,12 @@ import com.delivery.payment.dto.RefundResponse;
 import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.cart.service.CartService;
+import com.delivery.cart.service.PricingService;
+import com.delivery.common.pricing.GeoPoint;
+import com.delivery.common.pricing.PriceQuote;
+import com.delivery.common.pricing.PricingMath;
+import com.delivery.order.dto.CheckoutQuoteResponse;
+import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.dto.CheckoutResult;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -87,10 +93,12 @@ public class OrderService {
     private final TransactionTemplate transactionTemplate;
     private final TransactionTemplate readOnlyTransactionTemplate;
     private final DeliveryAddressResolver addressResolver;
+    private final PricingService pricingService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService) {
         this.addressResolver = addressResolver;
+        this.pricingService = pricingService;
         this.orderStockService = orderStockService;
         this.cartService = cartService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -262,6 +270,9 @@ public class OrderService {
             throw new BusinessException("invalid_cart", "Cart must be active and contain items", HttpStatus.BAD_REQUEST);
         }
         revalidateItems(tenantId, cart);
+        // Fees and tax are re-quoted here with the delivery address (INC-13): the cart's own fees were estimated
+        // without one. Discounts are applied below through the spec-002 seam, on top of this quote.
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destinationOf(deliveryAddress));
         // Fixed SKU order for the inventory row locks prevents deadlocks between carts sharing SKUs.
         List<CartItem> bySku = cart.getItems().stream().sorted(Comparator.comparing(CartItem::getSkuId)).toList();
         for (CartItem item : bySku) {
@@ -269,8 +280,9 @@ public class OrderService {
         }
         // Plain SecureRandom PIN, HMAC-hashed; no per-tenant uniqueness (a PIN is verified against one delivery only).
         String code = deliveryCodeHasher.generateCode();
-        Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), cart.getFees(), cart.getTaxes(), cart.getDiscounts(), cart.getTotal(), idempotencyKey, deliveryCodeHasher.hash(code), code);
+        Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), quote.fees(), quote.taxes(), cart.getDiscounts(), quote.total(), idempotencyKey, deliveryCodeHasher.hash(code), code);
         order.linkCart(cart.getId());
+        order.recordPricingQuote(PricingQuoteSnapshot.of(quote));
         deliveryAddress.ifPresent(order::recordDeliveryAddress);
         Map<UUID, UUID> categoryBySkuId = resolveCategoryBySkuId(cart);
         for (CartItem item : cart.getItems()) {
@@ -286,6 +298,34 @@ public class OrderService {
         deliveryRepository.save(new Delivery(UUID.randomUUID(), tenantId, saved.getId(), saved.getDeliveryConfirmationCodeHash()));
         cart.markCheckedOut();
         return saved;
+    }
+
+    /**
+     * Price quote for checking out the customer's cart to one of their addresses, from the same engine and inputs
+     * as checkout (INC-13). Without addressId the base delivery fee applies (estimate). The discount shown is the
+     * cart's pending coupon/promotion; checkout re-validates it.
+     */
+    @Transactional(readOnly = true)
+    public CheckoutQuoteResponse quote(UUID cartId, UUID addressId) {
+        UUID tenantId = tenantId();
+        UUID customerId = getCurrentCustomerId();
+        Cart cart = cartRepository.findByTenantIdAndId(tenantId, cartId).orElseThrow(() -> new NotFoundException("Cart was not found"));
+        if (!cart.getCustomerId().equals(customerId)) {
+            throw new BusinessException("cart_access_denied", "Access to this cart is not permitted", HttpStatus.FORBIDDEN);
+        }
+        GeoPoint destination = null;
+        if (addressId != null) {
+            destination = destinationOf(addressResolver.resolve(tenantId, customerId, addressId));
+        }
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destination);
+        BigDecimal discountTotal = cart.getDiscountTotal();
+        BigDecimal total = PricingMath.orderTotal(quote.subtotal(), quote.fees(), quote.taxes(), discountTotal);
+        return new CheckoutQuoteResponse(cart.getId(), addressId, quote.subtotal(), quote.deliveryFee(), quote.serviceFee(), quote.taxes(),
+                discountTotal, total, quote.delivery().basis(), quote.delivery().distanceKm());
+    }
+
+    private static GeoPoint destinationOf(Optional<DeliveryAddressSnapshot> address) {
+        return address.flatMap(a -> GeoPoint.of(a.getLatitude(), a.getLongitude())).orElse(null);
     }
 
     private String reference() { return "PA-" + System.currentTimeMillis() + "-" + random.nextInt(10_000); }

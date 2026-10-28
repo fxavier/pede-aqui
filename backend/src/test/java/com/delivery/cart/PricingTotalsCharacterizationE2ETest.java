@@ -1,6 +1,7 @@
 package com.delivery.cart;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,7 +36,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
  * INC-13 characterization (AS-23, FR-021, FR-063): pins the totals the API produces end to end on real Postgres
  * for one vendor (with coordinates) selling a 18.00 SKU, so every pricing difference introduced by the pricing
  * engine is visible and documented. Scenarios: cart totals, checkout with and without address, a spec-002
- * coupon on cart and checkout, the GET /cart/pricing preview, and the search delivery fee.
+ * coupon on cart and checkout, the GET /cart/pricing preview, and the search delivery fee. Tests whose expected
+ * values changed with the engine say so (old → new); the engine tests below cover rules and the recorded quote.
  */
 class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     private static final double VENDOR_LAT = -25.9692;
@@ -160,21 +162,119 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     }
 
     @Test
-    void pricingPreviewHonoursTheMvp10MagicCoupon() throws Exception {
+    void pricingPreviewIgnoresTheRemovedMvp10Coupon() throws Exception {
+        // INC-13: was discount 10.00 / total 108.00 (magic coupon); now no discount, real coupons use POST /cart/{id}/coupon.
         String ana = customerToken();
         mockMvc.perform(withBearer(get("/api/v1/customers/{customerId}/cart/pricing", UUID.randomUUID()), ana)
                         .param("subtotal", "100.00").param("couponCode", "mvp10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.discount").value(10.0))
-                .andExpect(jsonPath("$.total").value(108.0));
+                .andExpect(jsonPath("$.discount").value(0))
+                .andExpect(jsonPath("$.total").value(118.0));
     }
 
     @Test
-    void searchShowsADistanceBasedDeliveryFee() throws Exception {
-        // 3.66 km (haversine) from the vendor: 2.50 + 0.50 * 3.66 = 4.33 — a different formula from checkout's flat 5.00.
+    void searchShowsTheTenantBaseFeeWhenTheVendorHasNoDistanceRules() throws Exception {
+        // INC-13: was 4.33 (double 2.50 + 0.50 * 3.66 km haversine); now the same engine as checkout: no rules → policy base 5.00.
         JsonNode row = searchRow(CUSTOMER_LAT, CUSTOMER_LNG);
-        assertThat(row.get("distanceKm").asDouble()).isEqualTo(3.66);
-        assertMoney(row.get("deliveryFee"), "4.33");
+        assertThat(row.get("distanceKm").asDouble()).isBetween(3.62, 3.70); // PostGIS geodesic, not haversine
+        assertMoney(row.get("deliveryFee"), "5.00");
+        assertThat(row.get("deliveryFeeBasis").asText()).isEqualTo("POLICY_BASE");
+    }
+
+    // ---- INC-13 engine: rules, quote persistence, search == checkout ----------------------------------
+
+    @Test
+    void v048SeedsTheOperatorTenantPolicyWithThePreviousConstants() {
+        Map<String, Object> policy = jdbc.queryForMap("SELECT delivery_fee, service_fee, service_fee_rate, tax_rate FROM fee_policies WHERE tenant_id = ?", tenant);
+        assertThat((BigDecimal) policy.get("delivery_fee")).isEqualByComparingTo("5.00");
+        assertThat((BigDecimal) policy.get("service_fee")).isEqualByComparingTo("0.00");
+        assertThat((BigDecimal) policy.get("service_fee_rate")).isEqualByComparingTo("0.05");
+        assertThat((BigDecimal) policy.get("tax_rate")).isEqualByComparingTo("0.08");
+    }
+
+    @Test
+    void checkoutChargesTheVendorDistanceBandShownBySearchAndTheQuoteAndRecordsTheQuote() throws Exception {
+        UUID nearRule = UUID.randomUUID();
+        UUID farRule = UUID.randomUUID();
+        jdbc.update("INSERT INTO delivery_fee_rules (id, tenant_id, vendor_id, min_km, max_km, fee_amount) VALUES (?, ?, ?, 0, 3, 40.00)", nearRule, tenant, vendorId);
+        jdbc.update("INSERT INTO delivery_fee_rules (id, tenant_id, vendor_id, min_km, max_km, fee_amount) VALUES (?, ?, ?, 3, 6, 60.00)", farRule, tenant, vendorId);
+        String ana = customerToken();
+        UUID addressId = createAddress(ana, CUSTOMER_LAT, CUSTOMER_LNG);
+        UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
+
+        JsonNode row = searchRow(CUSTOMER_LAT, CUSTOMER_LNG);
+        assertMoney(row.get("deliveryFee"), "60.00");
+        assertThat(row.get("deliveryFeeBasis").asText()).isEqualTo("DISTANCE_RULE");
+
+        String quoteBody = mockMvc.perform(withBearer(get("/api/v1/checkout/quote"), ana)
+                        .param("cartId", cartId.toString()).param("addressId", addressId.toString()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode quote = objectMapper.readTree(quoteBody);
+        assertMoney(quote.get("deliveryFee"), "60.00");
+        assertMoney(quote.get("serviceFee"), "0.90");
+        assertMoney(quote.get("taxes"), "1.44");
+        assertMoney(quote.get("total"), "80.34");
+        assertThat(quote.get("deliveryFeeBasis").asText()).isEqualTo("DISTANCE_RULE");
+
+        checkout(ana, cartId, addressId);
+
+        // Search fee == quoted fee == charged delivery fee (ADR-0003 validation criterion).
+        assertOrderTotals(cartId, "60.90", "1.44", "0", "80.34");
+        Map<String, Object> recorded = jdbc.queryForMap("SELECT quote_engine_version, quote_delivery_fee, quote_service_fee, quote_tax_rate, "
+                + "quote_delivery_fee_basis, quote_distance_km, quote_fee_policy_id, quote_fee_policy_version, quote_delivery_fee_rule_id, "
+                + "quote_delivery_fee_rule_version, quoted_at FROM orders WHERE cart_id = ?", cartId);
+        assertThat(recorded.get("quote_engine_version")).isEqualTo("pricing-v1");
+        assertThat((BigDecimal) recorded.get("quote_delivery_fee")).isEqualByComparingTo(row.get("deliveryFee").decimalValue());
+        assertThat((BigDecimal) recorded.get("quote_service_fee")).isEqualByComparingTo("0.90");
+        assertThat((BigDecimal) recorded.get("quote_tax_rate")).isEqualByComparingTo("0.08");
+        assertThat(recorded.get("quote_delivery_fee_basis")).isEqualTo("DISTANCE_RULE");
+        assertThat(((BigDecimal) recorded.get("quote_distance_km")).doubleValue()).isEqualTo(row.get("distanceKm").asDouble());
+        assertThat(recorded.get("quote_fee_policy_id")).isEqualTo(jdbc.queryForObject("SELECT id FROM fee_policies WHERE tenant_id = ?", UUID.class, tenant));
+        assertThat(recorded.get("quote_fee_policy_version")).isNotNull();
+        assertThat(recorded.get("quote_delivery_fee_rule_id")).isEqualTo(farRule);
+        assertThat(((Number) recorded.get("quote_delivery_fee_rule_version")).longValue()).isZero();
+        assertThat(recorded.get("quoted_at")).isNotNull();
+    }
+
+    @Test
+    void addressWithoutCoordinatesAndLegacyCheckoutUseThePolicyBaseFee() throws Exception {
+        jdbc.update("INSERT INTO delivery_fee_rules (id, tenant_id, vendor_id, min_km, max_km, fee_amount) VALUES (?, ?, ?, 0, 50, 99.00)", UUID.randomUUID(), tenant, vendorId);
+        String ana = customerToken();
+        UUID noPin = createAddress(ana, null, null);
+        UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
+        checkout(ana, cartId, noPin);
+        assertOrderTotals(cartId, "5.90", "1.44", "0", "25.34");
+        assertThat(jdbc.queryForObject("SELECT quote_delivery_fee_basis FROM orders WHERE cart_id = ?", String.class, cartId)).isEqualTo("POLICY_BASE");
+        assertThat(jdbc.queryForObject("SELECT quote_distance_km FROM orders WHERE cart_id = ?", BigDecimal.class, cartId)).isNull();
+
+        String bruno = customerToken();
+        UUID legacyCart = UUID.fromString(addToCart(bruno).get("id").asText());
+        mockMvc.perform(withBearer(post("/api/v1/checkout"), bruno).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cartId\":\"" + legacyCart + "\",\"idempotencyKey\":\"legacy-q-" + legacyCart + "\"}"))
+                .andExpect(status().isCreated());
+        assertOrderTotals(legacyCart, "5.90", "1.44", "0", "25.34");
+        assertThat(jdbc.queryForObject("SELECT quote_delivery_fee_basis FROM orders WHERE cart_id = ?", String.class, legacyCart)).isEqualTo("POLICY_BASE");
+    }
+
+    @Test
+    void theRecordedQuoteIsImmutable() throws Exception {
+        String ana = customerToken();
+        UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
+        checkout(ana, cartId, createAddress(ana, CUSTOMER_LAT, CUSTOMER_LNG));
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE orders SET quote_delivery_fee = 0 WHERE cart_id = ?", cartId))
+                .hasMessageContaining("order pricing quote is immutable");
+        // Other order columns still change normally.
+        jdbc.update("UPDATE orders SET status = 'PAYMENT_CONFIRMED' WHERE cart_id = ?", cartId);
+    }
+
+    @Test
+    void quoteOfAnotherCustomersCartIsForbidden() throws Exception {
+        String ana = customerToken();
+        UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
+        mockMvc.perform(withBearer(get("/api/v1/checkout/quote"), customerToken()).param("cartId", cartId.toString()))
+                .andExpect(status().isForbidden());
     }
 
     // ---- helpers -----------------------------------------------------------------------------------

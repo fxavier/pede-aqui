@@ -1,17 +1,21 @@
 package com.delivery.order.controller;
 
+import com.delivery.order.dto.CheckoutQuoteResponse;
 import com.delivery.order.dto.CheckoutRequest;
 import com.delivery.order.dto.CheckoutResult;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.service.OrderService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Exposes checkout endpoint for active carts. */
@@ -37,5 +41,11 @@ public class CheckoutController {
             response.header("Deprecation", "true");
         }
         return response.body(result.order());
+    }
+
+    /** Fees, taxes and total that checkout will charge for the cart and (optional) address — same pricing engine (INC-13). */
+    @GetMapping("/quote")
+    public CheckoutQuoteResponse quote(@RequestParam UUID cartId, @RequestParam(required = false) UUID addressId) {
+        return service.quote(cartId, addressId);
     }
 }
