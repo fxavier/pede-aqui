@@ -14,7 +14,7 @@ Services:
 - Redis: `localhost:6379`
 - Keycloak: `http://localhost:8081`, admin `admin`, password `admin`
 - MinIO: API `http://localhost:9000`, console `http://localhost:9001`, user `minioadmin`, password `minioadmin`
-- Prometheus: `http://localhost:9090` scraping backend `/actuator/prometheus`
+- Prometheus: `http://localhost:9090` scraping backend `/actuator/prometheus` on the internal management port `backend:8091` (`MANAGEMENT_SERVER_PORT`, not published on the host)
 
 ## Keycloak Realm
 

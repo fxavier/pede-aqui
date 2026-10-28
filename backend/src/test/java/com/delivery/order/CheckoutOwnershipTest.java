@@ -56,7 +56,7 @@ class CheckoutOwnershipTest {
                 mock(InventoryService.class), userProfileRepository, mock(VendorRepository.class),
                 mock(NotificationService.class), mock(PaymentService.class), mock(AuditLogService.class),
                 mock(OrderMapper.class), tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                mock(CheckoutDiscountResolver.class));
+                mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class));
     }
 
     private void stubCaller() {

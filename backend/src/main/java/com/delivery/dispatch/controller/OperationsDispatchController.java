@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Exposes operations-only order monitoring and dispatch reassignment actions. */
@@ -27,7 +28,9 @@ public class OperationsDispatchController {
     }
 
     @GetMapping("/jobs")
-    public List<DispatchJobResponse> jobs() { return dispatchService.list(); }
+    public List<DispatchJobResponse> jobs(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+        return dispatchService.list(page, size);
+    }
 
     @GetMapping("/deliveries/{deliveryId}/events")
     public List<DeliveryEventResponse> deliveryEvents(@PathVariable UUID deliveryId) {

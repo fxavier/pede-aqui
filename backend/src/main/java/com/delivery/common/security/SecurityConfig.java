@@ -1,5 +1,6 @@
 package com.delivery.common.security;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,13 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174}")
     private List<String> allowedOrigins;
 
+    @Value("${server.port:8080}")
+    private int serverPort;
+
+    /** -1 = actuator shares the application port (dev default). */
+    @Value("${management.server.port:-1}")
+    private int managementPort;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
@@ -29,19 +37,31 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Separate management port (prod): reachable only on the internal network, so
+                        // Prometheus scrapes without a token. Never covers non-actuator paths (SEC-19).
+                        .requestMatchers(this::isActuatorOnManagementPort).permitAll()
                         .requestMatchers(
-                            "/actuator/health/**", "/api-docs/**", "/swagger-ui/**",
+                            "/actuator/health/**", "/livez", "/readyz", "/api-docs/**", "/swagger-ui/**",
                             "/swagger-ui.html", "/api/v1/register", "/api/v1/customers/register",
                             "/api/v1/catalog/categories",
                             "/api/v1/catalog/vendors/*/products",
                             "/api/v1/catalog/vendors/*",
                             "/api/v1/search/vendors"
                         ).permitAll()
+                        // metrics/prometheus/etc. on the public application port: platform ADMIN only (SEC-19).
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/tenants/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/provisioning/**").hasAuthority("ROLE_provisioning:write")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
+    }
+
+    private boolean isActuatorOnManagementPort(HttpServletRequest request) {
+        return managementPort > 0
+                && managementPort != serverPort
+                && request.getLocalPort() == managementPort
+                && request.getRequestURI().startsWith("/actuator/");
     }
 
     @Bean

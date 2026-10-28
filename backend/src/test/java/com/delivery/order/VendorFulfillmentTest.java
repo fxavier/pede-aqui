@@ -64,7 +64,8 @@ class VendorFulfillmentTest {
 
         var response = service.rejectByVendor(orderId, "Sem ingredientes");
 
-        assertThat(response.status()).isEqualTo(OrderStatus.REFUND_PENDING);
+        // COR-07: the order keeps REJECTED_BY_VENDOR; the refund is represented only by the Refund record.
+        assertThat(response.status()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
         assertThat(order.getRejectionReason()).isEqualTo("Sem ingredientes");
         verify(auditLogService).log("ORDER_REJECTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
     }
@@ -124,7 +125,8 @@ class VendorFulfillmentTest {
                 tenantContext,
                 mock(SkuRepository.class),
                 mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(),
+                mock(com.delivery.delivery.service.DeliveryCodeHasher.class));
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {

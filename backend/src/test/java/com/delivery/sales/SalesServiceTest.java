@@ -237,6 +237,16 @@ class SalesServiceTest {
     }
 
     @Test
+    void resendDeliveryCodeAfterDeliveryIsConflictBecausePlainPinWasCleared() {
+        Order order = order(OrderStatus.DELIVERING);
+        order.markDelivered();
+
+        assertThatThrownBy(() -> service.resendNotification(order.getId(), SalesNotificationType.DELIVERY_CODE))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("delivery_code_unavailable"));
+        verify(notificationService, never()).create(any(), anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
     void resendStatusNotificationTargetsTheCustomer() {
         Order order = order(OrderStatus.PREPARING);
 

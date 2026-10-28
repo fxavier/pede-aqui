@@ -7,7 +7,9 @@ import com.delivery.cart.entity.Cart;
 import com.delivery.cart.entity.CartItem;
 import com.delivery.cart.mapper.CartMapper;
 import com.delivery.cart.repository.CartRepository;
+import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
+import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
@@ -23,15 +25,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CartService {
     private final CartRepository cartRepository;
     private final SkuRepository skuRepository;
+    private final ProductRepository productRepository;
     private final CartMapper mapper;
     private final PricingService pricingService;
     private final TenantContext tenantContext;
     private final InventoryItemRepository inventoryItemRepository;
     private final AppUserProfileRepository userProfileRepository;
 
-    public CartService(CartRepository cartRepository, SkuRepository skuRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository) {
+    public CartService(CartRepository cartRepository, SkuRepository skuRepository, ProductRepository productRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository) {
         this.cartRepository = cartRepository;
         this.skuRepository = skuRepository;
+        this.productRepository = productRepository;
         this.mapper = mapper;
         this.pricingService = pricingService;
         this.tenantContext = tenantContext;
@@ -39,7 +43,7 @@ public class CartService {
         this.userProfileRepository = userProfileRepository;
     }
 
-    /** Adds a SKU to the active cart and rejects mixed-vendor carts. */
+    /** Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts. */
     @Transactional
     public CartResponse addItem(UUID vendorId, UUID skuId, int quantity) {
         if (quantity <= 0) throw new BusinessException("invalid_quantity", "Quantity must be positive", HttpStatus.BAD_REQUEST);
@@ -51,6 +55,14 @@ public class CartService {
             throw new BusinessException("single_vendor_cart", "MVP carts can contain products from one vendor only", HttpStatus.CONFLICT);
         }
         Sku sku = skuRepository.findByTenantIdAndId(tenantId, skuId).orElseThrow(() -> new NotFoundException("SKU was not found"));
+        // Only approved (ACTIVE) products with an active SKU are orderable (INC-05, COR-05).
+        if (!sku.isActive()) {
+            throw new BusinessException("sku_inactive", "This product variant is no longer available", HttpStatus.CONFLICT);
+        }
+        boolean productActive = productRepository.findByTenantIdAndId(tenantId, sku.getProductId()).map(Product::isActive).orElse(false);
+        if (!productActive) {
+            throw new BusinessException("product_not_available", "This product is not available for ordering", HttpStatus.CONFLICT);
+        }
         inventoryItemRepository.findByTenantIdAndSkuId(tenantId, skuId)
                 .filter(item -> item.getQuantityAvailable() >= quantity)
                 .orElseThrow(() -> new BusinessException("insufficient_stock", "Not enough stock is available", HttpStatus.CONFLICT));

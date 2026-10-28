@@ -25,7 +25,9 @@ public class DispatchController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('COURIER','OPS','ADMIN')")
-    public List<DispatchJobResponse> list() { return dispatchService.list(); }
+    public List<DispatchJobResponse> list(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+        return dispatchService.list(page, size);
+    }
 
     @PostMapping("/assign")
     @PreAuthorize("hasAnyRole('OPS','ADMIN')")
