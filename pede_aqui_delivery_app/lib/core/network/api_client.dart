@@ -59,24 +59,59 @@ class ApiClient {
     return _dio.delete<T>(path, options: Options(headers: _authHeaders));
   }
 
+  /// The refresh currently in flight, shared by every request that hits a 401 meanwhile.
+  /// Keycloak rotates refresh tokens (refreshTokenMaxReuse=0): two parallel refreshes with the
+  /// same token would make the second fail and log the user out, so only one may run at a time.
+  Future<void>? _refreshInFlight;
+
+  static const _retriedKey = 'auth_retried';
+
+  Future<void> _refreshOnce() {
+    final existing = _refreshInFlight;
+    if (existing != null) return existing;
+    final refresh = _runRefresh();
+    _refreshInFlight = refresh;
+    // Clear the slot once settled; errors are surfaced to the awaiting callers, not here.
+    refresh.then((_) {}, onError: (Object _) {}).whenComplete(() {
+      if (identical(_refreshInFlight, refresh)) _refreshInFlight = null;
+    });
+    return refresh;
+  }
+
+  Future<void> _runRefresh() async {
+    try {
+      await onRefreshToken!();
+    } catch (_) {
+      onSessionExpired?.call(); // once per failed refresh, however many requests were waiting
+      rethrow;
+    }
+  }
+
   InterceptorsWrapper _createInterceptor() {
     return InterceptorsWrapper(
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401 && onRefreshToken != null) {
+        final request = error.requestOptions;
+        if (error.response?.statusCode != 401 ||
+            onRefreshToken == null ||
+            request.extra[_retriedKey] == true) {
+          return handler.next(error);
+        }
+        // Refresh only if no other request already did it since this one was sent.
+        final sentWith = request.headers['Authorization'];
+        if (_authToken == null || sentWith == 'Bearer $_authToken') {
           try {
-            await onRefreshToken!();
-            
-            final request = error.requestOptions;
-            request.headers['Authorization'] = 'Bearer $_authToken';
-            
-            final response = await _dio.fetch(request);
-            return handler.resolve(response);
-          } catch (e) {
-            onSessionExpired?.call();
+            await _refreshOnce();
+          } catch (_) {
             return handler.next(error);
           }
         }
-        return handler.next(error);
+        request.headers['Authorization'] = 'Bearer $_authToken';
+        request.extra[_retriedKey] = true;
+        try {
+          return handler.resolve(await _dio.fetch(request));
+        } on DioException catch (retryError) {
+          return handler.next(retryError);
+        }
       },
     );
   }
