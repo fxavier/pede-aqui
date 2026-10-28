@@ -12,7 +12,7 @@ affected, and whether existing clients break.
   vendor's orders** instead of every order in the tenant.
 - If the caller's vendor cannot be resolved (no `vendor_id` JWT claim and the tenant has zero or
   several vendors) the endpoint answers **403** `vendor_scope_unresolved` instead of returning
-  tenant-wide data.
+  tenant-wide data. *(Resolution superseded by ADR-0001 below: the vendor now comes from `merchant_users`.)*
 - Still unbounded; it is kept for backward compatibility with the backoffice `/orders` page.
   New clients should use the paginated endpoint below. Deprecation of the array endpoint will be
   announced separately.

@@ -106,7 +106,7 @@ class SalesServiceTest {
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
                 auditLogService, tenantContext, overrideProperties,
-                new SalesAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), orderStockService);
+                new SalesAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), orderStockService, paymentRepository, deliveryRetirementService);
         authenticateWithRoles("ROLE_ADMIN");
     }
 
