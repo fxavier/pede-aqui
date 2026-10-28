@@ -314,6 +314,6 @@ Vertical metadata (slug → emoji/label) lives in `src/lib/verticals.ts`. The ho
 
 ## Architecture Constraints
 
-The backend deliberately avoids DDD, Clean/Hexagonal Architecture, CQRS, event sourcing, command buses, and Kafka. Keep it in the simple layered model described in `docs/architecture.md`.
+The backend is a layered modular monolith. Each top-level package under `com.delivery` is a Spring Modulith application module that keeps the `controller/service/repository/entity/dto/mapper` layering internally. Spring Modulith is used **only** for structural verification (`ApplicationModules.verify()` in CI) and transactional application events (`@ApplicationModuleListener` with the JPA event publication registry). Modules talk to each other through their public API (base package or `@NamedInterface` `api` package) or events — never through another module's repositories or entities, and without cycles. Still avoided: DDD tactical patterns, Clean/Hexagonal Architecture, CQRS, event sourcing, command buses, and Kafka/event externalization. See `docs/adr/ADR-0002-module-structure.md`.
 
 Every public class carries a short responsibility comment. Public service methods include short purpose comments. Business rules get comments only when non-obvious.
