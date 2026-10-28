@@ -12,6 +12,9 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.entity.Delivery;
+import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
@@ -46,6 +49,7 @@ class RefundServiceTest {
     private OrderRepository orderRepository;
     private TenantContext tenantContext;
     private AuditLogService auditLogService;
+    private DeliveryRepository deliveryRepository;
     private PaymentService service;
     private Payment payment;
     private Order order;
@@ -58,8 +62,10 @@ class RefundServiceTest {
         orderRepository = mock(OrderRepository.class);
         tenantContext = mock(TenantContext.class);
         auditLogService = mock(AuditLogService.class);
+        deliveryRepository = mock(DeliveryRepository.class);
+        stored.clear();
         service = new PaymentService(paymentRepository, orderRepository, refundRepository, auditLogService,
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties());
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(), deliveryRepository);
 
         payment = new Payment(UUID.randomUUID(), tenantA, orderId, new BigDecimal("100.00"), "pay-key");
         payment.confirm();
@@ -239,6 +245,62 @@ class RefundServiceTest {
         verify(auditLogService, never()).log(org.mockito.ArgumentMatchers.eq("ORDER_REFUNDED"), any(), any(), any(), any());
     }
 
+    // ---- V042 follow-up: the plain PIN on a fully refunded order ----
+
+    @Test
+    void fullApprovalClearsThePlainPinWhenNoCourierIsEngaged() {
+        // No delivery row at all (refund before dispatch).
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+        assertThat(order.getDeliveryConfirmationCodeDisplay()).isNull();
+    }
+
+    @Test
+    void fullApprovalClearsThePlainPinWhenTheDeliveryIsNoLongerCourierEngaged() {
+        for (DeliveryStatus status : List.of(DeliveryStatus.DISPATCH_PENDING, DeliveryStatus.REJECTED, DeliveryStatus.DELIVERED,
+                DeliveryStatus.FAILED_DELIVERY, DeliveryStatus.CANCELLED)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN cleared when delivery is %s", status).isNull();
+        }
+    }
+
+    @Test
+    void fullApprovalKeepsThePlainPinWhileACourierIsEngaged() {
+        // DeliveryService.complete checks only the delivery status, so an engaged courier may still complete with the PIN.
+        for (DeliveryStatus status : List.of(DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_VENDOR,
+                DeliveryStatus.REASSIGNED, DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER, DeliveryStatus.ARRIVED_AT_CUSTOMER)) {
+            setUp();
+            stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN kept while delivery is %s", status).isEqualTo("000000");
+        }
+    }
+
+    @Test
+    void partialApprovalLeavesThePlainPinAlone() {
+        RefundResponse first = request("40.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(first.id());
+
+        assertThat(order.getDeliveryConfirmationCodeDisplay()).isEqualTo("000000");
+    }
+
     @Test
     void remainingRefundCoversOnlyWhatIsLeftAndNothingWhenFullyCovered() {
         request("30.00", "k1");
@@ -250,6 +312,13 @@ class RefundServiceTest {
                 .hasValueSatisfying(r -> assertThat(r.amount()).isEqualByComparingTo("70.00"));
         assertThat(service.requestRemainingRefund(payment.getId(), "reject", "other-key")).isEmpty();
         assertThat(stored).hasSize(2);
+    }
+
+    /** The order's single delivery row (uq_deliveries_tenant_order) in the given status. */
+    private void stubDelivery(DeliveryStatus status) {
+        Delivery delivery = new Delivery(UUID.randomUUID(), tenantA, orderId, "hash");
+        delivery.updateStatus(status);
+        when(deliveryRepository.findByTenantIdAndOrderId(tenantA, orderId)).thenReturn(Optional.of(delivery));
     }
 
     private RefundResponse request(String amount, String key) {

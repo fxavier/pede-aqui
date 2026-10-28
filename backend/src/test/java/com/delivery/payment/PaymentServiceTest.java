@@ -68,7 +68,7 @@ class PaymentServiceTest {
         properties = new PaymentMockConfirmationProperties();
         properties.setEnabled(true);
         service = new PaymentService(paymentRepository, orderRepository, mock(RefundRepository.class), auditLogService,
-                new PaymentMapper(), tenantContext, userProfileRepository, properties);
+                new PaymentMapper(), tenantContext, userProfileRepository, properties, mock(com.delivery.delivery.repository.DeliveryRepository.class));
 
         payment = new Payment(UUID.randomUUID(), tenantId, orderId, new BigDecimal("21.50"), "pay-key");
         order = new Order(orderId, tenantId, "PA-1", ownerProfileId, UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE,
@@ -133,7 +133,7 @@ class PaymentServiceTest {
         when(refundRepository.saveAndFlush(any(Refund.class))).thenReturn(refund);
 
         PaymentService refundService = new PaymentService(paymentRepository, mock(OrderRepository.class), refundRepository,
-                mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository, properties);
+                mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository, properties, mock(com.delivery.delivery.repository.DeliveryRepository.class));
 
         var response = refundService.requestRefund(paymentId, new RefundRequest(new BigDecimal("100.00"), "Vendor rejection: Sem ingredientes", idempotencyKey));
 

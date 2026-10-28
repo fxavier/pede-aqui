@@ -6,6 +6,9 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.entity.Delivery;
+import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
@@ -42,6 +45,7 @@ public class PaymentService {
     private final TenantContext tenantContext;
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
+    private final DeliveryRepository deliveryRepository;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -51,7 +55,8 @@ public class PaymentService {
             PaymentMapper mapper,
             TenantContext tenantContext,
             AppUserProfileRepository userProfileRepository,
-            PaymentMockConfirmationProperties mockConfirmationProperties) {
+            PaymentMockConfirmationProperties mockConfirmationProperties,
+            DeliveryRepository deliveryRepository) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.refundRepository = refundRepository;
@@ -60,6 +65,7 @@ public class PaymentService {
         this.tenantContext = tenantContext;
         this.userProfileRepository = userProfileRepository;
         this.mockConfirmationProperties = mockConfirmationProperties;
+        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -166,6 +172,10 @@ public class PaymentService {
      * refunds cover part of the amount, FULLY_REFUNDED once they cover all of it. On full coverage the
      * order becomes REFUNDED, except a CANCELLED order, which stays CANCELLED (order and financial state
      * are independent); a partial approval leaves the order status unchanged.
+     *
+     * Full coverage also closes what the order's delivery row allows (lock order: payment row first, then the
+     * order, then inventory): the plain PIN is cleared unless a courier is engaged on the delivery
+     * ({@link DeliveryStatus#isCourierEngaged}, V042 rule).
      */
     @Transactional
     public RefundResponse approveRefund(UUID refundId) {
@@ -184,8 +194,10 @@ public class PaymentService {
                 payment.markFullyRefunded();
                 Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
                         .orElseThrow(() -> new NotFoundException("Order was not found"));
+                // One delivery per order (uq_deliveries_tenant_order); absent before dispatch.
+                Optional<DeliveryStatus> deliveryStatus = deliveryRepository.findByTenantIdAndOrderId(tenantId, order.getId()).map(Delivery::getStatus);
                 if (order.getStatus() != OrderStatus.CANCELLED) {
-                    order.markRefunded();
+                    order.markRefunded(deliveryStatus.map(DeliveryStatus::isCourierEngaged).orElse(false));
                     auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
                 }
             } else {

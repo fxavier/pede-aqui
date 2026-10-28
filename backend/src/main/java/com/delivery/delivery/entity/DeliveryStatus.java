@@ -13,5 +13,17 @@ public enum DeliveryStatus {
     DELIVERED,
     FAILED_DELIVERY,
     REASSIGNED,
-    CANCELLED
+    CANCELLED;
+
+    /**
+     * True while a courier is working the delivery (assigned through arrived at the customer). In that window the
+     * order's plain PIN must stay available: DeliveryService.complete checks only the delivery status, so the courier
+     * may still finish with the PIN even after the order was fully refunded. Same set as the V042 data fix.
+     */
+    public boolean isCourierEngaged() {
+        return switch (this) {
+            case ASSIGNED, ACCEPTED, ARRIVED_AT_VENDOR, REASSIGNED, PICKED_UP, ON_ROUTE_TO_CUSTOMER, ARRIVED_AT_CUSTOMER -> true;
+            default -> false;
+        };
+    }
 }
