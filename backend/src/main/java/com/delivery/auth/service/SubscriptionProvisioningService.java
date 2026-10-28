@@ -122,7 +122,7 @@ public class SubscriptionProvisioningService {
             return new Outcome(existingTenantResponse(existingProfile), null);
         }
 
-        MerchantRegistrationResponse saga = merchantRegistrationService.register(toRegistrationRequest(request, email));
+        MerchantRegistrationResponse saga = merchantRegistrationService.provisionTenant(toRegistrationRequest(request, email));
         String keycloakUserId = appUserProfileRepository.findById(saga.userProfileId())
                 .map(AppUserProfile::getKeycloakUserId)
                 .orElse(null);

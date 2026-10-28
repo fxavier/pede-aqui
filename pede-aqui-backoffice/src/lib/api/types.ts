@@ -641,9 +641,14 @@ export interface MerchantRegistrationPayload {
 }
 
 export interface MerchantRegistrationResponse {
+  /** ADR-0001: the operator tenant — self-registration no longer creates a tenant. */
   tenantId: string;
   tenantSlug: string;
   userProfileId: string;
   email: string;
   displayName: string;
+  /** New vendor created inside the operator tenant (additive, ADR-0001 step 4). */
+  vendorId?: string;
+  /** PENDING until an admin approves the vendor. */
+  vendorVerificationStatus?: string;
 }

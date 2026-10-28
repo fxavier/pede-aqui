@@ -87,7 +87,8 @@ class VendorOrderScopeTest {
                 paymentService, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository));
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -221,7 +222,8 @@ class VendorOrderScopeTest {
                 realPayments, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 

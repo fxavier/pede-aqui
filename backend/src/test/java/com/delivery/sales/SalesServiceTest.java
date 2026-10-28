@@ -105,7 +105,8 @@ class SalesServiceTest {
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
-                auditLogService, tenantContext, overrideProperties, new SalesAccessGuard(vendorRepository), orderStockService, paymentRepository, deliveryRetirementService);
+                auditLogService, tenantContext, overrideProperties,
+                new SalesAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), orderStockService);
         authenticateWithRoles("ROLE_ADMIN");
     }
 

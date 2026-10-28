@@ -6,9 +6,13 @@ import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.MarketplaceRole;
+import com.delivery.common.security.TenancyProperties;
 import com.delivery.tenant.entity.Tenant;
 import com.delivery.tenant.repository.TenantRepository;
+import com.delivery.vendor.entity.MerchantRole;
+import com.delivery.vendor.entity.MerchantUser;
 import com.delivery.vendor.entity.Vendor;
+import com.delivery.vendor.repository.MerchantUserRepository;
 import com.delivery.vendor.repository.VendorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Merchant onboarding saga (Keycloak user + profile + vendor + merchant_users), in two flavours (ADR-0001):
+ * <ul>
+ *   <li>{@link #register}: self-service {@code POST /register} — a PENDING vendor and its OWNER inside the operator
+ *       tenant; <b>never</b> creates a tenant (step 4, closes SEC-09's "mint a tenant" path);</li>
+ *   <li>{@link #provisionTenant}: the M2M subscription provisioning path (ADR-0001 §5) — a new tenant with its owner
+ *       and bootstrap vendor, kept for white-label operators.</li>
+ * </ul>
+ * On any failure after the Keycloak user was created, the user is deleted again (compensation).
+ */
 @Service
 @Transactional
 public class MerchantRegistrationService {
@@ -28,34 +42,53 @@ public class MerchantRegistrationService {
     private final AppUserProfileRepository appUserProfileRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final VendorRepository vendorRepository;
+    private final MerchantUserRepository merchantUserRepository;
+    private final TenancyProperties tenancyProperties;
 
     public MerchantRegistrationService(
             TenantRepository tenantRepository,
             AppUserProfileRepository appUserProfileRepository,
             KeycloakAdminService keycloakAdminService,
-            VendorRepository vendorRepository) {
+            VendorRepository vendorRepository,
+            MerchantUserRepository merchantUserRepository,
+            TenancyProperties tenancyProperties) {
         this.tenantRepository = tenantRepository;
         this.appUserProfileRepository = appUserProfileRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.vendorRepository = vendorRepository;
+        this.merchantUserRepository = merchantUserRepository;
+        this.tenancyProperties = tenancyProperties;
     }
 
+    /**
+     * Self-service merchant registration: creates the Keycloak user (tenant_id = operator), the VENDOR_ADMIN profile,
+     * a vendor pending verification and the OWNER association — all in the operator tenant. The request's
+     * {@code companySlug}/{@code defaultCurrency} are accepted for compatibility but no longer create anything.
+     */
     public MerchantRegistrationResponse register(MerchantRegistrationRequest request) {
-        // Step 1: Validate slug and email uniqueness
+        Tenant operator = tenantRepository.findById(tenancyProperties.getOperatorTenantId())
+                .orElseThrow(() -> new BusinessException("operator_tenant_missing",
+                        "The operator tenant is not provisioned", HttpStatus.INTERNAL_SERVER_ERROR));
+        return onboard(request, operator, false);
+    }
+
+    /** M2M provisioning: creates a NEW tenant (slug must be free) with its owner and bootstrap vendor. */
+    public MerchantRegistrationResponse provisionTenant(MerchantRegistrationRequest request) {
         if (tenantRepository.existsBySlug(request.companySlug())) {
             throw new BusinessException("tenant_slug_exists", "Company slug already exists", HttpStatus.CONFLICT);
         }
+        Tenant tenant = new Tenant(UUID.randomUUID(), request.companyName(), request.companySlug(), request.defaultCurrency());
+        return onboard(request, tenant, true);
+    }
 
+    private MerchantRegistrationResponse onboard(MerchantRegistrationRequest request, Tenant tenant, boolean persistTenant) {
         if (appUserProfileRepository.existsByEmail(request.email())) {
             throw new BusinessException("email_exists", "Email already exists", HttpStatus.CONFLICT);
         }
-
+        UUID tenantId = tenant.getId();
         String keycloakUserId = null;
         try {
-            // Step 2: Generate tenant ID first so it can be embedded in the Keycloak user attributes
-            UUID tenantId = UUID.randomUUID();
-
-            // Step 3: Create user in Keycloak with tenant_id attribute so it appears in the JWT
+            // Keycloak first: the tenant_id attribute must be on the user before any token is issued.
             keycloakUserId = keycloakAdminService.createUser(
                     request.email(),
                     request.firstName(),
@@ -64,11 +97,10 @@ public class MerchantRegistrationService {
                     tenantId.toString()
             );
 
-            // Step 4: Persist tenant
-            Tenant tenant = new Tenant(tenantId, request.companyName(), request.companySlug(), request.defaultCurrency());
-            tenantRepository.save(tenant);
+            if (persistTenant) {
+                tenantRepository.save(tenant);
+            }
 
-            // Step 5: Create user profile
             UUID userProfileId = UUID.randomUUID();
             String displayName = request.firstName() + " " + request.lastName();
             AppUserProfile userProfile = new AppUserProfile(
@@ -81,58 +113,59 @@ public class MerchantRegistrationService {
             );
             appUserProfileRepository.save(userProfile);
 
-            // Step 6: Create bootstrap vendor
+            // Vendor is created pending verification (VendorVerificationStatus.PENDING) and unavailable.
             UUID vendorId = UUID.randomUUID();
-            String ownerName = request.firstName() + " " + request.lastName();
             Vendor vendor = new Vendor(
                     vendorId,
                     tenantId,
-                    request.companyName(),   // companyName -> name
-                    null,                     // categoryId -> null
-                    null,                     // latitude -> null
-                    null,                     // longitude -> null
-                    ownerName,               // firstName + " " + lastName -> ownerName
-                    request.taxNumber(),     // taxNumber -> nif
-                    request.companyPhone(),  // companyPhone -> phone
-                    request.address(),       // address -> address
-                    null,                    // description -> null
-                    null                     // logoStorageKey -> null
+                    request.companyName(),
+                    null,
+                    null,
+                    null,
+                    displayName,
+                    request.taxNumber(),
+                    request.companyPhone(),
+                    request.address(),
+                    null,
+                    null
             );
             vendorRepository.save(vendor);
 
-            logger.info("Successfully registered merchant: tenantId={}, userProfileId={}, email={}", 
-                       tenantId, userProfileId, request.email());
+            merchantUserRepository.save(new MerchantUser(UUID.randomUUID(), tenantId, vendorId, userProfileId, MerchantRole.OWNER));
+
+            logger.info("Registered merchant: tenantId={}, vendorId={}, userProfileId={}, newTenant={}",
+                    tenantId, vendorId, userProfileId, persistTenant);
 
             return new MerchantRegistrationResponse(
                     tenantId,
-                    request.companySlug(),
+                    tenant.getSlug(),
                     userProfileId,
                     request.email(),
-                    displayName
+                    displayName,
+                    vendorId,
+                    vendor.getVerificationStatus().name()
             );
 
         } catch (BusinessException e) {
-            // Check if this is an email_exists error from Keycloak - this is expected for retries
+            // email_exists from Keycloak (409) is an expected outcome of a retry; everything else is logged as an error.
             if ("email_exists".equals(e.getCode())) {
-                logger.info("Merchant registration failed: email already exists in Keycloak: {}", request.email());
+                logger.info("Merchant registration refused: email already exists in Keycloak");
             } else {
-                logger.error("Merchant registration failed with business error: {} for email: {}", e.getCode(), request.email());
+                logger.error("Merchant registration failed with business error {}", e.getCode());
             }
-            // Re-throw business exceptions (including email_exists from Keycloak conflicts)
             throw e;
         } catch (Exception e) {
-            // Attempt compensation: delete user from Keycloak if persistence fails after createUser
+            // Compensation: the Keycloak user exists but nothing was persisted — remove it so the email can retry.
             if (keycloakUserId != null) {
                 try {
                     keycloakAdminService.deleteUser(keycloakUserId);
-                    logger.info("Successfully cleaned up Keycloak user {} after registration failure", keycloakUserId);
+                    logger.info("Cleaned up Keycloak user {} after registration failure", keycloakUserId);
                 } catch (Exception deleteException) {
-                    logger.error("Failed to delete Keycloak user {} during compensation - manual cleanup required: {}", 
-                                keycloakUserId, deleteException.getMessage(), deleteException);
+                    logger.error("Failed to delete Keycloak user {} during compensation - manual cleanup required: {}",
+                            keycloakUserId, deleteException.getMessage(), deleteException);
                 }
             }
-            
-            logger.error("Failed to complete merchant registration for email: {}", request.email(), e);
+            logger.error("Failed to complete merchant registration (tenantId={})", tenantId, e);
             throw new BusinessException("registration_error", "Failed to complete registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

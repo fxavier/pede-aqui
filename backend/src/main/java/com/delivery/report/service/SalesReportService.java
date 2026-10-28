@@ -10,37 +10,33 @@ import com.delivery.report.dto.SalesSummaryResponse;
 import com.delivery.report.mapper.SalesReportMapper;
 import com.delivery.report.repository.SalesReportRepository;
 import com.delivery.report.repository.SalesReportRepository.DimensionAggregateRow;
+import com.delivery.vendor.api.MerchantScopeGuard;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 /**
  * Assembles sales report DTOs from immutable order aggregates and enforces report scoping:
- * tenant isolation always, plus a forced own-vendor filter for VENDOR_ADMIN callers (AC-8.6).
+ * tenant isolation always, plus a forced own-vendor filter for VENDOR_ADMIN callers (AC-8.6), resolved by the
+ * shared {@link MerchantScopeGuard} (ADR-0001 step 3).
  */
 @Service
 public class SalesReportService {
 
-    private static final String VENDOR_ID_CLAIM = "vendor_id";
-
     private final SalesReportRepository repository;
     private final SalesReportMapper mapper;
     private final TenantContext tenantContext;
+    private final MerchantScopeGuard merchantScopeGuard;
 
-    public SalesReportService(SalesReportRepository repository, SalesReportMapper mapper, TenantContext tenantContext) {
+    public SalesReportService(SalesReportRepository repository, SalesReportMapper mapper, TenantContext tenantContext,
+                              MerchantScopeGuard merchantScopeGuard) {
         this.repository = repository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+        this.merchantScopeGuard = merchantScopeGuard;
     }
 
     /**
@@ -51,8 +47,9 @@ public class SalesReportService {
     public ReportScope resolveScope(UUID requestedVendorId) {
         UUID tenantId = tenantContext.currentTenantId()
                 .orElseThrow(() -> new BusinessException("tenant_required", "A tenant context is required for sales reports", HttpStatus.FORBIDDEN));
-        if (isVendorScoped()) {
-            return new ReportScope(tenantId, resolveOwnVendorId(tenantId));
+        // VENDOR_ADMIN is only forced to its vendor when no tenant-wide reporting role is present.
+        if (merchantScopeGuard.isVendorAdminScoped()) {
+            return new ReportScope(tenantId, merchantScopeGuard.requireOwnVendorId(tenantId));
         }
         return new ReportScope(tenantId, requestedVendorId);
     }
@@ -108,44 +105,4 @@ public class SalesReportService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    // VENDOR_ADMIN is only forced to its vendor when no tenant-wide reporting role is present.
-    private boolean isVendorScoped() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            return false;
-        }
-        Set<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
-        return roles.contains("ROLE_VENDOR_ADMIN")
-                && !roles.contains("ROLE_ADMIN")
-                && !roles.contains("ROLE_OPS")
-                && !roles.contains("ROLE_FINANCE");
-    }
-
-    // Prefers an explicit vendor_id JWT claim; otherwise the tenant's sole vendor (the current
-    // merchant-registration model creates exactly one). Ambiguity is refused rather than guessed.
-    private UUID resolveOwnVendorId(UUID tenantId) {
-        Optional<UUID> claimed = vendorIdClaim();
-        if (claimed.isPresent()) {
-            return claimed.get();
-        }
-        List<UUID> vendorIds = repository.findVendorIdsForTenant(tenantId);
-        if (vendorIds.size() == 1) {
-            return vendorIds.get(0);
-        }
-        throw new BusinessException("vendor_scope_unresolved",
-                "Unable to resolve the vendor for the current VENDOR_ADMIN", HttpStatus.FORBIDDEN);
-    }
-
-    private Optional<UUID> vendorIdClaim() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String value = jwt.getClaimAsString(VENDOR_ID_CLAIM);
-            if (value != null && !value.isBlank()) {
-                return Optional.of(UUID.fromString(value));
-            }
-        }
-        return Optional.empty();
-    }
 }

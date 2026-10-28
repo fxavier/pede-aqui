@@ -46,7 +46,8 @@ class InventoryServiceTest {
     void setUp() {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
-        service = new InventoryService(repository, new InventoryMapper(), tenantContext, new CatalogAccessGuard(), auditLogService);
+        service = new InventoryService(repository, new InventoryMapper(), tenantContext,
+                new CatalogAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext)), auditLogService);
     }
 
     @AfterEach

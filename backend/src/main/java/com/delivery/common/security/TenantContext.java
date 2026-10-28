@@ -62,8 +62,12 @@ public class TenantContext {
 
     /**
      * Tenant used by the public storefront endpoints (categories, vendor products, vendor search). A customer
-     * browses like an anonymous visitor — ACTIVE products across tenants — until ADR-0001 step 6 removes
-     * cross-tenant browsing; without this a customer would see PENDING products of their tenant.
+     * browses like an anonymous visitor — ACTIVE products across tenants; without this a customer would see
+     * PENDING products of their tenant.
+     * <p>TODO(ADR-0001 step 6): remove cross-tenant browsing. Once merchants are vendors of the operator tenant
+     * (step 4) and legacy dev tenants are consolidated (step 5, flag {@code app.merchant-scope.single-vendor-fallback-enabled}
+     * off), this must return the tenant mapped to the client/host ({@link TenancyProperties}) for anonymous and
+     * customer callers alike. Contract note dated 2026-10-28 in {@code docs/api/API-MIGRATION.md}.
      */
     public Optional<UUID> browseTenantId() {
         return isCustomerPrincipal() ? Optional.empty() : currentTenantId();

@@ -28,6 +28,7 @@ import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.repository.PaymentRepository;
+import com.delivery.vendor.api.MerchantScopeGuard;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
 import com.delivery.notification.service.NotificationService;
@@ -101,8 +102,7 @@ public class OrderService {
     private final DeliveryRetirementService deliveryRetirementService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, DeliveryRetirementService deliveryRetirementService) {
-        this.deliveryRetirementService = deliveryRetirementService;
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard) {
         this.addressResolver = addressResolver;
         this.pricingService = pricingService;
         this.orderStockService = orderStockService;
@@ -125,9 +125,9 @@ public class OrderService {
         this.skuRepository = skuRepository;
         this.productRepository = productRepository;
         this.discountResolver = discountResolver;
-        // SalesAccessGuard is stateless (only reads the SecurityContext and VendorRepository); building it here
-        // reuses the sales scoping rules without widening this constructor, which other increments also touch.
-        this.accessGuard = new SalesAccessGuard(vendorRepository);
+        // SalesAccessGuard is a stateless facade over the shared MerchantScopeGuard (ADR-0001 step 3); building it
+        // here reuses the sales scoping rules without a second injected bean.
+        this.accessGuard = new SalesAccessGuard(merchantScopeGuard);
         this.deliveryCodeHasher = deliveryCodeHasher;
     }
 
