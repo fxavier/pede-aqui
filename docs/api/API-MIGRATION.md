@@ -216,3 +216,12 @@ Not removed yet; removal lands once step 5 has run in every environment and the 
 - `X-Tenant-Id` from an anonymous caller, or from a non-admin naming a tenant other than its own claim,
   is ignored (as before) and now logged as a `SECURITY` WARN. No response change.
 - Clients: none affected; every frontend already sends a bearer token on writes.
+
+### LAC-06 — Category writes are OPS/ADMIN only
+
+- `POST /api/v1/catalog/categories`, `PUT /api/v1/catalog/categories/{id}` and
+  `DELETE /api/v1/catalog/categories/{id}` now answer **403** `forbidden` to `VENDOR_ADMIN` (previously
+  allowed). Categories are tenant-wide and, with tenant = operator, shared by every merchant. Reads are
+  unchanged. Vertical writes were already OPS/ADMIN.
+- Backoffice: `/catalogo/categorias` and `/catalogo/verticais` hide create/edit/delete for roles other
+  than OPS/ADMIN. A merchant that needs a new category asks OPS.

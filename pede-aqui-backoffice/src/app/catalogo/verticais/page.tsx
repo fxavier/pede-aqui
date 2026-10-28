@@ -17,6 +17,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { verticalService } from "@/lib/api/services";
 import type { Vertical } from "@/lib/api/types";
 import { Plus, Edit, Trash2, Layers } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
 
 type FormData = { label: string; active: boolean };
 const EMPTY_FORM: FormData = { label: "", active: true };
@@ -68,6 +69,9 @@ function VerticalForm({
 }
 
 export default function VerticaisPage() {
+  // LAC-06: vertical writes are OPS/ADMIN only on the backend; hide the actions from everyone else.
+  const role = useAppSelector((state) => state.auth.user?.role) ?? "";
+  const canManage = role === "OPS" || role === "ADMIN";
   const [verticals, setVerticals] = useState<Vertical[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,10 +161,12 @@ export default function VerticaisPage() {
               Gestão das verticais de negócio utilizadas para classificar categorias.
             </p>
           </div>
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Vertical
-          </Button>
+          {canManage && (
+            <Button onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Vertical
+            </Button>
+          )}
         </div>
 
         {error && <ErrorState message={error} onRetry={load} />}
@@ -203,6 +209,7 @@ export default function VerticaisPage() {
                           )}
                         </td>
                         <td className="py-3 text-right">
+                          {canManage && (
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => openEdit(v)}>
                               <Edit className="h-4 w-4" />
@@ -217,6 +224,7 @@ export default function VerticaisPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
+                          )}
                         </td>
                       </tr>
                     ))}
