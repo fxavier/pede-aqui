@@ -50,6 +50,10 @@ class CartSecurityApiTest {
     @MockitoBean
     private PricingService pricingService;
 
+    // CartController resolves the tenant for the pricing preview (INC-13).
+    @MockitoBean
+    private com.delivery.common.security.TenantContext tenantContext;
+
     @MockitoBean
     private CartRepository cartRepository;
 

@@ -199,6 +199,19 @@
       ]
     }
   ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"tenant_id\",\"displayName\":\"Tenant\",\"validations\":{\"length\":{\"max\":36}},\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  },
   "users": [
     {
       "username": "admin",
@@ -230,6 +243,11 @@
           "temporary": false
         }
       ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
       "realmRoles": [
         "FINANCE"
       ]
@@ -247,6 +265,11 @@
           "temporary": false
         }
       ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
       "realmRoles": [
         "SUPPORT"
       ]
@@ -264,6 +287,11 @@
           "temporary": false
         }
       ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
       "realmRoles": [
         "OPS"
       ]

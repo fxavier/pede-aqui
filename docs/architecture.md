@@ -1,6 +1,6 @@
 # Architecture
 
-The MVP uses a simple layered architecture. It deliberately avoids Domain-Driven Design, Clean Architecture, Hexagonal Architecture, ports/adapters, use cases, command buses, CQRS, event sourcing, Kafka, and speculative interfaces.
+The backend is a layered modular monolith (see `docs/adr/ADR-0002-module-structure.md`). Each top-level package under `com.delivery` is an application module that keeps the layers below internally; modules talk to each other through their public API or transactional application events, never through another module's repositories or entities, and without cycles. Spring Modulith is used only for structural verification and transactional events (adoption in code is a later increment). It deliberately avoids Domain-Driven Design tactical patterns, Clean Architecture, Hexagonal Architecture, ports/adapters, use cases, command buses, CQRS, event sourcing, Kafka/event externalization, and speculative interfaces.
 
 ## Backend Layers
 

@@ -2,8 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **Proposed** |
-| Date | 2026-10-28 |
+| Status | **Accepted** |
+| Date | 2026-10-28 (proposto) |
+| Accepted | 2026-10-28 |
 | Decisores | Xavier Francisco (owner técnico) |
 | Achados relacionados | D3, AS-23, AS-14 ([AS-IS-ARCHITECTURE.md §6, §13, §16](../assessment/AS-IS-ARCHITECTURE.md)) |
 | Relacionado | INC-13 (motor de pricing); futuro ADR financeiro (ledger/liquidações) |

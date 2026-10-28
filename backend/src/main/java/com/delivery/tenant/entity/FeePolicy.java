@@ -4,11 +4,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Stores tenant-level fees, commission, taxes, and cancellation policy rules. */
+/**
+ * Stores tenant-level fees, commission, taxes, and cancellation policy rules. Read by the pricing engine (INC-13):
+ * delivery_fee is the base delivery fee, service fee = service_fee (flat) + subtotal × service_fee_rate, tax = subtotal × tax_rate.
+ */
 @Entity
 @Table(name = "fee_policies")
 public class FeePolicy {
@@ -20,6 +24,8 @@ public class FeePolicy {
     private BigDecimal deliveryFee;
     @Column(name = "service_fee", nullable = false)
     private BigDecimal serviceFee;
+    @Column(name = "service_fee_rate", nullable = false)
+    private BigDecimal serviceFeeRate = BigDecimal.ZERO;
     @Column(name = "tax_rate", nullable = false)
     private BigDecimal taxRate;
     @Column(name = "commission_rate", nullable = false)
@@ -30,6 +36,9 @@ public class FeePolicy {
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+    /** Optimistic lock; also the rule version recorded on order pricing quotes. */
+    @Version
+    private long version;
 
     protected FeePolicy() {}
 
@@ -45,6 +54,12 @@ public class FeePolicy {
         this.updatedAt = this.createdAt;
     }
 
+    /** Sets the service fee percentage (fraction of the subtotal, 0.05 = 5 %). */
+    public void changeServiceFeeRate(BigDecimal serviceFeeRate) {
+        this.serviceFeeRate = serviceFeeRate;
+        this.updatedAt = Instant.now();
+    }
+
     public void update(BigDecimal deliveryFee, BigDecimal serviceFee, BigDecimal taxRate, BigDecimal commissionRate, String cancellationPolicy) {
         this.deliveryFee = deliveryFee;
         this.serviceFee = serviceFee;
@@ -58,7 +73,9 @@ public class FeePolicy {
     public UUID getTenantId() { return tenantId; }
     public BigDecimal getDeliveryFee() { return deliveryFee; }
     public BigDecimal getServiceFee() { return serviceFee; }
+    public BigDecimal getServiceFeeRate() { return serviceFeeRate; }
     public BigDecimal getTaxRate() { return taxRate; }
+    public long getVersion() { return version; }
     public BigDecimal getCommissionRate() { return commissionRate; }
     public String getCancellationPolicy() { return cancellationPolicy; }
 }

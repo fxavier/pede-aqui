@@ -22,7 +22,7 @@ public class PolicyService {
         this.tenantContext = tenantContext;
     }
 
-    /** Creates or updates tenant fee policy values. */
+    /** Creates or updates tenant fee policy values; the pricing engine applies them to the next quotes (INC-13). */
     @Transactional
     public FeePolicyResponse upsert(UpsertFeePolicyRequest request) {
         UUID tenantId = tenantId();
@@ -31,8 +31,12 @@ public class PolicyService {
                     existing.update(request.deliveryFee(), request.serviceFee(), request.taxRate(), request.commissionRate(), request.cancellationPolicy());
                     return existing;
                 })
-                .orElseGet(() -> feePolicyRepository.save(new FeePolicy(UUID.randomUUID(), tenantId, request.deliveryFee(), request.serviceFee(), request.taxRate(), request.commissionRate(), request.cancellationPolicy())));
-        return toResponse(policy);
+                .orElseGet(() -> new FeePolicy(UUID.randomUUID(), tenantId, request.deliveryFee(), request.serviceFee(), request.taxRate(), request.commissionRate(), request.cancellationPolicy()));
+        if (request.serviceFeeRate() != null) {
+            policy.changeServiceFeeRate(request.serviceFeeRate());
+        }
+        // saveAndFlush so the response carries the bumped version that the next order quotes will record.
+        return toResponse(feePolicyRepository.saveAndFlush(policy));
     }
 
     /** Returns current tenant policy configuration when available. */
@@ -44,7 +48,8 @@ public class PolicyService {
     }
 
     private FeePolicyResponse toResponse(FeePolicy policy) {
-        return new FeePolicyResponse(policy.getId(), policy.getDeliveryFee(), policy.getServiceFee(), policy.getTaxRate(), policy.getCommissionRate(), policy.getCancellationPolicy());
+        return new FeePolicyResponse(policy.getId(), policy.getDeliveryFee(), policy.getServiceFee(), policy.getTaxRate(), policy.getCommissionRate(), policy.getCancellationPolicy(),
+                policy.getServiceFeeRate(), policy.getVersion());
     }
 
     private UUID tenantId() {

@@ -2,8 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **Proposed** |
-| Date | 2026-10-28 |
+| Status | **Accepted** |
+| Date | 2026-10-28 (proposto) |
+| Accepted | 2026-10-28 |
 | Decisores | Xavier Francisco (owner técnico) |
 | Achados relacionados | AS-03, SEC-06, SEC-09, D1 ([AS-IS-ARCHITECTURE.md §5, §16](../assessment/AS-IS-ARCHITECTURE.md)) |
 | Bloqueia | INC-11 (resolução de tenant e perfil do cliente) e toda a refatoração estrutural da Fase 2 |

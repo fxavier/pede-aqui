@@ -122,10 +122,10 @@ public class CatalogService {
         return mapper.toProductResponse(productRepository.save(product));
     }
 
-    /** Lists products for one vendor. Anonymous: active products only (cross-tenant). Authenticated: all products in tenant (incl. PENDING for admin review). */
+    /** Lists products for one vendor. Anonymous and customers: active products only (cross-tenant). Staff: all products in tenant (incl. PENDING for admin review). */
     @Transactional(readOnly = true)
     public List<ProductResponse> listVendorProducts(UUID vendorId) {
-        Optional<UUID> tenantIdOpt = tenantContext.currentTenantId();
+        Optional<UUID> tenantIdOpt = tenantContext.browseTenantId();
         List<Product> products;
         List<Sku> skus;
         if (tenantIdOpt.isEmpty()) {
@@ -157,10 +157,10 @@ public class CatalogService {
         return mapper.toSkuResponse(sku);
     }
 
-    /** Lists all active categories. Anonymous and platform admins see all tenants; others see their own. */
+    /** Lists all active categories. Anonymous, customers and platform admins (outside a tenant) see all tenants; others see their own. */
     @Transactional(readOnly = true)
     public List<CategoryResponse> listCategories() {
-        return tenantContext.currentTenantId()
+        return tenantContext.browseTenantId()
                 .map(id -> categoryRepository.findByTenantIdAndActiveTrue(id).stream().map(mapper::toCategoryResponse).toList())
                 .orElseGet(() -> categoryRepository.findByActiveTrue().stream().map(mapper::toCategoryResponse).toList());
     }

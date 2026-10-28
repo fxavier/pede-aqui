@@ -9,12 +9,13 @@ The backend REST API uses base path `/api/v1`.
 - `GET /api/v1/tenants`: lists tenants, `ADMIN` only.
 - `GET /api/v1/tenants/{id}`: returns tenant details, `ADMIN` only.
 - `PATCH /api/v1/tenants/{id}/status`: updates tenant status, `ADMIN` only.
-- `GET /api/v1/search/vendors`: searches tenant-scoped vendors; returns an empty list until vendor persistence is added.
+- `GET /api/v1/search/vendors`: searches vendors with ACTIVE products; `deliveryFee` (BigDecimal) and `deliveryFeeBasis` come from the same pricing engine as checkout (INC-13).
 - `POST /api/v1/catalog/products`: creates a vendor product and rejects prohibited fuel listings.
 - `GET /api/v1/catalog/vendors/{vendorId}/products`: lists active products for a vendor.
 - `PATCH /api/v1/inventory/{inventoryItemId}/stock`: replaces available stock with a non-negative quantity.
 - `POST /api/v1/customers/{customerId}/cart/items`: adds an item to a single-vendor cart after stock validation.
-- `GET /api/v1/customers/{customerId}/cart/pricing`: calculates subtotal fees, tax, discount, and total.
+- `GET /api/v1/customers/{customerId}/cart/pricing?subtotal=`: previews fees, tax and total with the tenant fee policy (no address: base delivery fee; no discount — `couponCode` is ignored since INC-13, use `POST /api/v1/cart/{cartId}/coupon`).
+- `GET /api/v1/checkout/quote?cartId=&addressId=`: the delivery fee, service fee, taxes, pending discount and total checkout will charge for the caller's cart and address (INC-13; same engine as checkout).
 - `POST /api/v1/checkout`: converts an active cart into an order using a checkout idempotency key. `201` on creation, `200` with the same order when the key is replayed for the same customer and cart; `409 idempotency_key_reused` when the key belongs to another cart/customer; `409 price_changed` (with `details.items[].{skuId, previousUnitPrice, currentUnitPrice}`; the cart is re-priced for reconfirmation), `409 sku_inactive` / `409 product_not_available` when a line is no longer orderable.
 - `POST /api/v1/payments/{paymentId}/confirm`: confirms a local/mock payment idempotently.
 - `GET /api/v1/orders/{orderId}/tracking`: returns order status and the customer delivery confirmation code.

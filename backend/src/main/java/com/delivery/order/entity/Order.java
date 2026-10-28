@@ -3,6 +3,7 @@ package com.delivery.order.entity;
 import com.delivery.common.pricing.PricingMath;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -69,6 +70,12 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(name = "stock_status", nullable = false)
     private StockStatus stockStatus = StockStatus.RESERVED;
+    /** Delivery address snapshot taken at checkout (INC-12); null for legacy orders. */
+    @Embedded
+    private DeliveryAddressSnapshot deliveryAddress;
+    /** Pricing quote applied at checkout (INC-13); null for legacy orders. */
+    @Embedded
+    private PricingQuoteSnapshot pricingQuote;
     @Version
     private long version;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -99,6 +106,20 @@ public class Order {
     public void addItem(OrderItem item) { items.add(item); }
     /** Records the cart this order was checked out from (idempotency-key reuse detection). */
     public void linkCart(UUID cartId) { this.cartId = cartId; }
+    /** Records where the order goes; only before the order is first persisted (the snapshot is immutable). */
+    public void recordDeliveryAddress(DeliveryAddressSnapshot snapshot) {
+        if (this.deliveryAddress != null) {
+            throw new IllegalStateException("Delivery address snapshot is immutable");
+        }
+        this.deliveryAddress = snapshot;
+    }
+    /** Records the applied pricing quote; only before the order is first persisted (the snapshot is immutable). */
+    public void recordPricingQuote(PricingQuoteSnapshot snapshot) {
+        if (this.pricingQuote != null) {
+            throw new IllegalStateException("Pricing quote snapshot is immutable");
+        }
+        this.pricingQuote = snapshot;
+    }
     /** Moves RESERVED stock to RELEASED; returns false when stock was already released or committed. */
     public boolean markStockReleased() { return transitionStock(StockStatus.RELEASED); }
     /** Moves RESERVED stock to COMMITTED; returns false when stock was already released or committed. */
@@ -156,5 +177,9 @@ public class Order {
     public CancellationReason getCancellationReason() { return cancellationReason; }
     public UUID getCartId() { return cartId; }
     public StockStatus getStockStatus() { return stockStatus; }
+    /** The checkout-time delivery address, or null for orders placed without one (pre-INC-12 / legacy window). */
+    public DeliveryAddressSnapshot getDeliveryAddress() { return deliveryAddress; }
+    /** The checkout-time pricing quote, or null for orders placed before INC-13. */
+    public PricingQuoteSnapshot getPricingQuote() { return pricingQuote; }
     public List<OrderItem> getItems() { return items; }
 }

@@ -43,7 +43,7 @@ class CartCouponServiceTest {
     private final TenantContext tenantContext = mock(TenantContext.class);
     private final AppUserProfileRepository userProfileRepository = mock(AppUserProfileRepository.class);
     private final CartCouponService service = new CartCouponService(cartRepository, promotionResolver,
-            new PricingService(), tenantContext, userProfileRepository);
+            com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, userProfileRepository);
 
     private Cart cart;
 

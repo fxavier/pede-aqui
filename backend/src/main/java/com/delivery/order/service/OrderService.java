@@ -20,6 +20,7 @@ import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.entity.CancellationReason;
+import com.delivery.order.entity.DeliveryAddressSnapshot;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
@@ -36,6 +37,12 @@ import com.delivery.payment.dto.RefundResponse;
 import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.cart.service.CartService;
+import com.delivery.cart.service.PricingService;
+import com.delivery.common.pricing.GeoPoint;
+import com.delivery.common.pricing.PriceQuote;
+import com.delivery.common.pricing.PricingMath;
+import com.delivery.order.dto.CheckoutQuoteResponse;
+import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.dto.CheckoutResult;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -85,9 +92,13 @@ public class OrderService {
     private final CartService cartService;
     private final TransactionTemplate transactionTemplate;
     private final TransactionTemplate readOnlyTransactionTemplate;
+    private final DeliveryAddressResolver addressResolver;
+    private final PricingService pricingService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService) {
+        this.addressResolver = addressResolver;
+        this.pricingService = pricingService;
         this.orderStockService = orderStockService;
         this.cartService = cartService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -171,15 +182,23 @@ public class OrderService {
      * back and re-read the winner in a fresh transaction instead of failing with a 500.
      */
     public CheckoutResult checkout(UUID cartId, String idempotencyKey) {
+        return checkout(cartId, idempotencyKey, null);
+    }
+
+    /**
+     * Checkout with a delivery address (INC-12): the customer's own address is copied into an immutable order
+     * snapshot. A null addressId is the legacy request shape, accepted only while the compatibility window is open.
+     */
+    public CheckoutResult checkout(UUID cartId, String idempotencyKey, UUID addressId) {
         UUID tenantId = tenantId();
         UUID customerId = getCurrentCustomerId();
         try {
-            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey));
+            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey, addressId));
         } catch (DataIntegrityViolationException race) {
             // Another request with this key committed first and our INSERT hit uq_orders_tenant_checkout_key.
             CheckoutResult replay = readOnlyTransactionTemplate.execute(status -> orderRepository
                     .findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey)
-                    .map(existing -> replay(existing, customerId, cartId))
+                    .map(existing -> replay(existing, customerId, cartId, addressId))
                     .orElse(null));
             if (replay == null) {
                 throw race; // not an idempotency race (e.g. another constraint): surfaces as a neutral 409
@@ -193,10 +212,10 @@ public class OrderService {
         }
     }
 
-    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey) {
+    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey, UUID addressId) {
         Optional<Order> existing = orderRepository.findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey);
         if (existing.isPresent()) {
-            return replay(existing.get(), customerId, cartId);
+            return replay(existing.get(), customerId, cartId, addressId);
         }
         // Row lock serializes concurrent checkouts of the same cart (double click, client retries).
         Cart cart = cartRepository.lockByTenantIdAndId(tenantId, cartId).orElseThrow(() -> new NotFoundException("Cart was not found"));
@@ -206,17 +225,21 @@ public class OrderService {
         // A duplicate request may have committed while this one waited for the cart lock.
         existing = orderRepository.findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey);
         if (existing.isPresent()) {
-            return replay(existing.get(), customerId, cartId);
+            return replay(existing.get(), customerId, cartId, addressId);
         }
-        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey)), false);
+        Optional<DeliveryAddressSnapshot> deliveryAddress = addressResolver.resolve(tenantId, customerId, addressId);
+        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey, deliveryAddress)), false);
     }
 
-    /** Returns the order already created for this key, but only to the same customer and cart (409 otherwise). */
-    private CheckoutResult replay(Order existing, UUID customerId, UUID cartId) {
+    /** Returns the order already created for this key, but only to the same customer, cart and address (409 otherwise). */
+    private CheckoutResult replay(Order existing, UUID customerId, UUID cartId, UUID addressId) {
         boolean sameCustomer = existing.getCustomerId().equals(customerId);
         // Legacy orders (before V041) carry no cart link; for them only the customer can be compared.
         boolean sameCart = existing.getCartId() == null || existing.getCartId().equals(cartId);
-        if (!sameCustomer || !sameCart) {
+        // A retry may omit addressId (legacy shape); a different address under the same key is a different checkout.
+        boolean sameAddress = addressId == null || existing.getDeliveryAddress() == null
+                || addressId.equals(existing.getDeliveryAddress().getSourceAddressId());
+        if (!sameCustomer || !sameCart || !sameAddress) {
             throw new BusinessException("idempotency_key_reused", "This idempotency key was already used for a different checkout", HttpStatus.CONFLICT);
         }
         return new CheckoutResult(mapper.toResponse(existing), true);
@@ -242,11 +265,14 @@ public class OrderService {
         }
     }
 
-    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey) {
+    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey, Optional<DeliveryAddressSnapshot> deliveryAddress) {
         if (!"ACTIVE".equals(cart.getStatus()) || cart.getItems().isEmpty()) {
             throw new BusinessException("invalid_cart", "Cart must be active and contain items", HttpStatus.BAD_REQUEST);
         }
         revalidateItems(tenantId, cart);
+        // Fees and tax are re-quoted here with the delivery address (INC-13): the cart's own fees were estimated
+        // without one. Discounts are applied below through the spec-002 seam, on top of this quote.
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destinationOf(deliveryAddress));
         // Fixed SKU order for the inventory row locks prevents deadlocks between carts sharing SKUs.
         List<CartItem> bySku = cart.getItems().stream().sorted(Comparator.comparing(CartItem::getSkuId)).toList();
         for (CartItem item : bySku) {
@@ -254,8 +280,10 @@ public class OrderService {
         }
         // Plain SecureRandom PIN, HMAC-hashed; no per-tenant uniqueness (a PIN is verified against one delivery only).
         String code = deliveryCodeHasher.generateCode();
-        Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), cart.getFees(), cart.getTaxes(), cart.getDiscounts(), cart.getTotal(), idempotencyKey, deliveryCodeHasher.hash(code), code);
+        Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), quote.fees(), quote.taxes(), cart.getDiscounts(), quote.total(), idempotencyKey, deliveryCodeHasher.hash(code), code);
         order.linkCart(cart.getId());
+        order.recordPricingQuote(PricingQuoteSnapshot.of(quote));
+        deliveryAddress.ifPresent(order::recordDeliveryAddress);
         Map<UUID, UUID> categoryBySkuId = resolveCategoryBySkuId(cart);
         for (CartItem item : cart.getItems()) {
             order.addItem(new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(), item.getUnitPriceSnapshot(), item.getQuantity(), categoryBySkuId.get(item.getSkuId())));
@@ -270,6 +298,34 @@ public class OrderService {
         deliveryRepository.save(new Delivery(UUID.randomUUID(), tenantId, saved.getId(), saved.getDeliveryConfirmationCodeHash()));
         cart.markCheckedOut();
         return saved;
+    }
+
+    /**
+     * Price quote for checking out the customer's cart to one of their addresses, from the same engine and inputs
+     * as checkout (INC-13). Without addressId the base delivery fee applies (estimate). The discount shown is the
+     * cart's pending coupon/promotion; checkout re-validates it.
+     */
+    @Transactional(readOnly = true)
+    public CheckoutQuoteResponse quote(UUID cartId, UUID addressId) {
+        UUID tenantId = tenantId();
+        UUID customerId = getCurrentCustomerId();
+        Cart cart = cartRepository.findByTenantIdAndId(tenantId, cartId).orElseThrow(() -> new NotFoundException("Cart was not found"));
+        if (!cart.getCustomerId().equals(customerId)) {
+            throw new BusinessException("cart_access_denied", "Access to this cart is not permitted", HttpStatus.FORBIDDEN);
+        }
+        GeoPoint destination = null;
+        if (addressId != null) {
+            destination = destinationOf(addressResolver.resolve(tenantId, customerId, addressId));
+        }
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destination);
+        BigDecimal discountTotal = cart.getDiscountTotal();
+        BigDecimal total = PricingMath.orderTotal(quote.subtotal(), quote.fees(), quote.taxes(), discountTotal);
+        return new CheckoutQuoteResponse(cart.getId(), addressId, quote.subtotal(), quote.deliveryFee(), quote.serviceFee(), quote.taxes(),
+                discountTotal, total, quote.delivery().basis(), quote.delivery().distanceKm());
+    }
+
+    private static GeoPoint destinationOf(Optional<DeliveryAddressSnapshot> address) {
+        return address.flatMap(a -> GeoPoint.of(a.getLatitude(), a.getLongitude())).orElse(null);
     }
 
     private String reference() { return "PA-" + System.currentTimeMillis() + "-" + random.nextInt(10_000); }

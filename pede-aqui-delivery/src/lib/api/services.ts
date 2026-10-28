@@ -3,7 +3,10 @@ import type {
   AddCartItemRequest,
   CartResponse,
   Category,
+  CheckoutQuote,
   CheckoutRequest,
+  CustomerAddress,
+  CustomerAddressRequest,
   MeResponse,
   OrderResponse,
   Product,
@@ -73,9 +76,27 @@ export const cartService = {
     apiClient.post<CartResponse>(`/customers/${customerId}/cart/items`, req).then((r) => r.data),
 }
 
+export const addressService = {
+  list: () => apiClient.get<CustomerAddress[]>('/customers/me/addresses').then((r) => r.data),
+
+  create: (req: CustomerAddressRequest) =>
+    apiClient.post<CustomerAddress>('/customers/me/addresses', req).then((r) => r.data),
+
+  update: (id: string, req: CustomerAddressRequest) =>
+    apiClient.put<CustomerAddress>(`/customers/me/addresses/${id}`, req).then((r) => r.data),
+
+  remove: (id: string) => apiClient.delete(`/customers/me/addresses/${id}`).then(() => undefined),
+}
+
 export const checkoutService = {
   checkout: (req: CheckoutRequest) =>
     apiClient.post<OrderResponse>('/checkout', req).then((r) => r.data),
+
+  /** Fees and total checkout will charge for this cart and address (base-fee estimate without an address). */
+  quote: (cartId: string, addressId?: string) =>
+    apiClient
+      .get<CheckoutQuote>('/checkout/quote', { params: addressId ? { cartId, addressId } : { cartId } })
+      .then((r) => r.data),
 }
 
 export const orderService = {

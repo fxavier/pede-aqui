@@ -58,7 +58,7 @@ class CheckoutOwnershipTest {
                 mock(OrderMapper.class), tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class),
                 mock(com.delivery.order.service.OrderStockService.class),
-                mock(com.delivery.cart.service.CartService.class), mock(org.springframework.transaction.PlatformTransactionManager.class));
+                mock(com.delivery.cart.service.CartService.class), mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults());
     }
 
     private void stubCaller() {
