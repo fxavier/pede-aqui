@@ -2,11 +2,12 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **Proposed** |
-| Date | 2026-10-28 |
+| Status | **Accepted** |
+| Date | 2026-10-28 (proposto) |
+| Accepted | 2026-10-28 |
 | Decisores | Xavier Francisco (owner técnico) |
 | Achados relacionados | AS-12, AS-18, D2 ([AS-IS-ARCHITECTURE.md §4.3, §16](../assessment/AS-IS-ARCHITECTURE.md)) |
-| Substitui (se aceite) | A cláusula "Architecture Constraints" do `CLAUDE.md` (ver *Decision* §4) |
+| Substitui | A cláusula "Architecture Constraints" do `CLAUDE.md` (ver *Decision* §4) |
 | Depende de | ADR-0001 (a quebra dos ciclos `auth↔tenant`/`auth↔vendor` segue o novo registo de comerciante) |
 
 ## Context
@@ -92,7 +93,7 @@ Sem fronteiras de módulo verificáveis, cada correção local (como os *guards*
    - `spring-modulith-starter-test` (`@ApplicationModuleTest`) e geração de documentação.
    - **Não** se adotam: *event externalization* para brokers, `@DomainEvents`/agregados, Moments, nem qualquer barramento de comandos.
 3. **Regra de dependência:** sem ciclos entre módulos; chamadas síncronas só para leitura ou para operações que **têm** de ser atómicas com o chamador, sempre via API pública; efeitos subsequentes (notificar, criar entrega após pagamento, atualizar estado por evento de entrega, ledger) via eventos *after-commit*.
-4. **Nova redação proposta para "Architecture Constraints" no `CLAUDE.md`** (só aplicada quando este ADR passar a *Accepted*):
+4. **Nova redação proposta para "Architecture Constraints" no `CLAUDE.md`** (aplicada ao `CLAUDE.md` com a aceitação deste ADR, 2026-10-28):
 
    > The backend is a layered modular monolith. Each top-level package under `com.delivery` is a Spring Modulith application module that keeps the `controller/service/repository/entity/dto/mapper` layering internally. Spring Modulith is used **only** for structural verification (`ApplicationModules.verify()` in CI) and transactional application events (`@ApplicationModuleListener` with the JPA event publication registry). Modules talk to each other through their public API (base package or `@NamedInterface` `api` package) or events — never through another module's repositories or entities, and without cycles. Still avoided: DDD tactical patterns, Clean/Hexagonal Architecture, CQRS, event sourcing, command buses, and Kafka/event externalization. See `docs/adr/ADR-0002-module-structure.md`.
 
@@ -143,7 +144,7 @@ O Spring Modulith dá precisamente as duas coisas que faltam — fronteiras veri
 1. **Incremento "Modulith baseline"**: dependências (`spring-modulith-starter-core`, `-starter-jpa`, `-starter-test`), migração `V0NN__event_publication.sql`, `package-info.java` para `common` (OPEN), teste `ModularityTest` com baseline de violações e geração de documentação. Sem alterações de comportamento.
 2. **Quebra de ciclos**, um por incremento, por ordem de risco/benefício: C5 + C6 (*guard* partilhado, sem mudança de comportamento) → C4 → C9/C8 (com ADR-0001) → C3 → C7 (módulo `courier`) → C2 → C1 (estes dois introduzem eventos e exigem testes de caracterização dos estados da encomenda).
 3. Cada incremento remove as suas entradas do baseline; quando o baseline estiver vazio, o teste passa a `verify()` estrito.
-4. Atualizar o `CLAUDE.md` (cláusula nova) e `docs/architecture.md` no incremento "Modulith baseline", não antes.
+4. O `CLAUDE.md` (cláusula nova) e `docs/architecture.md` foram atualizados na aceitação deste ADR (2026-10-28); o código (dependências, migração, `ModularityTest`) só entra no incremento "Modulith baseline".
 5. Não há migração de dados de negócio; só a tabela `event_publication`.
 
 ## Validation Criteria
