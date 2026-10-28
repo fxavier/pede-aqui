@@ -9,9 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { userService, uploadService } from "@/lib/api/services";
-import { formatDate, cn } from "@/lib/utils";
-import type { UserProfile } from "@/lib/api/types";
-import { Upload, Image, Trash2, User, Mail, Phone, Shield } from "lucide-react";
+import { Upload, Trash2, User, Mail, Shield } from "lucide-react";
 
 type UserRecord = {
   id: string;
@@ -74,7 +72,7 @@ export default function UsersPage() {
         estado: user.status,
         cargo: user.roles.join(", "),
       })));
-    } catch (error) {
+    } catch {
       setError("Erro ao carregar utilizadores. Tente novamente.");
     } finally {
       setLoading(false);
@@ -282,6 +280,7 @@ export default function UsersPage() {
                   <div className="flex items-center gap-3">
                     {userForm.avatarPreview ? (
                       <div className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- local blob:/presigned preview URL; next/image optimisation does not apply */}
                         <img 
                           src={userForm.avatarPreview} 
                           alt="Avatar preview" 

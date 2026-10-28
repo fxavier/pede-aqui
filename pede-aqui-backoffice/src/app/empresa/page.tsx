@@ -17,7 +17,7 @@ import type {
   VendorDocument,
   Category,
 } from "@/lib/api/types";
-import { FileText, Image, Trash2, Upload } from "lucide-react";
+import { FileText, Image as ImageIcon, Trash2, Upload } from "lucide-react";
 
 type Tab = "perfil" | "horarios" | "documentos";
 
@@ -263,6 +263,7 @@ export default function EmpresaPage() {
                       {profile.logoPreview || profile.logoStorageKey ? (
                         <div className="relative">
                           {profile.logoPreview ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- local blob:/presigned preview URL; next/image optimisation does not apply
                             <img
                               src={profile.logoPreview}
                               alt="Logo"
@@ -283,7 +284,7 @@ export default function EmpresaPage() {
                         </div>
                       ) : (
                         <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-outline-variant">
-                          <Image className="h-6 w-6 text-on-surface-variant" />
+                          <ImageIcon aria-hidden="true" className="h-6 w-6 text-on-surface-variant" />
                         </div>
                       )}
                       <div>

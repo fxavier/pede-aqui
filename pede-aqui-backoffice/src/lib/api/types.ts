@@ -311,7 +311,7 @@ export interface Product {
   prohibitedFuel: boolean;
   skus: Sku[];
   status?: string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   primaryImageKey?: string;
   primaryImageUrl?: string | null;
   imageGallery?: string[];

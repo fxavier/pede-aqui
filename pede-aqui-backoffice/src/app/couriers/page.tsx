@@ -13,7 +13,7 @@ import { courierService } from "@/lib/api/services";
 import { formatDate, cn } from "@/lib/utils";
 import type { Courier, CourierDocument } from "@/lib/api/types";
 import {
-  CheckCircle, XCircle, Clock, User, Phone, Car,
+  CheckCircle, XCircle, User, Phone, Car,
   FileText, ChevronRight, Search, Truck,
 } from "lucide-react";
 

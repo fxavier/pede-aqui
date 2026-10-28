@@ -27,7 +27,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { catalogService, productFamilyService, productVariationOptionService, vendorService } from '@/lib/api/services';
 import type { Product, ProductVariationGroup, ProductVariationOption, Vendor } from '@/lib/api/types';
-import { useAppSelector } from '@/store/hooks';
 import { AppShell } from '@/components/layout/app-shell';
 
 export default function ProductFamiliesPage() {
@@ -64,8 +63,6 @@ export default function ProductFamiliesPage() {
     displayOrder: 0
   });
 
-  const user = useAppSelector((state) => state.auth.user);
-
   useEffect(() => {
     loadData();
   }, []);
@@ -74,12 +71,14 @@ export default function ProductFamiliesPage() {
     if (selectedProduct) {
       loadVariationGroups();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are recreated every render; re-run only when the selection changes
   }, [selectedProduct]);
 
   useEffect(() => {
     if (selectedGroup) {
       loadOptions();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are recreated every render; re-run only when the selection changes
   }, [selectedGroup]);
 
   const loadData = async () => {
