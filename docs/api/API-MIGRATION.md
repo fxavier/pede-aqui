@@ -92,3 +92,40 @@ affected, and whether existing clients break.
 - `AdminOrderResponse` gains `deliveryArea` (city of the snapshot, or `null`). Vendors and ops see
   only this coarse area — enough to anticipate route/preparation — never street, phone, recipient
   or GPS pin.
+
+## INC-13 — Pricing engine (AS-23, FR-021, FR-063)
+
+All money stays JSON numbers backed by `BigDecimal` (ADR-0003). Totals for tenants on the seeded/default policy are
+unchanged for cart and checkout; see the report table for the scenarios that changed.
+
+### `GET /api/v1/search/vendors` (type and value change, additive field)
+- `deliveryFee` was a `double` from `2.50 + 0.50 × km` (haversine); it is now a `BigDecimal` from the checkout
+  pricing engine: the vendor's distance band when both the search position (`lat`/`lng`) and the vendor have
+  coordinates, otherwise the tenant base fee (estimate). JSON stays numeric (`number | null` in TypeScript).
+- New `deliveryFeeBasis`: `DISTANCE_RULE` | `POLICY_BASE` | `PLATFORM_DEFAULT` — anything but `DISTANCE_RULE` is an
+  estimate (no position, vendor without coordinates, or no rules).
+- `distanceKm` for vendors with coordinates is now the PostGIS geodesic distance (was haversine; differs by < 0.5 %).
+
+### `GET /api/v1/customers/{customerId}/cart/pricing`
+- The `MVP10` magic coupon is removed: `couponCode` is ignored and `discount` is always 0. Coupons are applied with
+  `POST /api/v1/cart/{cartId}/coupon` (spec-002). No first-party client sent `MVP10` (checked: web, backoffice,
+  Flutter apps, seed data, tests).
+- Fees/tax now follow the caller's tenant `fee_policies` (base delivery fee, no address).
+
+### `GET /api/v1/checkout/quote?cartId={id}&addressId={id}` (new, additive)
+- Customer-owned cart (403 `cart_access_denied` otherwise; 404 for another customer's address). Returns
+  `{cartId, addressId, subtotal, deliveryFee, serviceFee, taxes, discountTotal, total, deliveryFeeBasis, distanceKm}`.
+  Without `addressId` it is the base-fee estimate. `discountTotal` is the cart's pending coupon; checkout re-validates it.
+
+### `POST /api/v1/checkout` (same shape, fees can differ from the cart)
+- Fees and tax are re-quoted at checkout with the delivery address; a vendor with distance rules is charged its band,
+  so the order total can differ from `CartResponse.total` (an address-less estimate). Clients should show
+  `GET /checkout/quote` before confirming. The applied quote is stored on the order (`orders.quote_*`).
+- Legacy requests without `addressId` (INC-12 window) price deterministically with the tenant base fee (`POLICY_BASE`).
+- New error: `409 pricing_policy_invalid` when a tenant policy has a rate above 100 % (refused rather than charged).
+
+### `PUT|GET /api/v1/admin/policy`
+- Request: optional `serviceFeeRate` (fraction 0–1; omitted keeps the current value). `taxRate` and `commissionRate`
+  are now validated to 0–1 (400 when above). Response: additive `serviceFeeRate` and `version`.
+- `serviceFee` remains a flat amount; service fee charged = `serviceFee + subtotal × serviceFeeRate`.
+
