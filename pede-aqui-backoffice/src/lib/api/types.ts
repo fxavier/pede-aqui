@@ -34,6 +34,8 @@ export interface Order {
   id: string;
   reference: string;
   status: string;
+  /** Why a CANCELLED order was cancelled; currently only "SELLER_REJECTED", null otherwise. */
+  cancellationReason?: string | null;
   total: number;
   deliveryCode: string | null;
   customerName: string | null;

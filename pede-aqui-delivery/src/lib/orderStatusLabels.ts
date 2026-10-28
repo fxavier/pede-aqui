@@ -12,6 +12,15 @@ const labels: Record<string, string> = {
   FAILED_DELIVERY: 'Entrega falhada',
   PAYMENT_PENDING: 'Aguardando pagamento',
   CANCELLED: 'Cancelado',
+  // Legacy rows only: new seller rejections are CANCELLED + cancellationReason SELLER_REJECTED.
+  REJECTED_BY_VENDOR: 'Rejeitado',
+}
+
+export const SELLER_REJECTED_LABEL = 'Rejeitado pelo vendedor'
+
+/** True when a CANCELLED order was cancelled because the seller rejected it. */
+export function isSellerRejected(status: string, cancellationReason?: string | null): boolean {
+  return status === 'CANCELLED' && cancellationReason === 'SELLER_REJECTED'
 }
 
 const ACTIVE_STATUSES = new Set([
@@ -26,7 +35,9 @@ const ACTIVE_STATUSES = new Set([
   'ARRIVED_AT_CUSTOMER',
 ])
 
-export function statusLabel(status: string): string {
+/** Customer-facing label for an order status; pass `cancellationReason` to tell seller rejections apart. */
+export function statusLabel(status: string, cancellationReason?: string | null): string {
+  if (isSellerRejected(status, cancellationReason)) return SELLER_REJECTED_LABEL
   return labels[status] ?? status
 }
 

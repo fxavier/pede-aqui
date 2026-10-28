@@ -51,6 +51,25 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   REFUNDED: "Reembolsado",
 };
 
+export const SELLER_REJECTED_LABEL = "Rejeitado pelo vendedor";
+
+/** True when the order is a seller rejection under the unified model (CANCELLED + SELLER_REJECTED).
+ *  Legacy rows keep status REJECTED_BY_VENDOR and are labelled by the status maps instead. */
+export function isSellerRejected(status: string, cancellationReason?: string | null): boolean {
+  return status === "CANCELLED" && cancellationReason === "SELLER_REJECTED";
+}
+
+/** Order status label that tells seller rejections apart from other cancellations.
+ *  `labels` lets a screen keep its own (e.g. abbreviated) status map. */
+export function orderStatusLabel(
+  status: string,
+  cancellationReason?: string | null,
+  labels: Record<string, string> = orderStatusLabels,
+): string {
+  if (isSellerRejected(status, cancellationReason)) return SELLER_REJECTED_LABEL;
+  return labels[status] ?? status;
+}
+
 export const orderStatusColors: Record<OrderStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PAYMENT_PENDING: "bg-yellow-100 text-yellow-800",

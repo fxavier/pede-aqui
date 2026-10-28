@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle, XCircle, ChevronRight, HelpCircle } from 'lucide-react'
-import { statusLabel } from '@/lib/orderStatusLabels'
+import { statusLabel, isSellerRejected } from '@/lib/orderStatusLabels'
 import type { OrderResponse } from '@/lib/api/types'
 import { formatMZN } from '@/lib/utils'
 
@@ -50,7 +50,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
                 {delivered && <Pill className="bg-emerald-50 text-emerald-800 border-emerald-100"><CheckCircle className="w-3.5 h-3.5" /> Entregue</Pill>}
-                {cancelled && <Pill className="bg-rose-50 text-rose-800 border-rose-100"><XCircle className="w-3.5 h-3.5" /> Cancelada</Pill>}
+                {cancelled && <Pill className="bg-rose-50 text-rose-800 border-rose-100"><XCircle className="w-3.5 h-3.5" /> {isSellerRejected(order.status, order.cancellationReason) ? statusLabel(order.status, order.cancellationReason) : 'Cancelada'}</Pill>}
                 {!delivered && !cancelled && <Pill className="bg-brand-50 text-brand-700 border-brand-100">{statusLabel(order.status)}</Pill>}
               </div>
 
