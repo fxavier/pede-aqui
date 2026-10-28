@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -44,14 +45,18 @@ public class SecurityConfig {
                         // Separate management port (prod): reachable only on the internal network, so
                         // Prometheus scrapes without a token. Never covers non-actuator paths (SEC-19).
                         .requestMatchers(this::isActuatorOnManagementPort).permitAll()
-                        .requestMatchers(
+                        // Public reads only (LAC-02): every rule is pinned to GET so a write on the same path
+                        // (e.g. POST /catalog/categories) still needs a token.
+                        .requestMatchers(HttpMethod.GET,
                             "/actuator/health/**", "/livez", "/readyz", "/api-docs/**", "/swagger-ui/**",
-                            "/swagger-ui.html", "/api/v1/register", "/api/v1/customers/register",
+                            "/swagger-ui.html",
                             "/api/v1/catalog/categories",
                             "/api/v1/catalog/vendors/*/products",
                             "/api/v1/catalog/vendors/*",
                             "/api/v1/search/vendors"
                         ).permitAll()
+                        // The only anonymous writes: self-registration of merchants and customers.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/register", "/api/v1/customers/register").permitAll()
                         // metrics/prometheus/etc. on the public application port: platform ADMIN only (SEC-19).
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/tenants/**").hasRole("ADMIN")

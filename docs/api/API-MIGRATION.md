@@ -201,3 +201,18 @@ Not removed yet; removal lands once step 5 has run in every environment and the 
    `GET /search/vendors` will answer only for the tenant mapped to the calling client/host
    (`app.tenancy.customer-clients`). Clients see the same data as today once all merchants live in the
    operator tenant; a white-label host will need its own mapping.
+
+## W1-A — Security leftovers (LAC-02, LAC-06, LAC-12, LAC-13)
+
+### LAC-02 — Anonymous writes are always 401
+
+- `SecurityConfig` public rules are now pinned to **`GET`**: `/api/v1/catalog/categories`,
+  `/api/v1/catalog/vendors/*`, `/api/v1/catalog/vendors/*/products`, `/api/v1/search/vendors` (plus
+  health/probes/OpenAPI). Public `GET` responses are unchanged.
+- Any `POST`/`PUT`/`PATCH`/`DELETE` without a token now answers **401** `unauthorized` (problem document)
+  before reaching the controller. Previously e.g. an anonymous `POST /api/v1/catalog/categories` reached
+  the controller and answered 400/403. The only anonymous writes are `POST /api/v1/register` and
+  `POST /api/v1/customers/register` (unchanged).
+- `X-Tenant-Id` from an anonymous caller, or from a non-admin naming a tenant other than its own claim,
+  is ignored (as before) and now logged as a `SECURITY` WARN. No response change.
+- Clients: none affected; every frontend already sends a bearer token on writes.

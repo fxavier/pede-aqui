@@ -23,6 +23,9 @@ import com.delivery.tenant.repository.TenantRepository;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
@@ -55,6 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
         "app.tenancy.operator-tenant-id=5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c",
         "app.tenancy.customer-clients.pede-aqui-web=5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
 })
+@ExtendWith(OutputCaptureExtension.class)
 class TenantRequestFilterProblemDetailTest {
 
     private static final String UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
@@ -152,6 +156,44 @@ class TenantRequestFilterProblemDetailTest {
         verifyNoInteractions(tenantRepository, auditLogService);
     }
 
+    /** LAC-02: a non-admin header that disagrees with the token's tenant is ignored and logged at WARN, without PII. */
+    @Test
+    void foreignTenantHeaderFromStaffIsIgnoredAndLoggedAsSecurityWarning(CapturedOutput output) throws Exception {
+        String ownTenant = UUID.randomUUID().toString();
+        String foreignTenant = UUID.randomUUID().toString();
+        mockMvc.perform(get("/api/v1/stub/ok")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPS"))
+                                .jwt(j -> j.subject("staff-subject-123").claim("email", "ops@example.test")
+                                        .claim(TenantContext.TENANT_ID_CLAIM, ownTenant)))
+                        .header(TenantContext.TENANT_ID_HEADER, foreignTenant))
+                .andExpect(status().isOk());
+        assertThat(output.getOut()).contains("WARN").contains("SECURITY").contains("X-Tenant-Id")
+                .contains("GET /api/v1/stub/ok")
+                .doesNotContain("staff-subject-123").doesNotContain("ops@example.test");
+        verifyNoInteractions(tenantRepository, auditLogService);
+    }
+
+    /** The backoffice echoes the user's own tenant in the header on every call: that is not a security event. */
+    @Test
+    void ownTenantHeaderFromStaffIsNotWarned(CapturedOutput output) throws Exception {
+        String ownTenant = UUID.randomUUID().toString();
+        mockMvc.perform(get("/api/v1/stub/ok")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPS"))
+                                .jwt(j -> j.claim(TenantContext.TENANT_ID_CLAIM, ownTenant)))
+                        .header(TenantContext.TENANT_ID_HEADER, ownTenant))
+                .andExpect(status().isOk());
+        assertThat(output.getOut()).doesNotContain("SECURITY");
+    }
+
+    /** LAC-02: an anonymous caller's header is never used and is logged at WARN. */
+    @Test
+    void anonymousTenantHeaderOnPublicEndpointIsIgnoredAndWarned(CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/api/v1/search/vendors").header(TenantContext.TENANT_ID_HEADER, UUID.randomUUID().toString()))
+                .andExpect(status().isOk());
+        assertThat(output.getOut()).contains("WARN").contains("SECURITY").contains("GET /api/v1/search/vendors");
+        verifyNoInteractions(tenantRepository, auditLogService);
+    }
+
     @Test
     void filterOrderIsCorrelationThenSecurityThenTenant() {
         Integer correlationOrder = OrderUtils.getOrder(CorrelationIdFilter.class);
@@ -164,6 +206,11 @@ class TenantRequestFilterProblemDetailTest {
     static class StubController {
         @GetMapping("/api/v1/stub/ok")
         Map<String, String> ok() {
+            return Map.of("ok", "yes");
+        }
+
+        @GetMapping("/api/v1/search/vendors")
+        Map<String, String> publicBrowse() {
             return Map.of("ok", "yes");
         }
     }
