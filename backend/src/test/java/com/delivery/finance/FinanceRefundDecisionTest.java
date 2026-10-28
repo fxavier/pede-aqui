@@ -60,7 +60,7 @@ class FinanceRefundDecisionTest {
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
 
         PaymentService paymentService = new PaymentService(paymentRepository, orderRepository, refundRepository, mock(AuditLogService.class),
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(), mock(com.delivery.delivery.repository.DeliveryRepository.class), mock(com.delivery.order.service.OrderStockService.class));
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(), mock(com.delivery.delivery.repository.DeliveryRepository.class), mock(com.delivery.order.service.OrderStockService.class), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
         financeService = new FinanceService(paymentRepository, mock(CommissionRepository.class), mock(CashReconciliationRepository.class),
                 refundRepository, new FinanceMapper(), tenantContext, paymentService);
     }

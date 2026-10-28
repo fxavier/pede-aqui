@@ -74,6 +74,9 @@ public class DispatchJob {
         this.updatedAt = Instant.now();
     }
 
+    /** Retires the job because its order can no longer be delivered (refunded/cancelled before pickup). */
+    public void cancel() { this.status = DispatchJobStatus.CANCELLED; this.updatedAt = Instant.now(); }
+
     public void reassign(UUID courierId) { this.courierId = courierId; this.status = DispatchJobStatus.ASSIGNED; this.assignedAt = Instant.now(); this.updatedAt = this.assignedAt; }
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; this.updatedAt = Instant.now(); }
 

@@ -87,7 +87,7 @@ class VendorOrderScopeTest {
                 paymentService, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults());
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -214,14 +214,14 @@ class VendorOrderScopeTest {
         when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         PaymentService realPayments = new PaymentService(paymentRepository, orderRepository, refundRepository,
                 mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository,
-                new PaymentMockConfirmationProperties(), mock(DeliveryRepository.class), mock(OrderStockService.class));
+                new PaymentMockConfirmationProperties(), mock(DeliveryRepository.class), mock(OrderStockService.class), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
                 realPayments, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
-                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults());
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 

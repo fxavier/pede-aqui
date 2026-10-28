@@ -13,6 +13,7 @@ import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.OrderStockService;
+import com.delivery.delivery.service.DeliveryRetirementService;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;
@@ -92,6 +93,7 @@ public class SalesService {
     private final SalesStatusOverrideProperties statusOverrideProperties;
     private final SalesAccessGuard accessGuard;
     private final OrderStockService orderStockService;
+    private final DeliveryRetirementService deliveryRetirementService;
 
     public SalesService(
             OrderRepository orderRepository,
@@ -108,7 +110,9 @@ public class SalesService {
             SalesStatusOverrideProperties statusOverrideProperties,
             SalesAccessGuard accessGuard,
             OrderStockService orderStockService,
-            PaymentRepository paymentRepository) {
+            PaymentRepository paymentRepository,
+            DeliveryRetirementService deliveryRetirementService) {
+        this.deliveryRetirementService = deliveryRetirementService;
         this.orderStockService = orderStockService;
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
@@ -197,7 +201,10 @@ public class SalesService {
                 items, order.getAppliedPromotionId(), paymentRows, refundRows, commission);
     }
 
-    /** Cancels a sale through the existing order state machine; allowed only in pre-dispatch states (409 otherwise). */
+    /**
+     * Cancels a sale through the existing order state machine; allowed only in pre-dispatch states (409 otherwise).
+     * The order's delivery is retired (it is still before pickup) so no courier can pick the goods up afterwards.
+     */
     @Transactional
     public SalesActionResponse cancel(UUID orderId, String reason) {
         UUID tenantId = tenantId();
@@ -208,6 +215,7 @@ public class SalesService {
             throw new BusinessException("sale_not_cancellable", "Order can no longer be cancelled in status " + order.getStatus(), HttpStatus.CONFLICT);
         }
         order.markCancelled();
+        deliveryRetirementService.retireBeforePickup(tenantId, orderId, "sale cancelled");
         orderStockService.release(order); // INC-07 (COR-01): cancellation gives the reservation back
         notificationService.create(order.getCustomerId(), "CUSTOMER", "order_cancelled", "Order Cancelled",
                 String.format("Your order %s was cancelled. Reason: %s", order.getReference(), reason), order.getReference());
@@ -305,7 +313,11 @@ public class SalesService {
 
     private void applyOverride(Order order, OrderStatus target) {
         switch (target) {
-            case CANCELLED -> { order.markCancelled(); orderStockService.release(order); }
+            case CANCELLED -> {
+                order.markCancelled();
+                deliveryRetirementService.retireBeforePickup(order.getTenantId(), order.getId(), "status override to CANCELLED");
+                orderStockService.release(order);
+            }
             case PREPARING -> order.markPreparing();
             case ASSIGNED_TO_COURIER -> order.markAssignedToCourier();
             // INC-07 (COR-01): a manual DELIVERED is a delivery for stock purposes — same closure as DeliveryService.complete

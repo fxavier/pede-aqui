@@ -83,6 +83,7 @@ class SalesServiceTest {
     private SalesStatusOverrideProperties overrideProperties;
     private SalesService service;
     private com.delivery.order.service.OrderStockService orderStockService;
+    private com.delivery.delivery.service.DeliveryRetirementService deliveryRetirementService;
 
     @BeforeEach
     void setUp() {
@@ -100,10 +101,11 @@ class SalesServiceTest {
         auditLogService = mock(AuditLogService.class);
         tenantContext = mock(TenantContext.class);
         overrideProperties = new SalesStatusOverrideProperties();
+        deliveryRetirementService = mock(com.delivery.delivery.service.DeliveryRetirementService.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
-                auditLogService, tenantContext, overrideProperties, new SalesAccessGuard(vendorRepository), orderStockService, paymentRepository);
+                auditLogService, tenantContext, overrideProperties, new SalesAccessGuard(vendorRepository), orderStockService, paymentRepository, deliveryRetirementService);
         authenticateWithRoles("ROLE_ADMIN");
     }
 
@@ -136,6 +138,8 @@ class SalesServiceTest {
             assertThat(response.orderStatus()).isEqualTo("CANCELLED");
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RELEASED);
+            // The order's delivery (created DISPATCH_PENDING at checkout) is retired so no courier can pick it up.
+            verify(deliveryRetirementService).retireBeforePickup(eq(tenantId), eq(order.getId()), anyString());
         }
         verify(auditLogService, org.mockito.Mockito.times(5)).log(eq("SALE_CANCELLED"), eq("order"), anyString(), anyString(), eq("SUCCESS"));
     }
@@ -150,6 +154,7 @@ class SalesServiceTest {
             assertThat(order.getStatus()).isEqualTo(status);
             assertThat(order.getStockStatus()).isEqualTo(com.delivery.order.entity.StockStatus.RESERVED);
         }
+        org.mockito.Mockito.verifyNoInteractions(deliveryRetirementService);
     }
 
     // --- Lock order rule: payment row FOR UPDATE before the order is read (same order as the vendor rejection) ---
@@ -323,6 +328,7 @@ class SalesServiceTest {
 
         Order confirmed = order(OrderStatus.PAYMENT_CONFIRMED);
         assertThat(service.statusOverride(confirmed.getId(), "CANCELLED", "refund path").orderStatus()).isEqualTo("CANCELLED");
+        verify(deliveryRetirementService).retireBeforePickup(eq(tenantId), eq(confirmed.getId()), anyString());
 
         Order accepted = order(OrderStatus.ACCEPTED_BY_VENDOR);
         assertThat(service.statusOverride(accepted.getId(), "PREPARING", "unstick vendor").orderStatus()).isEqualTo("PREPARING");

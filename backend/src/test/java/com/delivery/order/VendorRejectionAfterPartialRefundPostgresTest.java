@@ -85,7 +85,7 @@ import org.testcontainers.DockerClientFactory;
 @TestPropertySource(properties = {"spring.jpa.hibernate.ddl-auto=validate",
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
+@Import({com.delivery.delivery.service.DeliveryRetirementService.class, OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class,

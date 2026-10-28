@@ -14,7 +14,12 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.service.DeliveryRetirementService;
+import com.delivery.dispatch.entity.DispatchJob;
+import com.delivery.dispatch.entity.DispatchJobStatus;
+import com.delivery.dispatch.repository.DispatchJobRepository;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
@@ -52,6 +57,8 @@ class RefundServiceTest {
     private AuditLogService auditLogService;
     private DeliveryRepository deliveryRepository;
     private OrderStockService orderStockService;
+    private DispatchJobRepository dispatchJobRepository;
+    private DeliveryEventRepository deliveryEventRepository;
     private PaymentService service;
     private Payment payment;
     private Order order;
@@ -66,10 +73,13 @@ class RefundServiceTest {
         auditLogService = mock(AuditLogService.class);
         deliveryRepository = mock(DeliveryRepository.class);
         orderStockService = mock(OrderStockService.class);
+        dispatchJobRepository = mock(DispatchJobRepository.class);
+        deliveryEventRepository = mock(DeliveryEventRepository.class);
         stored.clear();
         service = new PaymentService(paymentRepository, orderRepository, refundRepository, auditLogService,
                 new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(),
-                deliveryRepository, orderStockService);
+                deliveryRepository, orderStockService,
+                new DeliveryRetirementService(deliveryRepository, dispatchJobRepository, deliveryEventRepository));
 
         payment = new Payment(UUID.randomUUID(), tenantA, orderId, new BigDecimal("100.00"), "pay-key");
         payment.confirm();
@@ -279,8 +289,9 @@ class RefundServiceTest {
     }
 
     @Test
-    void fullApprovalKeepsThePlainPinWhileACourierIsEngaged() {
-        // DeliveryService.complete checks only the delivery status, so an engaged courier may still complete with the PIN.
+    void fullApprovalClearsThePlainPinEvenWhileACourierIsEngaged() {
+        // DeliveryService now refuses completion of a REFUNDED order (409 order_not_deliverable), so no courier can
+        // still need the PIN: it is cleared whatever the delivery status (pre-pickup deliveries are also retired).
         for (DeliveryStatus status : List.of(DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED, DeliveryStatus.ARRIVED_AT_VENDOR,
                 DeliveryStatus.REASSIGNED, DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER, DeliveryStatus.ARRIVED_AT_CUSTOMER)) {
             setUp();
@@ -291,8 +302,74 @@ class RefundServiceTest {
             service.approveRefund(refund.id());
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
-            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN kept while delivery is %s", status).isEqualTo("000000");
+            assertThat(order.getDeliveryConfirmationCodeDisplay()).as("PIN cleared while delivery is %s", status).isNull();
         }
+    }
+
+    // ---- Follow-up: a full refund retires a delivery whose goods are still in the store ----
+
+    @Test
+    void fullApprovalBeforePickupRetiresTheDeliveryAndCancelsItsActiveDispatchJob() {
+        for (DeliveryStatus status : List.of(DeliveryStatus.DISPATCH_PENDING, DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED,
+                DeliveryStatus.ARRIVED_AT_VENDOR, DeliveryStatus.REASSIGNED, DeliveryStatus.REJECTED)) {
+            setUp();
+            Delivery delivery = stubDelivery(status);
+            DispatchJob job = new DispatchJob(UUID.randomUUID(), tenantA, orderId, delivery.getId(), UUID.randomUUID());
+            job.accept();
+            when(dispatchJobRepository.findByTenantIdAndDeliveryIdAndStatusIn(any(), any(), any())).thenReturn(List.of(job));
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(delivery.getStatus()).as("delivery retired from %s", status).isEqualTo(DeliveryStatus.CANCELLED);
+            assertThat(job.getStatus()).isEqualTo(DispatchJobStatus.CANCELLED);
+            verify(dispatchJobRepository).findByTenantIdAndDeliveryIdAndStatusIn(tenantA, delivery.getId(),
+                    java.util.EnumSet.of(DispatchJobStatus.ASSIGNED, DispatchJobStatus.ACCEPTED, DispatchJobStatus.REASSIGNABLE));
+            verify(deliveryEventRepository).save(any());
+            verify(orderStockService).release(order);
+        }
+    }
+
+    @Test
+    void fullApprovalAfterPickupLeavesTheDeliveryUntouched() {
+        for (DeliveryStatus status : List.of(DeliveryStatus.PICKED_UP, DeliveryStatus.ON_ROUTE_TO_CUSTOMER,
+                DeliveryStatus.ARRIVED_AT_CUSTOMER, DeliveryStatus.DELIVERED, DeliveryStatus.FAILED_DELIVERY)) {
+            setUp();
+            Delivery delivery = stubDelivery(status);
+            RefundResponse refund = request("100.00", "k-" + status);
+            stubTenantLookup();
+
+            service.approveRefund(refund.id());
+
+            assertThat(delivery.getStatus()).as("delivery kept in %s", status).isEqualTo(status);
+            verify(dispatchJobRepository, never()).findByTenantIdAndDeliveryIdAndStatusIn(any(), any(), any());
+            verify(deliveryEventRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    void fullApprovalOfAnAlreadyRetiredDeliveryDoesNothingMore() {
+        Delivery delivery = stubDelivery(DeliveryStatus.CANCELLED);
+        RefundResponse refund = request("100.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(refund.id());
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.CANCELLED);
+        verify(deliveryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void partialApprovalLeavesTheDeliveryAlone() {
+        Delivery delivery = stubDelivery(DeliveryStatus.ACCEPTED);
+        RefundResponse first = request("40.00", "k1");
+        stubTenantLookup();
+
+        service.approveRefund(first.id());
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ACCEPTED);
+        verify(deliveryEventRepository, never()).save(any());
     }
 
     // ---- V043 follow-up: the stock reservation of a fully refunded order ----
@@ -401,10 +478,11 @@ class RefundServiceTest {
     }
 
     /** The order's single delivery row (uq_deliveries_tenant_order) in the given status. */
-    private void stubDelivery(DeliveryStatus status) {
+    private Delivery stubDelivery(DeliveryStatus status) {
         Delivery delivery = new Delivery(UUID.randomUUID(), tenantA, orderId, "hash");
         delivery.updateStatus(status);
         when(deliveryRepository.findByTenantIdAndOrderId(tenantA, orderId)).thenReturn(Optional.of(delivery));
+        return delivery;
     }
 
     private RefundResponse request(String amount, String key) {

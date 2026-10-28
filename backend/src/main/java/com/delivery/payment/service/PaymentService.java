@@ -9,6 +9,7 @@ import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.service.DeliveryRetirementService;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
@@ -53,6 +54,7 @@ public class PaymentService {
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
     private final DeliveryRepository deliveryRepository;
     private final OrderStockService orderStockService;
+    private final DeliveryRetirementService deliveryRetirementService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -64,8 +66,10 @@ public class PaymentService {
             AppUserProfileRepository userProfileRepository,
             PaymentMockConfirmationProperties mockConfirmationProperties,
             DeliveryRepository deliveryRepository,
-            OrderStockService orderStockService) {
+            OrderStockService orderStockService,
+            DeliveryRetirementService deliveryRetirementService) {
         this.orderStockService = orderStockService;
+        this.deliveryRetirementService = deliveryRetirementService;
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.refundRepository = refundRepository;
@@ -183,10 +187,12 @@ public class PaymentService {
      * are independent); a partial approval leaves the order status unchanged.
      *
      * Full coverage also closes what the order's delivery row allows (lock order: payment row first, then the
-     * order, then inventory): the plain PIN is cleared unless a courier is engaged on the delivery
-     * ({@link DeliveryStatus#isCourierEngaged}, V042 rule), and the stock reservation is released unless the goods
-     * already left the store ({@link DeliveryStatus#isGoodsLeftTheStore}, or an order status past pickup — V043
-     * rule). The release is idempotent (stock_status), so an order cancelled earlier is not released twice.
+     * order, then the delivery/dispatch rows, then inventory): the plain PIN is always cleared (DeliveryService refuses
+     * to progress or complete a REFUNDED order, 409 order_not_deliverable, so no courier needs it any more), and unless
+     * the goods already left the store ({@link DeliveryStatus#isGoodsLeftTheStore}, or an order status past pickup —
+     * V043 rule) the delivery is retired (CANCELLED, active dispatch job CANCELLED) and the stock reservation released.
+     * Both are idempotent (delivery status, stock_status), so an order cancelled earlier is not retired or released
+     * twice. After pickup the delivery is left as it is (the goods are out; ops resolve it).
      */
     @Transactional
     public RefundResponse approveRefund(UUID refundId) {
@@ -205,16 +211,17 @@ public class PaymentService {
                 payment.markFullyRefunded();
                 Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
                         .orElseThrow(() -> new NotFoundException("Order was not found"));
-                // One delivery per order (uq_deliveries_tenant_order); absent before dispatch.
-                Optional<DeliveryStatus> deliveryStatus = deliveryRepository.findByTenantIdAndOrderId(tenantId, order.getId()).map(Delivery::getStatus);
+                // One delivery per order (uq_deliveries_tenant_order); absent only for legacy rows.
+                Optional<Delivery> delivery = deliveryRepository.findByTenantIdAndOrderId(tenantId, order.getId());
                 // Decide on the stock before markRefunded() changes the order status it reads.
-                boolean goodsLeftTheStore = deliveryStatus.map(DeliveryStatus::isGoodsLeftTheStore).orElse(false)
+                boolean goodsLeftTheStore = delivery.map(Delivery::getStatus).map(DeliveryStatus::isGoodsLeftTheStore).orElse(false)
                         || ORDER_STATUSES_PAST_PICKUP.contains(order.getStatus());
                 if (order.getStatus() != OrderStatus.CANCELLED) {
-                    order.markRefunded(deliveryStatus.map(DeliveryStatus::isCourierEngaged).orElse(false));
+                    order.markRefunded();
                     auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
                 }
                 if (!goodsLeftTheStore) {
+                    delivery.ifPresent(d -> deliveryRetirementService.retireBeforePickup(d, "order fully refunded"));
                     orderStockService.release(order); // INC-07 (COR-01): the sale is undone before pickup; no-op if already released/committed
                 }
             } else {

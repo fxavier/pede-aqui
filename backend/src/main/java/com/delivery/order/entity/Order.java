@@ -144,15 +144,12 @@ public class Order {
     public void markAssignedToCourier() { this.status = OrderStatus.ASSIGNED_TO_COURIER; this.updatedAt = Instant.now(); }
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     /**
-     * Full refund approved (PaymentService.approveRefund). The plain PIN is cleared unless a courier is still engaged on
-     * the delivery ({@code DeliveryStatus.isCourierEngaged}): completion checks only the delivery status, so an engaged
-     * courier may still need the PIN. The caller decides because only it can see the delivery row (V042 rule).
+     * Full refund approved (PaymentService.approveRefund). The plain PIN is always cleared: DeliveryService refuses to
+     * progress or complete a REFUNDED order (409 order_not_deliverable), so no courier can still need it.
      */
-    public void markRefunded(boolean courierEngaged) {
+    public void markRefunded() {
         this.status = OrderStatus.REFUNDED;
-        if (!courierEngaged) {
-            this.deliveryConfirmationCodeDisplay = null;
-        }
+        this.deliveryConfirmationCodeDisplay = null;
         this.updatedAt = Instant.now();
     }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
