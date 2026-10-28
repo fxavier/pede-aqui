@@ -12,13 +12,16 @@ import static org.mockito.Mockito.when;
 import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.cart.repository.CartRepository;
+import com.delivery.cart.service.CartService;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.dto.AdminOrderPageResponse;
@@ -29,6 +32,8 @@ import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
+import com.delivery.order.service.OrderStockService;
+import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.entity.Refund;
@@ -56,6 +61,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /** INC-04 (SEC-03, SEC-04, COR-07): vendor users are confined to their own vendor's orders. */
 class VendorOrderScopeTest {
@@ -69,6 +75,7 @@ class VendorOrderScopeTest {
     private final VendorRepository vendorRepository = mock(VendorRepository.class);
     private final AppUserProfileRepository userProfileRepository = mock(AppUserProfileRepository.class);
     private final TenantContext tenantContext = mock(TenantContext.class);
+    private final OrderStockService orderStockService = mock(OrderStockService.class);
     private final OrderService service;
 
     VendorOrderScopeTest() {
@@ -78,7 +85,14 @@ class VendorOrderScopeTest {
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
                 paymentService, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class));
+    }
+
+    private static DeliveryCodeHasher testCodeHasher() {
+        DeliveryCodeProperties properties = new DeliveryCodeProperties();
+        properties.setCodeHmacSecret("test-only-hmac-secret");
+        return new DeliveryCodeHasher(properties);
     }
 
     @AfterEach
@@ -106,6 +120,7 @@ class VendorOrderScopeTest {
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_CONFIRMED);
         verify(paymentService, never()).requestRefund(any(), any());
         verify(notificationService, never()).create(any(), anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(orderStockService, never()).release(any()); // INC-04 x INC-07: no stock side effect either
     }
 
     @Test
@@ -180,6 +195,7 @@ class VendorOrderScopeTest {
         verify(paymentService).requestRefund(org.mockito.ArgumentMatchers.eq(paymentId), refund.capture());
         assertThat(refund.getValue().amount()).isEqualByComparingTo("115.00");
         assertThat(refund.getValue().idempotencyKey()).isEqualTo("vendor-rejection-" + order.getId());
+        verify(orderStockService).release(order); // INC-07 (COR-01): rejection returns the reservation
     }
 
     @Test
@@ -192,19 +208,23 @@ class VendorOrderScopeTest {
         RefundRepository refundRepository = mock(RefundRepository.class);
         when(refundRepository.findByTenantIdAndIdempotencyKey(any(), anyString())).thenReturn(Optional.empty());
         when(refundRepository.save(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(refundRepository.saveAndFlush(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         PaymentService realPayments = new PaymentService(paymentRepository, orderRepository, refundRepository,
-                mock(AuditLogService.class), new PaymentMapper(), tenantContext);
+                mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository,
+                new PaymentMockConfirmationProperties());
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
                 realPayments, mock(AuditLogService.class), new OrderMapper(userProfileRepository, tenantContext),
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
-                (cart, customerId) -> CheckoutDiscount.none());
+                (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
+                orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 
         ArgumentCaptor<Refund> saved = ArgumentCaptor.forClass(Refund.class);
-        verify(refundRepository).save(saved.capture());
+        verify(refundRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo(RefundStatus.REQUESTED);
         assertThat(saved.getValue().getAmount()).isEqualByComparingTo("115.00");
         assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);

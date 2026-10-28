@@ -47,6 +47,7 @@ class DeliveryConfirmationTest {
     private static final String CODE = "482913";
     private static final String WRONG = "000001";
     private static final String COURIER_USER = "kc-courier";
+    private final com.delivery.order.service.OrderStockService orderStockService = mock(com.delivery.order.service.OrderStockService.class);
 
     private final UUID tenantId = UUID.randomUUID();
     private final UUID orderId = UUID.randomUUID();
@@ -70,7 +71,8 @@ class DeliveryConfirmationTest {
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
         properties.setMaxCodeAttempts(5);
         service = new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext,
-                new DeliveryAccessGuard(profileRepository, courierRepository, tenantContext), hasher, properties, auditLogService);
+                new DeliveryAccessGuard(profileRepository, courierRepository, tenantContext), hasher, properties, auditLogService,
+                orderStockService);
         order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hasher.hash(CODE), CODE);
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
         Courier courier = mock(Courier.class);
@@ -93,6 +95,17 @@ class DeliveryConfirmationTest {
         assertThat(service.complete(delivery.getId(), CODE).status()).isEqualTo(DeliveryStatus.DELIVERED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
         assertThat(order.getDeliveryConfirmationCodeDisplay()).isNull();
+    }
+
+    @Test
+    void completingStraightFromAcceptedCommitsTheReservedStock() {
+        // INC-02 allows /complete from ACCEPTED (no PICKED_UP PATCH), so INC-07's stock commit must also run here.
+        Delivery delivery = delivery(DeliveryStatus.ACCEPTED, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        service.complete(delivery.getId(), CODE);
+
+        verify(orderStockService).commit(order);
     }
 
     @Test

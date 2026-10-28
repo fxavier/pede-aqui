@@ -15,6 +15,8 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.repository.InventoryItemRepository;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -71,6 +73,19 @@ public class CartService {
         var pricing = pricingService.calculate(cart.getSubtotal(), null);
         cart.updateTotals(pricing.deliveryFee().add(pricing.serviceFee()), pricing.tax(), pricing.discount(), pricing.total());
         return mapper.toResponse(cartRepository.save(cart));
+    }
+
+    /**
+     * Re-snapshots cart lines at the given current SKU prices and recomputes totals, so a customer
+     * whose checkout was refused with price_changed can review the new total and reconfirm.
+     */
+    @Transactional
+    public void repriceItems(UUID tenantId, UUID cartId, Map<UUID, BigDecimal> currentPriceBySkuId) {
+        cartRepository.findByTenantIdAndId(tenantId, cartId).ifPresent(cart -> {
+            currentPriceBySkuId.forEach(cart::repriceItem);
+            var pricing = pricingService.calculate(cart.getSubtotal(), null);
+            cart.updateTotals(pricing.deliveryFee().add(pricing.serviceFee()), pricing.tax(), pricing.discount(), pricing.total());
+        });
     }
 
     /** Loads a tenant-scoped cart for checkout with customer ownership validation. */

@@ -17,13 +17,13 @@ import org.springframework.core.env.PropertySource;
 
 /**
  * Proves the real application.yml / application-{profile}.yml wiring (INC-08, SEC-07): prod refuses to start
- * without DB_PASSWORD / KEYCLOAK_ADMIN_CLIENT_SECRET, dev keeps working with its local defaults, and prod
+ * without DB_PASSWORD / KEYCLOAK_ADMIN_CLIENT_SECRET / APP_DELIVERY_CODE_HMAC_SECRET, dev keeps working with its local defaults, and prod
  * disables swagger/api-docs. Secrets are forced blank via inlined properties (higher precedence than the
  * optional repo-root .env import) so the outcome never depends on the developer's machine.
  */
 class ProdSecretsFailFastTest {
 
-    private static final String[] BLANK_SECRETS = {"DB_PASSWORD=", "KEYCLOAK_ADMIN_CLIENT_SECRET="};
+    private static final String[] BLANK_SECRETS = {"DB_PASSWORD=", "KEYCLOAK_ADMIN_CLIENT_SECRET=", "APP_DELIVERY_CODE_HMAC_SECRET="};
 
     private ApplicationContextRunner runner(String profile) {
         return new ApplicationContextRunner()
@@ -43,7 +43,8 @@ class ProdSecretsFailFastTest {
                     assertThat(ctx.getStartupFailure()).rootCause()
                             .isInstanceOf(BindValidationException.class)
                             .hasMessageContaining("dbPassword")
-                            .hasMessageContaining("keycloakAdminClientSecret");
+                            .hasMessageContaining("keycloakAdminClientSecret")
+                            .hasMessageContaining("codeHmacSecret");
                 });
     }
 
@@ -51,7 +52,7 @@ class ProdSecretsFailFastTest {
     void prodValidatesSecretsBeforeAnyDataSourceIsCreated() {
         // Flyway/JPA must not open a connection before the secrets check: every DataSource depends on it.
         runner("prod")
-                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x")
+                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x", "APP_DELIVERY_CODE_HMAC_SECRET=x")
                 .withBean("dataSource", DataSource.class, () -> Mockito.mock(DataSource.class))
                 .withUserConfiguration(RequiredSecretsProperties.DataSourceDependsOnRequiredSecrets.class)
                 .run(ctx -> {
@@ -64,19 +65,33 @@ class ProdSecretsFailFastTest {
     @Test
     void prodContextFailsWhenOnlyKeycloakSecretIsMissing() {
         runner("prod")
-                .withPropertyValues("DB_PASSWORD=from-env", "KEYCLOAK_ADMIN_CLIENT_SECRET=")
+                .withPropertyValues("DB_PASSWORD=from-env", "KEYCLOAK_ADMIN_CLIENT_SECRET=", "APP_DELIVERY_CODE_HMAC_SECRET=from-env")
                 .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void prodContextFailsWhenOnlyDeliveryCodeHmacSecretIsMissing() {
+        runner("prod")
+                .withPropertyValues("DB_PASSWORD=from-env", "KEYCLOAK_ADMIN_CLIENT_SECRET=from-env", "APP_DELIVERY_CODE_HMAC_SECRET=")
+                .run(ctx -> {
+                    assertThat(ctx).hasFailed();
+                    assertThat(ctx.getStartupFailure()).rootCause()
+                            .isInstanceOf(BindValidationException.class)
+                            .hasMessageContaining("codeHmacSecret");
+                });
     }
 
     @Test
     void prodContextStartsWhenSecretsAreProvided() {
         runner("prod")
-                .withPropertyValues("DB_PASSWORD=from-env", "KEYCLOAK_ADMIN_CLIENT_SECRET=from-env")
+                .withPropertyValues("DB_PASSWORD=from-env", "KEYCLOAK_ADMIN_CLIENT_SECRET=from-env",
+                        "APP_DELIVERY_CODE_HMAC_SECRET=from-env")
                 .run(ctx -> {
                     assertThat(ctx).hasNotFailed();
                     assertThat(ctx.getEnvironment().getProperty("spring.datasource.password")).isEqualTo("from-env");
                     assertThat(ctx.getEnvironment().getProperty("app.keycloak.admin.client-secret"))
                             .isEqualTo("from-env");
+                    assertThat(ctx.getEnvironment().getProperty("app.delivery.code-hmac-secret")).isEqualTo("from-env");
                 });
     }
 
@@ -90,7 +105,8 @@ class ProdSecretsFailFastTest {
                     List<String> rawValues = new ArrayList<>();
                     for (PropertySource<?> source : ctx.getEnvironment().getPropertySources()) {
                         if (source.getName().contains("application")) {
-                            for (String key : List.of("spring.datasource.password", "app.keycloak.admin.client-secret")) {
+                            for (String key : List.of("spring.datasource.password", "app.keycloak.admin.client-secret",
+                                    "app.delivery.code-hmac-secret")) {
                                 Object raw = source.getProperty(key);
                                 if (raw != null) {
                                     rawValues.add(key + "=" + raw);
@@ -111,13 +127,14 @@ class ProdSecretsFailFastTest {
             assertThat(ctx).doesNotHaveBean(RequiredSecretsProperties.class);
             assertThat(ctx.getEnvironment().getProperty("spring.datasource.password")).isNotBlank();
             assertThat(ctx.getEnvironment().getProperty("app.keycloak.admin.client-secret")).isNotBlank();
+            assertThat(ctx.getEnvironment().getProperty("app.delivery.code-hmac-secret")).isNotBlank();
         });
     }
 
     @Test
     void prodDisablesSwaggerAndApiDocs() {
         runner("prod")
-                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x")
+                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x", "APP_DELIVERY_CODE_HMAC_SECRET=x")
                 .run(ctx -> {
                     assertThat(ctx.getEnvironment().getProperty("springdoc.api-docs.enabled")).isEqualTo("false");
                     assertThat(ctx.getEnvironment().getProperty("springdoc.swagger-ui.enabled")).isEqualTo("false");
@@ -127,7 +144,7 @@ class ProdSecretsFailFastTest {
     @Test
     void prodServesActuatorOnSeparateManagementPort() {
         runner("prod")
-                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x")
+                .withPropertyValues("DB_PASSWORD=x", "KEYCLOAK_ADMIN_CLIENT_SECRET=x", "APP_DELIVERY_CODE_HMAC_SECRET=x")
                 .run(ctx -> {
                     assertThat(ctx.getEnvironment().getProperty("management.server.port")).isEqualTo("8091");
                     assertThat(ctx.getEnvironment().getProperty("management.endpoint.health.probes.add-additional-paths"))

@@ -49,6 +49,8 @@ public class CartItem {
         this.createdAt = Instant.now();
     }
 
+    /** Replaces the price snapshot (checkout found the SKU price changed); the cart recomputes its subtotal. */
+    void reprice(BigDecimal currentUnitPrice) { this.unitPriceSnapshot = currentUnitPrice; }
     public BigDecimal lineTotal() { return unitPriceSnapshot.multiply(BigDecimal.valueOf(quantity)); }
     public UUID getSkuId() { return skuId; }
     public String getProductNameSnapshot() { return productNameSnapshot; }

@@ -66,6 +66,12 @@ public class Cart {
 
     public void addItem(CartItem item) { items.add(item); recalculateSubtotal(); updatedAt = Instant.now(); }
     public void updateTotals(BigDecimal fees, BigDecimal taxes, BigDecimal discounts, BigDecimal total) { this.fees = fees; this.taxes = taxes; this.discounts = discounts; this.total = total; }
+    /** Re-snapshots one line at the SKU's current price and recomputes the subtotal (totals are set by the caller). */
+    public void repriceItem(UUID skuId, BigDecimal currentUnitPrice) {
+        items.stream().filter(item -> item.getSkuId().equals(skuId)).forEach(item -> item.reprice(currentUnitPrice));
+        recalculateSubtotal();
+        updatedAt = Instant.now();
+    }
     public void markCheckedOut() { this.status = "CHECKED_OUT"; this.updatedAt = Instant.now(); }
     /** Attaches a validated promotion/coupon discount pending re-validation at checkout. */
     public void applyPromotion(UUID appliedPromotionId, String couponCode, BigDecimal discountTotal) { this.appliedPromotionId = appliedPromotionId; this.couponCode = couponCode; this.discountTotal = discountTotal; this.updatedAt = Instant.now(); }

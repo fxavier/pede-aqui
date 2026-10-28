@@ -13,6 +13,10 @@ import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.mapper.DeliveryMapper;
+import com.delivery.catalog.service.CatalogAccessGuard;
+import com.delivery.inventory.mapper.InventoryMapper;
+import com.delivery.inventory.service.InventoryService;
+import com.delivery.order.service.OrderStockService;
 import com.delivery.delivery.service.DeliveryAccessGuard;
 import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.delivery.service.DeliveryService;
@@ -64,7 +68,8 @@ import org.testcontainers.DockerClientFactory;
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret", "app.delivery.max-code-attempts=5"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, DeliveryAccessGuard.class,
-        DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class})
+        DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class,
+        OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class})
 class DeliveryCompletionPostgresIntegrationTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
@@ -149,6 +154,9 @@ class DeliveryCompletionPostgresIntegrationTest {
         authenticate(assignedCourierUser, "COURIER");
 
         assertThat(service.complete(deliveryId, CODE).status()).isEqualTo(DeliveryStatus.DELIVERED);
+        // INC-07 x INC-02: no PICKED_UP PATCH happened, so completion itself closes the stock lifecycle.
+        assertThat(jdbc.queryForObject("SELECT stock_status FROM orders WHERE id = ?", String.class, orderId))
+                .isEqualTo("COMMITTED");
     }
 
     @Test

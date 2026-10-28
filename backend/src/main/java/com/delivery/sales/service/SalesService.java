@@ -12,6 +12,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
+import com.delivery.order.service.OrderStockService;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;
@@ -87,6 +88,7 @@ public class SalesService {
     private final TenantContext tenantContext;
     private final SalesStatusOverrideProperties statusOverrideProperties;
     private final SalesAccessGuard accessGuard;
+    private final OrderStockService orderStockService;
 
     public SalesService(
             OrderRepository orderRepository,
@@ -101,7 +103,9 @@ public class SalesService {
             AuditLogService auditLogService,
             TenantContext tenantContext,
             SalesStatusOverrideProperties statusOverrideProperties,
-            SalesAccessGuard accessGuard) {
+            SalesAccessGuard accessGuard,
+            OrderStockService orderStockService) {
+        this.orderStockService = orderStockService;
         this.orderRepository = orderRepository;
         this.searchRepository = searchRepository;
         this.paymentReadRepository = paymentReadRepository;
@@ -198,6 +202,7 @@ public class SalesService {
             throw new BusinessException("sale_not_cancellable", "Order can no longer be cancelled in status " + order.getStatus(), HttpStatus.CONFLICT);
         }
         order.markCancelled();
+        orderStockService.release(order); // INC-07 (COR-01): cancellation gives the reservation back
         notificationService.create(order.getCustomerId(), "CUSTOMER", "order_cancelled", "Order Cancelled",
                 String.format("Your order %s was cancelled. Reason: %s", order.getReference(), reason), order.getReference());
         auditLogService.log(AuditActions.SALE_CANCELLED, "order", orderId.toString(), order.getReference() + " reason=" + reason, "SUCCESS");
@@ -292,7 +297,7 @@ public class SalesService {
 
     private void applyOverride(Order order, OrderStatus target) {
         switch (target) {
-            case CANCELLED -> order.markCancelled();
+            case CANCELLED -> { order.markCancelled(); orderStockService.release(order); }
             case PREPARING -> order.markPreparing();
             case ASSIGNED_TO_COURIER -> order.markAssignedToCourier();
             case DELIVERED -> order.markDelivered();

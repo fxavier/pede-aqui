@@ -26,6 +26,10 @@ public class RequiredSecretsProperties {
     @NotBlank
     private String keycloakAdminClientSecret;
 
+    /** HMAC-SHA256 key for delivery PIN hashes (APP_DELIVERY_CODE_HMAC_SECRET). */
+    @NotBlank
+    private String codeHmacSecret;
+
     /**
      * Makes every DataSource wait for this validation, so a missing secret is reported as such before
      * Flyway/JPA touch the database (otherwise the first error would be an opaque JDBC auth failure).
@@ -44,4 +48,6 @@ public class RequiredSecretsProperties {
     public void setKeycloakAdminClientSecret(String keycloakAdminClientSecret) {
         this.keycloakAdminClientSecret = keycloakAdminClientSecret;
     }
+    public String getCodeHmacSecret() { return codeHmacSecret; }
+    public void setCodeHmacSecret(String codeHmacSecret) { this.codeHmacSecret = codeHmacSecret; }
 }
