@@ -184,6 +184,26 @@ class RefundAndOverrideStockPinPostgresTest {
         assertThat(order).containsEntry("status", "REFUNDED").containsEntry("delivery_confirmation_code_display", "000000");
     }
 
+    // --- Gap 2: manual DELIVERED closes the stock lifecycle like a real delivery ---
+
+    @Test
+    void statusOverrideToDeliveredCommitsTheReservationAndClearsThePlainPin() {
+        jdbc.update("UPDATE orders SET status = 'DELIVERING' WHERE id = ?", orderId);
+        delivery("ON_ROUTE_TO_CUSTOMER");
+
+        assertThat(salesService.statusOverride(orderId, "DELIVERED", "courier device died").orderStatus()).isEqualTo("DELIVERED");
+
+        Map<String, Object> order = order();
+        assertThat(order).containsEntry("status", "DELIVERED").containsEntry("stock_status", "COMMITTED");
+        assertThat(order.get("delivery_confirmation_code_display")).isNull();
+        // commit drains reserved only: on-hand 100 -> 95 (available untouched, reserved consumed).
+        assertThat(inventory()).containsEntry("quantity_available", 95).containsEntry("quantity_reserved", 0);
+
+        // Idempotent with a later courier pickup / completion: nothing to commit twice.
+        salesService.statusOverride(orderId, "DELIVERED", "retry");
+        assertThat(inventory()).containsEntry("quantity_available", 95).containsEntry("quantity_reserved", 0);
+    }
+
     // --- helpers ---
 
     private void approveFullRefund() {
