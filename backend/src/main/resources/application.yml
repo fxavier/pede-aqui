@@ -73,6 +73,15 @@ logging:
 
 app:
   api-base-path: /api/v1
+  # ADR-0001: tenant = operador do marketplace. O tenant do operador é criado por V045 com este id.
+  # Clientes (CUSTOMER) não têm tenant_id no token: o tenant vem do client OIDC que emitiu o token (azp),
+  # nunca do header X-Tenant-Id. Um client fora deste mapa não resolve tenant (403 tenant_required).
+  # O arranque falha se o mapa estiver vazio ou se algum tenant referido não existir.
+  tenancy:
+    operator-tenant-id: ${APP_OPERATOR_TENANT_ID:5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c}
+    customer-clients:
+      pede-aqui-web: ${app.tenancy.operator-tenant-id}
+      pede-aqui-mobile: ${app.tenancy.operator-tenant-id}
   provisioning:
     max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
     max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}

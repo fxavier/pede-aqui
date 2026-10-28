@@ -33,15 +33,15 @@ public class SearchService {
         this.vendorRepository = vendorRepository;
     }
 
-    /** Enhanced search with Redis caching, pagination, and filtering. Anonymous requests search across all tenants. */
+    /** Enhanced search with Redis caching, pagination, and filtering. Anonymous and customer requests search across all tenants. */
     public List<SearchVendorResponse> searchVendors(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        Optional<UUID> tenantId = tenantContext.currentTenantId();
+        Optional<UUID> tenantId = tenantContext.browseTenantId();
         return searchVendorsWithCache(tenantId.orElse(null), latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
     }
 
-    /** Enhanced search that includes totalCount for API response. Anonymous requests search across all tenants. */
+    /** Enhanced search that includes totalCount for API response. Anonymous and customer requests search across all tenants. */
     public SearchResponse searchVendorsWithCount(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        Optional<UUID> tenantId = tenantContext.currentTenantId();
+        Optional<UUID> tenantId = tenantContext.browseTenantId();
         UUID tid = tenantId.orElse(null);
 
         List<SearchVendorResponse> allResults = searchVendorsInternalForCount(tid, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);

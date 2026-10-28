@@ -167,9 +167,15 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 
 ### Tenant model
 
-- Tenant-scoped records carry a `tenant_id` column.
-- `TenantContext` resolves tenant: JWT `tenant_id` claim first, then `X-Tenant-Id` request header as fallback (used by platform admins managing tenants).
-- Platform super-admins have `ADMIN` role and **no** `tenant_id` in their JWT. `TenantContext.isPlatformAdmin()` identifies them.
+- Tenant-scoped records carry a `tenant_id` column. **Tenant = marketplace operator** (`docs/adr/ADR-0001-tenancy-model.md`); the Pede-Aqui operator tenant is seeded by `V045` with id `5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c` (`app.tenancy.operator-tenant-id`, env `APP_OPERATOR_TENANT_ID`). Migration is incremental: merchant self-registration still creates a tenant per merchant until the `merchant_users` step lands.
+- `TenantContext.currentTenantId()` resolution (INC-11, SEC-06):
+  - **platform admin** (`ADMIN`, no `tenant_id` claim; `isPlatformAdmin()`): the `X-Tenant-Id` header (impersonation). `TenantRequestFilter` rejects a malformed (400 `invalid_tenant_header`) or unknown (404 `tenant_not_found`) tenant and writes a `TENANT_IMPERSONATION` row to `audit_logs` for **every** request carrying the header.
+  - **customer-only principal** (`CUSTOMER` and no staff/merchant/courier role; `isCustomerPrincipal()`): the tenant mapped to the token's OIDC client (`azp`) in `app.tenancy.customer-clients` (`pede-aqui-web`, `pede-aqui-mobile` → operator). Unmapped client, or a `tenant_id` claim that disagrees → no tenant. Never from the header.
+  - **everyone else** (OPS, FINANCE, SUPPORT, VENDOR_*, COURIER, tenant-scoped ADMIN): the JWT `tenant_id` claim only. **`X-Tenant-Id` is ignored for anyone but the platform admin.**
+  - No resolvable tenant → services answer 403 `tenant_required`. Startup fails if the operator tenant or a mapped customer tenant does not exist.
+- Public storefront endpoints (categories, vendor products, vendor search) use `TenantContext.browseTenantId()`: customers browse like anonymous visitors (ACTIVE products, cross-tenant) until ADR-0001 step 6 removes cross-tenant browsing.
+- **Customer profile**: `CustomerProfileProvisioningService` creates the `AppUserProfile` (role `CUSTOMER`) idempotently (`INSERT … ON CONFLICT (tenant_id, keycloak_user_id) DO NOTHING`) at `POST /customers/register` (operator tenant) and, as a safety net, on every authenticated customer request (`TenantRequestFilter`). So register → login → cart → checkout works with no tenant header.
+- Realm: seed `ops`/`finance`/`support` carry `tenant_id` = operator tenant; only `admin` is a platform admin. `tenant_id` is declared in the realm user profile with admin-only view/edit — Keycloak 26 otherwise silently drops it when set via the Admin REST API, and users must never be able to edit it.
 - Service methods validate tenant context; repositories are plain Spring Data JPA interfaces.
 
 ### Database
@@ -223,7 +229,7 @@ Next.js App Router. All authenticated pages use `AppShell` from `src/components/
 
 Login page calls Keycloak token endpoint with `grant_type=password`. Token stored in `sessionStorage` as `auth_token` and also set as a cookie. `AppProviders` rehydrates auth state on page load by calling `authService.getMe()`. Root page redirects to `/platform` for platform super-admins or `/` (dashboard) for tenant users.
 
-Platform super-admins can "enter" a tenant (stored in `activeTenantId` Redux state) to operate on its behalf; `X-Tenant-Id` header is sent automatically.
+Platform super-admins can "enter" a tenant (stored in `activeTenantId` Redux state) to operate on its behalf; `X-Tenant-Id` header is sent automatically. The backend honours (and audits) that header only for the platform admin; for tenant users the client sends their own JWT tenant, which the backend ignores in favour of the claim.
 
 ### State management
 
@@ -261,7 +267,7 @@ Two token paths coexist in `auth-slice.ts`:
 - **OIDC PKCE** via `oidc-client-ts` (`userManager`) — for future use
 - **ROPC** (primary): `keycloakService.login()` calls Keycloak's token endpoint directly with `grant_type=password`, stores the JWT as `auth_token` in `sessionStorage`. `initAuth` checks `userManager.getUser()` first, then falls back to parsing `auth_token` from `sessionStorage`.
 
-Customer registration hits the backend at `POST /api/v1/customers/register` (open endpoint), which creates a Keycloak user via `KeycloakAdminService.createCustomer()` and assigns the `CUSTOMER` role.
+Customer registration hits the backend at `POST /api/v1/customers/register` (open endpoint), which creates a Keycloak user via `KeycloakAdminService.createCustomer()`, assigns the `CUSTOMER` role and provisions the customer profile in the operator tenant. The web client never sends `X-Tenant-Id`: the backend derives the customer's tenant from the `pede-aqui-web` client (`azp`).
 
 ### State management
 
