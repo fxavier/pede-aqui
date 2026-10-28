@@ -15,6 +15,7 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.delivery.service.DeliveryCodeHasher;
+import com.delivery.delivery.service.DeliveryRetirementService;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
@@ -97,9 +98,11 @@ public class OrderService {
     private final TransactionTemplate readOnlyTransactionTemplate;
     private final DeliveryAddressResolver addressResolver;
     private final PricingService pricingService;
+    private final DeliveryRetirementService deliveryRetirementService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, DeliveryRetirementService deliveryRetirementService) {
+        this.deliveryRetirementService = deliveryRetirementService;
         this.addressResolver = addressResolver;
         this.pricingService = pricingService;
         this.orderStockService = orderStockService;
@@ -370,7 +373,8 @@ public class OrderService {
     /**
      * Seller rejection (unified product decision): every rejection ends with the order CANCELLED and
      * {@code cancellation_reason = SELLER_REJECTED}, the vendor text kept in {@code rejection_reason}, stock released
-     * (INC-07), the plain delivery PIN cleared, a refund of whatever is still refundable on the payment (the full
+     * (INC-07), the plain delivery PIN cleared, the delivery retired (CANCELLED, active dispatch job cancelled) while
+     * its goods are still in the store, a refund of whatever is still refundable on the payment (the full
      * amount when nothing was refunded before, nothing when it is already fully covered), one customer notification
      * and one audit entry — all in one transaction, so any failure rolls back everything. The financial state
      * (PARTIALLY_/FULLY_REFUNDED) lives on the payment. Allowed from PAYMENT_CONFIRMED/ACCEPTED_BY_VENDOR only.
@@ -397,6 +401,7 @@ public class OrderService {
             throw new NotFoundException("Payment was not found for order");
         }
         order.markCancelledBySellerRejection(reason);
+        deliveryRetirementService.retireBeforePickup(order.getTenantId(), order.getId(), "seller rejected the order");
         orderStockService.release(order); // INC-07 (COR-01): rejected orders give their reservation back
         // The refund is created REQUESTED here; a future PSP payout runs after commit (PaymentService#requestRemainingRefund)
         // and can never undo this cancellation.

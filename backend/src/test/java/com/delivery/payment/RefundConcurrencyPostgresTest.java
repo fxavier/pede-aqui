@@ -58,7 +58,7 @@ import org.testcontainers.DockerClientFactory;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
-@Import({PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
+@Import({com.delivery.delivery.service.DeliveryRetirementService.class, PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
         OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class RefundConcurrencyPostgresTest {

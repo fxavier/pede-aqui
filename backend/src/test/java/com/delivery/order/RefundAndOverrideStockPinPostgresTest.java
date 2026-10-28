@@ -1,6 +1,7 @@
 package com.delivery.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.delivery.cart.mapper.CartMapper;
@@ -11,7 +12,12 @@ import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.config.DeliveryCodeProperties;
+import com.delivery.common.exception.BusinessException;
+import com.delivery.delivery.entity.DeliveryStatus;
+import com.delivery.delivery.mapper.DeliveryMapper;
+import com.delivery.delivery.service.DeliveryAccessGuard;
 import com.delivery.delivery.service.DeliveryCodeHasher;
+import com.delivery.delivery.service.DeliveryService;
 import com.delivery.inventory.mapper.InventoryMapper;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
@@ -56,9 +62,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.DockerClientFactory;
 
 /**
- * Real-Postgres tests for the three gaps surfaced by the V042/V043 data fixes, each committed in its own transaction:
- * a full refund clears the plain PIN unless a courier is engaged (V042 rule), a status override to DELIVERED commits
- * the stock like a real delivery does, and a full refund before pickup gives the reservation back (V043 rule).
+ * Real-Postgres tests for the gaps surfaced by the V042/V043 data fixes, each committed in its own transaction:
+ * a full refund clears the plain PIN, a status override to DELIVERED commits the stock like a real delivery does, a
+ * full refund before pickup gives the reservation back (V043 rule), and a full refund / cancellation / seller
+ * rejection before pickup retires the delivery so the courier can no longer pick up or complete it.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -66,13 +73,15 @@ import org.testcontainers.DockerClientFactory;
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret",
         "app.sales.status-override.enabled=true"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
+@Import({com.delivery.delivery.service.DeliveryRetirementService.class, OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class,
-        SalesService.class, SalesAccessGuard.class, SalesStatusOverrideProperties.class})
+        SalesService.class, SalesAccessGuard.class, SalesStatusOverrideProperties.class,
+        DeliveryService.class, DeliveryMapper.class, DeliveryAccessGuard.class})
 class RefundAndOverrideStockPinPostgresTest {
 
+    private static final String COURIER_USER = "kc-courier-";
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();
 
     @BeforeAll
@@ -97,6 +106,8 @@ class RefundAndOverrideStockPinPostgresTest {
 
     @Autowired private SalesService salesService;
     @Autowired private PaymentService paymentService;
+    @Autowired private OrderService orderService;
+    @Autowired private DeliveryService deliveryService;
     @Autowired private JdbcTemplate jdbc;
     @MockitoBean private TenantContext tenantContext;
     @MockitoBean private NotificationService notificationService;
@@ -152,7 +163,11 @@ class RefundAndOverrideStockPinPostgresTest {
     void cleanUp() {
         SecurityContextHolder.clearContext();
         // Removes only the rows this test seeded (throwaway Testcontainers database).
+        jdbc.update("DELETE FROM delivery_events WHERE tenant_id = ?", tenantId);
+        jdbc.update("DELETE FROM dispatch_jobs WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM deliveries WHERE tenant_id = ?", tenantId);
+        jdbc.update("DELETE FROM couriers WHERE tenant_id = ?", tenantId);
+        jdbc.update("DELETE FROM app_user_profiles WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM refunds WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM payments WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM order_items WHERE tenant_id = ?", tenantId);
@@ -178,13 +193,30 @@ class RefundAndOverrideStockPinPostgresTest {
     }
 
     @Test
-    void fullRefundWhileACourierIsEngagedKeepsThePlainPin() {
-        delivery("ACCEPTED");
+    void fullRefundWithACourierEngagedBeforePickupRetiresTheDeliveryClearsThePinAndReleasesOnce() {
+        jdbc.update("UPDATE orders SET status = 'ASSIGNED_TO_COURIER' WHERE id = ?", orderId);
+        UUID deliveryId = deliveryWithCourier("ACCEPTED", "ACCEPTED");
 
         approveFullRefund();
 
         Map<String, Object> order = order();
-        assertThat(order).containsEntry("status", "REFUNDED").containsEntry("delivery_confirmation_code_display", "000000");
+        assertThat(order).containsEntry("status", "REFUNDED").containsEntry("stock_status", "RELEASED");
+        assertThat(order.get("delivery_confirmation_code_display")).isNull();
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(jobStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(retiredEvents(deliveryId)).isEqualTo(1);
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+
+        // The courier can no longer pick up or complete; nothing moves and the stock is not touched again.
+        actAsCourier();
+        assertThatThrownBy(() -> deliveryService.updateStatus(deliveryId, DeliveryStatus.ARRIVED_AT_VENDOR, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus().value()).isEqualTo(409));
+        assertThatThrownBy(() -> deliveryService.complete(deliveryId, "000000"))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus().value()).isEqualTo(409));
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(order()).containsEntry("status", "REFUNDED").containsEntry("stock_status", "RELEASED");
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+        assertThat(jdbc.queryForObject("SELECT confirmation_attempts FROM deliveries WHERE id = ?", Integer.class, deliveryId)).isZero();
     }
 
     // --- Gap 2: manual DELIVERED closes the stock lifecycle like a real delivery ---
@@ -227,21 +259,53 @@ class RefundAndOverrideStockPinPostgresTest {
         // Goods left the store; the row is seeded RESERVED on purpose to prove nothing is released (in production
         // PICKED_UP would already have committed it and release would be a no-op anyway).
         jdbc.update("UPDATE orders SET status = 'DELIVERING' WHERE id = ?", orderId);
-        delivery("ON_ROUTE_TO_CUSTOMER");
+        UUID deliveryId = deliveryWithCourier("ON_ROUTE_TO_CUSTOMER", "ACCEPTED");
 
         approveFullRefund();
 
         Map<String, Object> order = order();
         assertThat(order).containsEntry("status", "REFUNDED").containsEntry("stock_status", "RESERVED");
         assertThat(inventory()).containsEntry("quantity_available", 95).containsEntry("quantity_reserved", 5);
+        // Goods left the store: the delivery and its job are not retired...
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("ON_ROUTE_TO_CUSTOMER");
+        assertThat(jobStatus(deliveryId)).isEqualTo("ACCEPTED");
+        assertThat(retiredEvents(deliveryId)).isZero();
+        // ...but the REFUNDED order can no longer be progressed or completed (409 order_not_deliverable).
+        actAsCourier();
+        assertThatThrownBy(() -> deliveryService.updateStatus(deliveryId, DeliveryStatus.ARRIVED_AT_CUSTOMER, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("ON_ROUTE_TO_CUSTOMER");
+    }
+
+    // --- Cancellations before pickup retire the delivery ---
+
+    @Test
+    void sellerRejectionRetiresTheDeliveryAndTheCourierCanNoLongerCompleteIt() {
+        UUID deliveryId = deliveryWithCourier("ASSIGNED", "ASSIGNED");
+
+        orderService.rejectByVendor(orderId, "Sem stock");
+
+        assertThat(order()).containsEntry("status", "CANCELLED").containsEntry("stock_status", "RELEASED");
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(jobStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+
+        actAsCourier();
+        assertThatThrownBy(() -> deliveryService.complete(deliveryId, "000000"))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus().value()).isEqualTo(409));
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("CANCELLED");
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
     }
 
     @Test
     void fullRefundOfASaleCancelledEarlierDoesNotReleaseTwice() {
-        salesService.cancel(orderId, "cliente desistiu"); // releases once
+        UUID deliveryId = delivery("DISPATCH_PENDING"); // created at checkout
+        salesService.cancel(orderId, "cliente desistiu"); // releases once, retires the delivery
         assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+        assertThat(deliveryStatus(deliveryId)).isEqualTo("CANCELLED");
 
         approveFullRefund();
+        assertThat(retiredEvents(deliveryId)).isEqualTo(1); // not retired twice
 
         Map<String, Object> order = order();
         assertThat(order).containsEntry("status", "CANCELLED").containsEntry("stock_status", "RELEASED");
@@ -255,10 +319,46 @@ class RefundAndOverrideStockPinPostgresTest {
         paymentService.approveRefund(refund.id());
     }
 
-    private void delivery(String status) {
+    private UUID delivery(String status) {
         Timestamp now = Timestamp.from(Instant.now());
+        UUID deliveryId = UUID.randomUUID();
         jdbc.update("INSERT INTO deliveries (id, tenant_id, order_id, courier_id, status, confirmation_code_hash, confirmation_attempts, created_at, updated_at) VALUES (?, ?, ?, NULL, ?, 'hash', 0, ?, ?)",
-                UUID.randomUUID(), tenantId, orderId, status, now, now);
+                deliveryId, tenantId, orderId, status, now, now);
+        return deliveryId;
+    }
+
+    /** A delivery held by a real courier (profile COURIER_USER) with its dispatch job in {@code jobStatus}. */
+    private UUID deliveryWithCourier(String status, String jobStatus) {
+        Timestamp now = Timestamp.from(Instant.now());
+        UUID profileId = UUID.randomUUID();
+        jdbc.update("INSERT INTO app_user_profiles (id, tenant_id, keycloak_user_id, email, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'Courier', 'ACTIVE', ?, ?)",
+                profileId, tenantId, COURIER_USER + tenantId, "c-" + tenantId + "@test.local", now, now);
+        UUID courierId = UUID.randomUUID();
+        jdbc.update("INSERT INTO couriers (id, tenant_id, user_profile_id, verification_status, available, created_at, updated_at) VALUES (?, ?, ?, 'APPROVED', TRUE, ?, ?)",
+                courierId, tenantId, profileId, now, now);
+        UUID deliveryId = UUID.randomUUID();
+        jdbc.update("INSERT INTO deliveries (id, tenant_id, order_id, courier_id, status, confirmation_code_hash, confirmation_attempts, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'hash', 0, ?, ?)",
+                deliveryId, tenantId, orderId, courierId, status, now, now);
+        jdbc.update("INSERT INTO dispatch_jobs (id, tenant_id, order_id, delivery_id, courier_id, status, assigned_at, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+                UUID.randomUUID(), tenantId, orderId, deliveryId, courierId, jobStatus, now, now, now);
+        return deliveryId;
+    }
+
+    private void actAsCourier() {
+        when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(COURIER_USER + tenantId));
+        authenticate("ROLE_COURIER");
+    }
+
+    private String deliveryStatus(UUID deliveryId) {
+        return jdbc.queryForObject("SELECT status FROM deliveries WHERE id = ?", String.class, deliveryId);
+    }
+
+    private String jobStatus(UUID deliveryId) {
+        return jdbc.queryForObject("SELECT status FROM dispatch_jobs WHERE delivery_id = ?", String.class, deliveryId);
+    }
+
+    private int retiredEvents(UUID deliveryId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM delivery_events WHERE delivery_id = ? AND event_type = 'RETIRED'", Integer.class, deliveryId);
     }
 
     private Map<String, Object> order() {

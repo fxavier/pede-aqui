@@ -86,6 +86,37 @@ affected, and whether existing clients break.
   `REJECTED_BY_VENDOR` rows, so the figures mean the same before and after the change. Note that
   `cancelledCount` therefore now includes seller rejections (it previously did not).
 
+## Refunded / cancelled orders can no longer be delivered (follow-up to the PIN/stock gaps fix)
+
+### `POST /api/v1/deliveries/{id}/complete` and `PATCH /api/v1/deliveries/{id}/status` (new 409 code)
+
+- New error **409 `order_not_deliverable`** when the delivery's order is `REFUNDED`, `CANCELLED`
+  (sales cancel, override-cancel, seller rejection, failed delivery) or the legacy
+  `REJECTED_BY_VENDOR`. Applies to the assigned courier and to OPS/ADMIN on `/status`.
+- Check order: 404 (delivery not in tenant) → 403 `delivery_access_denied` (not the assigned
+  courier) → the existing delivery-state 409s (`delivery_already_completed`,
+  `invalid_delivery_transition`) → **409 `order_not_deliverable`** → 423 `delivery_code_locked` →
+  PIN check. A refused call has no side effect: no attempt counter increment, no delivery event,
+  no audit, no stock movement.
+- A full refund (`FULLY_REFUNDED`), a sales cancel, an override to `CANCELLED` or a seller rejection
+  now **retire** a delivery whose goods are still in the store: the delivery moves to `CANCELLED`
+  (`delivery_events.event_type = RETIRED`) and its active dispatch job (`ASSIGNED`/`ACCEPTED`/
+  `REASSIGNABLE`) to `CANCELLED`, which also frees the courier. A courier acting on a retired
+  delivery gets the existing **409 `invalid_delivery_transition`**. After pickup the delivery is
+  not touched; the courier then gets `order_not_deliverable` on a refunded order.
+- A full refund now always clears the customer's plain PIN (`orders.delivery_confirmation_code_display`),
+  also when a courier is engaged.
+
+### Clients / consumers to review (delivery 409)
+
+- Courier app (`pede_aqui_courier_app`): only calls `POST /deliveries/{id}/complete`
+  (`remote_courier_data_source.dart` `confirmDelivery`) and never PATCHes `/status`.
+  `DeliveryCubit.confirmDelivery` catches every error with a generic "Não foi possível confirmar a
+  entrega." — it does not read the error `code`, so `order_not_deliverable` shows that generic
+  message. Recommended: map 409 `order_not_deliverable` / `invalid_delivery_transition` to "Pedido
+  cancelado/reembolsado — não entregar" and drop the job from the courier's list. Not changed here.
+- Backoffice / ops tools calling `PATCH /deliveries/{id}/status`: handle the new code.
+
 ## INC-14 — Error contract and correlation (AS-15, AS-17)
 
 Full contract: [ERROR-CONTRACT.md](ERROR-CONTRACT.md).

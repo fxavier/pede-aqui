@@ -27,6 +27,9 @@ public interface DispatchJobRepository extends JpaRepository<DispatchJob, UUID> 
     /** One page of a single courier's jobs within the tenant. */
     List<DispatchJob> findByTenantIdAndCourierId(UUID tenantId, UUID courierId, Pageable pageable);
 
+    /** The delivery's jobs in the given statuses (used to cancel its active job when the delivery is retired). */
+    List<DispatchJob> findByTenantIdAndDeliveryIdAndStatusIn(UUID tenantId, UUID deliveryId, Collection<DispatchJobStatus> statuses);
+
     /** True when the delivery already has a job in one of the given (active) statuses. */
     boolean existsByTenantIdAndDeliveryIdAndStatusIn(UUID tenantId, UUID deliveryId, Collection<DispatchJobStatus> statuses);
 
