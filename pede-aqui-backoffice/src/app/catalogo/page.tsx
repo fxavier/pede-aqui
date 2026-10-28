@@ -261,6 +261,7 @@ export default function CatalogoPage() {
                               Imagem do produto
                             </label>
                             {productForm.imagePreview && (
+                              // eslint-disable-next-line @next/next/no-img-element -- local blob:/presigned preview URL; next/image optimisation does not apply
                               <img
                                 src={productForm.imagePreview}
                                 alt="preview"
@@ -310,6 +311,7 @@ export default function CatalogoPage() {
                                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
                                 >
                                   {imagePreviews[product.id] ? (
+                                    // eslint-disable-next-line @next/next/no-img-element -- local blob:/presigned preview URL; next/image optimisation does not apply
                                     <img
                                       src={imagePreviews[product.id]}
                                       alt={product.name}

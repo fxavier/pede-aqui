@@ -9,6 +9,13 @@ interface FormData extends Omit<MerchantRegistrationPayload, 'confirmPassword'> 
   confirmPassword: string;
 }
 
+/** Error body returned by POST /register (thrown as-is by registrationService). */
+interface RegistrationError {
+  code?: string;
+  message?: string;
+  fieldErrors?: { field: string; message: string }[];
+}
+
 const toSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -93,10 +100,14 @@ export default function RegisterPage() {
     setLoading(true);
     setGlobalError('');
     try {
+      // confirmPassword is client-side only and must not be sent to the API.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...payload } = form;
       await registrationService.register(payload);
       setSuccess(true);
-    } catch (error: any) {
+    } catch (caught) {
+      // registrationService.register throws the parsed API error body as-is.
+      const error = caught as RegistrationError;
       if (error.code === 'tenant_slug_exists') {
         setErrors({ companySlug: 'Este slug já está em uso.' }); setStep(1);
       } else if (error.code === 'email_exists') {
@@ -104,7 +115,7 @@ export default function RegisterPage() {
       } else if (error.code === 'validation_failed' && error.fieldErrors) {
         const fe: Record<string, string> = {};
         let firstStep = 3;
-        error.fieldErrors.forEach((f: any) => {
+        error.fieldErrors.forEach((f) => {
           fe[f.field] = f.message;
           const s = getStepForField(f.field);
           if (s < firstStep) firstStep = s;

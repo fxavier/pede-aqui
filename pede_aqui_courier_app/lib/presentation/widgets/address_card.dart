@@ -39,7 +39,7 @@ class AddressCard extends StatelessWidget {
                   Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(color: color.withOpacity(.12), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)),
                     child: Icon(icon, color: color, size: 28),
                   ),
                   const SizedBox(width: 14),
@@ -77,8 +77,8 @@ class AddressCard extends StatelessWidget {
                     label: const Text('Ligar'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: color,
-                      side: BorderSide(color: color.withOpacity(.25)),
-                      backgroundColor: color.withOpacity(.08),
+                      side: BorderSide(color: color.withValues(alpha: .25)),
+                      backgroundColor: color.withValues(alpha: .08),
                       minimumSize: const Size(0, 44),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                     ),
@@ -90,8 +90,8 @@ class AddressCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: color.withOpacity(.07),
-                border: Border(top: BorderSide(color: color.withOpacity(.12))),
+                color: color.withValues(alpha: .07),
+                border: Border(top: BorderSide(color: color.withValues(alpha: .12))),
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
               ),
               child: Row(

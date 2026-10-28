@@ -39,14 +39,14 @@ void setupServiceLocator() {
     getIt.registerLazySingleton<OrderRepository>(() => MockOrderRepository());
   } else {
     getIt.registerLazySingleton<AuthRepository>(
-        () => ApiAuthRepository(getIt<ApiClient>(), getIt<TokenStorage>()));
+        () => ApiAuthRepository(getIt<ApiClient>(), getIt<TokenStorage>()),);
     getIt.registerLazySingleton<CatalogRepository>(() => ApiCatalogRepository(getIt<ApiClient>()));
     // Customer id comes from the authenticated session (Keycloak user id),
     // resolved lazily so the repository can be registered before login.
     getIt.registerLazySingleton<CartRepository>(() => ApiCartRepository(
           getIt<ApiClient>(),
           () => (getIt<AuthRepository>() as ApiAuthRepository).customerId,
-        ));
+        ),);
     getIt.registerLazySingleton<OrderRepository>(() => ApiOrderRepository(getIt<ApiClient>()));
 
     // Wire refresh interceptor

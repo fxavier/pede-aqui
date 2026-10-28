@@ -113,7 +113,7 @@ class WeeklyChartCard extends StatelessWidget {
                         width: 28,
                         height: 34 + (128 * factor),
                         decoration: BoxDecoration(
-                          color: item.isToday ? AppColors.primary.withOpacity(.78) : AppColors.primary,
+                          color: item.isToday ? AppColors.primary.withValues(alpha: .78) : AppColors.primary,
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                         ),
                       ),

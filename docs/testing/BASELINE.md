@@ -217,3 +217,20 @@ real ou integração.
 | **Risco:** `.gitignore` da raiz exclui código-fonte (`data/` e `screens/` não ancorados — ver 7.1) | Um clone limpo não compila as apps Flutter; `validate:screens` falha; ficheiros novos nesses diretórios ficam fora dos commits sem aviso | — (ancorar os padrões e versionar os ficheiros em falta, em incremento próprio) |
 | `java` predefinido é JDK 25 | Builds devem exportar `JAVA_HOME` para JDK 21 | `export JAVA_HOME=…/ms-21.0.8/Contents/Home` |
 | Sem `.env.local` nos frontends num clone limpo | Não afetou typecheck/test/build | — |
+
+## 10. Pós-correção — CI verde (branch `fix/ci-green`, 2026-10-28)
+
+Medido sobre `origin/main` @ `8d09b1c` + commits de `fix/ci-green`, com os comandos exatos do
+`.github/workflows/ci.yml`. Node 20.20.2 / npm 10.9.9 (as versões do CI; o npm 11 local esconde a
+falha do lockfile) e Flutter 3.29.3.
+
+| Job | Causa raiz | Correção | Resultado local |
+|---|---|---|---|
+| backoffice | `--max-warnings=0`: 7 erros + 23 avisos de lint; `generated-screens.ts` e `src/app/screens/**` fora do Git | Lint corrigido (tipos, imports mortos, `ImageIcon`, deps do efeito, disables por linha justificados); ficheiros versionados | `npm ci && npm run validate && npm run build` → **OK** (32 ecrãs, build 57/57 páginas) |
+| delivery-web | `package-lock.json` escrito pelo npm 11 sem o `esbuild@0.28.2` aninhado do vitest; o `npm ci` do npm 10 (Node 20) aborta com EUSAGE | Lockfile ressincronizado com `npm@10 install --package-lock-only` (só adições) | `npm ci && npm run typecheck && npm test && npm run build` → **OK** (4 ficheiros, 22 testes) |
+| delivery-app | Fontes `lib/features/*/data/` ignoradas pelo `.gitignore`; CI em Flutter `stable` flutuante (3.47.8) exige `intl ^0.20.3` → `pub get` falha; 47 infos fatais no `analyze` | `.gitignore` ancorado + fontes versionadas; Flutter fixado em 3.29.3 no CI; `dart fix --apply` | `flutter pub get && flutter analyze && flutter test` → **OK** (0 issues, 9 testes) |
+| courier-app | Fontes `lib/data/` e `lib/presentation/screens/` ignoradas; infos (`withOpacity` deprecado, `const`) | Idem + `withOpacity(x)` → `withValues(alpha: x)` | `flutter pub get && flutter analyze && flutter test` → **OK** (0 issues, 9 testes) |
+| backend | **Novo em `main`** (fora do âmbito, não corrigido): o merge `5f8095c` perdeu o parâmetro/atribuição `deliveryRetirementService` do construtor de `OrderService` (introduzido em `380c1cc`) | — | `mvn compile` → **FALHA** `OrderService.java:[132,5] variable deliveryRetirementService might not have been initialized` |
+
+`.gitignore`: `data/` → `/data/` e `screens/` → `/screens/` (só a raiz: volumes locais e a pasta de
+referências de design). Ficaram versionados 62 ficheiros antes só existentes na cópia local do autor.

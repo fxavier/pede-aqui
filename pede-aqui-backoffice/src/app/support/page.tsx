@@ -77,7 +77,7 @@ export default function SupportPage() {
     setActionError(null);
     try {
       updateTicket(await fn());
-    } catch (error) {
+    } catch {
       setActionError("Erro ao executar acção. Tente novamente.");
     } finally {
       setActionLoading(false);
@@ -100,7 +100,7 @@ export default function SupportPage() {
       setCreateDescription("");
       setCreateOrderId("");
       setShowCreate(false);
-    } catch (error) {
+    } catch {
       setCreateError("Erro ao criar ticket. Tente novamente.");
     } finally {
       setCreating(false);

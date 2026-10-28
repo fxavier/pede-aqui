@@ -76,7 +76,7 @@ class CartScreen extends StatelessWidget {
               ...summary.items.map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _CartItemTile(item: item),
-                  )),
+                  ),),
               const SizedBox(height: 10),
               OrderSummaryCard(summary: summary),
               const SizedBox(height: 18),

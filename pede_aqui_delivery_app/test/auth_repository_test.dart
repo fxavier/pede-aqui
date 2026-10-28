@@ -82,7 +82,7 @@ void main() {
       final tokenAdapter = FakeHttpAdapter((options) => jsonResponse({
             'access_token': 'acc-1',
             'refresh_token': 'ref-1',
-          }));
+          }),);
       final apiAdapter = FakeHttpAdapter((options) => jsonResponse(meProfile));
       final repo = ApiAuthRepository(
         ApiClient(dio: testDio(apiAdapter, baseUrl: 'http://test.local/api/v1')),
@@ -194,14 +194,14 @@ void main() {
       final tokenAdapter = FakeHttpAdapter((options) => jsonResponse({
             'access_token': 'acc-new',
             'refresh_token': 'ref-new',
-          }));
+          }),);
       final apiAdapter = FakeHttpAdapter((options) {
         if (options.path.contains('/customers/register')) {
           return jsonResponse({
             'keycloakUserId': 'kc-user-1',
             'email': 'felix@example.com',
             'displayName': 'Felix Tester',
-          }, status: 201);
+          }, status: 201,);
         }
         return jsonResponse(meProfile);
       });

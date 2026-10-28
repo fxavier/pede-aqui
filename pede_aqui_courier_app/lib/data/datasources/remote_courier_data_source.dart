@@ -137,7 +137,7 @@ class RemoteCourierDataSource implements CourierDataSource {
       estimatedMinutes: (job['estimatedMinutes'] as num?)?.toInt() ?? 15,
       expectedEarning: (job['estimatedEarning'] as num?)?.toInt() ?? 0,
       paymentMethod: job['paymentMethod'] as String? ?? 'Pagar no destino',
-      items: [],
+      items: const [],
       distanceKm: (job['distanceKm'] as num?)?.toDouble() ?? 0,
       pickupCompleted: job['pickupCompleted'] as bool? ?? false,
       verificationCode: job['confirmationCode'] as String?,

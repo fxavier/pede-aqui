@@ -48,7 +48,7 @@ export default function HomePage() {
         router.replace('/login');
         break;
     }
-  }, [isLoading, isAuthenticated, user?.role, router]);
+  }, [isLoading, isAuthenticated, user?.role, user?.tenantId, user?.activeTenantId, router]);
 
   if (isLoading) {
     return null;

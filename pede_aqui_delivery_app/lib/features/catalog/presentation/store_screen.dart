@@ -86,8 +86,8 @@ class _StoreScreenState extends State<StoreScreen> {
                             const SizedBox(height: 6),
                             Text(vendor?.description ?? 'Grelhados • Comida contemporânea • 2.1 km', style: const TextStyle(color: AppColors.mutedText, fontSize: 12)),
                             const SizedBox(height: 10),
-                            Row(
-                              children: const [
+                            const Row(
+                              children: [
                                 Icon(Icons.star_rounded, color: AppColors.amber600, size: 17),
                                 SizedBox(width: 4),
                                 Text('4.8', style: TextStyle(fontWeight: FontWeight.w800)),

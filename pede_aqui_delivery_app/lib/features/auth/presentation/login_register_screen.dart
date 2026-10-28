@@ -36,7 +36,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       listenWhen: (previous, current) =>
           !previous.authenticated && current.authenticated,
       listener: (context, state) => Navigator.pushNamedAndRemoveUntil(
-          context, AppRoutes.home, (route) => false),
+          context, AppRoutes.home, (route) => false,),
       child: ScreenShell(
         padding: const EdgeInsets.fromLTRB(24, 34, 24, 32),
         child: Column(
@@ -54,7 +54,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                   BoxShadow(
                       color: Colors.black.withValues(alpha: .07),
                       blurRadius: 34,
-                      offset: const Offset(0, 18)),
+                      offset: const Offset(0, 18),),
                 ],
               ),
               child: Column(
@@ -64,11 +64,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                       _TabButton(
                           label: 'Entrar',
                           selected: !_register,
-                          onTap: () => setState(() => _register = false)),
+                          onTap: () => setState(() => _register = false),),
                       _TabButton(
                           label: 'Registar',
                           selected: _register,
-                          onTap: () => setState(() => _register = true)),
+                          onTap: () => setState(() => _register = true),),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -100,7 +100,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                       child: const Text('Esqueceu a palavra-passe?',
                           style: TextStyle(
                               color: AppColors.primary,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w800,),),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -120,7 +120,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             Text(
                               state.error!,
                               style: const TextStyle(
-                                  color: Colors.red, fontSize: 14),
+                                  color: Colors.red, fontSize: 14,),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
@@ -147,7 +147,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 12),
                         child: Text('ou continue com',
                             style: TextStyle(
-                                color: AppColors.mutedText, fontSize: 12)),
+                                color: AppColors.mutedText, fontSize: 12,),),
                       ),
                       Expanded(child: Divider()),
                     ],
@@ -162,11 +162,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         foregroundColor: AppColors.green,
                         side: const BorderSide(color: AppColors.green),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(16),),
                       ),
                       icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
                       label: const Text('Continuar com Google',
-                          style: TextStyle(fontWeight: FontWeight.w800)),
+                          style: TextStyle(fontWeight: FontWeight.w800),),
                     ),
                   ),
                 ],
@@ -180,12 +180,12 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                   TextSpan(
                       text: 'Termos de Serviço',
                       style: TextStyle(
-                          color: AppColors.green, fontWeight: FontWeight.w800)),
+                          color: AppColors.green, fontWeight: FontWeight.w800,),),
                   TextSpan(text: ' e '),
                   TextSpan(
                       text: 'Política de Privacidade.',
                       style: TextStyle(
-                          color: AppColors.green, fontWeight: FontWeight.w800)),
+                          color: AppColors.green, fontWeight: FontWeight.w800,),),
                 ],
               ),
               textAlign: TextAlign.center,
@@ -218,7 +218,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     final minLength = _register ? 8 : 6;
     if (password.length < minLength) {
       setState(() => _validationError =
-          'A palavra-passe deve ter pelo menos $minLength caracteres.');
+          'A palavra-passe deve ter pelo menos $minLength caracteres.',);
       return;
     }
 
@@ -233,7 +233,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
 
 class _TabButton extends StatelessWidget {
   const _TabButton(
-      {required this.label, required this.selected, required this.onTap});
+      {required this.label, required this.selected, required this.onTap,});
 
   final String label;
   final bool selected;
@@ -251,14 +251,14 @@ class _TabButton extends StatelessWidget {
             border: Border(
                 bottom: BorderSide(
                     color: selected ? AppColors.primary : AppColors.border,
-                    width: 2)),
+                    width: 2,),),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: selected ? AppColors.primary : AppColors.mutedText),
+                color: selected ? AppColors.primary : AppColors.mutedText,),
           ),
         ),
       ),

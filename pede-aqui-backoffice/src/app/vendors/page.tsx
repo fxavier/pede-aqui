@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { dashboardService, orderService, vendorService, categoryService, uploadService } from "@/lib/api/services";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import type { VendorDashboard, Order, VendorDocument, Category } from "@/lib/api/types";
-import { DollarSign, ShoppingBag, TrendingUp, XCircle, Upload, FileText, Image, Trash2 } from "lucide-react";
+import { DollarSign, ShoppingBag, TrendingUp, XCircle, Upload, FileText, Image as ImageIcon, Trash2 } from "lucide-react";
 
 
 type OrderTab = "all" | "pending" | "active" | "delivered" | "cancelled";
@@ -496,6 +496,7 @@ export default function VendorsPage() {
                       <div className="flex items-center gap-3">
                         {vendorForm.logoPreview ? (
                           <div className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- local blob:/presigned preview URL; next/image optimisation does not apply */}
                             <img 
                               src={vendorForm.logoPreview} 
                               alt="Logo preview" 
@@ -511,7 +512,7 @@ export default function VendorsPage() {
                           </div>
                         ) : (
                           <div className="h-16 w-16 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center">
-                            <Image className="h-6 w-6 text-on-surface-variant" />
+                            <ImageIcon aria-hidden="true" className="h-6 w-6 text-on-surface-variant" />
                           </div>
                         )}
                         <div className="flex-1">
