@@ -89,6 +89,36 @@ class SalesAccessGuardTest {
     }
 
     @Test
+    void merchantScopeCoversVendorAdminAndVendorStaffButNotTenantWideRoles() {
+        authenticate("ROLE_VENDOR_STAFF");
+        assertThat(guard.isMerchantScoped()).isTrue();
+        assertThat(guard.isVendorScoped()).isFalse(); // sales semantics unchanged
+
+        authenticate("ROLE_VENDOR_ADMIN");
+        assertThat(guard.isMerchantScoped()).isTrue();
+
+        authenticate("ROLE_VENDOR_STAFF", "ROLE_OPS");
+        assertThat(guard.isMerchantScoped()).isFalse();
+    }
+
+    @Test
+    void requireOwnVendorIdFailsClosedWhenAmbiguous() {
+        when(vendorRepository.findByTenantId(tenantId)).thenReturn(List.of(
+                new Vendor(UUID.randomUUID(), tenantId, "A", null, null, null, "O", null, null, null, null, null),
+                new Vendor(UUID.randomUUID(), tenantId, "B", null, null, null, "O", null, null, null, null, null)));
+        authenticate("ROLE_VENDOR_STAFF");
+
+        assertThatThrownBy(() -> guard.requireOwnVendorId(tenantId))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void maskNameKeepsFirstLetterOfEachWord() {
+        assertThat(SalesAccessGuard.maskName("Ana  Lima")).isEqualTo("A*** L***");
+        assertThat(SalesAccessGuard.maskName(null)).isNull();
+    }
+
+    @Test
     void tenantWideRolesBypassVendorScoping() {
         authenticate("ROLE_ADMIN");
         assertThatCode(() -> guard.ensureOwnVendorOrder(tenantId, UUID.randomUUID())).doesNotThrowAnyException();

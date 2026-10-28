@@ -16,6 +16,7 @@ import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.delivery.service.DeliveryCodeHasher;
 import com.delivery.inventory.service.InventoryService;
+import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.entity.Order;
@@ -30,6 +31,7 @@ import com.delivery.vendor.repository.VendorRepository;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.payment.service.PaymentService;
 import com.delivery.payment.dto.RefundRequest;
+import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.common.service.AuditLogService;
 import java.security.SecureRandom;
 import java.util.List;
@@ -37,14 +39,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Handles checkout and order creation for customer carts. */
+/** Handles checkout, order listing, and vendor fulfilment transitions (vendor users confined to their own vendor). */
 @Service
 public class OrderService {
     private static final Set<OrderStatus> VENDOR_REJECTION_ALLOWED_STATUSES = Set.of(OrderStatus.PAYMENT_CONFIRMED, OrderStatus.ACCEPTED_BY_VENDOR);
+    private static final int MAX_PAGE_SIZE = 100;
     private final CartRepository cartRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
@@ -60,6 +67,7 @@ public class OrderService {
     private final SkuRepository skuRepository;
     private final ProductRepository productRepository;
     private final CheckoutDiscountResolver discountResolver;
+    private final SalesAccessGuard accessGuard;
     private final DeliveryCodeHasher deliveryCodeHasher;
     private final SecureRandom random = new SecureRandom();
 
@@ -79,26 +87,60 @@ public class OrderService {
         this.skuRepository = skuRepository;
         this.productRepository = productRepository;
         this.discountResolver = discountResolver;
+        // SalesAccessGuard is stateless (only reads the SecurityContext and VendorRepository); building it here
+        // reuses the sales scoping rules without widening this constructor, which other increments also touch.
+        this.accessGuard = new SalesAccessGuard(vendorRepository);
         this.deliveryCodeHasher = deliveryCodeHasher;
     }
 
-    /** Returns all orders for the current tenant with customer and vendor names resolved (admin/vendor safe). */
+    /** Returns the caller's orders with names resolved: tenant-wide for OPS/ADMIN, own vendor only for merchant users. */
     @Transactional(readOnly = true)
     public List<AdminOrderResponse> listForCurrentContext() {
-        List<Order> orders = tenantContext.isPlatformAdmin()
-                ? orderRepository.findAll()
-                : orderRepository.findByTenantId(tenantId());
+        List<Order> orders;
+        if (accessGuard.isMerchantScoped()) {
+            UUID tenantId = tenantId();
+            orders = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId));
+        } else {
+            orders = tenantContext.isPlatformAdmin()
+                    ? orderRepository.findAll()
+                    : orderRepository.findByTenantId(tenantId());
+        }
+        return toAdminResponses(orders);
+    }
+
+    private List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
         Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
         Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
         Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()
                 .collect(Collectors.toMap(AppUserProfile::getId, AppUserProfile::getDisplayName));
         Map<UUID, String> vendorNames = vendorRepository.findAllById(vendorIds).stream()
                 .collect(Collectors.toMap(Vendor::getId, Vendor::getName));
+        // Same PII rule as the sales lens: only a pure SUPPORT caller gets masked customer names.
+        boolean maskPii = accessGuard.shouldMaskCustomerPii();
         return orders.stream()
                 .map(o -> mapper.toAdminResponse(o,
-                        customerNames.getOrDefault(o.getCustomerId(), "Unknown"),
+                        maskPii ? SalesAccessGuard.maskName(customerNames.getOrDefault(o.getCustomerId(), "Unknown"))
+                                : customerNames.getOrDefault(o.getCustomerId(), "Unknown"),
                         vendorNames.getOrDefault(o.getVendorId(), "Unknown")))
                 .toList();
+    }
+
+    /** Returns one page of orders for the current context (newest first, size capped). */
+    @Transactional(readOnly = true)
+    public AdminOrderPageResponse listPageForCurrentContext(int page, int size) {
+        int effectiveSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int effectivePage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(effectivePage, effectiveSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> result;
+        if (accessGuard.isMerchantScoped()) {
+            UUID tenantId = tenantId();
+            result = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId), pageable);
+        } else {
+            result = tenantContext.isPlatformAdmin()
+                    ? orderRepository.findAll(pageable)
+                    : orderRepository.findByTenantId(tenantId(), pageable);
+        }
+        return new AdminOrderPageResponse(toAdminResponses(result.getContent()), effectivePage, effectiveSize, result.getTotalElements());
     }
 
     /** Creates an order, reserves stock, and creates local payment/delivery records idempotently. */
@@ -208,8 +250,7 @@ public class OrderService {
         String refundIdempotencyKey = "vendor-rejection-" + orderId.toString();
         paymentService.requestRefund(payment.getId(), new RefundRequest(payment.getAmount(), "Vendor rejection: " + reason, refundIdempotencyKey));
         
-        // Transition order to refund pending state
-        order.markRefundPending();
+        // COR-07: the order stays REJECTED_BY_VENDOR; the refund is tracked only on the Refund record.
         auditLogService.log("ORDER_REJECTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
         
         return mapper.toResponse(order);
@@ -239,7 +280,16 @@ public class OrderService {
         return mapper.toResponse(order);
     }
 
+    /**
+     * Loads an order for a vendor fulfilment transition. Merchant users only see their own vendor's
+     * orders: another vendor's order answers 404 exactly like a missing one (existence is not revealed).
+     */
     private Order findOrder(UUID orderId) {
-        return orderRepository.findByTenantIdAndId(tenantId(), orderId).orElseThrow(() -> new NotFoundException("Order was not found"));
+        UUID tenantId = tenantId();
+        Order order = orderRepository.findByTenantIdAndId(tenantId, orderId).orElseThrow(() -> new NotFoundException("Order was not found"));
+        if (accessGuard.isMerchantScoped() && !accessGuard.requireOwnVendorId(tenantId).equals(order.getVendorId())) {
+            throw new NotFoundException("Order was not found");
+        }
+        return order;
     }
 }
