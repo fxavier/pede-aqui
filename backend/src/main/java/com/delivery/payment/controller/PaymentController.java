@@ -22,6 +22,9 @@ public class PaymentController {
 
     public PaymentController(PaymentService service) { this.service = service; }
 
+    // No @PreAuthorize on purpose: when app.payments.mock-confirmation.enabled=false the endpoint must
+    // answer 404 for every role, so the flag, role (CUSTOMER owner / OPS / ADMIN) and ownership checks
+    // all live in PaymentService.confirm (INC-01, AS-01).
     @PostMapping("/{paymentId}/confirm")
     public PaymentResponse confirm(@PathVariable UUID paymentId, @Valid @RequestBody ConfirmPaymentRequest request) {
         return service.confirm(paymentId, request.idempotencyKey());
