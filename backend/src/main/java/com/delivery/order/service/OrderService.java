@@ -19,7 +19,6 @@ import com.delivery.inventory.service.InventoryService;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
-import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.DeliveryAddressSnapshot;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
@@ -32,7 +31,6 @@ import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.payment.service.PaymentService;
-import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.common.service.AuditLogService;
@@ -70,6 +68,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class OrderService {
     private static final Set<OrderStatus> VENDOR_REJECTION_ALLOWED_STATUSES = Set.of(OrderStatus.PAYMENT_CONFIRMED, OrderStatus.ACCEPTED_BY_VENDOR);
+    /** A rejection of an order already in one of these is a no-op repeat (REJECTED_BY_VENDOR = legacy rows). */
+    private static final Set<OrderStatus> REJECTION_ALREADY_SETTLED_STATUSES = Set.of(OrderStatus.CANCELLED, OrderStatus.REJECTED_BY_VENDOR);
+    public static final String SELLER_REJECTION_AUDIT_ACTION = "ORDER_CANCELLED_SELLER_REJECTED";
+    /** Idempotency key prefix of the rejection refund (`seller-reject-<orderId>`); legacy rows use `vendor-rejection-<orderId>`. */
+    public static final String SELLER_REJECT_REFUND_KEY_PREFIX = "seller-reject-";
     private static final int MAX_PAGE_SIZE = 100;
     private final CartRepository cartRepository;
     private final OrderRepository orderRepository;
@@ -365,25 +368,27 @@ public class OrderService {
     }
 
     /**
-     * Rejects an order with a required reason while still in vendor-owned states, in one transaction
-     * (status change + stock release + refund request + notification + audit; any failure rolls back all).
-     * The payment row is locked first so concurrent rejections (and refund requests/approvals) of the same
-     * order are serialized and the second caller sees the committed outcome.
-     * - No refund on the payment yet (INC-04): order → REJECTED_BY_VENDOR and a refund of the full amount.
-     * - Payment already carries refunds (REFUNDED or pending): order → CANCELLED with reason SELLER_REJECTED
-     *   and only the remaining refundable amount is requested (none when nothing remains). Repeating it is
-     *   idempotent: the same response, no new refund, audit entry or notification.
+     * Seller rejection (unified product decision): every rejection ends with the order CANCELLED and
+     * {@code cancellation_reason = SELLER_REJECTED}, the vendor text kept in {@code rejection_reason}, stock released
+     * (INC-07), the plain delivery PIN cleared, a refund of whatever is still refundable on the payment (the full
+     * amount when nothing was refunded before, nothing when it is already fully covered), one customer notification
+     * and one audit entry — all in one transaction, so any failure rolls back everything. The financial state
+     * (PARTIALLY_/FULLY_REFUNDED) lives on the payment. Allowed from PAYMENT_CONFIRMED/ACCEPTED_BY_VENDOR only.
+     *
+     * Lock order rule: the payment row is locked FOR UPDATE before the order is read (SalesService does the same),
+     * so concurrent rejections, cancellations and refunds of one order serialize and the second caller sees the
+     * committed state. A repeat on an order already CANCELLED (any reason) or in the legacy REJECTED_BY_VENDOR
+     * status returns the current state without new side effects (idempotent).
      */
     @Transactional
     public OrderResponse rejectByVendor(UUID orderId, String reason) {
         if (reason == null || reason.isBlank()) {
             throw new BusinessException("rejection_reason_required", "A rejection reason is required", HttpStatus.BAD_REQUEST);
         }
-        // Lock before the order is read, so the order state below is the committed state after any concurrent rejection.
         Payment payment = paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId(), orderId).orElse(null);
         Order order = findOrder(orderId);
-        if (order.getStatus() == OrderStatus.CANCELLED && order.getCancellationReason() == CancellationReason.SELLER_REJECTED) {
-            return mapper.toResponse(order); // idempotent repeat of a seller rejection
+        if (REJECTION_ALREADY_SETTLED_STATUSES.contains(order.getStatus())) {
+            return mapper.toResponse(order); // idempotent repeat: already cancelled/rejected, nothing more to do
         }
         if (!VENDOR_REJECTION_ALLOWED_STATUSES.contains(order.getStatus())) {
             throw new BusinessException("invalid_order_transition", "Order cannot be rejected in the current status", HttpStatus.BAD_REQUEST);
@@ -391,34 +396,16 @@ public class OrderService {
         if (payment == null) {
             throw new NotFoundException("Payment was not found for order");
         }
-        if (paymentService.hasCommittedRefunds(payment.getId())) {
-            return cancelBySellerRejection(order, payment, reason);
-        }
-
-        order.markRejectedByVendor(reason);
-        orderStockService.release(order); // INC-07 (COR-01): rejected orders give their reservation back
-        notifyRejected(order, reason);
-        String refundIdempotencyKey = "vendor-rejection-" + orderId;
-        paymentService.requestRefund(payment.getId(), new RefundRequest(payment.getAmount(), "Vendor rejection: " + reason, refundIdempotencyKey));
-        // COR-07: the order stays REJECTED_BY_VENDOR; the refund is tracked only on the Refund record.
-        auditLogService.log("ORDER_REJECTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
-        return mapper.toResponse(order);
-    }
-
-    /**
-     * Seller rejection after a partial refund: cancel with SELLER_REJECTED and refund only the remainder
-     * (payment − refunds already REFUNDED or pending). The refund is created REQUESTED here; a future PSP
-     * payout runs after commit (see PaymentService#requestRemainingRefund) and can never undo this cancellation.
-     */
-    private OrderResponse cancelBySellerRejection(Order order, Payment payment, String reason) {
         order.markCancelledBySellerRejection(reason);
-        orderStockService.release(order); // INC-07 (COR-01)
-        BigDecimal refunded = paymentService.requestRemainingRefund(payment.getId(), "Vendor rejection: " + reason, "seller-reject-" + order.getId())
+        orderStockService.release(order); // INC-07 (COR-01): rejected orders give their reservation back
+        // The refund is created REQUESTED here; a future PSP payout runs after commit (PaymentService#requestRemainingRefund)
+        // and can never undo this cancellation.
+        BigDecimal refunded = paymentService.requestRemainingRefund(payment.getId(), "Vendor rejection: " + reason, SELLER_REJECT_REFUND_KEY_PREFIX + orderId)
                 .map(RefundResponse::amount)
                 .orElse(BigDecimal.ZERO);
         notifyRejected(order, reason);
         // No PII: the order id identifies the target; the business reference carries only the refunded remainder.
-        auditLogService.log("ORDER_CANCELLED_SELLER_REJECTED", "order", order.getId().toString(),
+        auditLogService.log(SELLER_REJECTION_AUDIT_ACTION, "order", orderId.toString(),
                 "refund_remaining=" + refunded.setScale(2, RoundingMode.HALF_UP).toPlainString(), "SUCCESS");
         return mapper.toResponse(order);
     }

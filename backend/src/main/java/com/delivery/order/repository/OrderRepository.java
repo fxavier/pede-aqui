@@ -1,5 +1,6 @@
 package com.delivery.order.repository;
 
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import java.util.List;
@@ -18,4 +19,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByTenantIdAndId(UUID tenantId, UUID id);
     Optional<Order> findByTenantIdAndCheckoutIdempotencyKey(UUID tenantId, String checkoutIdempotencyKey);
     List<Order> findByTenantIdAndStatus(UUID tenantId, OrderStatus status);
+    long countByTenantIdAndStatus(UUID tenantId, OrderStatus status);
+    long countByTenantIdAndStatusAndCancellationReason(UUID tenantId, OrderStatus status, CancellationReason cancellationReason);
 }

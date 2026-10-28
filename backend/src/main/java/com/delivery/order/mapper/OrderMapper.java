@@ -33,7 +33,7 @@ public class OrderMapper {
     public OrderResponse toCustomerResponse(Order order) {
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                null, null, null, null, DeliveryAddressResponse.from(order.getDeliveryAddress()));
+                null, null, null, null, DeliveryAddressResponse.from(order.getDeliveryAddress()), order.getCancellationReason());
     }
 
     /** Customer-only response with names - only for order owners */
@@ -43,7 +43,8 @@ public class OrderMapper {
                 .toList();
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                customerName, vendorName, order.getCreatedAt(), items, DeliveryAddressResponse.from(order.getDeliveryAddress()));
+                customerName, vendorName, order.getCreatedAt(), items, DeliveryAddressResponse.from(order.getDeliveryAddress()),
+                order.getCancellationReason());
     }
 
     /** Admin/vendor response that excludes delivery code */
@@ -53,7 +54,8 @@ public class OrderMapper {
                 .toList();
         return new AdminOrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), customerName, vendorName, order.getCreatedAt(), items,
-                order.getDeliveryAddress() == null ? null : order.getDeliveryAddress().getCity());
+                order.getDeliveryAddress() == null ? null : order.getDeliveryAddress().getCity(),
+                order.getCancellationReason());
     }
 
     /** Context-aware response that includes delivery code only for the customer who owns the order */
@@ -63,7 +65,7 @@ public class OrderMapper {
         }
         // For non-owners, return response without delivery code or delivery address
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                order.getTotal(), null, null, null, null, null, null);
+                order.getTotal(), null, null, null, null, null, null, order.getCancellationReason());
     }
 
     /** Context-aware response with names that includes delivery code only for the customer who owns the order */
@@ -76,7 +78,7 @@ public class OrderMapper {
                 .map(this::toItemResponse)
                 .toList();
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
-                order.getTotal(), null, customerName, vendorName, order.getCreatedAt(), items, null);
+                order.getTotal(), null, customerName, vendorName, order.getCreatedAt(), items, null, order.getCancellationReason());
     }
 
     public OrderItemResponse toItemResponse(OrderItem item) {

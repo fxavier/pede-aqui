@@ -1,5 +1,6 @@
 package com.delivery.order.dto;
 
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.OrderStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -10,7 +11,8 @@ import java.util.UUID;
  * Order response for admin/vendor contexts that excludes sensitive delivery confirmation codes. Of the
  * delivery address it carries only {@code deliveryArea} (the city of the checkout snapshot): enough for a
  * vendor to anticipate the route and preparation timing, without street, phone, recipient or GPS pin, which
- * only the assigned courier needs (GET /deliveries/{id}/address).
+ * only the assigned courier needs (GET /deliveries/{id}/address). {@code cancellationReason} says why a
+ * CANCELLED order ended (e.g. SELLER_REJECTED); null otherwise.
  */
 public record AdminOrderResponse(
         UUID id,
@@ -21,4 +23,5 @@ public record AdminOrderResponse(
         String vendorName,
         Instant createdAt,
         List<OrderItemResponse> items,
-        String deliveryArea) {}
+        String deliveryArea,
+        CancellationReason cancellationReason) {}

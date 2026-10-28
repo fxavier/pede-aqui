@@ -18,6 +18,7 @@ import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;
 import com.delivery.payment.entity.Refund;
 import com.delivery.payment.entity.RefundStatus;
+import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.service.PaymentService;
 import com.delivery.sales.config.SalesStatusOverrideProperties;
 import com.delivery.sales.dto.SaleDetailResponse;
@@ -84,6 +85,7 @@ public class SalesService {
     private final VendorRepository vendorRepository;
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final TenantContext tenantContext;
@@ -105,8 +107,10 @@ public class SalesService {
             TenantContext tenantContext,
             SalesStatusOverrideProperties statusOverrideProperties,
             SalesAccessGuard accessGuard,
-            OrderStockService orderStockService) {
+            OrderStockService orderStockService,
+            PaymentRepository paymentRepository) {
         this.orderStockService = orderStockService;
+        this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
         this.searchRepository = searchRepository;
         this.paymentReadRepository = paymentReadRepository;
@@ -197,6 +201,7 @@ public class SalesService {
     @Transactional
     public SalesActionResponse cancel(UUID orderId, String reason) {
         UUID tenantId = tenantId();
+        lockPayment(tenantId, orderId);
         Order order = findOrder(tenantId, orderId);
         accessGuard.ensureOwnVendorOrder(tenantId, order.getVendorId());
         if (!CANCELLABLE_STATUSES.contains(order.getStatus())) {
@@ -217,6 +222,7 @@ public class SalesService {
     @Transactional
     public RefundResponse refund(UUID orderId, BigDecimal amount, String reason, String idempotencyKey) {
         UUID tenantId = tenantId();
+        lockPayment(tenantId, orderId);
         Order order = findOrder(tenantId, orderId);
         String key = (idempotencyKey == null || idempotencyKey.isBlank()) ? "sales-refund-" + UUID.randomUUID() : idempotencyKey;
 
@@ -280,6 +286,7 @@ public class SalesService {
         }
         OrderStatus target = parseStatus(targetStatusRaw);
         UUID tenantId = tenantId();
+        lockPayment(tenantId, orderId);
         Order order = findOrder(tenantId, orderId);
         if (order.getStatus() == target) {
             // Idempotent retry: the transition already happened; return the same result.
@@ -364,6 +371,16 @@ public class SalesService {
 
     private Order findOrder(UUID tenantId, UUID orderId) {
         return orderRepository.findByTenantIdAndId(tenantId, orderId).orElseThrow(() -> new NotFoundException("Order was not found"));
+    }
+
+    /**
+     * Lock order rule shared with the vendor rejection (OrderService#rejectByVendor): take the order's payment row
+     * FOR UPDATE before reading the order, so concurrent cancel / refund / override / reject calls on one order
+     * serialize and the loser sees the committed state instead of racing or deadlocking on the order row.
+     * Pre-payment orders (no payment row yet) have nothing to lock and keep the plain path.
+     */
+    private void lockPayment(UUID tenantId, UUID orderId) {
+        paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId, orderId);
     }
 
     private UUID tenantId() {
