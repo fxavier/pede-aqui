@@ -191,6 +191,12 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 - `ddl-auto: validate` — Hibernate never mutates schema; always create a migration for schema changes.
 - PostGIS extension enabled (used for geo/zone features). `customer_addresses.location` is `geography(Point,4326)` (V046, INC-12 expand phase): the app still writes `latitude`/`longitude` and a DB trigger derives `location`; the contract step (drop lat/lng) is pending.
 
+### Caching
+
+- Spring Cache on Redis (`spring.cache.type: ${CACHE_TYPE:redis}`; JSON serialization and TTLs in `common/config/RedisConfig`). Only cache today: `vendorSearch` (LAC-51), TTL 60 s, so store/product changes surface in search within a minute.
+- `@Cacheable` only works across a Spring proxy: never put it on a private or self-invoked method. The search cache lives in its own bean, `geo/service/VendorSearchCache`; `SearchService` calls it with a `VendorSearchQuery` whose `cacheKey()` holds every filter, the browse tenant (`*` = cross-tenant) and coordinates rounded to 3 decimals (~100 m — the search itself runs on the rounded point). The full filtered list is cached once; pages and `totalCount` are cut from it. Add any new filter to `VendorSearchQuery` or results will leak between queries.
+- Cache errors are logged and ignored (`LoggingCacheErrorHandler`): with Redis down the search runs uncached. The test suite runs with `spring.cache.type=none` (`src/test/resources/config/application.yml`); `VendorSearchCacheRedisTest` covers the real Redis round-trip and TTL.
+
 ### Storage
 
 Profile-driven: **dev = MinIO** (default), **prod = AWS S3**. Pattern: call `/uploads/images/presigned-url` or `/uploads/documents/presigned-url` to get `{ uploadUrl, storageKey }`, then PUT the file directly to `uploadUrl`. Pass `storageKey` back to the API to link the file to an entity.

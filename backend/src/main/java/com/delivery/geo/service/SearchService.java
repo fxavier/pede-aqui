@@ -13,9 +13,7 @@ import com.delivery.vendor.repository.VendorRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /** Provides tenant-scoped vendor discovery backed by real vendor records. */
@@ -25,70 +23,62 @@ public class SearchService {
     private final ProductRepository productRepository;
     private final VendorRepository vendorRepository;
     private final PricingService pricingService;
+    private final VendorSearchCache searchCache;
     private static final int PAGE_SIZE = 20;
     private static final int BASE_DELIVERY_MINUTES = 15;
     private static final int PER_KM_MINUTES = 3;
 
     public SearchService(TenantContext tenantContext, ProductRepository productRepository, VendorRepository vendorRepository,
-                         PricingService pricingService) {
+                         PricingService pricingService, VendorSearchCache searchCache) {
         this.tenantContext = tenantContext;
         this.productRepository = productRepository;
         this.vendorRepository = vendorRepository;
         this.pricingService = pricingService;
+        this.searchCache = searchCache;
     }
 
-    /** Enhanced search with Redis caching, pagination, and filtering. Anonymous and customer requests search across all tenants. */
+    /** Cached, paginated vendor search. Anonymous and customer requests search across all tenants. */
     public List<SearchVendorResponse> searchVendors(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        Optional<UUID> tenantId = tenantContext.browseTenantId();
-        return searchVendorsWithCache(tenantId.orElse(null), latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
+        return page(allResults(latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort), page);
     }
 
-    /** Enhanced search that includes totalCount for API response. Anonymous and customer requests search across all tenants. */
+    /** Cached vendor search with the total count for the API response; count and page come from one cached result set. */
     public SearchResponse searchVendorsWithCount(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        Optional<UUID> tenantId = tenantContext.browseTenantId();
-        UUID tid = tenantId.orElse(null);
-
-        List<SearchVendorResponse> allResults = searchVendorsInternalForCount(tid, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
-        int totalCount = allResults.size();
-        List<SearchVendorResponse> pageResults = searchVendorsWithCache(tid, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
-
-        return new SearchResponse(pageResults, totalCount, page, PAGE_SIZE);
+        List<SearchVendorResponse> allResults = allResults(latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
+        return new SearchResponse(page(allResults, page), allResults.size(), page, PAGE_SIZE);
     }
 
-    @Cacheable(value = "vendorSearch", key = "(#tenantId != null ? #tenantId : '*') + '_' + #latitude + '_' + #longitude + '_' + #radius + '_' + #category + '_' + #sort + '_' + #page")
-    private List<SearchVendorResponse> searchVendorsWithCache(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        return searchVendorsInternal(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort, page);
+    /** Full filtered and sorted result set, served from the vendorSearch cache (LAC-51). */
+    private List<SearchVendorResponse> allResults(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort) {
+        VendorSearchQuery query = VendorSearchQuery.of(tenantContext.browseTenantId().orElse(null),
+                latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
+        return searchCache.results(query, () -> search(query));
     }
 
-    private List<SearchVendorResponse> searchVendorsInternal(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort, Integer page) {
-        List<SearchVendorResponse> allResults = searchVendorsInternalForCount(tenantId, latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
-
-        // Pagination
-        int startIndex = page * PAGE_SIZE;
-        int endIndex = Math.min(startIndex + PAGE_SIZE, allResults.size());
-
+    private static List<SearchVendorResponse> page(List<SearchVendorResponse> allResults, Integer page) {
+        int startIndex = (page == null ? 0 : page) * PAGE_SIZE;
         if (startIndex >= allResults.size()) {
             return List.of();
         }
-
-        return allResults.subList(startIndex, endIndex);
+        return allResults.subList(startIndex, Math.min(startIndex + PAGE_SIZE, allResults.size()));
     }
 
-    private List<SearchVendorResponse> searchVendorsInternalForCount(UUID tenantId, Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort) {
-        List<Vendor> vendors = vendorRepository.findAllById(resolveVendorIds(tenantId, category));
+    private List<SearchVendorResponse> search(VendorSearchQuery query) {
+        List<Vendor> vendors = vendorRepository.findAllById(resolveVendorIds(query.tenantId(), query.category()));
 
-        double normalizedLat = latitude == null ? 0.0d : latitude;
-        double normalizedLng = longitude == null ? 0.0d : longitude;
-        int searchRadius = radius == null ? 5000 : radius;
+        double normalizedLat = query.latitude() == null ? 0.0d : query.latitude();
+        double normalizedLng = query.longitude() == null ? 0.0d : query.longitude();
+        Double minRating = query.minRating();
+        Integer maxDeliveryMinutes = query.maxDeliveryMinutes();
         // Same engine and distance function as checkout (INC-13): the fee shown is the fee charged for this position.
-        Map<UUID, DeliveryFeeQuote> fees = pricingService.estimateDeliveryFees(vendors, GeoPoint.of(latitude, longitude).orElse(null));
+        Map<UUID, DeliveryFeeQuote> fees = pricingService.estimateDeliveryFees(vendors, GeoPoint.of(query.latitude(), query.longitude()).orElse(null));
 
         return vendors.stream()
                 .map(vendor -> createVendorResponse(vendor, fees.get(vendor.getId()), normalizedLat, normalizedLng))
-                .filter(vendor -> isWithinRadius(vendor, searchRadius))
+                .filter(vendor -> isWithinRadius(vendor, query.radiusMeters()))
                 .filter(vendor -> minRating == null || vendor.rating() >= minRating)
                 .filter(vendor -> maxDeliveryMinutes == null || vendor.estimatedDeliveryMinutes() <= maxDeliveryMinutes)
-                .sorted(getComparator(sort))
+                .sorted(getComparator(query.sort()))
                 .toList();
     }
 
