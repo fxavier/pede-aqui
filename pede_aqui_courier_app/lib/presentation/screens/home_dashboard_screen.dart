@@ -57,9 +57,9 @@ class HomeDashboardScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 28),
                     const SectionHeader(title: 'Entrega activa'),
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.end,
-                      children: const [
+                      children: [
                         Icon(Icons.circle, size: 9, color: AppColors.primary),
                         SizedBox(width: 6),
                         Text('EM CURSO', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900)),

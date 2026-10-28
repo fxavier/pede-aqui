@@ -54,10 +54,10 @@ class WalletScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          AppCard(
+          const AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text('Últimos movimentos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                 SizedBox(height: 12),
                 _WalletRow(title: 'Entrega #PA-00891', amount: '+320 MT', date: 'Hoje, 13:45'),
