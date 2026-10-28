@@ -1,5 +1,6 @@
 package com.delivery.order.controller;
 
+import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
@@ -11,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Exposes order listing and customer order tracking endpoints. */
@@ -29,6 +31,13 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
     public List<AdminOrderResponse> list() {
         return orderService.listForCurrentContext();
+    }
+
+    /** Paginated variant of {@link #list()} (newest first, size capped at 100); same role and vendor scoping. */
+    @GetMapping("/page")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
+    public AdminOrderPageResponse listPage(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return orderService.listPageForCurrentContext(page, size);
     }
 
     @GetMapping("/{orderId}/tracking")

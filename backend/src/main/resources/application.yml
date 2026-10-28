@@ -19,7 +19,8 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/delivery}
     username: ${DB_USERNAME:delivery}
-    password: ${DB_PASSWORD:delivery}
+    # Sem default aqui (SEC-07): o valor de dev está em application-dev.yml; prod exige DB_PASSWORD.
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -43,6 +44,8 @@ server:
   servlet:
     context-path: /
 
+# Exposição: health público; metrics/prometheus só para ADMIN na porta da aplicação, ou sem token
+# na porta de gestão interna quando MANAGEMENT_SERVER_PORT está definida (SEC-19, ver SecurityConfig).
 management:
   endpoints:
     web:
@@ -52,10 +55,15 @@ management:
     health:
       probes:
         enabled: true
+        # /livez e /readyz também na porta da aplicação: as probes continuam a funcionar quando o
+        # actuator vive numa porta de gestão separada (MANAGEMENT_SERVER_PORT, ver application-prod.yml).
+        add-additional-paths: true
 
 springdoc:
   api-docs:
     path: /api-docs
+    # springdoc >= 2.8 passou a emitir OpenAPI 3.1 por defeito; fixa 3.0 para manter o contrato publicado (INC-09).
+    version: openapi_3_0
   swagger-ui:
     path: /swagger-ui.html
 
@@ -65,6 +73,9 @@ logging:
 
 app:
   api-base-path: /api/v1
+  provisioning:
+    max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
+    max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}
   catalog:
     price-review:
       enabled: true          # false → all price edits apply in place, audit-only
@@ -86,6 +97,15 @@ app:
       realm: ${KEYCLOAK_REALM:delivery}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:delivery-admin-service}
       client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:delivery-admin-secret}
+  delivery:
+    # Failed PIN submissions before the delivery code locks (OPS unlocks via /ops/deliveries/{id}/unlock-code).
+    max-code-attempts: ${APP_DELIVERY_MAX_CODE_ATTEMPTS:5}
+    # HMAC-SHA256 key for delivery PIN hashes. Empty here on purpose: only the dev profile has a
+    # default; prod must set APP_DELIVERY_CODE_HMAC_SECRET or startup fails.
+    code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:}
+  payments:
+    mock-confirmation:
+      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

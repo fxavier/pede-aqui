@@ -24,7 +24,7 @@ public class S3Config {
         // (~/.aws profile, instance role) only applies when they're absent.
         var credentialsProvider = (!accessKey.isBlank() && !secretKey.isBlank())
                 ? StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
-                : DefaultCredentialsProvider.create();
+                : DefaultCredentialsProvider.builder().build();
 
         S3Presigner.Builder builder = S3Presigner.builder()
                 .region(Region.of(region))

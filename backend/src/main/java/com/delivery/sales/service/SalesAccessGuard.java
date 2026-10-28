@@ -3,8 +3,10 @@ package com.delivery.sales.service;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,7 +14,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-/** Resolves vendor scoping and PII-masking rules for the sales lens (mirrors the catalog guard conventions). */
+/**
+ * Resolves vendor scoping and PII-masking rules for the sales lens (mirrors the catalog guard conventions).
+ * Also reused by order fulfilment and order listing (INC-04) via the merchant-scoped, fail-closed methods.
+ */
 @Component
 public class SalesAccessGuard {
     private static final String VENDOR_ID_CLAIM = "vendor_id";
@@ -26,6 +31,36 @@ public class SalesAccessGuard {
     /** True when the caller must be confined to their own vendor (VENDOR_ADMIN without a tenant-wide role). */
     public boolean isVendorScoped() {
         return hasAuthority("ROLE_VENDOR_ADMIN") && !hasTenantWideRole();
+    }
+
+    /**
+     * True when the caller is a merchant user (VENDOR_ADMIN or VENDOR_STAFF) without a tenant-wide role.
+     * VENDOR_STAFF has no user-to-vendor association yet, so it is resolved exactly like VENDOR_ADMIN.
+     */
+    public boolean isMerchantScoped() {
+        return (hasAuthority("ROLE_VENDOR_ADMIN") || hasAuthority("ROLE_VENDOR_STAFF")) && !hasTenantWideRole();
+    }
+
+    /**
+     * Fail-closed variant of {@link #resolveOwnVendorId}: throws 403 when a merchant caller's vendor
+     * cannot be determined (no vendor_id claim and the tenant has zero or several vendors).
+     */
+    public UUID requireOwnVendorId(UUID tenantId) {
+        UUID ownVendorId = resolveOwnVendorId(tenantId);
+        if (ownVendorId == null) {
+            throw new BusinessException("vendor_scope_unresolved", "Unable to resolve the vendor for the current merchant user", HttpStatus.FORBIDDEN);
+        }
+        return ownVendorId;
+    }
+
+    /** Masks a person's name: keeps the first letter of each word ("Ana Lima" -> "A*** L***"). */
+    public static String maskName(String name) {
+        if (name == null || name.isBlank()) {
+            return name;
+        }
+        return Arrays.stream(name.trim().split("\\s+"))
+                .map(word -> word.charAt(0) + "***")
+                .collect(Collectors.joining(" "));
     }
 
     /** True when customer PII must be masked (SUPPORT without any wider role). */
