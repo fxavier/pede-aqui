@@ -214,7 +214,7 @@ class VendorOrderScopeTest {
         when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         PaymentService realPayments = new PaymentService(paymentRepository, orderRepository, refundRepository,
                 mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository,
-                new PaymentMockConfirmationProperties(), mock(DeliveryRepository.class));
+                new PaymentMockConfirmationProperties(), mock(DeliveryRepository.class), mock(OrderStockService.class));
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,

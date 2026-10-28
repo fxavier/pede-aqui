@@ -26,4 +26,16 @@ public enum DeliveryStatus {
             default -> false;
         };
     }
+
+    /**
+     * True once the goods left the store (pickup and everything after it, including a failed delivery). From here
+     * the order's stock reservation is consumed (OrderStockService.commit), never returned to available. Same set
+     * as the V043 data fix.
+     */
+    public boolean isGoodsLeftTheStore() {
+        return switch (this) {
+            case PICKED_UP, ON_ROUTE_TO_CUSTOMER, ARRIVED_AT_CUSTOMER, DELIVERED, FAILED_DELIVERY -> true;
+            default -> false;
+        };
+    }
 }

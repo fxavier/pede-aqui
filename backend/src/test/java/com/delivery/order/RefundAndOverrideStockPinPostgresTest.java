@@ -204,6 +204,47 @@ class RefundAndOverrideStockPinPostgresTest {
         assertThat(inventory()).containsEntry("quantity_available", 95).containsEntry("quantity_reserved", 0);
     }
 
+    // --- Gap 3: full refund before pickup gives the reservation back (V043 rule) ---
+
+    @Test
+    void fullRefundBeforePickupReleasesTheReservationAndMarksTheOrderRefunded() {
+        delivery("ACCEPTED"); // courier engaged but goods still in the store
+
+        approveFullRefund();
+
+        Map<String, Object> order = order();
+        // INC-06 behaviour kept: a non-CANCELLED order becomes REFUNDED; the release is the only addition.
+        assertThat(order).containsEntry("status", "REFUNDED").containsEntry("stock_status", "RELEASED");
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+        assertThat(paymentStatus()).isEqualTo("FULLY_REFUNDED");
+    }
+
+    @Test
+    void fullRefundAfterPickupLeavesTheStockAlone() {
+        // Goods left the store; the row is seeded RESERVED on purpose to prove nothing is released (in production
+        // PICKED_UP would already have committed it and release would be a no-op anyway).
+        jdbc.update("UPDATE orders SET status = 'DELIVERING' WHERE id = ?", orderId);
+        delivery("ON_ROUTE_TO_CUSTOMER");
+
+        approveFullRefund();
+
+        Map<String, Object> order = order();
+        assertThat(order).containsEntry("status", "REFUNDED").containsEntry("stock_status", "RESERVED");
+        assertThat(inventory()).containsEntry("quantity_available", 95).containsEntry("quantity_reserved", 5);
+    }
+
+    @Test
+    void fullRefundOfASaleCancelledEarlierDoesNotReleaseTwice() {
+        salesService.cancel(orderId, "cliente desistiu"); // releases once
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+
+        approveFullRefund();
+
+        Map<String, Object> order = order();
+        assertThat(order).containsEntry("status", "CANCELLED").containsEntry("stock_status", "RELEASED");
+        assertThat(inventory()).containsEntry("quantity_available", 100).containsEntry("quantity_reserved", 0);
+    }
+
     // --- helpers ---
 
     private void approveFullRefund() {
