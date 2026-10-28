@@ -222,6 +222,19 @@ class ErrorContractApiTest {
                 .andExpect(header().string("X-Correlation-Id", "abc-123"));
     }
 
+    @Test
+    void rateLimitIsProblemDocumentKeepingItsCode() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            mockMvc.perform(get("/api/v1/stub/checkout-limited").with(user())).andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/v1/stub/checkout-limited").with(user()))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("rate_limited"))
+                .andExpect(jsonPath("$.message").value("Too many requests for sensitive endpoint"))
+                .andExpect(jsonPath("$.correlationId").isString());
+    }
+
     /** Throws each kind of exception the handler must translate. */
     @RestController
     static class StubController {
@@ -229,7 +242,7 @@ class ErrorContractApiTest {
         record Payload(@NotBlank String name) {
         }
 
-        @GetMapping("/api/v1/stub/ok")
+        @GetMapping({"/api/v1/stub/ok", "/api/v1/stub/checkout-limited"})
         Map<String, String> ok() {
             return Map.of("ok", "yes");
         }

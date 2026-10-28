@@ -1,5 +1,6 @@
 package com.delivery.common.security;
 
+import com.delivery.common.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
@@ -42,10 +43,9 @@ public class RateLimitConfig implements WebMvcConfigurer {
                 }
                 counter.count++;
                 if (counter.count > LIMIT) {
-                    response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"code\":\"rate_limited\",\"message\":\"Too many requests for sensitive endpoint\"}");
-                    return false;
+                    // Thrown (not written) so the 429 is the same problem document as every other error (INC-14).
+                    throw new BusinessException(
+                            "rate_limited", "Too many requests for sensitive endpoint", HttpStatus.TOO_MANY_REQUESTS);
                 }
             }
             return true;
