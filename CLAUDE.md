@@ -53,7 +53,7 @@ cd backend && mvn clean verify
 
 Spring profiles: `dev` is the default (`spring.profiles.default`) and points storage at local MinIO — no AWS needed. `prod` (`SPRING_PROFILES_ACTIVE=prod`) targets real AWS S3 and fails fast if `AWS_S3_BUCKET`/`AWS_REGION` are missing. See the Storage section. `prod` also fails fast without `APP_DELIVERY_CODE_HMAC_SECRET` (delivery-PIN HMAC key; only `dev` has a default).
 
-Secrets: `application.yml` has **no literal defaults** for `DB_PASSWORD` or `KEYCLOAK_ADMIN_CLIENT_SECRET` — the local values live only in `application-dev.yml`. In `prod`, `RequiredSecretsProperties` (`@Validated @NotBlank`, bound via `app.secrets.*` in `application-prod.yml`) aborts startup if either is blank, and every `DataSource` depends on it so the error surfaces before Flyway touches the DB. New secrets follow the same pattern (no default in base yml, dev default in `application-dev.yml`, field in `RequiredSecretsProperties`). `prod` also disables `/api-docs` and Swagger UI.
+Secrets: `application.yml` has **no literal defaults** for `DB_PASSWORD`, `KEYCLOAK_ADMIN_CLIENT_SECRET` or `APP_DELIVERY_CODE_HMAC_SECRET` — the local values live only in `application-dev.yml`. In `prod`, `RequiredSecretsProperties` (`@Validated @NotBlank`, bound via `app.secrets.*` in `application-prod.yml`) aborts startup if any of them is blank, and every `DataSource` depends on it so the error surfaces before Flyway touches the DB. New secrets follow the same pattern (no default in base yml, dev default in `application-dev.yml`, field in `RequiredSecretsProperties`). `prod` also disables `/api-docs` and Swagger UI.
 
 ### Customer web app (React + Vite)
 

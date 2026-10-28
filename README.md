@@ -117,6 +117,7 @@ Notas:
 - `DB_USERNAME`: PostgreSQL username.
 - `DB_PASSWORD`: PostgreSQL password. **Required in `prod`** (startup fails if blank); the `dev` profile defaults to the compose value.
 - `KEYCLOAK_ADMIN_CLIENT_SECRET`: secret of the `delivery-admin-service` Keycloak client. **Required in `prod`**; `dev` defaults to the local realm value.
+- `APP_DELIVERY_CODE_HMAC_SECRET`: HMAC-SHA256 key for delivery PIN hashes. **Required in `prod`** (startup fails if blank); `dev` has a local-only default.
 - `MANAGEMENT_SERVER_PORT`: separate internal port for actuator (`prod` default `8091`; compose sets `8091`). Never expose it publicly.
 - `KEYCLOAK_ISSUER_URI`: Keycloak realm issuer URI.
 - `SERVER_PORT`: backend port, default `8080`.

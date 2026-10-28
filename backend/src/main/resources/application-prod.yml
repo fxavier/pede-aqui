@@ -9,14 +9,13 @@ app:
     s3-bucket: ${AWS_S3_BUCKET}
     s3-region: ${AWS_REGION}
     s3-endpoint: "" # vazio = AWS real (virtual-hosted style)
-  delivery:
-    # Sem valor por defeito: o arranque falha se APP_DELIVERY_CODE_HMAC_SECRET não estiver definido.
-    code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET}
   # Fail-fast de segredos (SEC-07): application.yml não tem defaults para estes valores;
   # RequiredSecretsProperties (@Validated @NotBlank) impede o arranque se vierem vazios.
   secrets:
     db-password: ${spring.datasource.password:}
     keycloak-admin-client-secret: ${app.keycloak.admin.client-secret:}
+    # APP_DELIVERY_CODE_HMAC_SECRET (chave HMAC dos PINs de entrega, INC-02): sem default em application.yml.
+    code-hmac-secret: ${app.delivery.code-hmac-secret:}
 
 # Swagger UI / OpenAPI desligados em produção (SEC-21).
 springdoc:
