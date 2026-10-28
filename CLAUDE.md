@@ -165,6 +165,12 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 - Fine-grained access uses `@PreAuthorize` annotations in service or controller methods.
 - Roles: `ADMIN`, `OPS`, `VENDOR_ADMIN`, `COURIER`, `CUSTOMER`, `FINANCE`, `SUPPORT`.
 
+### Errors and correlation
+
+- Every error body is an RFC 9457 problem document built by `ApiProblems` (`common/exception`): `type/title/status/detail/instance` plus `code` (stable lowercase snake_case — clients branch on it), optional `details`, `correlationId`, `traceId`, and the legacy `message`/`timestamp`/`fieldErrors` kept for a compatibility window. Contract and consumer analysis: `docs/api/ERROR-CONTRACT.md`.
+- `GlobalExceptionHandler` extends `ResponseEntityExceptionHandler`, so Spring's MVC exceptions map to proper 4xx (unknown path 404, 405, 415, malformed body/params 400) instead of the 500 catch-all. Throw `BusinessException(code, message, status)` for business errors; don't write JSON error bodies by hand — filters/interceptors that must answer directly use `ApiProblems.create(...)` (the security chain does, via `ProblemDetailSecurityHandlers`).
+- `CorrelationIdFilter` runs first (`HIGHEST_PRECEDENCE`, before Spring Security): reuses an incoming `X-Correlation-Id` only if it matches `[A-Za-z0-9._:-]{1,128}`, else generates a UUID; puts it in MDC `correlationId` (logged by `logback-spring.xml`) and the response header (CORS-exposed).
+
 ### Tenant model
 
 - Tenant-scoped records carry a `tenant_id` column. **Tenant = marketplace operator** (`docs/adr/ADR-0001-tenancy-model.md`); the Pede-Aqui operator tenant is seeded by `V045` with id `5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c` (`app.tenancy.operator-tenant-id`, env `APP_OPERATOR_TENANT_ID`). Migration is incremental: merchant self-registration still creates a tenant per merchant until the `merchant_users` step lands.
