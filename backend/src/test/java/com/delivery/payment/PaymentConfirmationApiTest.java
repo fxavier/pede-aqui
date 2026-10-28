@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.security.SecurityConfig;
+import com.delivery.common.security.TenancyProperties;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.order.entity.Order;
@@ -47,14 +48,17 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 /** HTTP-level tests for POST /payments/{id}/confirm with the real service and security config (INC-01, AS-01). */
 class PaymentConfirmationApiTest {
-    static final UUID TENANT_ID = UUID.randomUUID();
+    static final String TENANT = "0b5f6a43-2d0c-4c6e-8f1a-3c2b1a0f9e8d";
+    static final UUID TENANT_ID = UUID.fromString(TENANT);
     static final UUID ORDER_ID = UUID.randomUUID();
     static final UUID OWNER_PROFILE_ID = UUID.randomUUID();
     static final String KEY = "checkout-key-1";
 
     @WebMvcTest(PaymentController.class)
     @Import({SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class})
-    @EnableConfigurationProperties(PaymentMockConfirmationProperties.class)
+    @EnableConfigurationProperties({PaymentMockConfirmationProperties.class, TenancyProperties.class})
+    // Customers resolve their tenant from the OIDC client (ADR-0001), so map the test client to this tenant.
+    @TestPropertySource(properties = "app.tenancy.customer-clients.pede-aqui-web=" + TENANT)
     abstract static class Base {
         @Autowired MockMvc mockMvc;
         @MockBean PaymentRepository paymentRepository;
@@ -86,7 +90,14 @@ class PaymentConfirmationApiTest {
 
         MockHttpServletRequestBuilder confirmAs(String subject, String role) {
             return post("/api/v1/payments/{paymentId}/confirm", payment.getId())
-                    .with(jwt().jwt(j -> j.subject(subject).claim(TenantContext.TENANT_ID_CLAIM, TENANT_ID.toString()))
+                    .with(jwt().jwt(j -> {
+                                j.subject(subject);
+                                if ("CUSTOMER".equals(role)) {
+                                    j.claim(TenantContext.AUTHORIZED_PARTY_CLAIM, "pede-aqui-web");
+                                } else {
+                                    j.claim(TenantContext.TENANT_ID_CLAIM, TENANT_ID.toString());
+                                }
+                            })
                             .authorities(new SimpleGrantedAuthority("ROLE_" + role)))
                     .contentType("application/json")
                     .content("{\"idempotencyKey\":\"" + KEY + "\"}");

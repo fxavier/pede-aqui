@@ -8,6 +8,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.security.TenancyProperties;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.config.DeliveryCodeProperties;
@@ -67,7 +68,7 @@ import org.testcontainers.DockerClientFactory;
 @TestPropertySource(properties = {"spring.jpa.hibernate.ddl-auto=validate",
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret", "app.delivery.max-code-attempts=5"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, DeliveryAccessGuard.class,
+@Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, TenancyProperties.class, DeliveryAccessGuard.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class,
         OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class})
 class DeliveryCompletionPostgresIntegrationTest {
