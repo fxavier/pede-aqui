@@ -21,7 +21,7 @@ public class BusinessException extends RuntimeException {
         return status;
     }
 
-    /** Optional machine-readable context serialized as ErrorResponse.details; null (omitted) by default. */
+    /** Optional machine-readable context serialized as the problem document's {@code details} member; null (omitted) by default. */
     public Object getDetails() {
         return null;
     }

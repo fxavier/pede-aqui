@@ -1,5 +1,7 @@
 package com.delivery.common.security;
 
+import com.delivery.common.config.CorrelationIdFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +31,9 @@ public class SecurityConfig {
     private int managementPort;
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+        // 401/403 decided here are problem documents like the MVC ones (INC-14, AS-17).
+        ProblemDetailSecurityHandlers problemHandlers = new ProblemDetailSecurityHandlers(objectMapper);
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new JwtRoleConverter());
 
@@ -53,7 +57,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/tenants/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/provisioning/**").hasAuthority("ROLE_provisioning:write")
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(problemHandlers)
+                        .accessDeniedHandler(problemHandlers))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(problemHandlers)
+                        .accessDeniedHandler(problemHandlers)
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }
 
@@ -69,7 +79,10 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Tenant-Id"));
+        config.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "Accept", "X-Tenant-Id", CorrelationIdFilter.CORRELATION_ID_HEADER));
+        // Browsers can only read the correlation id (to show it in error toasts / support tickets) if exposed.
+        config.setExposedHeaders(List.of(CorrelationIdFilter.CORRELATION_ID_HEADER));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
