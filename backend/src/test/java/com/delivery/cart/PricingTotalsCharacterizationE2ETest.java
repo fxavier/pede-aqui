@@ -270,6 +270,42 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     }
 
     @Test
+    void adminConfiguredPolicyIsAppliedAndItsVersionRecorded() throws Exception {
+        Map<String, Object> original = jdbc.queryForMap("SELECT delivery_fee, service_fee, service_fee_rate, tax_rate, commission_rate, "
+                + "cancellation_policy, version FROM fee_policies WHERE tenant_id = ?", tenant);
+        try {
+            String admin = adminToken();
+            String body = "{\"deliveryFee\":7.00,\"serviceFee\":1.00,\"serviceFeeRate\":0.02,\"taxRate\":0.16,"
+                    + "\"commissionRate\":0.10,\"cancellationPolicy\":\"Teste\"}";
+            String saved = mockMvc.perform(withBearer(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/admin/policy"), admin)
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.serviceFeeRate").value(0.02))
+                    .andReturn().getResponse().getContentAsString();
+            long version = objectMapper.readTree(saved).get("version").asLong();
+            assertThat(version).isGreaterThan(((Number) original.get("version")).longValue());
+            mockMvc.perform(withBearer(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/admin/policy"), admin)
+                            .contentType(MediaType.APPLICATION_JSON).content(body.replace("0.16", "8")))
+                    .andExpect(status().isBadRequest());
+
+            String ana = customerToken();
+            JsonNode cart = addToCart(ana);
+            // 18.00 + 7.00 delivery + (1.00 + 0.36) service + 2.88 tax = 29.24
+            assertMoney(cart.get("fees"), "8.36");
+            assertMoney(cart.get("taxes"), "2.88");
+            assertMoney(cart.get("total"), "29.24");
+            UUID cartId = UUID.fromString(cart.get("id").asText());
+            checkout(ana, cartId, createAddress(ana, CUSTOMER_LAT, CUSTOMER_LNG));
+            assertOrderTotals(cartId, "8.36", "2.88", "0", "29.24");
+            assertThat(jdbc.queryForObject("SELECT quote_fee_policy_version FROM orders WHERE cart_id = ?", Long.class, cartId)).isEqualTo(version);
+        } finally {
+            jdbc.update("UPDATE fee_policies SET delivery_fee = ?, service_fee = ?, service_fee_rate = ?, tax_rate = ?, commission_rate = ?, "
+                    + "cancellation_policy = ? WHERE tenant_id = ?", original.get("delivery_fee"), original.get("service_fee"),
+                    original.get("service_fee_rate"), original.get("tax_rate"), original.get("commission_rate"), original.get("cancellation_policy"), tenant);
+        }
+    }
+
+    @Test
     void quoteOfAnotherCustomersCartIsForbidden() throws Exception {
         String ana = customerToken();
         UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
@@ -345,6 +381,15 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
         Map<String, Object> claims = new HashMap<>(Map.of("azp", "pede-aqui-web", "email", "cliente-" + subject + "@example.test", "name", "Cliente Teste"));
         claims.put("sub", subject);
         claims.put("realm_access", Map.of("roles", List.of("CUSTOMER")));
+        String value = "test-token-" + UUID.randomUUID();
+        tokens.put(value, new Jwt(value, Instant.now(), Instant.now().plusSeconds(300), Map.of("alg", "RS256"), claims));
+        return value;
+    }
+
+    private String adminToken() {
+        Map<String, Object> claims = new HashMap<>(Map.of("azp", "delivery-app", "tenant_id", tenant.toString()));
+        claims.put("sub", "admin-" + UUID.randomUUID());
+        claims.put("realm_access", Map.of("roles", List.of("ADMIN")));
         String value = "test-token-" + UUID.randomUUID();
         tokens.put(value, new Jwt(value, Instant.now(), Instant.now().plusSeconds(300), Map.of("alg", "RS256"), claims));
         return value;
