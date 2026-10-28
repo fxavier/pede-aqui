@@ -25,6 +25,8 @@ public final class AuditActions {
     public static final String PROMOTION_ACTIVATED = "PROMOTION_ACTIVATED";
     public static final String PROMOTION_PAUSED = "PROMOTION_PAUSED";
     public static final String PROMOTION_DELETED = "PROMOTION_DELETED";
+    // Users (LAC-13)
+    public static final String USER_ROLES_ASSIGNED = "USER_ROLES_ASSIGNED";
 
     private AuditActions() {
     }

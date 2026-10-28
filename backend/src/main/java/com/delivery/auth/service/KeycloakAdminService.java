@@ -17,6 +17,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,26 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             logger.error("Failed to create Keycloak customer for email: {}", email, e);
             throw new BusinessException("keycloak_error", "Failed to create Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Adds realm roles to an existing Keycloak user (LAC-13), so the roles stored on the profile are also issued
+     * in the user's tokens. Idempotent: re-adding a role the user already has is a no-op in Keycloak.
+     */
+    public void assignRealmRoles(String userId, Collection<String> roleNames) {
+        try {
+            String adminToken = getAdminToken();
+            for (String roleName : roleNames) {
+                assignRole(adminToken, userId, roleName);
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new BusinessException("keycloak_user_not_found", "Keycloak user or role was not found", HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            logger.error("Failed to assign realm roles to Keycloak user {}: {}", userId, e.getMessage());
+            throw new BusinessException("keycloak_error", "Failed to assign roles in Keycloak", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -70,7 +70,8 @@ public class AdminController {
     public List<AuditLogResponse> audit() { return auditLogService.list(); }
 
     @PostMapping("/users")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPPORT')")
+    // LAC-13: assigning roles is ADMIN-only (method-level rules override the class rule, so state it here).
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public MeResponse createUser(@Valid @RequestBody CreateUserProfileRequest request) {
         return appUserProfileService.createUserProfile(request);

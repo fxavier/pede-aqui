@@ -247,3 +247,15 @@ Not removed yet; removal lands once step 5 has run in every environment and the 
 - Clients: the backoffice now sends `contentLength: file.size` (all six upload call sites). The customer
   web app and the Flutter apps do not call these endpoints today; when the courier app starts uploading
   proof photos it must send `contentLength` and PUT the exact bytes.
+
+### LAC-13 — `POST /api/v1/admin/users` is ADMIN-only, roles allow-listed and synced to Keycloak
+
+- `SUPPORT` now gets **403** on `POST /api/v1/admin/users` (was 201). `GET /admin/users` and
+  `GET /admin/users/{id}` stay open to `ADMIN` and `SUPPORT`.
+- `roles` must be non-empty (**400** `roles_required`). An `ADMIN` may assign every role except `ADMIN`;
+  only the platform admin (ADMIN without `tenant_id`) may also assign `ADMIN`. Otherwise **403**
+  `role_assignment_forbidden`.
+- The roles are added as realm roles to the existing Keycloak user `keycloakUserId`, so the next token
+  carries them. Unknown Keycloak user/role → **404** `keycloak_user_not_found`; other Keycloak failure →
+  **500** `keycloak_error`; in both cases no profile is created. Audited as `USER_ROLES_ASSIGNED`.
+- Clients: the backoffice `/users` page is ADMIN-only already; no request-shape change.
