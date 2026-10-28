@@ -10,7 +10,7 @@ class PedeAquiBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
+    const items = [
       _NavItem(icon: Icons.grid_view_rounded, label: 'Início'),
       _NavItem(icon: Icons.history_rounded, label: 'Histórico'),
       _NavItem(icon: Icons.payments_outlined, label: 'Ganhos'),

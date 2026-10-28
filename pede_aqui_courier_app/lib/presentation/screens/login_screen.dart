@@ -96,9 +96,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('Entrar'),
                   ),
                   const SizedBox(height: 16),
-                  TextButton(
+                  const TextButton(
                     onPressed: null,
-                    child: const Text('Criar conta de estafeta'),
+                    child: Text('Criar conta de estafeta'),
                   ),
                 ],
               ),

@@ -34,7 +34,7 @@ class MapPreview extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [Colors.black.withOpacity(.28), Colors.transparent],
+                    colors: [Colors.black.withValues(alpha: .28), Colors.transparent],
                   ),
                 ),
               ),
@@ -55,7 +55,7 @@ class MapPreview extends StatelessWidget {
                 bottom: 18,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(.92), borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .92), borderRadius: BorderRadius.circular(16)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -89,7 +89,7 @@ class _MapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(.45)
+      ..color = Colors.white.withValues(alpha: .45)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     final routePaint = Paint()
@@ -97,7 +97,7 @@ class _MapPainter extends CustomPainter {
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    final greenPaint = Paint()..color = const Color(0xFFB8DDBA).withOpacity(.75);
+    final greenPaint = Paint()..color = const Color(0xFFB8DDBA).withValues(alpha: .75);
 
     canvas.drawRect(Rect.fromLTWH(size.width * .62, 0, size.width * .22, size.height), greenPaint);
     for (var i = 0; i < 8; i++) {

@@ -11,7 +11,7 @@ class DeliveryStatusStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statuses = DeliveryStatus.values;
+    const statuses = DeliveryStatus.values;
     final currentIndex = statuses.indexOf(currentStatus);
 
     return AppCard(
@@ -24,7 +24,7 @@ class DeliveryStatusStepper extends StatelessWidget {
               left: 28,
               right: 28,
               top: 25,
-              child: Container(height: 2, color: AppColors.outlineVariant.withOpacity(.65)),
+              child: Container(height: 2, color: AppColors.outlineVariant.withValues(alpha: .65)),
             ),
             Positioned(
               left: 28,

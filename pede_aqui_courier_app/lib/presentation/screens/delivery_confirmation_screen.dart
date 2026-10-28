@@ -95,8 +95,8 @@ class DeliveryConfirmationScreen extends StatelessWidget {
                           end: Alignment.topRight,
                         ),
                       ),
-                      child: Stack(
-                        children: const [
+                      child: const Stack(
+                        children: [
                           Positioned(right: 22, top: 26, child: Icon(Icons.delivery_dining, color: Colors.white30, size: 86)),
                           Positioned(
                             left: 18,
@@ -165,7 +165,7 @@ class _OtpInputState extends State<_OtpInput> {
           decoration: BoxDecoration(
             color: const Color(0xFFFFF9E6),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.warning.withOpacity(.35), width: 2),
+            border: Border.all(color: AppColors.warning.withValues(alpha: .35), width: 2),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

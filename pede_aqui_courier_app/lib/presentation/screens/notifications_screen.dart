@@ -23,7 +23,7 @@ class NotificationsScreen extends StatelessWidget {
                   (item) => Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: AppCard(
-                      borderColor: item.isRead ? null : AppColors.primary.withOpacity(.25),
+                      borderColor: item.isRead ? null : AppColors.primary.withValues(alpha: .25),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
