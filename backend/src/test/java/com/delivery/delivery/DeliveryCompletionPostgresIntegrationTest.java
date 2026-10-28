@@ -70,7 +70,8 @@ import org.testcontainers.DockerClientFactory;
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, TenancyProperties.class, DeliveryAccessGuard.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class,
-        OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class})
+        OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
+        com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class})
 class DeliveryCompletionPostgresIntegrationTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();

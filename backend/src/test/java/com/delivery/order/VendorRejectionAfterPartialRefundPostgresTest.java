@@ -80,6 +80,7 @@ import org.testcontainers.DockerClientFactory;
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
+        com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class})

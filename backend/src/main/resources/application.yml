@@ -82,6 +82,12 @@ app:
     customer-clients:
       pede-aqui-web: ${app.tenancy.operator-tenant-id}
       pede-aqui-mobile: ${app.tenancy.operator-tenant-id}
+  # ADR-0001 passo 3: os guards de comerciante resolvem o vendor por merchant_users (V049). O fallback legado
+  # ("claim vendor_id, senão o único vendor do tenant") só serve perfis ainda sem linha em merchant_users.
+  # Desligar (false) apenas quando backend/scripts/adr-0001-merchant-users-report.sql §4 devolver 0 nesse
+  # ambiente; o passo 6 do ADR remove depois o código do fallback.
+  merchant-scope:
+    single-vendor-fallback-enabled: ${APP_MERCHANT_SCOPE_SINGLE_VENDOR_FALLBACK_ENABLED:true}
   provisioning:
     max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
     max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}

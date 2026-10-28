@@ -77,7 +77,8 @@ class CatalogServiceAuthorizationTest {
         when(optionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         service = new CatalogService(mock(CategoryRepository.class), productRepository, skuRepository, inventoryRepository,
                 groupRepository, optionRepository, new CatalogMapper(mock(StorageUrlService.class)), tenantContext,
-                vendorRepository, mock(StorageUrlService.class), new CatalogAccessGuard(), auditLogService);
+                vendorRepository, mock(StorageUrlService.class),
+                new CatalogAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), auditLogService);
         authenticate("ROLE_VENDOR_ADMIN", Map.of("vendor_id", ownVendorId.toString()));
     }
 

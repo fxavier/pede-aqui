@@ -1,56 +1,42 @@
 package com.delivery.sales.service;
 
 import com.delivery.common.exception.BusinessException;
-import com.delivery.vendor.entity.Vendor;
-import com.delivery.vendor.repository.VendorRepository;
+import com.delivery.vendor.api.MerchantScopeGuard;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 /**
- * Resolves vendor scoping and PII-masking rules for the sales lens (mirrors the catalog guard conventions).
- * Also reused by order fulfilment and order listing (INC-04) via the merchant-scoped, fail-closed methods.
+ * Sales-lens access rules: PII masking plus the merchant vendor scope, which is delegated to the shared
+ * {@link MerchantScopeGuard} (ADR-0001 step 3 / ADR-0002 C5). Also reused by order fulfilment and order listing
+ * (INC-04). Every scope method fails closed (403 {@code vendor_scope_unresolved}) when the vendor cannot be resolved.
  */
 @Component
 public class SalesAccessGuard {
-    private static final String VENDOR_ID_CLAIM = "vendor_id";
+    private final MerchantScopeGuard merchantScopeGuard;
 
-    private final VendorRepository vendorRepository;
-
-    public SalesAccessGuard(VendorRepository vendorRepository) {
-        this.vendorRepository = vendorRepository;
+    public SalesAccessGuard(MerchantScopeGuard merchantScopeGuard) {
+        this.merchantScopeGuard = merchantScopeGuard;
     }
 
     /** True when the caller must be confined to their own vendor (VENDOR_ADMIN without a tenant-wide role). */
     public boolean isVendorScoped() {
-        return hasAuthority("ROLE_VENDOR_ADMIN") && !hasTenantWideRole();
+        return merchantScopeGuard.isVendorAdminScoped();
     }
 
-    /**
-     * True when the caller is a merchant user (VENDOR_ADMIN or VENDOR_STAFF) without a tenant-wide role.
-     * VENDOR_STAFF has no user-to-vendor association yet, so it is resolved exactly like VENDOR_ADMIN.
-     */
+    /** True when the caller is a merchant user (VENDOR_ADMIN or VENDOR_STAFF) without a tenant-wide role. */
     public boolean isMerchantScoped() {
-        return (hasAuthority("ROLE_VENDOR_ADMIN") || hasAuthority("ROLE_VENDOR_STAFF")) && !hasTenantWideRole();
+        return merchantScopeGuard.isMerchantScoped();
     }
 
-    /**
-     * Fail-closed variant of {@link #resolveOwnVendorId}: throws 403 when a merchant caller's vendor
-     * cannot be determined (no vendor_id claim and the tenant has zero or several vendors).
-     */
+    /** Vendor the merchant caller is confined to; 403 {@code vendor_scope_unresolved} when it cannot be determined. */
     public UUID requireOwnVendorId(UUID tenantId) {
-        UUID ownVendorId = resolveOwnVendorId(tenantId);
-        if (ownVendorId == null) {
-            throw new BusinessException("vendor_scope_unresolved", "Unable to resolve the vendor for the current merchant user", HttpStatus.FORBIDDEN);
-        }
-        return ownVendorId;
+        return merchantScopeGuard.requireOwnVendorId(tenantId);
     }
 
     /** Masks a person's name: keeps the first letter of each word ("Ana Lima" -> "A*** L***"). */
@@ -66,38 +52,27 @@ public class SalesAccessGuard {
     /** True when customer PII must be masked (SUPPORT without any wider role). */
     public boolean shouldMaskCustomerPii() {
         return hasAuthority("ROLE_SUPPORT")
-                && !hasTenantWideRole()
+                && !merchantScopeGuard.hasTenantWideRole()
                 && !hasAuthority("ROLE_VENDOR_ADMIN");
     }
 
     /**
-     * Resolves the vendor id a vendor-scoped caller is confined to: the optional vendor_id JWT
-     * claim first; otherwise the tenant's single bootstrap vendor (merchant registration provisions
-     * exactly one vendor per tenant, so the tenant boundary is the vendor boundary).
-     * Returns null when the scope cannot be narrowed beyond the tenant.
+     * Resolves the vendor a vendor-scoped caller is confined to. Since ADR-0001 step 3 this never returns null:
+     * an unresolvable scope is a 403 {@code vendor_scope_unresolved} instead of a tenant-wide result.
      */
     public UUID resolveOwnVendorId(UUID tenantId) {
-        UUID claim = callerVendorClaim();
-        if (claim != null) {
-            return claim;
-        }
-        List<Vendor> vendors = vendorRepository.findByTenantId(tenantId);
-        return vendors.size() == 1 ? vendors.get(0).getId() : null;
+        return merchantScopeGuard.requireOwnVendorId(tenantId);
     }
 
-    /** Throws 403 when a vendor-scoped caller targets an order of another vendor. */
+    /** Throws 403 when a vendor-scoped caller targets an order of another vendor (or has no resolvable vendor). */
     public void ensureOwnVendorOrder(UUID tenantId, UUID orderVendorId) {
         if (!isVendorScoped()) {
             return;
         }
-        UUID ownVendorId = resolveOwnVendorId(tenantId);
-        if (ownVendorId != null && !ownVendorId.equals(orderVendorId)) {
-            throw new BusinessException("vendor_access_denied", "You can only access sales of your own vendor", HttpStatus.FORBIDDEN);
+        UUID ownVendorId = merchantScopeGuard.requireOwnVendorId(tenantId);
+        if (!ownVendorId.equals(orderVendorId)) {
+            throw new BusinessException(MerchantScopeGuard.ACCESS_DENIED_CODE, "You can only access sales of your own vendor", HttpStatus.FORBIDDEN);
         }
-    }
-
-    private boolean hasTenantWideRole() {
-        return hasAuthority("ROLE_ADMIN") || hasAuthority("ROLE_OPS") || hasAuthority("ROLE_FINANCE");
     }
 
     private boolean hasAuthority(String authority) {
@@ -106,21 +81,5 @@ public class SalesAccessGuard {
             return false;
         }
         return auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(authority::equals);
-    }
-
-    private UUID callerVendorClaim() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
-            return null;
-        }
-        String value = jwt.getClaimAsString(VENDOR_ID_CLAIM);
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("vendor_access_denied", "Invalid vendor claim", HttpStatus.FORBIDDEN);
-        }
     }
 }

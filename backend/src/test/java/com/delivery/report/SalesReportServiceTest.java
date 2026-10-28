@@ -19,6 +19,9 @@ import com.delivery.report.repository.SalesReportRepository.DimensionAggregateRo
 import com.delivery.report.repository.SalesReportRepository.SummaryRow;
 import com.delivery.report.service.ReportScope;
 import com.delivery.report.service.SalesReportService;
+import com.delivery.vendor.MerchantScopeFixtures;
+import com.delivery.vendor.entity.Vendor;
+import com.delivery.vendor.repository.VendorRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -42,14 +45,18 @@ class SalesReportServiceTest {
 
     private SalesReportRepository repository;
     private TenantContext tenantContext;
+    private VendorRepository vendorRepository;
     private SalesReportService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(SalesReportRepository.class);
         tenantContext = mock(TenantContext.class);
+        vendorRepository = mock(VendorRepository.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
-        service = new SalesReportService(repository, new SalesReportMapper(), tenantContext);
+        // Vendor scope via the shared guard (ADR-0001 step 3): no merchant_users rows here, legacy fallback on.
+        service = new SalesReportService(repository, new SalesReportMapper(), tenantContext,
+                MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository));
     }
 
     @AfterEach
@@ -129,7 +136,7 @@ class SalesReportServiceTest {
         UUID otherVendor = UUID.randomUUID();
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken("vendor-user", "n/a", "ROLE_VENDOR_ADMIN"));
-        when(repository.findVendorIdsForTenant(tenantId)).thenReturn(List.of(ownVendor));
+        when(vendorRepository.findByTenantId(tenantId)).thenReturn(List.of(vendor(ownVendor)));
 
         ReportScope scope = service.resolveScope(otherVendor);
 
@@ -150,14 +157,14 @@ class SalesReportServiceTest {
         ReportScope scope = service.resolveScope(null);
 
         assertThat(scope.vendorId()).isEqualTo(claimedVendor);
-        verify(repository, never()).findVendorIdsForTenant(any());
+        verify(vendorRepository, never()).findByTenantId(any());
     }
 
     @Test
     void vendorAdminWithAmbiguousVendorIsRefused() {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken("vendor-user", "n/a", "ROLE_VENDOR_ADMIN"));
-        when(repository.findVendorIdsForTenant(tenantId)).thenReturn(List.of(UUID.randomUUID(), UUID.randomUUID()));
+        when(vendorRepository.findByTenantId(tenantId)).thenReturn(List.of(vendor(UUID.randomUUID()), vendor(UUID.randomUUID())));
 
         assertThatThrownBy(() -> service.resolveScope(null))
                 .isInstanceOf(BusinessException.class)
@@ -173,7 +180,7 @@ class SalesReportServiceTest {
         ReportScope scope = service.resolveScope(requestedVendor);
 
         assertThat(scope.vendorId()).isEqualTo(requestedVendor);
-        verify(repository, never()).findVendorIdsForTenant(any());
+        verify(vendorRepository, never()).findByTenantId(any());
     }
 
     @Test
@@ -193,5 +200,9 @@ class SalesReportServiceTest {
         assertThatThrownBy(() -> service.resolveScope(null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("tenant context is required");
+    }
+
+    private Vendor vendor(UUID id) {
+        return new Vendor(id, tenantId, "Loja", null, null, null, "Owner", null, null, null, null, null);
     }
 }

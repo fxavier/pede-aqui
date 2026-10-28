@@ -132,7 +132,8 @@ class VendorFulfillmentTest {
                 orderStockService,
                 mock(com.delivery.cart.service.CartService.class),
                 mock(org.springframework.transaction.PlatformTransactionManager.class),
-                new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults());
+                new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext));
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {

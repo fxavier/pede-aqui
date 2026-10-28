@@ -89,7 +89,9 @@ abstract class AbstractSalesReportPostgresTest {
     void setUpReportStack() {
         repository = new SalesReportRepository(jdbcTemplate);
         mapper = new SalesReportMapper();
-        service = new SalesReportService(repository, mapper, mock(TenantContext.class));
+        TenantContext tenantContext = mock(TenantContext.class);
+        service = new SalesReportService(repository, mapper, tenantContext,
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext));
         exporter = new SalesReportCsvExporter(repository, mapper, service);
         seed();
     }

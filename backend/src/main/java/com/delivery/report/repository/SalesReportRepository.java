@@ -173,12 +173,6 @@ public class SalesReportRepository {
         return jdbc.queryForObject(sql, params(tenantId, vendorId, from, to), BigDecimal.class);
     }
 
-    /** Vendor ids of a tenant — used to resolve the forced scope of a VENDOR_ADMIN caller. */
-    public List<UUID> findVendorIdsForTenant(UUID tenantId) {
-        return jdbc.queryForList("SELECT id FROM vendors WHERE tenant_id = :tenantId ORDER BY created_at",
-                Map.of("tenantId", tenantId), UUID.class);
-    }
-
     private String timeseriesSql(UUID vendorId) {
         // Buckets are pinned to UTC boundaries (AT TIME ZONE 'UTC') so results do not depend
         // on the database session timezone.
