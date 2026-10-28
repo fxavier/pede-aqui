@@ -10,6 +10,7 @@ import com.delivery.report.dto.SalesSummaryResponse;
 import com.delivery.report.service.ReportScope;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -34,6 +35,24 @@ class SalesReportAggregationTest extends AbstractSalesReportPostgresTest {
         assertThat(summary.averageOrderValue()).isEqualByComparingTo("133.33");
         assertThat(summary.deliveredCount()).isEqualTo(1);
         assertThat(summary.cancelledCount()).isEqualTo(1);
+    }
+
+    @Test
+    void cancelledCountIncludesSellerRejectionsAndLegacyRejectedOrders() {
+        // Unified seller rejection: CANCELLED + cancellation_reason SELLER_REJECTED ...
+        UUID sellerRejected = UUID.randomUUID();
+        insertOrder(sellerRejected, tenant1, vendor1, "CANCELLED", DAY_2, "50.00", "0.00", "0.00", "0.00", "50.00");
+        jdbcTemplate.update("UPDATE orders SET cancellation_reason = 'SELLER_REJECTED' WHERE id = ?", sellerRejected);
+        // ... and a legacy row written before the unification still counts the same way.
+        UUID legacyRejected = UUID.randomUUID();
+        insertOrder(legacyRejected, tenant1, vendor1, "REJECTED_BY_VENDOR", DAY_2, "50.00", "0.00", "0.00", "0.00", "50.00");
+
+        SalesSummaryResponse summary = service.summary(new ReportScope(tenant1, null), FROM, TO);
+
+        assertThat(summary.orderCount()).isEqualTo(5); // both stay in the post-payment gross basis
+        assertThat(summary.gross()).isEqualByComparingTo("500.00");
+        assertThat(summary.cancelledCount()).isEqualTo(3); // O3 + seller-rejected + legacy rejected
+        assertThat(service.timeseries(new ReportScope(tenant1, null), FROM, TO, ReportInterval.DAY).get(1).cancelledCount()).isEqualTo(3);
     }
 
     @Test

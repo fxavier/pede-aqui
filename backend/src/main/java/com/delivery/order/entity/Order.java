@@ -145,7 +145,7 @@ public class Order {
     public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     public void markRefunded() { this.status = OrderStatus.REFUNDED; this.updatedAt = Instant.now(); }
     public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
-    /** Seller rejection once the payment already carries refunds: CANCELLED with reason SELLER_REJECTED (financial state lives on Payment). */
+    /** Seller rejection: CANCELLED with reason SELLER_REJECTED plus the vendor's text; the financial state lives on Payment. */
     public void markCancelledBySellerRejection(String reason) {
         this.status = OrderStatus.CANCELLED;
         this.cancellationReason = CancellationReason.SELLER_REJECTED;
@@ -153,7 +153,6 @@ public class Order {
         this.deliveryConfirmationCodeDisplay = null;
         this.updatedAt = Instant.now();
     }
-    public void markRejectedByVendor(String reason) { this.status = OrderStatus.REJECTED_BY_VENDOR; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
     public void markDelivered() { this.status = OrderStatus.DELIVERED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }

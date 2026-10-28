@@ -138,15 +138,6 @@ public class PaymentService {
     }
 
     /**
-     * True when the payment already carries a refund that still counts against it (REQUESTED/APPROVED/REFUNDED,
-     * i.e. anything not REJECTED). Callers that branch on this hold the payment row lock (findByTenantIdAndOrderIdForUpdate).
-     */
-    @Transactional(readOnly = true)
-    public boolean hasCommittedRefunds(UUID paymentId) {
-        return committedRefunds(tenantId(), paymentId).signum() > 0;
-    }
-
-    /**
      * Requests a refund of whatever is still refundable on the payment: amount − Σ(non-rejected refunds), so
      * completed and pending refunds are never duplicated. Returns empty (no refund row) when nothing remains.
      * Runs on the same locked path as {@link #requestRefund}; reusing the idempotency key returns the existing refund.

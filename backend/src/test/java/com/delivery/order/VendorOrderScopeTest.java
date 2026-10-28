@@ -26,6 +26,7 @@ import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
@@ -119,6 +120,7 @@ class VendorOrderScopeTest {
         assertThatThrownBy(() -> service.rejectByVendor(order.getId(), "Sem stock")).isInstanceOf(NotFoundException.class);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_CONFIRMED);
         verify(paymentService, never()).requestRefund(any(), any());
+        verify(paymentService, never()).requestRemainingRefund(any(), anyString(), anyString());
         verify(notificationService, never()).create(any(), anyString(), anyString(), anyString(), anyString(), anyString());
         verify(orderStockService, never()).release(any()); // INC-04 x INC-07: no stock side effect either
     }
@@ -174,10 +176,10 @@ class VendorOrderScopeTest {
         assertThat(service.markReadyForPickup(order.getId()).status()).isEqualTo(OrderStatus.READY_FOR_PICKUP);
     }
 
-    // --- COR-07: rejection keeps REJECTED_BY_VENDOR; the refund lives only on the Refund record ---
+    // --- Unified seller rejection: CANCELLED + SELLER_REJECTED; the refund of the remainder lives on the Refund record ---
 
     @Test
-    void ownVendorRejectionKeepsRejectedStatusAndRequestsFullRefund() {
+    void ownVendorRejectionCancelsAsSellerRejectedAndRequestsTheRemainingRefund() {
         authenticate(vendorA, "ROLE_VENDOR_ADMIN");
         Order order = stored(paymentConfirmed(vendorA));
         Payment payment = mock(Payment.class);
@@ -188,18 +190,18 @@ class VendorOrderScopeTest {
 
         var response = service.rejectByVendor(order.getId(), "Sem ingredientes");
 
-        assertThat(response.status()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(response.cancellationReason()).isEqualTo(CancellationReason.SELLER_REJECTED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(order.getCancellationReason()).isEqualTo(CancellationReason.SELLER_REJECTED);
         assertThat(order.getRejectionReason()).isEqualTo("Sem ingredientes");
-        ArgumentCaptor<RefundRequest> refund = ArgumentCaptor.forClass(RefundRequest.class);
-        verify(paymentService).requestRefund(org.mockito.ArgumentMatchers.eq(paymentId), refund.capture());
-        assertThat(refund.getValue().amount()).isEqualByComparingTo("115.00");
-        assertThat(refund.getValue().idempotencyKey()).isEqualTo("vendor-rejection-" + order.getId());
+        verify(paymentService).requestRemainingRefund(paymentId, "Vendor rejection: Sem ingredientes", "seller-reject-" + order.getId());
+        verify(paymentService, never()).requestRefund(any(), any());
         verify(orderStockService).release(order); // INC-07 (COR-01): rejection returns the reservation
     }
 
     @Test
-    void rejectionThroughRealPaymentServicePersistsRequestedRefundAndKeepsOrderRejected() {
+    void rejectionThroughRealPaymentServicePersistsRequestedFullRefundAndCancelsOrder() {
         authenticate(vendorA, "ROLE_VENDOR_ADMIN");
         Order order = stored(paymentConfirmed(vendorA));
         Payment payment = new Payment(UUID.randomUUID(), tenantId, order.getId(), new BigDecimal("115.00"), "pay-idem");
@@ -227,7 +229,9 @@ class VendorOrderScopeTest {
         verify(refundRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo(RefundStatus.REQUESTED);
         assertThat(saved.getValue().getAmount()).isEqualByComparingTo("115.00");
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED_BY_VENDOR);
+        assertThat(saved.getValue().getIdempotencyKey()).isEqualTo("seller-reject-" + order.getId());
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(order.getCancellationReason()).isEqualTo(CancellationReason.SELLER_REJECTED);
     }
 
     // --- SEC-04: listing is confined to the vendor; OPS/ADMIN keep the tenant-wide view ---

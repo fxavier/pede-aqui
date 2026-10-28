@@ -17,6 +17,7 @@ import com.delivery.dispatch.repository.CourierRepository;
 import com.delivery.dispatch.repository.DispatchJobRepository;
 import com.delivery.finance.repository.CashReconciliationRepository;
 import com.delivery.finance.repository.CommissionRepository;
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.payment.entity.PaymentStatus;
@@ -115,7 +116,9 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public VendorDashboardResponse vendor() {
         UUID tenantId = tenantId();
-        long rejected = orderRepository.findByTenantIdAndStatus(tenantId, OrderStatus.REJECTED_BY_VENDOR).size();
+        // Seller rejections are CANCELLED + SELLER_REJECTED; REJECTED_BY_VENDOR rows predate that unification.
+        long rejected = orderRepository.countByTenantIdAndStatusAndCancellationReason(tenantId, OrderStatus.CANCELLED, CancellationReason.SELLER_REJECTED)
+                + orderRepository.countByTenantIdAndStatus(tenantId, OrderStatus.REJECTED_BY_VENDOR);
         long accepted = orderRepository.findByTenantIdAndStatus(tenantId, OrderStatus.ACCEPTED_BY_VENDOR).size();
         BigDecimal salesTotal = orderRepository.findByTenantIdAndStatus(tenantId, OrderStatus.DELIVERED).stream()
                 .map(order -> order.getTotal())
