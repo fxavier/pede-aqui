@@ -49,7 +49,7 @@ class CatalogInventoryApiTest {
                 .thenReturn(new ProductResponse(UUID.randomUUID(), vendorId, categoryId, "Arroz", "Pacote 1kg", "PENDING", false, false, Map.of(), null, null, List.of(), List.of()));
 
         mockMvc.perform(post("/api/v1/catalog/products")
-                        .with(jwt())
+                        .with(jwt().authorities(() -> "ROLE_VENDOR_ADMIN"))
                         .contentType("application/json")
                         .content("{\"vendorId\":\"" + vendorId + "\",\"categoryId\":\"" + categoryId + "\",\"name\":\"Arroz\"}"))
                 .andExpect(status().isCreated())
@@ -64,7 +64,7 @@ class CatalogInventoryApiTest {
                 .thenReturn(new InventoryResponse(inventoryId, skuId, 8, 0));
 
         mockMvc.perform(patch("/api/v1/inventory/{inventoryItemId}/stock", inventoryId)
-                        .with(jwt())
+                        .with(jwt().authorities(() -> "ROLE_VENDOR_ADMIN"))
                         .contentType("application/json")
                         .content("{\"quantityAvailable\":8}"))
                 .andExpect(status().isOk())
@@ -76,7 +76,7 @@ class CatalogInventoryApiTest {
         UUID inventoryId = UUID.randomUUID();
 
         mockMvc.perform(patch("/api/v1/inventory/{inventoryItemId}/stock", inventoryId)
-                        .with(jwt())
+                        .with(jwt().authorities(() -> "ROLE_VENDOR_ADMIN"))
                         .contentType("application/json")
                         .content("{\"quantityAvailable\":-1}"))
                 .andExpect(status().isBadRequest());

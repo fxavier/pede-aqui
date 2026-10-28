@@ -12,3 +12,7 @@ app:
   delivery:
     # Dev-only default (never use in prod); override with APP_DELIVERY_CODE_HMAC_SECRET.
     code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:dev-only-delivery-code-hmac-secret}
+  # Sem PSP: a confirmação manual do pagamento mock só existe em dev (dono da encomenda ou OPS/ADMIN).
+  payments:
+    mock-confirmation:
+      enabled: true

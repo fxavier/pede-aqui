@@ -27,6 +27,8 @@ import com.delivery.catalog.repository.ProductVariationOptionRepository;
 import com.delivery.catalog.dto.VendorPublicResponse;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
+import com.delivery.common.service.AuditLogService;
 import com.delivery.inventory.entity.InventoryItem;
 import com.delivery.inventory.repository.InventoryItemRepository;
 import com.delivery.upload.service.StorageUrlService;
@@ -54,8 +56,12 @@ public class CatalogService {
     private final TenantContext tenantContext;
     private final VendorRepository vendorRepository;
     private final StorageUrlService storageUrlService;
+    private final CatalogAccessGuard accessGuard;
+    private final AuditLogService auditLogService;
 
-    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext, VendorRepository vendorRepository, StorageUrlService storageUrlService) {
+    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository, SkuRepository skuRepository, InventoryItemRepository inventoryItemRepository, ProductVariationGroupRepository variationGroupRepository, ProductVariationOptionRepository variationOptionRepository, CatalogMapper mapper, TenantContext tenantContext, VendorRepository vendorRepository, StorageUrlService storageUrlService, CatalogAccessGuard accessGuard, AuditLogService auditLogService) {
+        this.accessGuard = accessGuard;
+        this.auditLogService = auditLogService;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.skuRepository = skuRepository;
@@ -84,10 +90,15 @@ public class CatalogService {
                 storageUrlService.presignGet(vendor.getLogoStorageKey()));
     }
 
-    /** Creates a product while blocking prohibited fuel listings. */
+    /** Creates a product for a vendor of the caller's tenant (VENDOR_ADMIN: own vendor only) while blocking prohibited fuel listings. */
     @Transactional
     public ProductResponse createProduct(CreateProductRequest request) {
         UUID tenantId = tenantId();
+        // The vendor must exist in this tenant: otherwise a product could be attached to another
+        // tenant's vendor and, once approved, surface on its public (cross-tenant) storefront.
+        vendorRepository.findByTenantIdAndId(tenantId, request.vendorId())
+                .orElseThrow(() -> new BusinessException("vendor_not_found", "Vendor not found", HttpStatus.NOT_FOUND));
+        accessGuard.ensureCanManageVendor(request.vendorId());
         Product product = new Product(UUID.randomUUID(), tenantId, request.vendorId(), request.categoryId(), request.name(), request.description());
         if (request.requiresPrescriptionMetadata()) product.markPrescriptionRequired();
         if (request.prohibitedFuel()) {
@@ -131,10 +142,14 @@ public class CatalogService {
         return products.stream().map(product -> mapper.toProductResponse(product, skusByProduct.getOrDefault(product.getId(), List.of()))).toList();
     }
 
-    /** Creates a SKU for an existing product and seeds an inventory entry. */
+    /** Creates a SKU for a tenant product the caller may manage and seeds an inventory entry for the product's vendor. */
     @Transactional
     public SkuResponse createSku(CreateSkuRequest request) {
         UUID tenantId = tenantId();
+        Product product = ensureCanManageProduct(tenantId, request.productId());
+        if (!product.getVendorId().equals(request.vendorId())) {
+            throw new BusinessException("vendor_mismatch", "vendorId does not own the product", HttpStatus.BAD_REQUEST);
+        }
         Sku sku = new Sku(UUID.randomUUID(), tenantId, request.productId(), request.skuCode(), request.name(), request.price());
         skuRepository.save(sku);
         InventoryItem inventory = new InventoryItem(UUID.randomUUID(), tenantId, request.vendorId(), sku.getId(), request.initialStock());
@@ -318,7 +333,9 @@ public class CatalogService {
         }
         
         product.approve();
-        return mapper.toProductResponse(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        auditLogService.log(AuditActions.PRODUCT_APPROVED, "product", productId.toString(), "status PENDING -> ACTIVE", "SUCCESS");
+        return mapper.toProductResponse(saved);
     }
 
     /** Rejects a product (changes status from PENDING to REJECTED). */
@@ -333,7 +350,9 @@ public class CatalogService {
         }
         
         product.reject();
-        return mapper.toProductResponse(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        auditLogService.log(AuditActions.PRODUCT_REJECTED, "product", productId.toString(), "status PENDING -> REJECTED", "SUCCESS");
+        return mapper.toProductResponse(saved);
     }
 
     // Product Variation Groups (Families) Management
@@ -342,11 +361,10 @@ public class CatalogService {
     @Transactional
     public ProductVariationGroupResponse createProductVariationGroup(CreateProductVariationGroupRequest request) {
         UUID tenantId = tenantId();
-        
-        // Validate product exists
-        productRepository.findByTenantIdAndId(tenantId, request.productId())
-            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
-        
+
+        // Validate product exists and belongs to a vendor the caller may manage
+        ensureCanManageProduct(tenantId, request.productId());
+
         if (request.maxSelections() < request.minSelections()) {
             throw new BusinessException("invalid_selection_limits", "Max selections must be >= min selections", HttpStatus.BAD_REQUEST);
         }
@@ -387,7 +405,8 @@ public class CatalogService {
         
         ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
             .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
-            
+        ensureCanManageProduct(tenantId, group.getProductId());
+
         if (request.maxSelections() < request.minSelections()) {
             throw new BusinessException("invalid_selection_limits", "Max selections must be >= min selections", HttpStatus.BAD_REQUEST);
         }
@@ -405,7 +424,8 @@ public class CatalogService {
         
         ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
             .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
-        
+        ensureCanManageProduct(tenantId, group.getProductId());
+
         // Delete all options first
         variationOptionRepository.deleteByTenantIdAndGroupId(tenantId, groupId);
         
@@ -420,10 +440,9 @@ public class CatalogService {
     public ProductVariationOptionResponse createProductVariationOption(CreateProductVariationOptionRequest request) {
         UUID tenantId = tenantId();
         
-        // Validate group exists
-        variationGroupRepository.findByTenantIdAndId(tenantId, request.groupId())
-            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
-        
+        // Validate group exists and its product belongs to a vendor the caller may manage
+        ensureCanManageGroup(tenantId, request.groupId());
+
         ProductVariationOption option = new ProductVariationOption(UUID.randomUUID(), tenantId, request.groupId(), request.name());
         option.updateProfile(request.name(), request.description(), request.priceModifier(), request.available(), request.displayOrder());
         
@@ -460,7 +479,8 @@ public class CatalogService {
         
         ProductVariationOption option = variationOptionRepository.findByTenantIdAndId(tenantId, optionId)
             .orElseThrow(() -> new BusinessException("variation_option_not_found", "Product variation option not found", HttpStatus.NOT_FOUND));
-        
+        ensureCanManageGroup(tenantId, option.getGroupId());
+
         option.updateProfile(request.name(), request.description(), request.priceModifier(), request.available(), request.displayOrder());
         
         ProductVariationOption saved = variationOptionRepository.save(option);
@@ -474,8 +494,24 @@ public class CatalogService {
         
         ProductVariationOption option = variationOptionRepository.findByTenantIdAndId(tenantId, optionId)
             .orElseThrow(() -> new BusinessException("variation_option_not_found", "Product variation option not found", HttpStatus.NOT_FOUND));
-        
+        ensureCanManageGroup(tenantId, option.getGroupId());
+
         variationOptionRepository.delete(option);
+    }
+
+    // Loads a tenant product (404 outside the tenant) and enforces own-vendor scoping for vendor users.
+    private Product ensureCanManageProduct(UUID tenantId, UUID productId) {
+        Product product = productRepository.findByTenantIdAndId(tenantId, productId)
+            .orElseThrow(() -> new BusinessException("product_not_found", "Product not found", HttpStatus.NOT_FOUND));
+        accessGuard.ensureCanManageVendor(product.getVendorId());
+        return product;
+    }
+
+    // Resolves a variation group to its product and applies ensureCanManageProduct.
+    private void ensureCanManageGroup(UUID tenantId, UUID groupId) {
+        ProductVariationGroup group = variationGroupRepository.findByTenantIdAndId(tenantId, groupId)
+            .orElseThrow(() -> new BusinessException("variation_group_not_found", "Product variation group not found", HttpStatus.NOT_FOUND));
+        ensureCanManageProduct(tenantId, group.getProductId());
     }
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }

@@ -30,11 +30,11 @@ The backend REST API uses base path `/api/v1`.
 - `GET /api/v1/couriers/me`: returns courier profile for authenticated courier user.
 - `PATCH /api/v1/couriers/me/availability`: switches courier online/offline availability.
 - `GET /api/v1/couriers/me/earnings-summary`: returns completed deliveries, failed deliveries, and earnings total.
-- `GET /api/v1/dispatch-jobs`: lists dispatch jobs for courier/ops/admin roles.
-- `POST /api/v1/dispatch-jobs/assign?orderId={id}&deliveryId={id}&operatingZoneId={id}`: assigns a delivery to an eligible courier in the requested zone.
-- `POST /api/v1/dispatch-jobs/{jobId}/accept`: courier accepts assignment.
-- `POST /api/v1/dispatch-jobs/{jobId}/reject`: courier rejects assignment with reason.
-- `POST /api/v1/dispatch-jobs/{jobId}/reassign?operatingZoneId={id}`: ops/admin reassign rejected jobs.
+- `GET /api/v1/dispatch-jobs?page=0&size=50`: lists one page (newest first, `size` capped at 100) of the tenant's dispatch jobs for OPS/ADMIN; a COURIER only sees jobs offered to them. Response is a JSON array. `GET /api/v1/ops/dispatch/jobs` takes the same params.
+- `POST /api/v1/dispatch-jobs/assign?orderId={id}&deliveryId={id}&operatingZoneId={id}`: offers a `READY_FOR_PICKUP` order's delivery to the first eligible courier of the zone without an active delivery; the offer expires after `app.dispatch.offer-ttl` (default 60s). 409 when the order is not ready, the delivery already has an active job, or no free courier exists.
+- `POST /api/v1/dispatch-jobs/{jobId}/accept`: the addressed courier accepts an `ASSIGNED`, unexpired offer (atomic; concurrent accepts yield one success). 404 if the job is not offered to the caller, 409 if no longer `ASSIGNED` or expired.
+- `POST /api/v1/dispatch-jobs/{jobId}/reject`: the addressed courier declines an `ASSIGNED` offer with a reason (404 if not theirs, 409 otherwise).
+- `POST /api/v1/dispatch-jobs/{jobId}/reassign?operatingZoneId={id}`: ops/admin reassign `REASSIGNABLE` jobs to another free courier with a fresh offer deadline.
 - `PATCH /api/v1/deliveries/{deliveryId}/status`: updates delivery lifecycle status and optional proof/COD metadata.
 - `GET /api/v1/admin/tenants`: admin tenant visibility endpoint.
 - `POST /api/v1/admin/zones` and `GET /api/v1/admin/zones`: admin zone configuration endpoints.

@@ -95,6 +95,9 @@ app:
     # HMAC-SHA256 key for delivery PIN hashes. Empty here on purpose: only the dev profile has a
     # default; prod must set APP_DELIVERY_CODE_HMAC_SECRET or startup fails.
     code-hmac-secret: ${APP_DELIVERY_CODE_HMAC_SECRET:}
+  payments:
+    mock-confirmation:
+      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

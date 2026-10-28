@@ -1,5 +1,6 @@
 package com.delivery.dispatch.entity;
 
+import com.delivery.common.exception.BusinessException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,6 +10,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
 /** Represents a courier assignment for a delivery job. */
 @Entity
@@ -56,10 +58,34 @@ public class DispatchJob {
         this.updatedAt = this.assignedAt;
     }
 
-    public void accept() { this.status = DispatchJobStatus.ACCEPTED; this.acceptedAt = Instant.now(); this.updatedAt = this.acceptedAt; }
-    public void reject(String reason) { this.status = DispatchJobStatus.REASSIGNABLE; this.rejectionReason = reason; this.updatedAt = Instant.now(); }
+    /** Accepts the offer; only an ASSIGNED job can be accepted (409 otherwise). */
+    public void accept() {
+        requireAssigned("accepted");
+        this.status = DispatchJobStatus.ACCEPTED;
+        this.acceptedAt = Instant.now();
+        this.updatedAt = this.acceptedAt;
+    }
+
+    /** Declines the offer and makes the job reassignable; only an ASSIGNED job can be rejected (409 otherwise). */
+    public void reject(String reason) {
+        requireAssigned("rejected");
+        this.status = DispatchJobStatus.REASSIGNABLE;
+        this.rejectionReason = reason;
+        this.updatedAt = Instant.now();
+    }
+
     public void reassign(UUID courierId) { this.courierId = courierId; this.status = DispatchJobStatus.ASSIGNED; this.assignedAt = Instant.now(); this.updatedAt = this.assignedAt; }
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; this.updatedAt = Instant.now(); }
+
+    /** True when an offer deadline exists and has passed at the given instant. */
+    public boolean isOfferExpired(Instant now) { return expiresAt != null && !expiresAt.isAfter(now); }
+
+    private void requireAssigned(String action) {
+        if (status != DispatchJobStatus.ASSIGNED) {
+            throw new BusinessException("dispatch_job_not_assigned",
+                    "Only an assigned dispatch job can be " + action + " (current status: " + status + ")", HttpStatus.CONFLICT);
+        }
+    }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
