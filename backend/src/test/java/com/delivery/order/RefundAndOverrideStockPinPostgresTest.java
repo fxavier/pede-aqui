@@ -90,6 +90,9 @@ class RefundAndOverrideStockPinPostgresTest {
         registry.add("spring.datasource.url", PostgresTestContainerConfig.POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", PostgresTestContainerConfig.POSTGRES::getUsername);
         registry.add("spring.datasource.password", PostgresTestContainerConfig.POSTGRES::getPassword);
+        // Sequential tests: a 2-connection pool is enough, and this extra context must not push the shared container
+        // over max_connections in a full `mvn verify` (see PostgresApiE2ETestBase).
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
     }
 
     @Autowired private SalesService salesService;
