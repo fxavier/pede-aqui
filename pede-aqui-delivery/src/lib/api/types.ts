@@ -87,6 +87,23 @@ export interface CartResponse {
   items: CartItemResponse[]
 }
 
+// Checkout quote (GET /api/v1/checkout/quote) — same pricing engine as checkout (INC-13)
+export type DeliveryFeeBasis = 'DISTANCE_RULE' | 'POLICY_BASE' | 'PLATFORM_DEFAULT' | 'EMPTY_CART'
+
+export interface CheckoutQuote {
+  cartId: string
+  addressId: string | null
+  subtotal: number
+  deliveryFee: number
+  serviceFee: number
+  taxes: number
+  discountTotal: number
+  total: number
+  deliveryFeeBasis: DeliveryFeeBasis
+  /** Straight-line distance used for the fee; null when vendor or address has no coordinates. */
+  distanceKm: number | null
+}
+
 // Checkout (POST /api/v1/checkout)
 export interface CheckoutRequest {
   cartId: string
