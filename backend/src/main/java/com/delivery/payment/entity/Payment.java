@@ -58,6 +58,12 @@ public class Payment {
     public void markPartiallyRefunded() { this.status = PaymentStatus.PARTIALLY_REFUNDED; this.updatedAt = Instant.now(); }
     /** Financial state after a refund approval: approved refunds cover the full amount. */
     public void markFullyRefunded() { this.status = PaymentStatus.FULLY_REFUNDED; this.updatedAt = Instant.now(); }
+    /** Still awaiting confirmation (nothing captured yet). */
+    public boolean isPendingConfirmation() { return status == PaymentStatus.PENDING_CONFIRMATION; }
+    /** Money was captured ({@link PaymentStatus#CAPTURED}), whatever has been refunded since. */
+    public boolean isCaptured() { return PaymentStatus.CAPTURED.contains(status); }
+    /** Status name for logs/read models of other modules (they do not depend on the internal enum). */
+    public String statusName() { return status.name(); }
     /** Pending payment abandoned (W4-A PaymentExpiryJob): nothing was captured, so nothing is refundable. */
     public void markCancelled() { this.status = PaymentStatus.CANCELLED; this.updatedAt = Instant.now(); }
     public UUID getId() { return id; }

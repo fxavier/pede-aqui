@@ -91,6 +91,8 @@ class OrderTimeoutPostgresTest extends PostgresApiE2ETestBase {
     void paymentExpiryCancelsTheOverdueOrderWithAllItsEffectsOnce() {
         Seeded overdue = seedOrder("PAYMENT_PENDING", "PENDING_CONFIRMATION", LONG_AGO, null);
         Seeded fresh = seedOrder("PAYMENT_PENDING", "PENDING_CONFIRMATION", Instant.now(), null);
+        // Inconsistent row (payment captured, order still pending): never cancelled without a refund decision.
+        Seeded inconsistent = seedOrder("PAYMENT_PENDING", "CONFIRMED", LONG_AGO, LONG_AGO);
 
         paymentExpiryJob.run(); // through JobRunner: MDC job name becomes the history actor
 
@@ -112,6 +114,8 @@ class OrderTimeoutPostgresTest extends PostgresApiE2ETestBase {
         assertThat(audits(overdue, "ORDER_CANCELLED_PAYMENT_EXPIRED")).isEqualTo(1);
         assertThat(statusChangedPublications(overdue)).isGreaterThanOrEqualTo(1);
         assertThat(order(fresh)).containsEntry("status", "PAYMENT_PENDING").containsEntry("stock_status", "RESERVED");
+        assertThat(order(inconsistent)).containsEntry("status", "PAYMENT_PENDING").containsEntry("stock_status", "RESERVED");
+        assertThat(orderHistory(inconsistent)).isEmpty();
         assertThat(meterRegistry.find("order.timeout.orders").tags("job", PaymentExpiryJob.NAME, "outcome", "cancelled").counter())
                 .isNotNull();
 
@@ -158,6 +162,8 @@ class OrderTimeoutPostgresTest extends PostgresApiE2ETestBase {
     void acceptanceTimeoutCancelsRefundsReleasesAndNotifiesOnce() {
         Seeded overdue = seedOrder("PAYMENT_CONFIRMED", "CONFIRMED", LONG_AGO, LONG_AGO);
         Seeded fresh = seedOrder("PAYMENT_CONFIRMED", "CONFIRMED", LONG_AGO, Instant.now()); // paid just now
+        // Inconsistent row (order confirmed, payment never captured): no refund of uncaptured money.
+        Seeded uncaptured = seedOrder("PAYMENT_CONFIRMED", "PENDING_CONFIRMATION", LONG_AGO, null);
 
         acceptanceTimeoutJob.run();
 
@@ -178,6 +184,8 @@ class OrderTimeoutPostgresTest extends PostgresApiE2ETestBase {
                         .containsEntry("reason", "VENDOR_TIMEOUT").containsEntry("actor_id", AcceptanceTimeoutJob.NAME));
         assertThat(order(fresh)).containsEntry("status", "PAYMENT_CONFIRMED").containsEntry("stock_status", "RESERVED");
         assertThat(refunds(fresh)).isZero();
+        assertThat(order(uncaptured)).containsEntry("status", "PAYMENT_CONFIRMED");
+        assertThat(refunds(uncaptured)).isZero();
 
         timeoutService.cancelUnacceptedOrders();
         assertThat(refunds(overdue)).isEqualTo(1);

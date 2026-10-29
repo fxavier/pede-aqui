@@ -47,15 +47,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<String> findDeliveryStatus(@Param("tenantId") UUID tenantId, @Param("orderId") UUID orderId);
 
     /**
-     * PaymentExpiryJob candidates (W4-A): orders still PAYMENT_PENDING created before {@code cutoff}. Read-only, no
-     * lock (each one is re-checked under the payment lock); oldest first, bounded. Served by V058
-     * idx_orders_status_timeouts.
+     * PaymentExpiryJob candidates (W4-A): orders still PAYMENT_PENDING created before {@code cutoff} whose payment is
+     * still PENDING_CONFIRMATION (or that have none). Inconsistent rows (payment captured) are never candidates, so
+     * they cannot starve the bounded batch; ops find them by query. Read-only, no lock (each one is re-checked under
+     * the payment lock); oldest first, bounded. Served by V058 idx_orders_status_timeouts.
      */
     @Query(value = """
             SELECT o.id AS "orderId", o.tenant_id AS "tenantId"
               FROM orders o
+              LEFT JOIN payments p ON p.tenant_id = o.tenant_id AND p.order_id = o.id
              WHERE o.status = 'PAYMENT_PENDING'
                AND o.created_at < :cutoff
+               AND (p.id IS NULL OR p.status = 'PENDING_CONFIRMATION')
              ORDER BY o.created_at, o.id
              LIMIT :limit""", nativeQuery = true)
     List<StockReconciliationCandidate> findPaymentExpiryCandidates(@Param("cutoff") Instant cutoff, @Param("limit") int limit);
@@ -63,13 +66,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     /**
      * AcceptanceTimeoutJob candidates (W4-A): orders still PAYMENT_CONFIRMED whose payment was confirmed before
      * {@code cutoff} (rows without payments.confirmed_at fall back to orders.updated_at, the moment of the last
-     * transition). Read-only, no lock; oldest first, bounded.
+     * transition) and whose payment was captured and not fully refunded (CONFIRMED/PARTIALLY_REFUNDED — inconsistent
+     * rows are never candidates, so they cannot starve the batch). Read-only, no lock; oldest first, bounded.
      */
     @Query(value = """
             SELECT o.id AS "orderId", o.tenant_id AS "tenantId"
               FROM orders o
-              LEFT JOIN payments p ON p.tenant_id = o.tenant_id AND p.order_id = o.id
+              JOIN payments p ON p.tenant_id = o.tenant_id AND p.order_id = o.id
              WHERE o.status = 'PAYMENT_CONFIRMED'
+               AND p.status IN ('CONFIRMED', 'PARTIALLY_REFUNDED')
                AND COALESCE(p.confirmed_at, o.updated_at) < :cutoff
              ORDER BY o.created_at, o.id
              LIMIT :limit""", nativeQuery = true)

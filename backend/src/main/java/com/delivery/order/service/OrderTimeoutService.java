@@ -163,6 +163,15 @@ public class OrderTimeoutService {
             return Outcome.ALREADY_SETTLED;
         }
         Order order = found.get();
+        if (!lockedPayments.isEmpty()) {
+            Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, lockedPayments.get(0)).orElseThrow();
+            if (!payment.isPendingConfirmation()) {
+                // Inconsistent row (money may have been captured): never cancel without a refund decision.
+                log.warn("Order {} (tenant {}) is PAYMENT_PENDING but its payment is {}; payment expiry needs ops review",
+                        orderId, tenantId, payment.statusName());
+                return Outcome.NEEDS_ATTENTION;
+            }
+        }
         stateMachine.cancel(order, CancellationReason.PAYMENT_EXPIRED, null);
         if (!lockedPayments.isEmpty()) {
             paymentService.expirePending(tenantId, lockedPayments.get(0));
@@ -193,6 +202,12 @@ public class OrderTimeoutService {
             return Outcome.ALREADY_SETTLED;
         }
         Order order = found.get();
+        if (!payment.isCaptured()) {
+            // A refund of an uncaptured payment would be wrong: leave the inconsistent row to ops.
+            log.warn("Order {} (tenant {}) is PAYMENT_CONFIRMED but its payment is {}; acceptance timeout needs ops review",
+                    orderId, tenantId, payment.statusName());
+            return Outcome.NEEDS_ATTENTION;
+        }
         Instant confirmedAt = payment.getConfirmedAt() != null ? payment.getConfirmedAt() : order.getUpdatedAt();
         if (!confirmedAt.isBefore(cutoff)) {
             return Outcome.ALREADY_SETTLED;
