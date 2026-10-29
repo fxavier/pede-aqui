@@ -8,6 +8,7 @@ import type {
   CustomerAddress,
   CustomerAddressRequest,
   CustomerOrderDetail,
+  CustomerCancellationResult,
   CustomerOrderSummary,
   CursorPage,
   MeResponse,
@@ -85,4 +86,10 @@ export const orderService = {
   /** The signed-in customer's own order (404 when it is not theirs). */
   getMine: (orderId: string) =>
     apiClient.get<CustomerOrderDetail>(`/me/orders/${orderId}`).then((r) => r.data),
+
+  /** Cancels (free phase, 200) or asks to cancel (after acceptance, 202) the signed-in customer's order. */
+  cancelMine: (orderId: string, reason?: string) =>
+    apiClient
+      .post<CustomerCancellationResult>(`/me/orders/${orderId}/cancel`, reason ? { reason } : {})
+      .then((r) => r.data),
 }
