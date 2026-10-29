@@ -25,18 +25,16 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);
 
     /**
-     * Server-side straight-line (geodesic, PostGIS geography) distance in km from each vendor to a point (INC-13).
-     * Vendors without usable coordinates (missing, (0,0) placeholder or out of range) are not returned.
+     * Server-side straight-line (geodesic, PostGIS geography) distance in km from each vendor to a point (INC-13),
+     * computed on {@code vendors.location} (LAC-39). Vendors without a location (coordinates missing, (0,0)
+     * placeholder or out of range — see V062's sync trigger) are not returned.
      */
     @Query(value = """
             SELECT v.id AS "vendorId",
-                   ST_Distance(CAST(ST_SetSRID(ST_MakePoint(v.longitude, v.latitude), 4326) AS geography),
-                               CAST(ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326) AS geography)) / 1000.0 AS "distanceKm"
+                   ST_Distance(v.location, CAST(ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326) AS geography)) / 1000.0 AS "distanceKm"
               FROM vendors v
              WHERE v.id IN (:vendorIds)
-               AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
-               AND NOT (v.latitude = 0 AND v.longitude = 0)
-               AND v.latitude BETWEEN -90 AND 90 AND v.longitude BETWEEN -180 AND 180
+               AND v.location IS NOT NULL
             """, nativeQuery = true)
     List<VendorDistance> straightLineDistancesKm(@Param("vendorIds") Collection<UUID> vendorIds,
                                                  @Param("latitude") double latitude,
