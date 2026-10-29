@@ -5,10 +5,11 @@ Production-oriented MVP for a multi-tenant delivery marketplace using a simple l
 ## Structure
 
 - `backend/`: Java 21 Spring Boot API with controller, service, repository, entity, dto, mapper, config, exception, and security layers.
-- `web/`: Next.js TypeScript backoffice.
+- `pede-aqui-backoffice/`: Next.js TypeScript backoffice.
 - `pede-aqui-delivery/`: React + Vite customer-facing web app (browse, order, track).
-- `mobile/`: Flutter customer and courier app shell.
-- `docs/`: Practical architecture, API, and local development notes.
+- `pede_aqui_delivery_app/`: Flutter customer app.
+- `pede_aqui_courier_app/`: Flutter courier app.
+- `docs/`: Practical architecture, API, and local development notes (`docs/assets/` for diagram exports, `docs/history/` for superseded audit reports).
 - `specs/001-delivery-marketplace-mvp/`: specification, plan, data model, contracts, and tasks.
 
 ## Prerequisites
@@ -34,30 +35,30 @@ mvn spring-boot:run
 
 OpenAPI is available at `http://localhost:8080/swagger-ui.html` when the backend is running.
 
-## Web
+## Backoffice
 
 ```bash
-cd web
-npm install
+cd pede-aqui-backoffice
+npm ci
 npm run dev
 ```
 
 ## Mobile
 
 ```bash
-cd mobile/delivery_app
+cd pede_aqui_delivery_app
 flutter pub get
 flutter run
 
-cd mobile/courier_app
+cd pede_aqui_courier_app
 flutter pub get
 flutter run
 ```
 
 Aplicacoes moveis independentes:
 
-- `mobile/delivery_app`: app do cliente (delivery)
-- `mobile/courier_app`: app do estafeta (courier)
+- `pede_aqui_delivery_app`: app do cliente (delivery)
+- `pede_aqui_courier_app`: app do estafeta (courier)
 
 ### Execucao com Keycloak (PKCE)
 
@@ -66,7 +67,7 @@ Use os comandos abaixo para correr as apps com autenticacao Keycloak via `--dart
 #### Delivery app (cliente)
 
 ```bash
-cd mobile/delivery_app
+cd pede_aqui_delivery_app
 flutter pub get
 
 # Android
@@ -87,7 +88,7 @@ flutter run -d ios \
 #### Courier app (estafeta)
 
 ```bash
-cd mobile/courier_app
+cd pede_aqui_courier_app
 flutter pub get
 
 # Android
@@ -147,6 +148,8 @@ Do not commit real secrets. Use local `.env` files only for developer machines.
 ```bash
 docker compose config
 cd backend && mvn clean verify
-cd web && npm run lint && npm run build
-cd mobile && flutter analyze && flutter test
+cd pede-aqui-backoffice && npm run validate && npm run build
+cd pede-aqui-delivery && npm run typecheck && npm test && npm run build
+cd pede_aqui_delivery_app && flutter analyze && flutter test
+cd pede_aqui_courier_app && flutter analyze && flutter test
 ```

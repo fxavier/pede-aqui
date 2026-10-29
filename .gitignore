@@ -1,5 +1,8 @@
 .DS_Store
 Thumbs.db
+._*
+Desktop.ini
+*.drawio.bkp
 *.tmp
 *.swp
 .vscode/
@@ -13,13 +16,8 @@ backend/target/
 *.class
 *.jar
 
-# Node / Next.js
-web/node_modules/
-web/.next/
-web/out/
-web/dist/
-web/build/
-web/coverage/
+# Node (each app also has its own .gitignore)
+node_modules/
 
 # Flutter / Dart
 **/.dart_tool/
@@ -48,3 +46,20 @@ crash.*.log
 
 ### screens folder #####
 /screens/
+
+### Local tool / agent artifacts (root-anchored; never sources) #####
+/.serena/
+/graphify-out/
+/.claude/worktrees/
+/~/
+.traycer/
+# stray nested build husk of the old backend layout
+/backend/backend/
+
+### Root-level binaries and archives belong in docs/assets/ (root only) #####
+/*.pptx
+/*.pdf
+/*.docx
+/*.png
+/*.svg
+/*.tgz
