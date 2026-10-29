@@ -13,6 +13,8 @@ public interface SkuRepository extends JpaRepository<Sku, UUID> {
     List<Sku> findByTenantIdAndProductIdAndActiveTrue(UUID tenantId, UUID productId);
     /** SKUs with a price change awaiting moderation, tenant-scoped. */
     List<Sku> findByTenantIdAndPendingPriceIsNotNull(UUID tenantId);
+    /** SKU codes are unique per (tenant, vendor, sku_code) since V056 (LAC-16): two stores may share a code. */
+    boolean existsByTenantIdAndVendorIdAndSkuCode(UUID tenantId, UUID vendorId, String skuCode);
     /** Tenant-free: active SKUs for given products (public browse). */
     List<Sku> findByProductIdInAndActiveTrue(List<UUID> productIds);
 }
