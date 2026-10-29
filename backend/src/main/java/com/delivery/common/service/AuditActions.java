@@ -45,6 +45,18 @@ public final class AuditActions {
     public static final String ORDER_CANCELLED_PAYMENT_EXPIRED = "ORDER_CANCELLED_PAYMENT_EXPIRED";
     public static final String ORDER_CANCELLED_VENDOR_TIMEOUT = "ORDER_CANCELLED_VENDOR_TIMEOUT";
 
+    // Customer cancellation (LAC-26, W5-A)
+    /** Free cancellation by the customer (before acceptance); business reference refund_remaining=<amount>. */
+    public static final String ORDER_CANCELLED_BY_CUSTOMER = "ORDER_CANCELLED_BY_CUSTOMER";
+    /** The customer requested a cancellation after acceptance (target = the request). */
+    public static final String ORDER_CANCELLATION_REQUESTED = "ORDER_CANCELLATION_REQUESTED";
+    /** OPS/ADMIN approved a request: order cancelled with the fee withheld (target = the order). */
+    public static final String ORDER_CANCELLATION_APPROVED = "ORDER_CANCELLATION_APPROVED";
+    /** OPS/ADMIN rejected a request (target = the request). */
+    public static final String ORDER_CANCELLATION_REJECTED = "ORDER_CANCELLATION_REJECTED";
+    /** A request was closed because the order moved on before a decision (target = the request). */
+    public static final String ORDER_CANCELLATION_REQUEST_CLOSED = "ORDER_CANCELLATION_REQUEST_CLOSED";
+
     private AuditActions() {
     }
 }

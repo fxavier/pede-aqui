@@ -197,6 +197,8 @@ app:
           - /api/v1/finance/refunds/**
           - /api/v1/sales/orders/*/refund
           - /api/v1/sales/orders/*/cancel
+          - /api/v1/me/orders/*/cancel
+          - /api/v1/ops/cancellation-requests/*/approve
         capacity: 20
         period: 1m
       provisioning:
@@ -301,6 +303,10 @@ app:
     # PAYMENT_CONFIRMED not accepted by the vendor within this -> CANCELLED (VENDOR_TIMEOUT) + refund of the remainder.
     acceptance-timeout: ${APP_ORDERS_ACCEPTANCE_TIMEOUT:PT10M}
     timeout-batch-size: 200
+    # LAC-26 (W5-A): customer cancellation. Fee (fraction of the order subtotal, 0..1) withheld from the refund when OPS
+    # approves the cancellation of an order the vendor already accepted (ACCEPTED_BY_VENDOR/PREPARING).
+    cancellation:
+      fee-rate: ${APP_ORDERS_CANCELLATION_FEE_RATE:0.10}
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

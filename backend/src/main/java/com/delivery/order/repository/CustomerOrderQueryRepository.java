@@ -30,6 +30,9 @@ public interface CustomerOrderQueryRepository extends Repository<Order, UUID> {
     /** The order only when it belongs to this customer in this tenant. */
     Optional<Order> findByTenantIdAndIdAndCustomerId(UUID tenantId, UUID id, UUID customerId);
 
+    /** Ownership check without loading the order (LAC-26: checked before the payment lock is taken). */
+    boolean existsByTenantIdAndIdAndCustomerId(UUID tenantId, UUID id, UUID customerId);
+
     /** Item-line count per order for one page of orders, in one query (avoids loading every item collection). */
     @Query("select i.order.id, count(i) from OrderItem i where i.order.id in :orderIds group by i.order.id")
     List<Object[]> countItemsByOrderIds(@Param("orderIds") Collection<UUID> orderIds);
