@@ -186,6 +186,9 @@ real ou integração.
 
 ## 8. Contrato OpenAPI baseline
 
+> Histórico. Desde LAC-56 o contrato vivo é `docs/api/openapi.json`, gerado por
+> `OpenApiContractExportTest` e verificado em CI (ver [`docs/api/README.md`](../api/README.md)).
+
 - Ficheiro: [`docs/api/openapi-baseline.json`](../api/openapi-baseline.json) (JSON normalizado com
   chaves ordenadas e indentação de 2 espaços, para diffs estáveis).
 - Conteúdo: OpenAPI 3.0.1, 123 paths, 148 operações, 125 schemas — gerado sobre `54be398`

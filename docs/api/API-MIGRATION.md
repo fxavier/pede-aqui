@@ -3,6 +3,10 @@
 Contract changes introduced by the refactoring increments. Each entry says what changed, who is
 affected, and whether existing clients break.
 
+The machine-readable contract is `docs/api/openapi.json`; CI fails a PR that leaves it stale or that
+breaks it without the `api-breaking` label. Every PR carrying that label needs an entry here. See
+[README.md](README.md).
+
 ## INC-04 — Vendor order scope (SEC-03, SEC-04, COR-07)
 
 ### `GET /api/v1/orders` (unchanged shape, narrower data)
