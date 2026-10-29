@@ -61,6 +61,42 @@ Keycloak only imports a realm that does not exist yet. After changing either fil
 docker compose rm -sf keycloak && docker compose up -d keycloak
 ```
 
+### Customer phone + SMS login (LAC-18, ADR-0004)
+
+The compose `keycloak` service is **built** from `keycloak/Dockerfile`: Keycloak 26.8.1 plus the provider jar
+built from `keycloak/extensions/sms-otp` (Maven runs inside the image build, so the first `docker compose up`
+takes a few minutes). The realm binds the flow `browser-customer-phone` to `pede-aqui-web` and
+`pede-aqui-mobile` only, so their login page starts with "Entrar com o telemóvel"; the backoffice and the
+courier app keep the password (+TOTP) page. Without the provider jar, customer logins fail with
+"authenticator not found", so always run the compose image (not the bare upstream image).
+
+```bash
+docker compose build keycloak                                        # after changing the provider
+docker compose rm -sf keycloak && docker compose up -d --build keycloak   # after changing the realm
+```
+
+- **SMS is a stub** (`sms-sender` provider `log`): nothing is sent; the Keycloak log gets
+  `SMS (stub, not sent) to +25884*****67: Pede Aqui: o seu código de acesso é ******. …`. To log in by phone
+  locally, set `KC_SPI_SMS_SENDER__LOG__REVEAL_CODE_IN_DEV_MODE: "true"` on the compose `keycloak` service and
+  recreate it; the code then appears in `docker compose logs keycloak`. This only works with `start-dev`;
+  in production mode the option is ignored with a warning.
+- Numbers: Mozambican mobiles only (+258, prefixes 82–87). `84 123 4567`, `+258 84 123 4567` and
+  `258841234567` are all accepted. Rules: code 6 digits / 5 min; 5 wrong codes per number → number locked
+  15 min (doubles per lock within 24 h); resend after 60 s; 3 SMS per number and 10 per IP per 15 min.
+  Counters live in Keycloak's cache, so `docker compose restart keycloak` clears them.
+- First phone login creates a Keycloak user `phone-<uuid>` with `CUSTOMER`, attributes `phone_e164` and
+  `phone_verified=true`, and Keycloak asks for first/last name. The token carries `phone_number` and
+  `phone_number_verified`; the backend copies the number to `app_user_profiles.phone_e164` (V063) and
+  `GET /api/v1/me` returns `phoneE164`.
+- Users with any staff role (ADMIN, OPS, FINANCE, SUPPORT, VENDOR_ADMIN, VENDOR_STAFF, COURIER) are refused on
+  the phone path, even if they have a `phone_e164` attribute.
+- `KC_SPI_AUTHENTICATOR__PEDE_AQUI_PHONE_OTP__HMAC_SECRET` (compose sets a dev value) keys the code hashes;
+  production must set a ≥32-character secret shared by all Keycloak nodes, or Keycloak refuses to start.
+  Behind a proxy/LB configure Keycloak `proxy-headers`, otherwise the per-IP limits see only the LB address.
+- Provider tests: `cd keycloak/extensions/sms-otp && mvn verify` (unit tests + `PhoneOtpKeycloakIT`, which
+  starts a real Keycloak 26.8.1 with the jar and the repository realm; needs Docker). `mvn package` runs only
+  the unit tests.
+
 ### Customer web login (`pede-aqui-web`, PKCE only)
 
 The customer web app (`pede-aqui-delivery`, `http://localhost:5173`) logs in **only** with Authorization

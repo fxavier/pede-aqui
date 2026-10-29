@@ -9,6 +9,7 @@ Registo das decisões arquiteturais do Pede-Aqui (pt-PT). Cada ADR segue o mesmo
 | [ADR-0001](./ADR-0001-tenancy-model.md) | Modelo de tenancy — tenant = operador do marketplace | Accepted (2026-10-28) | 2026-10-28 | INC-11 e restante Fase 2 |
 | [ADR-0002](./ADR-0002-module-structure.md) | Estrutura de módulos — camadas por domínio + Spring Modulith só para verificação e eventos transacionais | Accepted (2026-10-28) | 2026-10-28 | Incremento "Modulith baseline" (cláusula "Architecture Constraints" do `CLAUDE.md` já atualizada) |
 | [ADR-0003](./ADR-0003-money-representation.md) | Representação monetária — `NUMERIC(12,2)` + `BigDecimal`; sem `double` em dinheiro | Accepted (2026-10-28) | 2026-10-28 | INC-13 (parte do `SearchService`) |
+| [ADR-0004](./ADR-0004-phone-otp.md) | Login de clientes por telemóvel + SMS — autenticador SPI no Keycloak (rejeita OTP no backend + impersonation) | Proposed | 2026-10-29 | W5-D (LAC-18) |
 
 ## Ciclo de vida
 

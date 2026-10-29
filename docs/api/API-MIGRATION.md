@@ -618,3 +618,23 @@ No backend API change; this records a client change that the Keycloak ROPC shutd
 - Dev: tokens carry `iss` = the host the app used. The backend validates `iss` against
   `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
   than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).
+
+## W5-D — Customer phone + SMS login (LAC-18, ADR-0004 Proposed)
+
+Additive only; no client breaks.
+
+- **New login method, no new endpoint.** The Keycloak login page of the customer clients `pede-aqui-web` and
+  `pede-aqui-mobile` now starts with "phone number → 6-digit SMS code" (authenticator `pede-aqui-phone-otp`,
+  flow `browser-customer-phone`), with "Entrar com email e palavra-passe" falling through to the old form. The
+  apps keep the same Authorization Code + PKCE redirect; nothing changes in their code. A non-phone `login_hint`
+  (the email sent after `POST /customers/register`) skips straight to the password form; a phone `login_hint`
+  pre-fills the number. `delivery-app` (backoffice) and `pede-aqui-courier-mobile` are unchanged.
+- **Tokens of the customer clients** carry two new OIDC standard claims when the user has a phone:
+  `phone_number` (E.164, e.g. `+258841234567`) and `phone_number_verified` (boolean). Phone-created users have an
+  opaque `preferred_username` (`phone-<uuid>`) and may have **no `email` claim**.
+- **`GET /api/v1/me`** (`MeResponse`): new nullable fields `phoneE164` (string, E.164) and `phoneVerifiedAt`
+  (ISO-8601 instant). Filled for customers from a verified `phone_number` claim (unique per tenant: a number already
+  verified on another profile is not linked). The old free-text `phone` field is unchanged and not verified.
+- Consumers that assumed `email` is always present in a customer token or in `MeResponse.email` semantics: for a
+  phone-only customer `MeResponse.email` falls back to the Keycloak subject (column is NOT NULL), as it already did
+  for any token without an email claim.
