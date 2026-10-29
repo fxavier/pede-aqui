@@ -33,6 +33,10 @@ public class BusinessMetrics {
     public static final String UPLOAD_REJECTIONS = "uploads.rejected";
     /** {@code audit_events_total{action,result}}: committed audit entries (PAYMENT_CONFIRMED, REFUND_APPROVED, DELIVERY_CODE_LOCKED…). */
     public static final String AUDIT_EVENTS = "audit.events";
+    /** {@code orders_created_total}: orders persisted by checkout (OrderStateMachine.recordCreated), after commit. */
+    public static final String ORDERS_CREATED = "orders.created";
+    /** {@code orders_cancelled_total{reason}}: reason = seller_rejected | payment_expired | vendor_timeout | other. */
+    public static final String ORDERS_CANCELLED = "orders.cancelled";
 
     public static final String SUCCESS = "success";
     public static final String REJECTED = "rejected";
