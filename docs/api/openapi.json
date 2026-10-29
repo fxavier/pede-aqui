@@ -1893,6 +1893,13 @@
           "phone": {
             "type": "string"
           },
+          "phoneE164": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "roles": {
             "items": {
               "enum": [

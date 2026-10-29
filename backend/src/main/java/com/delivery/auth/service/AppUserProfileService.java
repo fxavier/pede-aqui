@@ -90,7 +90,7 @@ public class AppUserProfileService {
         String email = jwt.getClaimAsString("email");
         String displayName = Optional.ofNullable(jwt.getClaimAsString("name"))
                 .orElse(jwt.getClaimAsString("preferred_username"));
-        return new MeResponse(null, null, keycloakUserId, email, displayName, null, extractRoles(jwt), null, null, null, null, null);
+        return new MeResponse(null, null, keycloakUserId, email, displayName, null, extractRoles(jwt), null, null, null, null, null, null, null);
     }
 
     private Set<MarketplaceRole> extractRoles(Jwt jwt) {

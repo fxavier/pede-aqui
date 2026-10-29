@@ -1,6 +1,7 @@
 package com.delivery.auth.dto;
 
 import com.delivery.common.security.MarketplaceRole;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -18,5 +19,8 @@ public record MeResponse(
         String nif,
         LocalDate dateOfBirth,
         String address,
-        String avatarStorageKey) {
+        String avatarStorageKey,
+        /* Verified phone in E.164 from the phone + SMS login (LAC-18); null when never verified. */
+        String phoneE164,
+        Instant phoneVerifiedAt) {
 }

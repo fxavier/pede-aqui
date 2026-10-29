@@ -36,10 +36,12 @@ public final class PhoneNumbers {
             international = compact.substring(1);
         } else if (compact.startsWith("00")) {
             international = compact.substring(2);
+        } else if (compact.startsWith(MOZAMBIQUE) && compact.length() == MOZAMBIQUE.length() + 9) {
+            international = compact; // 258XXXXXXXXX typed without '+'
         } else if (MZ_MOBILE_NATIONAL.matcher(compact).matches()) {
             international = MOZAMBIQUE + compact;
         } else {
-            international = compact;
+            return Optional.empty(); // other bare digits are national numbers that are not Mozambican mobiles
         }
         if (!international.chars().allMatch(Character::isDigit)) {
             return Optional.empty();

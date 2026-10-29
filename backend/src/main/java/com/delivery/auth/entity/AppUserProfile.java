@@ -38,6 +38,13 @@ public class AppUserProfile {
 
     private String phone;
 
+    /** Verified phone (E.164) from the Keycloak phone login (LAC-18); written only by CustomerProfileProvisioningService. */
+    @Column(name = "phone_e164", insertable = false, updatable = false)
+    private String phoneE164;
+
+    @Column(name = "phone_verified_at", insertable = false, updatable = false)
+    private Instant phoneVerifiedAt;
+
     @Column(name = "full_name")
     private String fullName;
 
@@ -115,6 +122,8 @@ public class AppUserProfile {
     public String getEmail() { return email; }
     public String getDisplayName() { return displayName; }
     public String getPhone() { return phone; }
+    public String getPhoneE164() { return phoneE164; }
+    public Instant getPhoneVerifiedAt() { return phoneVerifiedAt; }
     public Set<MarketplaceRole> getRoles() { return roles; }
     public String getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
