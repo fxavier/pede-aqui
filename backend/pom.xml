@@ -19,7 +19,23 @@
         <java.version>21</java.version>
         <springdoc.version>2.10.0</springdoc.version>
         <aws.sdk.version>2.57.4</aws.sdk.version>
+        <!-- ADR-0002 / LAC-47: Spring Modulith 1.4.x is the line built for Spring Boot 3.5. -->
+        <spring-modulith.version>1.4.14</spring-modulith.version>
+        <!-- LAC-46: ShedLock 6.x targets Spring Framework 6 / Boot 3 (7.x moves to Spring 7). -->
+        <shedlock.version>6.10.0</shedlock.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.modulith</groupId>
+                <artifactId>spring-modulith-bom</artifactId>
+                <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -78,6 +94,33 @@
             <artifactId>s3</artifactId>
             <version>${aws.sdk.version}</version>
         </dependency>
+        <!-- ADR-0002 / LAC-47: structural verification + transactional events with a JDBC event publication registry. -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-core</artifactId>
+            <exclusions>
+                <!-- ADR-0002: Moments (time-passing events) are not adopted. -->
+                <exclusion>
+                    <groupId>org.springframework.modulith</groupId>
+                    <artifactId>spring-modulith-moments</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-jdbc</artifactId>
+        </dependency>
+        <!-- LAC-46: run each scheduled job once across replicas (JDBC lock table, V052). -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -91,6 +134,16 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-docs</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

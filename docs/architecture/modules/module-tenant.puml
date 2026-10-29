@@ -1,0 +1,39 @@
+@startuml
+set separator none
+title Tenant
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
+  Component(DeliveryApplication.DeliveryApplication.Dispatch, "Dispatch", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Geo, "Geo", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Tenant, "Tenant", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Vendor, "Vendor", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Geo, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Tenant, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Auth, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Tenant, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Geo, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Dispatch, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml
