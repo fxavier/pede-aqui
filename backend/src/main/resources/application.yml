@@ -241,6 +241,15 @@ app:
       # Orders touched more recently than this are left to the request that is changing them.
       grace-period: PT10M
       batch-size: 200
+    # W4-A (LAC-25): order timeouts — see app.orders.* for the timeout durations.
+    payment-expiry:
+      enabled: ${APP_JOBS_PAYMENT_EXPIRY_ENABLED:true}
+      interval: PT1M
+      initial-delay: PT1M
+    acceptance-timeout:
+      enabled: ${APP_JOBS_ACCEPTANCE_TIMEOUT_ENABLED:true}
+      interval: PT1M
+      initial-delay: PT1M
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -250,6 +259,13 @@ app:
       cron: "0 30 3 * * *"
       zone: Africa/Maputo
       retention: P7D
+  # W4-A (LAC-25): order lifecycle timeouts (ISO-8601), enforced by the payment-expiry / acceptance-timeout jobs.
+  orders:
+    # PAYMENT_PENDING longer than this after checkout -> CANCELLED (PAYMENT_EXPIRED), stock released, no refund.
+    payment-timeout: ${APP_ORDERS_PAYMENT_TIMEOUT:PT20M}
+    # PAYMENT_CONFIRMED not accepted by the vendor within this -> CANCELLED (VENDOR_TIMEOUT) + refund of the remainder.
+    acceptance-timeout: ${APP_ORDERS_ACCEPTANCE_TIMEOUT:PT10M}
+    timeout-batch-size: 200
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested
