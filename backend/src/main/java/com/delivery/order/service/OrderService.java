@@ -15,7 +15,7 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.delivery.service.DeliveryCodeHasher;
-import com.delivery.delivery.service.DeliveryRetirementService;
+import com.delivery.delivery.api.DeliveryRetirementService;
 import com.delivery.inventory.service.InventoryService;
 import com.delivery.marketing.api.CheckoutDiscount;
 import com.delivery.marketing.api.CheckoutDiscountResolver;

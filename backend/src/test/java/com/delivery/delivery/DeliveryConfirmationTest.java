@@ -71,9 +71,10 @@ class DeliveryConfirmationTest {
         when(eventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
         properties.setMaxCodeAttempts(5);
-        service = new DeliveryService(deliveryRepository, eventRepository, orderRepository, new DeliveryMapper(), tenantContext,
-                new DeliveryAccessGuard(profileRepository, courierRepository, tenantContext), hasher, properties, auditLogService,
-                orderStockService, mock(StoredUploadValidator.class));
+        service = new DeliveryService(deliveryRepository, eventRepository,
+                new com.delivery.order.service.OrderDeliveryHooks(orderRepository, orderStockService), new DeliveryMapper(), tenantContext,
+                new DeliveryAccessGuard(new com.delivery.dispatch.service.CourierIdentityResolver(profileRepository, courierRepository, tenantContext)),
+                hasher, properties, auditLogService, mock(StoredUploadValidator.class));
         order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hasher.hash(CODE), CODE);
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
         Courier courier = mock(Courier.class);
