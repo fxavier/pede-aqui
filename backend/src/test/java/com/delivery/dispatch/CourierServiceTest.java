@@ -46,7 +46,7 @@ class CourierServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class), mock(StoredUploadValidator.class));
+        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class), mock(StoredUploadValidator.class), mock(com.delivery.common.service.AuditLogService.class));
 
         var eligible = service.eligibleInZone(zoneA);
 
@@ -88,7 +88,8 @@ class CourierServiceTest {
                 new DispatchMapper(),
                 tenantContext,
                 mock(DashboardService.class),
-                mock(StoredUploadValidator.class)
+                mock(StoredUploadValidator.class),
+                mock(com.delivery.common.service.AuditLogService.class)
         );
 
         CreateCourierRequest request = new CreateCourierRequest(differentProfileId, UUID.randomUUID(), null, null, null, null, null, null);
@@ -132,7 +133,8 @@ class CourierServiceTest {
                 new DispatchMapper(),
                 tenantContext,
                 mock(DashboardService.class),
-                mock(StoredUploadValidator.class)
+                mock(StoredUploadValidator.class),
+                mock(com.delivery.common.service.AuditLogService.class)
         );
 
         // Create request with profile fields
