@@ -20,7 +20,7 @@ import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.CategoryRepository;
 import com.delivery.catalog.repository.SkuRepository;
-import com.delivery.catalog.service.PharmacySalePolicy;
+import com.delivery.catalog.api.PharmacySalePolicy;
 import com.delivery.vendor.api.StoreAvailabilityService;
 import com.delivery.vendor.api.StoreClosedException;
 import com.delivery.common.exception.BusinessException;

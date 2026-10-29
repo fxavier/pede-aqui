@@ -81,7 +81,7 @@ import org.testcontainers.DockerClientFactory;
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({com.delivery.delivery.service.DeliveryRetirementService.class, OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
         com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class,
-        OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class, com.delivery.vendor.api.StoreAvailabilityService.class, com.delivery.catalog.service.PharmacySalePolicy.class,
+        OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class, com.delivery.vendor.api.StoreAvailabilityService.class, com.delivery.catalog.api.PharmacySalePolicy.class,
         SalesService.class, DeliveryService.class, DeliveryMapper.class,
         DeliveryAccessGuard.class, DeliveryCodeHasher.class, DeliveryCodeProperties.class,
         com.delivery.order.service.DeliveryAddressResolver.class})

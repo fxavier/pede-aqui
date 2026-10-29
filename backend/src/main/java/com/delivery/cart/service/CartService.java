@@ -11,7 +11,7 @@ import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
-import com.delivery.catalog.service.PharmacySalePolicy;
+import com.delivery.catalog.api.PharmacySalePolicy;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;

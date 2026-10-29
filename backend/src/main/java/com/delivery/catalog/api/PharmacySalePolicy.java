@@ -1,4 +1,4 @@
-package com.delivery.catalog.service;
+package com.delivery.catalog.api;
 
 import com.delivery.catalog.entity.Category;
 import com.delivery.catalog.entity.Product;
