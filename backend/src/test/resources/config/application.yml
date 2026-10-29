@@ -3,3 +3,7 @@ spring:
   cache:
     # No Redis in the test suite; caching is covered by SearchServiceCachingTest and VendorSearchCacheRedisTest.
     type: none
+app:
+  jobs:
+    # LAC-46: no background scheduler in tests; job beans exist and tests call run()/reconcile() directly.
+    enabled: false

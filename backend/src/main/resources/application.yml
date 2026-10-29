@@ -32,6 +32,22 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # ADR-0002 / LAC-47: transactional events. Registry = JDBC table event_publication, owned by Flyway (V052), never
+  # auto-created. Completed rows are marked (update) and purged by EventPublicationCleanupJob; incomplete ones are
+  # resubmitted by EventPublicationRetryJob on one replica instead of on every restart (multi-replica safe).
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
+      completion-mode: update
+      republish-outstanding-events-on-restart: false
+  # LAC-46: scheduler threads for @Scheduled jobs (ShedLock keeps each job to one replica).
+  task:
+    scheduling:
+      thread-name-prefix: job-
+      pool:
+        size: 2
   # LAC-51: Redis cache (vendorSearch, TTL 60 s em RedisConfig). Os testes usam none
   # (src/test/resources/config/application.yml); CACHE_TYPE=none desliga-a sem Redis.
   cache:
@@ -93,6 +109,17 @@ app:
   # ambiente; o passo 6 do ADR remove depois o código do fallback.
   merchant-scope:
     single-vendor-fallback-enabled: ${APP_MERCHANT_SCOPE_SINGLE_VENDOR_FALLBACK_ENABLED:true}
+  # LAC-27: horários (vendor_opening_hours) e encerramentos (vendor_closures) avaliados neste fuso.
+  # enforce-available-flag: também exigir vendors.available=true para aceitar encomendas. Desligado porque a
+  # coluna nasce FALSE e ainda não há UI para a ligar — ligar só depois de rever esse valor em todas as lojas.
+  store-availability:
+    timezone: ${APP_STORE_TIMEZONE:Africa/Maputo}
+    enforce-available-flag: ${APP_STORE_ENFORCE_AVAILABLE_FLAG:false}
+  # LAC-64: vertical farmácia bloqueada até parecer jurídico/regulatório. Com false, produtos com receita ou da
+  # vertical "pharmacy" são recusados no carrinho e no checkout (422 pharmacy_not_available).
+  verticals:
+    pharmacy:
+      enabled: ${APP_VERTICALS_PHARMACY_ENABLED:false}
   provisioning:
     max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
     max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}
@@ -135,6 +162,26 @@ app:
   payments:
     mock-confirmation:
       enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
+  # LAC-46: scheduled jobs (JobSchedulingConfig + ShedLock). enabled=false turns the scheduler off (tests); each job
+  # also has its own flag. Durations are ISO-8601.
+  jobs:
+    enabled: ${APP_JOBS_ENABLED:true}
+    reservation-reconciler:
+      enabled: ${APP_JOBS_RESERVATION_RECONCILER_ENABLED:true}
+      interval: PT15M
+      initial-delay: PT2M
+      # Orders touched more recently than this are left to the request that is changing them.
+      grace-period: PT10M
+      batch-size: 200
+    event-publication-retry:
+      enabled: true
+      interval: PT1M
+      older-than: PT5M
+    event-publication-cleanup:
+      enabled: true
+      cron: "0 30 3 * * *"
+      zone: Africa/Maputo
+      retention: P7D
   sales:
     status-override:
       enabled: false  # gated manual transition matrix; keep disabled unless explicitly requested

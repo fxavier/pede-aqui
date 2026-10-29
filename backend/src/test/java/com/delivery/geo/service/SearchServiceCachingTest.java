@@ -16,6 +16,7 @@ import com.delivery.common.pricing.DeliveryFeeBasis;
 import com.delivery.common.pricing.DeliveryFeeQuote;
 import com.delivery.common.security.TenantContext;
 import com.delivery.geo.dto.SearchResponse;
+import com.delivery.vendor.api.StoreAvailabilityService;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
 import java.math.BigDecimal;
@@ -54,9 +55,10 @@ class SearchServiceCachingTest {
         @Bean VendorRepository vendorRepository() { return mock(VendorRepository.class); }
         @Bean PricingService pricingService() { return mock(PricingService.class); }
         @Bean VendorSearchCache vendorSearchCache() { return new VendorSearchCache(); }
+        @Bean StoreAvailabilityService storeAvailabilityService() { return mock(StoreAvailabilityService.class); }
         @Bean SearchService searchService(TenantContext t, ProductRepository p, VendorRepository v, PricingService ps,
-                                          VendorSearchCache c) {
-            return new SearchService(t, p, v, ps, c);
+                                          VendorSearchCache c, StoreAvailabilityService sa) {
+            return new SearchService(t, p, v, ps, c, sa);
         }
     }
 

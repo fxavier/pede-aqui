@@ -8,6 +8,15 @@ export interface VendorSearchResult {
   rating: number
   estimatedDeliveryMinutes: number | null
   deliveryFee: number | null
+  /** LAC-27: store open right now (hours + closures); closed stores come last in the results. */
+  open?: boolean
+  /** LAC-27: next opening instant (ISO-8601) when closed; null when unknown. */
+  nextOpeningAt?: string | null
+}
+
+/** Open state shown to customers: the backend's request-time `open`, falling back to `available` for older APIs. */
+export function isVendorOpen(vendor: Pick<VendorSearchResult, 'open' | 'available'>): boolean {
+  return vendor.open ?? vendor.available
 }
 
 export interface VendorSearchResponse {

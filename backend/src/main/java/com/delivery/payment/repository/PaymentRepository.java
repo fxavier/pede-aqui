@@ -24,6 +24,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Payment p where p.tenantId = :tenantId and p.orderId = :orderId")
     Optional<Payment> findByTenantIdAndOrderIdForUpdate(@Param("tenantId") UUID tenantId, @Param("orderId") UUID orderId);
+    /**
+     * Non-blocking variant of the lock above for background jobs (LAC-46 claim pattern): locks the order's payment
+     * row(s) FOR UPDATE SKIP LOCKED and returns their ids; a row held by a request in flight is skipped (empty result)
+     * so the job moves on and retries on its next tick instead of queueing behind user traffic.
+     */
+    @Query(value = "SELECT p.id FROM payments p WHERE p.tenant_id = :tenantId AND p.order_id = :orderId FOR UPDATE SKIP LOCKED",
+            nativeQuery = true)
+    List<UUID> lockIdsByTenantIdAndOrderIdSkipLocked(@Param("tenantId") UUID tenantId, @Param("orderId") UUID orderId);
+    boolean existsByTenantIdAndOrderId(UUID tenantId, UUID orderId);
     Optional<Payment> findByTenantIdAndIdempotencyKey(UUID tenantId, String idempotencyKey);
     Optional<Payment> findByTenantIdAndOrderId(UUID tenantId, UUID orderId);
     List<Payment> findByTenantIdAndStatus(UUID tenantId, PaymentStatus status);

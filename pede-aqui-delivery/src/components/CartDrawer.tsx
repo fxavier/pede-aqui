@@ -7,6 +7,7 @@ import { clearCart, cartTotal, cartItemCount, setCartFromResponse } from '@/stor
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { cartService } from '@/lib/api/services'
+import { cartErrorMessage } from '@/lib/cart-errors'
 
 interface Props {
   open: boolean
@@ -41,10 +42,10 @@ export function CartDrawer({ open, onClose }: Props) {
         })),
       }))
       setError(null)
-    } catch {
+    } catch (err) {
       // Local state is left untouched (still in sync with the server cart);
       // surface the failure so the user knows the quantity was not updated.
-      setError('Não foi possível atualizar o carrinho. Tente novamente.')
+      setError(cartErrorMessage(err, 'Não foi possível atualizar o carrinho. Tente novamente.'))
     }
   }
 

@@ -8,6 +8,7 @@ import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.geo.dto.SearchResponse;
 import com.delivery.geo.dto.SearchSortOption;
 import com.delivery.geo.dto.SearchVendorResponse;
+import com.delivery.vendor.api.StoreAvailabilityService;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
 import java.util.Comparator;
@@ -24,12 +25,14 @@ public class SearchService {
     private final VendorRepository vendorRepository;
     private final PricingService pricingService;
     private final VendorSearchCache searchCache;
+    private final StoreAvailabilityService storeAvailability;
     private static final int PAGE_SIZE = 20;
     private static final int BASE_DELIVERY_MINUTES = 15;
     private static final int PER_KM_MINUTES = 3;
 
     public SearchService(TenantContext tenantContext, ProductRepository productRepository, VendorRepository vendorRepository,
-                         PricingService pricingService, VendorSearchCache searchCache) {
+                         PricingService pricingService, VendorSearchCache searchCache, StoreAvailabilityService storeAvailability) {
+        this.storeAvailability = storeAvailability;
         this.tenantContext = tenantContext;
         this.productRepository = productRepository;
         this.vendorRepository = vendorRepository;
@@ -48,11 +51,27 @@ public class SearchService {
         return new SearchResponse(page(allResults, page), allResults.size(), page, PAGE_SIZE);
     }
 
-    /** Full filtered and sorted result set, served from the vendorSearch cache (LAC-51). */
+    /**
+     * Full filtered and sorted result set, served from the vendorSearch cache (LAC-51), then stamped with each store's
+     * open state at request time and re-ordered so closed stores come last (LAC-27), keeping the cached order within
+     * the open and the closed group (stable sort).
+     * <p>Open state is deliberately computed AFTER the cache read instead of being cached (or keyed by a time bucket):
+     * a store opens/closes at exact minutes and OPS closures must take effect immediately, so a cached open flag would
+     * be wrong for up to the TTL/bucket length. The cost is three indexed queries per search over the result's vendors.
+     */
     private List<SearchVendorResponse> allResults(Double latitude, Double longitude, Integer radius, String category, Double minRating, Integer maxDeliveryMinutes, String sort) {
         VendorSearchQuery query = VendorSearchQuery.of(tenantContext.browseTenantId().orElse(null),
                 latitude, longitude, radius, category, minRating, maxDeliveryMinutes, sort);
-        return searchCache.results(query, () -> search(query));
+        List<SearchVendorResponse> cached = searchCache.results(query, () -> search(query));
+        Map<UUID, StoreAvailabilityService.Availability> availability =
+                storeAvailability.availabilityNow(cached.stream().map(SearchVendorResponse::vendorId).toList());
+        return cached.stream()
+                .map(row -> {
+                    StoreAvailabilityService.Availability state = availability.get(row.vendorId());
+                    return state == null ? row.withOpenState(false, null) : row.withOpenState(state.open(), state.nextOpeningAt());
+                })
+                .sorted(Comparator.comparing(SearchVendorResponse::open).reversed())
+                .toList();
     }
 
     private static List<SearchVendorResponse> page(List<SearchVendorResponse> allResults, Integer page) {
@@ -121,7 +140,9 @@ public class SearchService {
                 vendor.getRating(),
                 estimatedDeliveryMinutes,
                 fee.amount(),
-                fee.basis().name()
+                fee.basis().name(),
+                false, // placeholder: open state is stamped after the cache read (LAC-27)
+                null
         );
     }
 

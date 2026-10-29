@@ -1,6 +1,7 @@
 package com.delivery.vendor.repository;
 
 import com.delivery.vendor.entity.VendorOpeningHour;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,4 +10,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface VendorOpeningHourRepository extends JpaRepository<VendorOpeningHour, UUID> {
     List<VendorOpeningHour> findByTenantIdAndVendorIdOrderByDayOfWeekAsc(UUID tenantId, UUID vendorId);
     void deleteByTenantIdAndVendorId(UUID tenantId, UUID vendorId);
+    List<VendorOpeningHour> findByVendorIdIn(Collection<UUID> vendorIds);
 }

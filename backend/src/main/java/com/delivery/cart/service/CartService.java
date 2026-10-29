@@ -11,10 +11,12 @@ import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
+import com.delivery.catalog.api.PharmacySalePolicy;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.repository.InventoryItemRepository;
+import com.delivery.vendor.api.StoreAvailabilityService;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
@@ -33,8 +35,12 @@ public class CartService {
     private final TenantContext tenantContext;
     private final InventoryItemRepository inventoryItemRepository;
     private final AppUserProfileRepository userProfileRepository;
+    private final StoreAvailabilityService storeAvailability;
+    private final PharmacySalePolicy pharmacySalePolicy;
 
-    public CartService(CartRepository cartRepository, SkuRepository skuRepository, ProductRepository productRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository) {
+    public CartService(CartRepository cartRepository, SkuRepository skuRepository, ProductRepository productRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository, StoreAvailabilityService storeAvailability, PharmacySalePolicy pharmacySalePolicy) {
+        this.storeAvailability = storeAvailability;
+        this.pharmacySalePolicy = pharmacySalePolicy;
         this.cartRepository = cartRepository;
         this.skuRepository = skuRepository;
         this.productRepository = productRepository;
@@ -45,7 +51,10 @@ public class CartService {
         this.userProfileRepository = userProfileRepository;
     }
 
-    /** Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts. */
+    /**
+     * Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts, SKUs of another vendor
+     * (sku_vendor_mismatch), pharmacy products while the vertical is blocked (LAC-64) and closed stores (LAC-27).
+     */
     @Transactional
     public CartResponse addItem(UUID vendorId, UUID skuId, int quantity) {
         if (quantity <= 0) throw new BusinessException("invalid_quantity", "Quantity must be positive", HttpStatus.BAD_REQUEST);
@@ -61,10 +70,14 @@ public class CartService {
         if (!sku.isActive()) {
             throw new BusinessException("sku_inactive", "This product variant is no longer available", HttpStatus.CONFLICT);
         }
-        boolean productActive = productRepository.findByTenantIdAndId(tenantId, sku.getProductId()).map(Product::isActive).orElse(false);
-        if (!productActive) {
-            throw new BusinessException("product_not_available", "This product is not available for ordering", HttpStatus.CONFLICT);
+        Product product = productRepository.findByTenantIdAndId(tenantId, sku.getProductId()).filter(Product::isActive)
+                .orElseThrow(() -> new BusinessException("product_not_available", "This product is not available for ordering", HttpStatus.CONFLICT));
+        // The SKU must be sold by the vendor named in the request, otherwise another vendor's item would enter this cart.
+        if (!product.getVendorId().equals(vendorId)) {
+            throw new BusinessException("sku_vendor_mismatch", "This product variant is not sold by the given vendor", HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        pharmacySalePolicy.requireSellable(product); // LAC-64
+        storeAvailability.requireOpen(vendorId);     // LAC-27
         inventoryItemRepository.findByTenantIdAndSkuId(tenantId, skuId)
                 .filter(item -> item.getQuantityAvailable() >= quantity)
                 .orElseThrow(() -> new BusinessException("insufficient_stock", "Not enough stock is available", HttpStatus.CONFLICT));
@@ -87,6 +100,21 @@ public class CartService {
             var quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), null);
             cart.updateTotals(quote.fees(), quote.taxes(), BigDecimal.ZERO, quote.total());
         });
+    }
+
+    /**
+     * Checkout-time eligibility (LAC-27, LAC-64): the store must be open now and every product still sellable under
+     * the pharmacy gate. Inactive SKUs/products are left to the caller's own revalidation (sku_inactive /
+     * product_not_available). Runs inside the caller's checkout transaction.
+     */
+    public void requireCheckoutEligible(UUID tenantId, Cart cart) {
+        storeAvailability.requireOpen(cart.getVendorId());
+        for (CartItem item : cart.getItems()) {
+            skuRepository.findByTenantIdAndId(tenantId, item.getSkuId())
+                    .flatMap(sku -> productRepository.findByTenantIdAndId(tenantId, sku.getProductId()))
+                    .filter(Product::isActive)
+                    .ifPresent(pharmacySalePolicy::requireSellable);
+        }
     }
 
     /** Loads a tenant-scoped cart for checkout with customer ownership validation. */

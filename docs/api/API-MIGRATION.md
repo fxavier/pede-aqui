@@ -282,3 +282,113 @@ The Keycloak realm now enforces `length(10) and digits(1) and upperCase(1) and l
   carries them. Unknown Keycloak user/role → **404** `keycloak_user_not_found`; other Keycloak failure →
   **500** `keycloak_error`; in both cases no profile is created. Audited as `USER_ROLES_ASSIGNED`.
 - Clients: the backoffice `/users` page is ADMIN-only already; no request-shape change.
+
+## W2-B — Bounded lists and audit context (LAC-14, LAC-15)
+
+### LAC-14 — Every list is bounded (array contract kept)
+
+Conventions (`backend/.../common/pagination`): every list is ordered **newest first** by
+`(createdAt DESC, id DESC)` within the caller's tenant/scope.
+
+**Legacy array endpoints keep returning a plain JSON array** but now return at most the **newest 200**
+rows. When more rows exist the response carries **`X-Truncated: true`** (exposed to browsers via CORS);
+otherwise the header is absent. Affected: `GET /tenants`, `GET /admin/tenants`, `GET /orders`,
+`GET /couriers`, `GET /vendors`, `GET /admin/users`, `GET /admin/audit`, `GET /notifications`,
+`GET /support/tickets`, `GET /support/tickets/mine`. Behaviour notes:
+
+- Ordering is now explicit newest-first (several of these were unordered before).
+- No consumer breaks: the backoffice (`services.ts`), the customer web and the Flutter apps all read an
+  array and none has more than 200 rows per tenant today. Clients that may exceed 200 rows must move to
+  the paged endpoints below; the capped arrays stay until a deprecation window is announced here.
+- `GET /orders` keeps the INC-04 scoping (merchant → own vendor, OPS/ADMIN → tenant, platform admin →
+  every tenant).
+
+**New keyset (cursor) endpoints** — large / append-only lists. `?limit=50&cursor=<opaque>`; `limit` is
+clamped to `1..200` (default 50); omit `cursor` for the first page. Response
+`{ "items": [...], "nextCursor": "<opaque>" | null }`; `nextCursor` is null on the last page. The cursor
+is an opaque base64url token of `(createdAt, id)`: rows inserted after the first page never shift or
+duplicate later pages. A malformed cursor → **400** `invalid_cursor`. A cursor carries no tenant; the
+caller's scope always applies.
+
+| Endpoint | Roles / scope |
+|---|---|
+| `GET /api/v1/admin/audit/cursor` | ADMIN; current tenant |
+| `GET /api/v1/notifications/cursor` | any authenticated user; own notifications only |
+| `GET /api/v1/orders/cursor` | ADMIN, OPS, VENDOR_ADMIN, VENDOR_STAFF; same scoping as `GET /orders` |
+
+**New offset endpoints** — smaller admin lists. `?page=0&size=20`; `page < 0` → 0, `size` clamped to
+`1..100` (default 20). Response `{ "content": [...], "page", "size", "totalElements" }` (same shape as
+`/orders/page` and `/sales/orders`).
+
+| Endpoint | Roles / scope |
+|---|---|
+| `GET /api/v1/tenants/page` | platform admin |
+| `GET /api/v1/couriers/page` | ADMIN, OPS (platform admin: all tenants) |
+| `GET /api/v1/vendors/page?available=` | VENDOR_ADMIN, VENDOR_STAFF, ADMIN (same scoping as `GET /vendors`) |
+| `GET /api/v1/admin/users/page` | ADMIN, SUPPORT; current tenant |
+| `GET /api/v1/support/tickets/page` | SUPPORT, ADMIN; current tenant |
+
+`GET /orders/page` (INC-04) is unchanged. Database: V054 adds `(tenant_id, created_at DESC, id DESC)`
+indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …)`,
+`(tenant_id, creator_user_id, …)` and a cross-tenant `orders (created_at DESC, id DESC)`).
+
+### LAC-15 — Audit entries carry request context; `audit_logs` is append-only
+
+- `GET /api/v1/admin/audit` (and `/admin/audit/cursor`) items gain four **additive, nullable** fields:
+  `ip` (remote address of the request — `X-Forwarded-For` is not trusted), `userAgent` (≤ 512 chars),
+  `correlationId` (the request's `X-Correlation-Id`) and `details` (JSON object; keys that look like
+  secrets — pin, code, otp, password, token, secret … — are stored as `"***"`). Entries written before
+  V053, or outside an HTTP request, have them null.
+- New audited actions: `FEE_POLICY_UPDATED` (`PUT /admin/policy`, details = new values + version),
+  `ZONE_CREATED` (`POST /admin/zones`), `TENANT_CREATED` / `TENANT_STATUS_CHANGED` (platform admin,
+  recorded against the affected tenant, details `from`/`to`), `COURIER_APPROVED` / `COURIER_REJECTED`,
+  `VENDOR_VERIFICATION_APPROVED` / `VENDOR_VERIFICATION_REJECTED` (details `reason`).
+- `audit_logs` rejects `UPDATE`, `DELETE` and `TRUNCATE` (trigger, SQLSTATE 42501). Retention target is
+  24 months (LAC-63) but **no purge job exists yet**; the future job (W2-A scheduling) must run its
+  `DELETE` inside a transaction that first executes `SET LOCAL app.audit_logs_purge = 'on'` (UPDATE stays
+  forbidden). Operational scripts that tried to rewrite audit rows will now fail — by design.
+- Not in this change: `order_status_history` / `payment_status_history` (register LAC-15 first bullet)
+  belong to the order/payment state machine (W4-A, LAC-25) and will be written there.
+- Clients: none affected (additive fields; no frontend renders the audit list yet).
+
+## W2-D — Store hours and closures, pharmacy gate, cart SKU check (LAC-27, LAC-64)
+
+### LAC-27 — Opening hours and closures are enforced (behaviour change)
+
+- A store is **open** when its weekly opening hours (`PUT /vendors/{id}/opening-hours`, evaluated in
+  `Africa/Maputo`, `APP_STORE_TIMEZONE`) allow the current local time **and** no exceptional closure covers
+  now. A vendor that never configured opening hours stays always open (no change for existing data); once
+  any hours exist, a weekday without a row is closed. `vendors.available` is **not** enforced unless
+  `APP_STORE_ENFORCE_AVAILABLE_FLAG=true` (the column defaults to `false` and has no UI yet).
+- `POST /api/v1/customers/{customerId}/cart/items` and `POST /api/v1/checkout` answer **422**
+  `store_closed` when the store is closed, with `details: { vendorId, nextOpeningAt }`. A checkout refused
+  this way creates no order and leaves the cart `ACTIVE` (no repricing).
+- New endpoints (OPS, ADMIN; VENDOR_ADMIN only for its own vendor → otherwise 403 `vendor_access_denied`),
+  audited as `VENDOR_CLOSURE_CREATED` / `VENDOR_CLOSURE_DELETED`:
+  - `GET /api/v1/vendors/{vendorId}/closures` — current and future closures, earliest first.
+  - `POST /api/v1/vendors/{vendorId}/closures` `{ startsAt, endsAt, reason }` → **201**
+    `{ id, vendorId, startsAt, endsAt, reason, createdAt }`; the closure covers `[startsAt, endsAt)`.
+    `endsAt` ≤ `startsAt` or already past → **400** `invalid_closure_period`.
+  - `DELETE /api/v1/vendors/{vendorId}/closures/{closureId}` → **204** (404 if not found).
+- `GET /api/v1/search/vendors` rows gain `open` (boolean) and `nextOpeningAt` (ISO-8601 or `null`)
+  (additive). Closed stores are listed **after** open ones (relevance/distance/rating order is kept
+  within each group); `totalCount` is unchanged. The open state is computed on every request *after* the
+  cached result set is read, so closures and opening times take effect immediately despite the 60 s
+  `vendorSearch` cache. `available` is unchanged.
+- Clients: the customer web app shows the Portuguese message for `store_closed` (with "Abre às …") in the
+  vendor page, the cart drawer and checkout, and the vendor cards use `open`/`nextOpeningAt` for the
+  "Aberto"/"Fechado · Abre …" badge (falling back to `available`). Backoffice: no closures UI yet (API only).
+  Flutter apps: not yet mapped (they show their generic error).
+
+### LAC-64 — Pharmacy vertical blocked by configuration
+
+- `app.verticals.pharmacy.enabled` (`APP_VERTICALS_PHARMACY_ENABLED`, default **false**) until a legal opinion.
+  While disabled, a product with `requires_prescription_metadata=true` or whose category's `vertical` is
+  `pharmacy` → **422** `pharmacy_not_available` in add-to-cart and checkout. With the vertical enabled,
+  prescription products still answer **422** `prescription_required` (no prescription flow exists).
+- Catalog browse/search are unchanged (pharmacy products remain visible; ordering is what is blocked).
+
+### Cart — SKU must belong to the request's vendor
+
+- `POST /api/v1/customers/{customerId}/cart/items` with a `skuId` sold by a vendor other than `vendorId`
+  → **422** `sku_vendor_mismatch` (previously the item was added to that vendor's cart).

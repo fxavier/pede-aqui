@@ -50,7 +50,7 @@ class VendorServiceTest {
         when(repository.findByTenantIdAndId(tenantId, vendorId))
                 .thenReturn(Optional.of(new Vendor(vendorId, tenantId, "Loja X", UUID.randomUUID(), null, null, null, null, null, null, null, null)));
 
-        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext);
+        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext, org.mockito.Mockito.mock(com.delivery.common.service.AuditLogService.class));
 
         var response = service.decide(vendorId, true, "Licenca validada");
 
@@ -67,7 +67,7 @@ class VendorServiceTest {
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         when(repository.findByTenantIdAndId(tenantId, vendorId)).thenReturn(Optional.of(vendor));
 
-        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext);
+        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext, org.mockito.Mockito.mock(com.delivery.common.service.AuditLogService.class));
 
         var response = service.decide(vendorId, false, "Documento expirado");
 
@@ -82,7 +82,7 @@ class VendorServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext);
+        VendorVerificationService service = new VendorVerificationService(repository, new VendorMapper(), tenantContext, org.mockito.Mockito.mock(com.delivery.common.service.AuditLogService.class));
 
         assertThatThrownBy(() -> service.decide(vendorId, false, "  "))
                 .isInstanceOf(BusinessException.class)

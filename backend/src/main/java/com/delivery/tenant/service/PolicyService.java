@@ -2,10 +2,14 @@ package com.delivery.tenant.service;
 
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
+import com.delivery.common.service.AuditLogService;
 import com.delivery.tenant.dto.FeePolicyResponse;
 import com.delivery.tenant.dto.UpsertFeePolicyRequest;
 import com.delivery.tenant.entity.FeePolicy;
 import com.delivery.tenant.repository.FeePolicyRepository;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PolicyService {
     private final FeePolicyRepository feePolicyRepository;
     private final TenantContext tenantContext;
+    private final AuditLogService auditLogService;
 
-    public PolicyService(FeePolicyRepository feePolicyRepository, TenantContext tenantContext) {
+    public PolicyService(FeePolicyRepository feePolicyRepository, TenantContext tenantContext, AuditLogService auditLogService) {
         this.feePolicyRepository = feePolicyRepository;
         this.tenantContext = tenantContext;
+        this.auditLogService = auditLogService;
     }
 
     /** Creates or updates tenant fee policy values; the pricing engine applies them to the next quotes (INC-13). */
@@ -36,7 +42,18 @@ public class PolicyService {
             policy.changeServiceFeeRate(request.serviceFeeRate());
         }
         // saveAndFlush so the response carries the bumped version that the next order quotes will record.
-        return toResponse(feePolicyRepository.saveAndFlush(policy));
+        FeePolicyResponse response = toResponse(feePolicyRepository.saveAndFlush(policy));
+        // LAC-15: fee-policy changes are audited with the values now in force (no personal data).
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("version", response.version());
+        details.put("deliveryFee", response.deliveryFee());
+        details.put("serviceFee", response.serviceFee());
+        details.put("serviceFeeRate", response.serviceFeeRate());
+        details.put("taxRate", response.taxRate());
+        details.put("commissionRate", response.commissionRate());
+        details.put("cancellationPolicy", response.cancellationPolicy());
+        auditLogService.log(AuditActions.FEE_POLICY_UPDATED, "fee_policy", response.id().toString(), "v" + response.version(), "SUCCESS", details);
+        return response;
     }
 
     /** Returns current tenant policy configuration when available. */

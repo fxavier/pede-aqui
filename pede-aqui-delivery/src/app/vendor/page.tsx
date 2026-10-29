@@ -17,6 +17,7 @@ import type { RootState, AppDispatch } from '@/store'
 import type { Product } from '@/lib/api/types'
 import { formatMZN } from '@/lib/utils'
 import { vendorCover, productEmoji } from '@/lib/covers'
+import { cartErrorMessage } from '@/lib/cart-errors'
 
 export default function VendorPage() {
   const { vendorId } = useParams<{ vendorId: string }>()
@@ -105,8 +106,8 @@ export default function VendorPage() {
       }))
       dispatch(action({ cartId: response.id, vendorId: vendorId!, vendorName, items }))
       setCartError(null)
-    } catch {
-      setCartError('Não foi possível adicionar ao carrinho. Tente novamente.')
+    } catch (err) {
+      setCartError(cartErrorMessage(err, 'Não foi possível adicionar ao carrinho. Tente novamente.'))
     }
   }
 
