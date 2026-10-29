@@ -58,7 +58,11 @@ public class Payment {
     public void markPartiallyRefunded() { this.status = PaymentStatus.PARTIALLY_REFUNDED; this.updatedAt = Instant.now(); }
     /** Financial state after a refund approval: approved refunds cover the full amount. */
     public void markFullyRefunded() { this.status = PaymentStatus.FULLY_REFUNDED; this.updatedAt = Instant.now(); }
+    /** Pending payment abandoned (W4-A PaymentExpiryJob): nothing was captured, so nothing is refundable. */
+    public void markCancelled() { this.status = PaymentStatus.CANCELLED; this.updatedAt = Instant.now(); }
     public UUID getId() { return id; }
+    /** When the payment was confirmed; null while pending (and for rows confirmed before the column was filled). */
+    public Instant getConfirmedAt() { return confirmedAt; }
     public UUID getTenantId() { return tenantId; }
     public UUID getOrderId() { return orderId; }
     public BigDecimal getAmount() { return amount; }

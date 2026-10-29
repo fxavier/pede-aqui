@@ -57,9 +57,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.delivery.order.OrderStatusChanged;
-import java.time.Instant;
-import org.springframework.context.ApplicationEventPublisher;
+import com.delivery.order.api.OrderStateMachine;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -74,7 +73,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Handles checkout, order listing, and vendor fulfilment transitions (vendor users confined to their own vendor). */
 @Service
 public class OrderService {
-    private static final Set<OrderStatus> VENDOR_REJECTION_ALLOWED_STATUSES = Set.of(OrderStatus.PAYMENT_CONFIRMED, OrderStatus.ACCEPTED_BY_VENDOR);
+    static final Set<OrderStatus> VENDOR_REJECTION_ALLOWED_STATUSES = Set.of(OrderStatus.PAYMENT_CONFIRMED, OrderStatus.ACCEPTED_BY_VENDOR);
     /** A rejection of an order already in one of these is a no-op repeat (REJECTED_BY_VENDOR = legacy rows). */
     private static final Set<OrderStatus> REJECTION_ALREADY_SETTLED_STATUSES = Set.of(OrderStatus.CANCELLED, OrderStatus.REJECTED_BY_VENDOR);
     public static final String SELLER_REJECTION_AUDIT_ACTION = "ORDER_CANCELLED_SELLER_REJECTED";
@@ -99,7 +98,7 @@ public class OrderService {
     private final MerchantScopeGuard accessGuard;
     private final CustomerPiiMasking piiMasking;
     private final DeliveryCodeHasher deliveryCodeHasher;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OrderStateMachine stateMachine;
     private final OrderStockService orderStockService;
     private final CartService cartService;
     private final TransactionTemplate transactionTemplate;
@@ -109,12 +108,12 @@ public class OrderService {
     private final DeliveryRetirementService deliveryRetirementService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService, ApplicationEventPublisher eventPublisher) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService, OrderStateMachine stateMachine) {
         this.deliveryRetirementService = deliveryRetirementService;
         this.addressResolver = addressResolver;
         this.pricingService = pricingService;
         this.orderStockService = orderStockService;
-        this.eventPublisher = eventPublisher;
+        this.stateMachine = stateMachine;
         this.cartService = cartService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.readOnlyTransactionTemplate = new TransactionTemplate(transactionManager);
@@ -320,7 +319,9 @@ public class OrderService {
             order.applyDiscount(discount.appliedPromotionId(), discount.discountTotal());
         }
         Order saved = orderRepository.save(order);
-        paymentRepository.save(new Payment(UUID.randomUUID(), tenantId, saved.getId(), saved.getTotal(), idempotencyKey));
+        stateMachine.recordCreated(saved); // history row null -> PAYMENT_PENDING (V058)
+        Payment payment = paymentRepository.save(new Payment(UUID.randomUUID(), tenantId, saved.getId(), saved.getTotal(), idempotencyKey));
+        paymentService.recordCreated(payment); // history row null -> PENDING_CONFIRMATION (V058)
         deliveryRepository.save(new Delivery(UUID.randomUUID(), tenantId, saved.getId(), saved.getDeliveryConfirmationCodeHash()));
         cart.markCheckedOut();
         return saved;
@@ -378,16 +379,11 @@ public class OrderService {
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }
 
-    /** Marks an order as accepted by the vendor when in PAYMENT_CONFIRMED state. */
+    /** Marks an order as accepted by the vendor; only from PAYMENT_CONFIRMED (409 invalid_order_transition otherwise). */
     @Transactional
     public OrderResponse acceptByVendor(UUID orderId) {
         Order order = findOrder(orderId);
-        if (order.getStatus() != OrderStatus.PAYMENT_CONFIRMED) {
-            throw new BusinessException("invalid_order_transition", "Only payment confirmed orders can be accepted", HttpStatus.BAD_REQUEST);
-        }
-        OrderStatus previous = order.getStatus();
-        order.markAcceptedByVendor();
-        publishStatusChanged(order, previous);
+        stateMachine.transition(order, OrderStatus.ACCEPTED_BY_VENDOR, "VENDOR_ACCEPTED"); // only from PAYMENT_CONFIRMED (409 otherwise)
         auditLogService.log("ORDER_ACCEPTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
     }
@@ -399,7 +395,8 @@ public class OrderService {
      * its goods are still in the store, a refund of whatever is still refundable on the payment (the full
      * amount when nothing was refunded before, nothing when it is already fully covered), one customer notification
      * and one audit entry — all in one transaction, so any failure rolls back everything. The financial state
-     * (PARTIALLY_/FULLY_REFUNDED) lives on the payment. Allowed from PAYMENT_CONFIRMED/ACCEPTED_BY_VENDOR only.
+     * (PARTIALLY_/FULLY_REFUNDED) lives on the payment. Allowed from PAYMENT_CONFIRMED/ACCEPTED_BY_VENDOR only (409
+     * invalid_order_transition otherwise).
      *
      * Lock order rule: the payment row is locked FOR UPDATE before the order is read (SalesService does the same),
      * so concurrent rejections, cancellations and refunds of one order serialize and the second caller sees the
@@ -417,12 +414,12 @@ public class OrderService {
             return mapper.toResponse(order); // idempotent repeat: already cancelled/rejected, nothing more to do
         }
         if (!VENDOR_REJECTION_ALLOWED_STATUSES.contains(order.getStatus())) {
-            throw new BusinessException("invalid_order_transition", "Order cannot be rejected in the current status", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("invalid_order_transition", "Order cannot be rejected in status " + order.getStatus(), HttpStatus.CONFLICT);
         }
         if (payment == null) {
             throw new NotFoundException("Payment was not found for order");
         }
-        order.markCancelledBySellerRejection(reason);
+        stateMachine.cancelBySellerRejection(order, reason);
         deliveryRetirementService.retireBeforePickup(order.getTenantId(), order.getId(), "seller rejected the order");
         orderStockService.release(order); // INC-07 (COR-01): rejected orders give their reservation back
         // The refund is created REQUESTED here; a future PSP payout runs after commit (PaymentService#requestRemainingRefund)
@@ -447,38 +444,22 @@ public class OrderService {
                 order.getReference());
     }
 
-    /** Marks an accepted order as preparing. */
+    /** Marks an accepted order as preparing (409 invalid_order_transition from any other status). */
     @Transactional
     public OrderResponse markPreparing(UUID orderId) {
         Order order = findOrder(orderId);
-        if (order.getStatus() != OrderStatus.ACCEPTED_BY_VENDOR) {
-            throw new BusinessException("invalid_order_transition", "Only accepted orders can move to preparing", HttpStatus.BAD_REQUEST);
-        }
-        OrderStatus previous = order.getStatus();
-        order.markPreparing();
-        publishStatusChanged(order, previous);
+        stateMachine.transition(order, OrderStatus.PREPARING, "VENDOR_PREPARING"); // only from ACCEPTED_BY_VENDOR (409 otherwise)
         auditLogService.log("ORDER_PREPARING", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
     }
 
-    /** Marks a preparing order as ready for pickup. */
+    /** Marks a preparing order as ready for pickup (409 invalid_order_transition from any other status). */
     @Transactional
     public OrderResponse markReadyForPickup(UUID orderId) {
         Order order = findOrder(orderId);
-        if (order.getStatus() != OrderStatus.PREPARING) {
-            throw new BusinessException("invalid_order_transition", "Only preparing orders can move to ready for pickup", HttpStatus.BAD_REQUEST);
-        }
-        OrderStatus previous = order.getStatus();
-        order.markReadyForPickup();
-        publishStatusChanged(order, previous);
+        stateMachine.transition(order, OrderStatus.READY_FOR_PICKUP, "VENDOR_READY"); // only from PREPARING (409 otherwise)
         auditLogService.log("ORDER_READY_FOR_PICKUP", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
-    }
-
-    /** Publishes OrderStatusChanged in the current transaction (LAC-47); delivered to listeners after commit. */
-    private void publishStatusChanged(Order order, OrderStatus previous) {
-        eventPublisher.publishEvent(new OrderStatusChanged(order.getTenantId(), order.getId(), order.getVendorId(),
-                previous.name(), order.getStatus().name(), Instant.now()));
     }
 
     /**

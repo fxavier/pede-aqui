@@ -1,6 +1,7 @@
 package com.delivery.order.entity;
 
 import com.delivery.common.pricing.PricingMath;
+import com.delivery.order.api.OrderStateMachine;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -137,31 +138,26 @@ public class Order {
         this.total = PricingMath.orderTotal(this.subtotal, this.fees, this.taxes, discountTotal);
         this.updatedAt = Instant.now();
     }
-    public void markPaymentConfirmed() { this.status = OrderStatus.PAYMENT_CONFIRMED; this.updatedAt = Instant.now(); }
-    public void markAcceptedByVendor() { this.status = OrderStatus.ACCEPTED_BY_VENDOR; this.updatedAt = Instant.now(); }
-    public void markPreparing() { this.status = OrderStatus.PREPARING; this.updatedAt = Instant.now(); }
-    public void markReadyForPickup() { this.status = OrderStatus.READY_FOR_PICKUP; this.updatedAt = Instant.now(); }
-    public void markAssignedToCourier() { this.status = OrderStatus.ASSIGNED_TO_COURIER; this.updatedAt = Instant.now(); }
-    public void markRefundPending() { this.status = OrderStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     /**
-     * Full refund approved (PaymentService.approveRefund). The plain PIN is always cleared: DeliveryService refuses to
-     * progress or complete a REFUNDED order (409 order_not_deliverable), so no courier can still need it.
+     * Applies a status change granted by {@link OrderStateMachine} (LAC-25) — the only way to change the status. The
+     * plain delivery PIN is cleared on DELIVERED, CANCELLED (any path) and REFUNDED: DeliveryService refuses to
+     * progress or complete a REFUNDED/CANCELLED order (409 order_not_deliverable), so no courier can still need it. A
+     * cancellation may record its reason (V044) and, for a seller rejection, the vendor's text.
      */
-    public void markRefunded() {
-        this.status = OrderStatus.REFUNDED;
-        this.deliveryConfirmationCodeDisplay = null;
+    public void applyStatusChange(OrderStateMachine.Change change) {
+        OrderStatus target = change.target();
+        this.status = target;
+        if (target == OrderStatus.DELIVERED || target == OrderStatus.CANCELLED || target == OrderStatus.REFUNDED) {
+            this.deliveryConfirmationCodeDisplay = null;
+        }
+        if (change.cancellationReason() != null) {
+            this.cancellationReason = change.cancellationReason();
+        }
+        if (change.rejectionReason() != null) {
+            this.rejectionReason = change.rejectionReason();
+        }
         this.updatedAt = Instant.now();
     }
-    public void markCancelled() { this.status = OrderStatus.CANCELLED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
-    /** Seller rejection: CANCELLED with reason SELLER_REJECTED plus the vendor's text; the financial state lives on Payment. */
-    public void markCancelledBySellerRejection(String reason) {
-        this.status = OrderStatus.CANCELLED;
-        this.cancellationReason = CancellationReason.SELLER_REJECTED;
-        this.rejectionReason = reason;
-        this.deliveryConfirmationCodeDisplay = null;
-        this.updatedAt = Instant.now();
-    }
-    public void markDelivered() { this.status = OrderStatus.DELIVERED; this.deliveryConfirmationCodeDisplay = null; this.updatedAt = Instant.now(); }
 
     public UUID getId() { return id; }
     public UUID getTenantId() { return tenantId; }
@@ -180,6 +176,8 @@ public class Order {
     public String getDeliveryConfirmationCodeHash() { return deliveryConfirmationCodeHash; }
     public String getDeliveryConfirmationCodeDisplay() { return deliveryConfirmationCodeDisplay; }
     public Instant getCreatedAt() { return createdAt; }
+    /** Last change of the order (status transitions, stock lifecycle, discount). */
+    public Instant getUpdatedAt() { return updatedAt; }
     public String getRejectionReason() { return rejectionReason; }
     public CancellationReason getCancellationReason() { return cancellationReason; }
     public UUID getCartId() { return cartId; }

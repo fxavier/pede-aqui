@@ -16,6 +16,7 @@ import com.delivery.dispatch.entity.DispatchJob;
 import com.delivery.dispatch.entity.DispatchJobStatus;
 import com.delivery.dispatch.mapper.DispatchMapper;
 import com.delivery.dispatch.repository.DispatchJobRepository;
+import com.delivery.order.api.OrderStateMachine;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
@@ -70,6 +71,7 @@ public class DispatchService {
     private final AuditLogService auditLogService;
     private final TenantContext tenantContext;
     private final Duration offerTtl;
+    private final OrderStateMachine stateMachine;
 
     public DispatchService(
             DispatchJobRepository dispatchJobRepository,
@@ -80,7 +82,9 @@ public class DispatchService {
             DispatchMapper dispatchMapper,
             AuditLogService auditLogService,
             TenantContext tenantContext,
-            @Value("${app.dispatch.offer-ttl:60s}") Duration offerTtl) {
+            @Value("${app.dispatch.offer-ttl:60s}") Duration offerTtl,
+            OrderStateMachine stateMachine) {
+        this.stateMachine = stateMachine;
         this.dispatchJobRepository = dispatchJobRepository;
         this.courierService = courierService;
         this.deliveryRepository = deliveryRepository;
@@ -117,7 +121,7 @@ public class DispatchService {
         job.setExpiresAt(Instant.now().plus(offerTtl));
         job = dispatchJobRepository.save(job);
         delivery.assignCourier(courier.getId());
-        order.markAssignedToCourier();
+        stateMachine.transition(order, OrderStatus.ASSIGNED_TO_COURIER, "DISPATCH_ASSIGNED");
         flushTranslatingConflicts();
         return dispatchMapper.toDispatchJobResponse(job);
     }

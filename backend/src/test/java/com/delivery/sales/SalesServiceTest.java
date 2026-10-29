@@ -106,7 +106,7 @@ class SalesServiceTest {
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,
                 auditLogService, tenantContext, overrideProperties,
-                new SalesAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), orderStockService, paymentRepository, deliveryRetirementService);
+                new SalesAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), orderStockService, paymentRepository, deliveryRetirementService, com.delivery.order.OrderTestStatus.stateMachine());
         authenticateWithRoles("ROLE_ADMIN");
     }
 
@@ -295,7 +295,7 @@ class SalesServiceTest {
     @Test
     void resendDeliveryCodeAfterDeliveryIsConflictBecausePlainPinWasCleared() {
         Order order = order(OrderStatus.DELIVERING);
-        order.markDelivered();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.DELIVERED);
 
         assertThatThrownBy(() -> service.resendNotification(order.getId(), SalesNotificationType.DELIVERY_CODE))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("delivery_code_unavailable"));
