@@ -1,12 +1,11 @@
 import { useParams, Link } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
-import type { OrderResponse } from '@/lib/api/types'
+import { useMyOrder } from '@/lib/orderHistory'
 import { formatMZN } from '@/lib/utils'
 
 export default function OrderConfirmationPage() {
   const { orderId } = useParams<{ orderId: string }>()
-  const orders: OrderResponse[] = JSON.parse(localStorage.getItem('pede-aqui:orders') ?? '[]')
-  const order = orders.find((o) => o.id === orderId)
+  const { data: order } = useMyOrder(orderId)
 
   return (
     <div className="max-w-lg mx-auto px-4 sm:px-6 space-y-6 py-10 text-center">
@@ -20,8 +19,8 @@ export default function OrderConfirmationPage() {
 
       {order && (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 text-left space-y-3">
-          {order.vendorName && <p className="font-display font-bold text-slate-800 capitalize">{order.vendorName}</p>}
-          {order.items?.map((item) => (
+          <p className="font-display font-bold text-slate-800 capitalize">{order.vendorName}</p>
+          {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-sm text-slate-600">
               <span>{item.quantity}× {item.productName}</span>
               <span className="font-semibold text-slate-800">{formatMZN(item.lineTotal)}</span>
