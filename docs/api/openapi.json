@@ -87,7 +87,9 @@
             "enum": [
               "SELLER_REJECTED",
               "PAYMENT_EXPIRED",
-              "VENDOR_TIMEOUT"
+              "VENDOR_TIMEOUT",
+              "CUSTOMER_CANCELLED",
+              "CUSTOMER_CANCELLED_WITH_FEE"
             ],
             "type": "string"
           },
@@ -197,6 +199,88 @@
             "type": "string"
           },
           "userAgent": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CancelOrderRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CancellationRequestResponse": {
+        "properties": {
+          "closureReason": {
+            "enum": [
+              "OPS_REJECTED",
+              "ORDER_ADVANCED",
+              "ORDER_CLOSED"
+            ],
+            "type": "string"
+          },
+          "decidedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "feeAmount": {
+            "type": "number"
+          },
+          "feeRate": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderReference": {
+            "type": "string"
+          },
+          "orderStatus": {
+            "enum": [
+              "PENDING",
+              "PAYMENT_PENDING",
+              "PAYMENT_CONFIRMED",
+              "ACCEPTED_BY_VENDOR",
+              "REJECTED_BY_VENDOR",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "DISPATCH_PENDING",
+              "ASSIGNED_TO_COURIER",
+              "PICKED_UP",
+              "DELIVERING",
+              "DELIVERED",
+              "CANCELLED",
+              "REFUND_PENDING",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "APPROVED",
+              "REJECTED"
+            ],
             "type": "string"
           }
         },
@@ -593,9 +677,158 @@
         },
         "type": "object"
       },
+      "CourierLocationBatchRequest": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CourierLocationPointRequest"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "type": "object"
+      },
+      "CourierLocationBatchResponse": {
+        "properties": {
+          "accepted": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "dropped": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "droppedByReason": {
+            "additionalProperties": {
+              "description": "Dropped points per reason code",
+              "format": "int32",
+              "type": "integer"
+            },
+            "description": "Dropped points per reason code",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "CourierLocationPointRequest": {
+        "properties": {
+          "accuracyMeters": {
+            "description": "Horizontal accuracy in metres (points above app.courier-location.max-accuracy-meters, default 100, are dropped)",
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "format": "double",
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "headingDegrees": {
+            "description": "Heading in degrees, 0 (inclusive) to 360 (exclusive)",
+            "exclusiveMaximum": true,
+            "exclusiveMinimum": false,
+            "format": "double",
+            "maximum": 360,
+            "minimum": 0,
+            "type": "number"
+          },
+          "latitude": {
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "format": "double",
+            "maximum": 90,
+            "minimum": -90,
+            "type": "number"
+          },
+          "longitude": {
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "format": "double",
+            "maximum": 180,
+            "minimum": -180,
+            "type": "number"
+          },
+          "recordedAt": {
+            "description": "Client timestamp of the fix (ISO-8601)",
+            "format": "date-time",
+            "type": "string"
+          },
+          "speedMps": {
+            "description": "Device-reported speed in m/s",
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "accuracyMeters",
+          "latitude",
+          "longitude",
+          "recordedAt"
+        ],
+        "type": "object"
+      },
+      "CourierLocationResponse": {
+        "properties": {
+          "accuracyMeters": {
+            "format": "double",
+            "type": "number"
+          },
+          "courierId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "headingDegrees": {
+            "format": "double",
+            "type": "number"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "speedMps": {
+            "format": "double",
+            "type": "number"
+          },
+          "stale": {
+            "description": "True when nothing was received within app.courier-location.presence-ttl (default 2 min)",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "OFFLINE",
+              "AVAILABLE",
+              "BUSY",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CourierResponse": {
         "properties": {
           "available": {
+            "deprecated": true,
+            "description": "Deprecated (LAC-42): true when status is AVAILABLE or BUSY",
             "type": "boolean"
           },
           "fullName": {
@@ -604,6 +837,17 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "locationConsentAcceptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locationConsentVersion": {
+            "type": "string"
+          },
+          "maxActiveDeliveries": {
+            "format": "int32",
+            "type": "integer"
           },
           "nif": {
             "type": "string"
@@ -618,6 +862,22 @@
           "rating": {
             "format": "double",
             "type": "number"
+          },
+          "status": {
+            "enum": [
+              "OFFLINE",
+              "AVAILABLE",
+              "BUSY",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "statusChangedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "suspensionReason": {
+            "type": "string"
           },
           "userProfileId": {
             "format": "uuid",
@@ -1368,15 +1628,84 @@
         },
         "type": "object"
       },
-      "CustomerOrderDetailResponse": {
+      "CustomerCancellationResponse": {
         "properties": {
           "cancellationReason": {
             "enum": [
               "SELLER_REJECTED",
               "PAYMENT_EXPIRED",
-              "VENDOR_TIMEOUT"
+              "VENDOR_TIMEOUT",
+              "CUSTOMER_CANCELLED",
+              "CUSTOMER_CANCELLED_WITH_FEE"
             ],
             "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderStatus": {
+            "enum": [
+              "PENDING",
+              "PAYMENT_PENDING",
+              "PAYMENT_CONFIRMED",
+              "ACCEPTED_BY_VENDOR",
+              "REJECTED_BY_VENDOR",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "DISPATCH_PENDING",
+              "ASSIGNED_TO_COURIER",
+              "PICKED_UP",
+              "DELIVERING",
+              "DELIVERED",
+              "CANCELLED",
+              "REFUND_PENDING",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "CANCELLED",
+              "REQUESTED"
+            ],
+            "type": "string"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "request": {
+            "$ref": "#/components/schemas/CancellationRequestResponse"
+          }
+        },
+        "type": "object"
+      },
+      "CustomerOrderDetailResponse": {
+        "properties": {
+          "cancellationFeeEstimate": {
+            "type": "number"
+          },
+          "cancellationPhase": {
+            "enum": [
+              "FREE",
+              "REQUEST",
+              "ALREADY_CANCELLED",
+              "NOT_CANCELLABLE"
+            ],
+            "type": "string"
+          },
+          "cancellationReason": {
+            "enum": [
+              "SELLER_REJECTED",
+              "PAYMENT_EXPIRED",
+              "VENDOR_TIMEOUT",
+              "CUSTOMER_CANCELLED",
+              "CUSTOMER_CANCELLED_WITH_FEE"
+            ],
+            "type": "string"
+          },
+          "cancellationRequest": {
+            "$ref": "#/components/schemas/CancellationRequestResponse"
           },
           "createdAt": {
             "format": "date-time",
@@ -1470,7 +1799,9 @@
             "enum": [
               "SELLER_REJECTED",
               "PAYMENT_EXPIRED",
-              "VENDOR_TIMEOUT"
+              "VENDOR_TIMEOUT",
+              "CUSTOMER_CANCELLED",
+              "CUSTOMER_CANCELLED_WITH_FEE"
             ],
             "type": "string"
           },
@@ -1859,6 +2190,37 @@
         },
         "type": "object"
       },
+      "LocationConsentRequest": {
+        "properties": {
+          "version": {
+            "maxLength": 40,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
+      "LocationConsentResponse": {
+        "properties": {
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedVersion": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "MeResponse": {
         "properties": {
           "address": {
@@ -2132,7 +2494,9 @@
             "enum": [
               "SELLER_REJECTED",
               "PAYMENT_EXPIRED",
-              "VENDOR_TIMEOUT"
+              "VENDOR_TIMEOUT",
+              "CUSTOMER_CANCELLED",
+              "CUSTOMER_CANCELLED_WITH_FEE"
             ],
             "type": "string"
           },
@@ -2214,6 +2578,29 @@
           },
           "toStatus": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseCancellationRequestResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/CancellationRequestResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "type": "object"
@@ -3450,6 +3837,24 @@
         },
         "type": "object"
       },
+      "SetCourierStatusRequest": {
+        "properties": {
+          "status": {
+            "description": "AVAILABLE or OFFLINE; any other value is 400 invalid_courier_status",
+            "enum": [
+              "OFFLINE",
+              "AVAILABLE",
+              "BUSY",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
       "SetProductImageRequest": {
         "properties": {
           "storageKey": {
@@ -3538,6 +3943,19 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "SuspendCourierRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
         "type": "object"
       },
       "TenantProvisioningRequest": {
@@ -5219,7 +5637,7 @@
     },
     "/api/v1/catalog/moderation/price-changes/{skuId}/approve": {
       "post": {
-        "operationId": "approve",
+        "operationId": "approve_1",
         "parameters": [
           {
             "in": "path",
@@ -5253,7 +5671,7 @@
     },
     "/api/v1/catalog/moderation/price-changes/{skuId}/reject": {
       "post": {
-        "operationId": "reject_1",
+        "operationId": "reject_2",
         "parameters": [
           {
             "in": "path",
@@ -6516,6 +6934,7 @@
     },
     "/api/v1/couriers/me/availability": {
       "patch": {
+        "deprecated": true,
         "operationId": "setAvailability",
         "parameters": [
           {
@@ -6551,6 +6970,7 @@
             "description": "OK"
           }
         },
+        "summary": "Deprecated: use PUT /api/v1/couriers/me/status",
         "tags": [
           "courier-controller"
         ]
@@ -6577,6 +6997,192 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CourierEarningsSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/me/location-consent": {
+      "delete": {
+        "operationId": "withdrawConsent",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-location-controller"
+        ]
+      },
+      "get": {
+        "operationId": "consent",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationConsentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-location-controller"
+        ]
+      },
+      "put": {
+        "operationId": "acceptConsent",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationConsentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationConsentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-location-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/me/locations": {
+      "post": {
+        "operationId": "ingest",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourierLocationBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierLocationBatchResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-location-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/me/status": {
+      "put": {
+        "operationId": "setStatus",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCourierStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierResponse"
                 }
               }
             },
@@ -6683,7 +7289,7 @@
     },
     "/api/v1/couriers/{courierId}/approve": {
       "patch": {
-        "operationId": "approve_1",
+        "operationId": "approve_2",
         "parameters": [
           {
             "in": "path",
@@ -6815,9 +7421,9 @@
         ]
       }
     },
-    "/api/v1/couriers/{courierId}/reject": {
+    "/api/v1/couriers/{courierId}/reinstate": {
       "patch": {
-        "operationId": "reject_3",
+        "operationId": "reinstate",
         "parameters": [
           {
             "in": "path",
@@ -6839,6 +7445,98 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/{courierId}/reject": {
+      "patch": {
+        "operationId": "reject_4",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courierId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourierResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/{courierId}/suspend": {
+      "patch": {
+        "operationId": "suspend",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courierId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendCourierRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7579,7 +8277,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_7",
+        "operationId": "list_8",
         "parameters": [
           {
             "in": "query",
@@ -7784,7 +8482,7 @@
     },
     "/api/v1/dispatch-jobs/{jobId}/reject": {
       "post": {
-        "operationId": "reject",
+        "operationId": "reject_1",
         "parameters": [
           {
             "in": "path",
@@ -8616,7 +9314,7 @@
     },
     "/api/v1/me/orders": {
       "get": {
-        "operationId": "list_6",
+        "operationId": "list_7",
         "parameters": [
           {
             "in": "query",
@@ -8694,6 +9392,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CustomerOrderDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "customer-order-controller"
+        ]
+      }
+    },
+    "/api/v1/me/orders/{orderId}/cancel": {
+      "post": {
+        "operationId": "cancel_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerCancellationResponse"
                 }
               }
             },
@@ -8828,6 +9576,197 @@
         },
         "tags": [
           "notification-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/cancellation-requests": {
+      "get": {
+        "operationId": "list_6",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "REQUESTED",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseCancellationRequestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-cancellation-request-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/cancellation-requests/{requestId}/approve": {
+      "post": {
+        "operationId": "approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationRequestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-cancellation-request-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/cancellation-requests/{requestId}/reject": {
+      "post": {
+        "operationId": "reject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationRequestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-cancellation-request-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/couriers/locations": {
+      "get": {
+        "operationId": "latestInZone",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "zoneId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourierLocationResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-courier-location-controller"
         ]
       }
     },
@@ -11227,7 +12166,7 @@
     },
     "/api/v1/vendor/orders/{orderId}/reject": {
       "patch": {
-        "operationId": "reject_2",
+        "operationId": "reject_3",
         "parameters": [
           {
             "in": "path",

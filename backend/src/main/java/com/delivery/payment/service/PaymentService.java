@@ -236,13 +236,53 @@ public class PaymentService {
      */
     @Transactional
     public boolean expirePending(UUID tenantId, UUID paymentId) {
+        return cancelPending(tenantId, paymentId, "PAYMENT_EXPIRED");
+    }
+
+    /**
+     * A payment still {@code PENDING_CONFIRMATION} becomes {@code CANCELLED} (nothing was captured), recording the fixed
+     * code {@code reason} in its history — payment expiry and the customer's free cancellation (LAC-26). Locks the row
+     * FOR UPDATE (re-entrant). Returns false, changing nothing, when the payment is in any other status.
+     */
+    @Transactional
+    public boolean cancelPending(UUID tenantId, UUID paymentId, String reason) {
         Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
         if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION) {
             return false;
         }
         payment.markCancelled();
-        recordStatusChange(payment, PaymentStatus.PENDING_CONFIRMATION, "PAYMENT_EXPIRED");
+        recordStatusChange(payment, PaymentStatus.PENDING_CONFIRMATION, reason);
         return true;
+    }
+
+    /**
+     * Customer cancellation with a fee (LAC-26): requests a refund of {@code remaining − withheld}, where remaining is
+     * {@code amount − Σ non-rejected refunds}; the withheld fee stays captured. Same locked path and idempotency as
+     * {@link #requestRemainingRefundForTenant}; returns empty (no refund row) when nothing is left after the fee.
+     */
+    @Transactional
+    public Optional<RefundResponse> requestRemainingRefundLessForTenant(UUID tenantId, UUID paymentId, BigDecimal withheld,
+                                                                        String reason, String idempotencyKey) {
+        Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
+        boolean keyUsed = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey).isPresent();
+        BigDecimal remaining = payment.getAmount().subtract(committedRefunds(tenantId, paymentId)).subtract(withheld);
+        if (!keyUsed && remaining.signum() <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(requestRefundForTenant(tenantId, paymentId, new RefundRequest(remaining, reason, idempotencyKey)));
+    }
+
+    /** Amount of the tenant's refund created with {@code idempotencyKey}, if any (read-only; idempotent replies). */
+    @Transactional(readOnly = true)
+    public Optional<BigDecimal> refundAmountByKey(UUID tenantId, String idempotencyKey) {
+        return refundRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey).map(Refund::getAmount);
+    }
+
+    /** What can still be refunded on the payment:{@code amount − Σ non-rejected refunds} (locks the payment row). */
+    @Transactional
+    public BigDecimal refundableAmount(UUID tenantId, UUID paymentId) {
+        Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
+        return payment.getAmount().subtract(committedRefunds(tenantId, paymentId));
     }
 
     /** Appends a payment_status_history row in the current transaction when the status actually changed. */

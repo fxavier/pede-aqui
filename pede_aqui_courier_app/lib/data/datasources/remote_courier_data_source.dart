@@ -104,7 +104,9 @@ class RemoteCourierDataSource implements CourierDataSource {
 
   @override
   Future<void> updateAvailability(bool isAvailable) {
-    return _apiClient.patch<void>('/couriers/me/availability', data: {'available': isAvailable});
+    // LAC-42: operational status endpoint (PATCH /couriers/me/availability is deprecated). Going offline while
+    // working an accepted delivery answers 409 courier_has_active_delivery.
+    return _apiClient.put<void>('/couriers/me/status', data: {'status': isAvailable ? 'AVAILABLE' : 'OFFLINE'});
   }
 
   @override

@@ -17,6 +17,8 @@ const labels: Record<string, string> = {
 }
 
 export const SELLER_REJECTED_LABEL = 'Rejeitado pelo vendedor'
+/** LAC-26: cancelled by the customer (free, or approved request with fee). */
+export const CUSTOMER_CANCELLED_LABEL = 'Cancelado por si'
 
 /** True when a CANCELLED order was cancelled because the seller rejected it. */
 export function isSellerRejected(status: string, cancellationReason?: string | null): boolean {
@@ -38,6 +40,9 @@ const ACTIVE_STATUSES = new Set([
 /** Customer-facing label for an order status; pass `cancellationReason` to tell seller rejections apart. */
 export function statusLabel(status: string, cancellationReason?: string | null): string {
   if (isSellerRejected(status, cancellationReason)) return SELLER_REJECTED_LABEL
+  if (status === 'CANCELLED' && (cancellationReason === 'CUSTOMER_CANCELLED' || cancellationReason === 'CUSTOMER_CANCELLED_WITH_FEE')) {
+    return CUSTOMER_CANCELLED_LABEL
+  }
   return labels[status] ?? status
 }
 

@@ -10,3 +10,6 @@ app:
   jobs:
     # LAC-46: no background scheduler in tests; job beans exist and tests call run()/reconcile() directly.
     enabled: false
+  courier-location:
+    # LAC-40: no Redis in the suite; the GEO/presence writes are covered by CourierPresenceStoreRedisTest.
+    redis-enabled: false
