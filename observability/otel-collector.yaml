@@ -1,0 +1,32 @@
+# LAC-50 local stack (docker compose --profile observability): the backend exports spans over OTLP/HTTP to this
+# collector, which batches them and forwards to Jaeger. In AWS the same role is played by the ADOT Collector
+# (exporting to X-Ray) — the application only knows the OTLP endpoint (MANAGEMENT_OTLP_TRACING_ENDPOINT).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  # One summary line per batch in `docker compose logs otel-collector` (handy to see that spans arrive).
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/jaeger, debug]

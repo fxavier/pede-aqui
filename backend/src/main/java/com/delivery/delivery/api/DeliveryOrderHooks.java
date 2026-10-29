@@ -17,8 +17,14 @@ public interface DeliveryOrderHooks {
      */
     void requireDeliverable(UUID tenantId, UUID orderId);
 
-    /** Courier picked the goods up: commits the order's stock reservation (no-op if already committed). */
+    /**
+     * Courier picked the goods up: the order follows (ASSIGNED_TO_COURIER -> PICKED_UP, W4-A) and its stock
+     * reservation is committed (no-op if already committed).
+     */
     void onPickedUp(UUID tenantId, UUID orderId);
+
+    /** Courier on the way to / arrived at the customer: the order becomes DELIVERING when it is still before that. */
+    void onOutForDelivery(UUID tenantId, UUID orderId);
 
     /** Delivery completed with the customer PIN: order DELIVERED (clears the plain PIN) and stock committed. */
     void onDelivered(UUID tenantId, UUID orderId);

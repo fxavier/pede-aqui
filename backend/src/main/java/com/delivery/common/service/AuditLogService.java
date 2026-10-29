@@ -4,6 +4,7 @@ import com.delivery.common.config.CorrelationIdFilter;
 import com.delivery.common.dto.AuditLogResponse;
 import com.delivery.common.entity.AuditLog;
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.observability.BusinessMetrics;
 import com.delivery.common.pagination.CappedList;
 import com.delivery.common.pagination.CursorPage;
 import com.delivery.common.pagination.KeysetCursor;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,10 +45,17 @@ public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
     private final TenantContext tenantContext;
+    private BusinessMetrics metrics = BusinessMetrics.NOOP;
 
     public AuditLogService(AuditLogRepository auditLogRepository, TenantContext tenantContext) {
         this.auditLogRepository = auditLogRepository;
         this.tenantContext = tenantContext;
+    }
+
+    /** Optional: slice tests without a meter registry keep the no-op metrics. */
+    @Autowired(required = false)
+    public void setBusinessMetrics(BusinessMetrics metrics) {
+        this.metrics = metrics;
     }
 
     /** Writes a sensitive action audit entry without recording secret values. */
@@ -76,6 +85,10 @@ public class AuditLogService {
                         truncate(MDC.get(CorrelationIdFilter.MDC_KEY), CORRELATION_ID_MAX),
                         details == null ? null : maskMap(details));
         auditLogRepository.save(entry);
+        // LAC-50: audit_events_total{action,result}, only once the business transaction commits. Covers payments
+        // confirmed (PAYMENT_CONFIRMED), refunds approved (REFUND_APPROVED), PIN lockouts (DELIVERY_CODE_LOCKED)…
+        metrics.incrementAfterCommit(BusinessMetrics.AUDIT_EVENTS,
+                "action", BusinessMetrics.safeAction(action), "result", BusinessMetrics.safeAction(result));
     }
 
     /** Lists the newest tenant audit entries, capped at {@link PageLimits#LEGACY_LIST_CAP} (legacy array, LAC-14). */

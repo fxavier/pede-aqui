@@ -352,7 +352,8 @@ class DispatchServicePostgresTest {
 
     private DispatchService newService(Duration offerTtl) {
         return new DispatchService(jobRepository, courierService, deliveryRepository, deliveryEventRepository,
-                orderRepository, new DispatchMapper(), mock(AuditLogService.class), tenantContext, offerTtl);
+                orderRepository, new DispatchMapper(), mock(AuditLogService.class), tenantContext, offerTtl,
+                com.delivery.order.OrderTestStatus.stateMachine());
     }
 
     private void actAsCourier(Courier courier) {

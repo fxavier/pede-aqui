@@ -4,6 +4,7 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.delivery.api.DeliveryAddressResponse;
 import com.delivery.delivery.api.DeliveryOrderHooks;
+import com.delivery.order.api.OrderStateMachine;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
@@ -35,10 +36,12 @@ public class OrderDeliveryHooks implements DeliveryOrderHooks {
 
     private final OrderRepository orderRepository;
     private final OrderStockService orderStockService;
+    private final OrderStateMachine stateMachine;
 
-    public OrderDeliveryHooks(OrderRepository orderRepository, OrderStockService orderStockService) {
+    public OrderDeliveryHooks(OrderRepository orderRepository, OrderStockService orderStockService, OrderStateMachine stateMachine) {
         this.orderRepository = orderRepository;
         this.orderStockService = orderStockService;
+        this.stateMachine = stateMachine;
     }
 
     /** 409 order_not_deliverable when the order was refunded or cancelled; 404 when it does not exist. */
@@ -50,17 +53,34 @@ public class OrderDeliveryHooks implements DeliveryOrderHooks {
         }
     }
 
-    /** INC-07 (COR-01): pickup consumes the reservation; no-op if already committed. */
+    /**
+     * INC-07 (COR-01): pickup consumes the reservation (no-op if already committed). W4-A: the order follows the
+     * courier, ASSIGNED_TO_COURIER -> PICKED_UP; an order in any other status (legacy rows, an ops override) is left
+     * as it is — the sync never moves an order backwards or outside the transition table.
+     */
     @Override
     public void onPickedUp(UUID tenantId, UUID orderId) {
-        orderStockService.commit(findOrder(tenantId, orderId));
+        Order order = findOrder(tenantId, orderId);
+        if (order.getStatus() == OrderStatus.ASSIGNED_TO_COURIER) {
+            stateMachine.transition(order, OrderStatus.PICKED_UP, "DELIVERY_PICKED_UP");
+        }
+        orderStockService.commit(order);
+    }
+
+    /** W4-A: courier on the way / at the customer: ASSIGNED_TO_COURIER or PICKED_UP -> DELIVERING; otherwise unchanged. */
+    @Override
+    public void onOutForDelivery(UUID tenantId, UUID orderId) {
+        Order order = findOrder(tenantId, orderId);
+        if (order.getStatus() == OrderStatus.ASSIGNED_TO_COURIER || order.getStatus() == OrderStatus.PICKED_UP) {
+            stateMachine.transition(order, OrderStatus.DELIVERING, "DELIVERY_ON_ROUTE");
+        }
     }
 
     /** Order DELIVERED (clears the plain PIN) and the stock lifecycle closed (no-op if pickup committed it). */
     @Override
     public void onDelivered(UUID tenantId, UUID orderId) {
         Order order = findOrder(tenantId, orderId);
-        order.markDelivered();
+        stateMachine.transition(order, OrderStatus.DELIVERED, "DELIVERY_COMPLETED"); // from ASSIGNED_TO_COURIER/PICKED_UP/DELIVERING
         orderStockService.commit(order);
     }
 
@@ -68,7 +88,7 @@ public class OrderDeliveryHooks implements DeliveryOrderHooks {
     @Override
     public void onDeliveryFailed(UUID tenantId, UUID orderId) {
         Order order = findOrder(tenantId, orderId);
-        order.markCancelled();
+        stateMachine.transition(order, OrderStatus.CANCELLED, "DELIVERY_FAILED");
         orderStockService.release(order);
     }
 

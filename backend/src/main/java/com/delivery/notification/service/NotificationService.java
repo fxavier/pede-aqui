@@ -37,7 +37,13 @@ public class NotificationService {
     /** Creates a persisted notification record for a specific recipient. */
     @Transactional
     public NotificationResponse create(UUID recipientUserId, String recipientRole, String type, String title, String message, String businessReference) {
-        Notification notification = new Notification(UUID.randomUUID(), tenantId(), recipientUserId, recipientRole, type, title, message, businessReference);
+        return createForTenant(tenantId(), recipientUserId, recipientRole, type, title, message, businessReference);
+    }
+
+    /** {@link #create} for an explicit tenant: scheduled jobs (W4-A timeouts) run without a tenant context. */
+    @Transactional
+    public NotificationResponse createForTenant(UUID tenantId, UUID recipientUserId, String recipientRole, String type, String title, String message, String businessReference) {
+        Notification notification = new Notification(UUID.randomUUID(), tenantId, recipientUserId, recipientRole, type, title, message, businessReference);
         Notification saved = notificationRepository.save(notification);
         LOGGER.info("notification.created type={} recipientRole={} businessReference={}", type, recipientRole, businessReference);
         return toResponse(saved);

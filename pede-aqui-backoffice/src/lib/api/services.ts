@@ -1,4 +1,5 @@
-import { apiClient, getAuthToken, getTenantId } from "./client";
+import { apiClient } from "./client";
+import { bffFetch } from "../http-client";
 import type {
   AdminDashboard,
   VendorDashboard,
@@ -205,27 +206,19 @@ export const reportService = {
   byCategory: (params: ReportRangeParams) =>
     apiClient.get<DimensionRow[]>(`/reports/sales/by-category${toQueryString({ ...params })}`),
   // Builds the export query string (report/format/date-range/vendor/interval); callers combine
-  // it with `downloadExport` rather than linking directly, since the endpoint requires the
-  // Bearer/X-Tenant-Id headers a plain <a href> cannot attach.
+  // it with `downloadExport` rather than linking directly.
   buildExportQuery: (report: SalesReportName, params: ReportRangeParams & { interval?: ReportInterval }) =>
     toQueryString({ report, format: "csv", ...params }),
-  // Streams the CSV export as a Blob using the same auth/tenant headers as the JSON client;
+  // Streams the CSV export as a Blob through the BFF (which adds the bearer token and tenant server-side);
   // callers turn the Blob into an object URL to trigger a browser download.
   downloadExport: async (
     report: SalesReportName,
     params: ReportRangeParams & { interval?: ReportInterval }
   ): Promise<Blob> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!apiBase) {
-      throw new Error("API base URL not configured");
-    }
     const query = toQueryString({ report, format: "csv", ...params });
-    const response = await fetch(`${apiBase}/reports/sales/export${query}`, {
+    const response = await bffFetch(`/reports/sales/export${query}`, {
       method: "GET",
-      headers: {
-        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
-        ...(getTenantId() ? { "X-Tenant-Id": getTenantId()! } : {}),
-      },
+      headers: { Accept: "text/csv, application/json;q=0.9, */*;q=0.8" },
     });
     if (!response.ok) {
       throw new Error(`Exportação falhou: ${response.status} ${response.statusText}`);
@@ -488,12 +481,8 @@ export const managementService = {
 
 export const registrationService = {
   register: async (payload: MerchantRegistrationPayload): Promise<MerchantRegistrationResponse> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!apiBase) {
-      throw new Error("API base URL not configured");
-    }
-
-    const response = await fetch(`${apiBase}/register`, {
+    // Open endpoint: the BFF forwards POST /register without a session (allow-listed there).
+    const response = await bffFetch("/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

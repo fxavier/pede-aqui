@@ -19,7 +19,11 @@ import org.springframework.http.ProblemDetail;
  */
 public final class ApiProblems {
 
-    /** MDC key populated by Micrometer Tracing when it is added; until then traceId falls back to the correlation id. */
+    /**
+     * MDC key populated by Micrometer Tracing (LAC-50) for the request span — the W3C trace id that is exported to the
+     * collector (ids are minted even when export is off). Falls back to the correlation id only when no tracer is
+     * active (e.g. MVC slice tests).
+     */
     static final String TRACE_ID_MDC_KEY = "traceId";
 
     private ApiProblems() {

@@ -6,6 +6,7 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.common.service.StatusChangeActor;
 import com.delivery.payment.api.PaymentOrderHooks;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.PaymentResponse;
@@ -13,12 +14,15 @@ import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.entity.PaymentStatus;
+import com.delivery.payment.entity.PaymentStatusHistory;
 import com.delivery.payment.entity.Refund;
 import com.delivery.payment.entity.RefundStatus;
 import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.repository.PaymentRepository;
+import com.delivery.payment.repository.PaymentStatusHistoryRepository;
 import com.delivery.payment.repository.RefundRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +48,7 @@ public class PaymentService {
     private final TenantContext tenantContext;
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
+    private final PaymentStatusHistoryRepository historyRepository;
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -53,7 +58,9 @@ public class PaymentService {
             PaymentMapper mapper,
             TenantContext tenantContext,
             AppUserProfileRepository userProfileRepository,
-            PaymentMockConfirmationProperties mockConfirmationProperties) {
+            PaymentMockConfirmationProperties mockConfirmationProperties,
+            PaymentStatusHistoryRepository historyRepository) {
+        this.historyRepository = historyRepository;
         this.paymentRepository = paymentRepository;
         this.orderHooks = orderHooks;
         this.refundRepository = refundRepository;
@@ -98,7 +105,9 @@ public class PaymentService {
         if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION || !order.awaitingPayment()) {
             throw new BusinessException("payment_not_confirmable", "Payment can no longer be confirmed", HttpStatus.CONFLICT);
         }
+        PaymentStatus previous = payment.getStatus();
         payment.confirm();
+        recordStatusChange(payment, previous, "MOCK_CONFIRMATION");
         orderHooks.markPaymentConfirmed(tenantId, payment.getOrderId());
         auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(), "SUCCESS");
         return mapper.toResponse(payment);
@@ -112,7 +121,12 @@ public class PaymentService {
      */
     @Transactional
     public RefundResponse requestRefund(UUID paymentId, RefundRequest request) {
-        UUID tenantId = tenantId();
+        return requestRefundForTenant(tenantId(), paymentId, request);
+    }
+
+    /** {@link #requestRefund} for an explicit tenant (scheduled jobs run without a tenant context). */
+    @Transactional
+    public RefundResponse requestRefundForTenant(UUID tenantId, UUID paymentId, RefundRequest request) {
         Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
         Refund existing = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, request.idempotencyKey()).orElse(null);
         if (existing != null) {
@@ -151,14 +165,19 @@ public class PaymentService {
      */
     @Transactional
     public Optional<RefundResponse> requestRemainingRefund(UUID paymentId, String reason, String idempotencyKey) {
-        UUID tenantId = tenantId();
+        return requestRemainingRefundForTenant(tenantId(), paymentId, reason, idempotencyKey);
+    }
+
+    /** {@link #requestRemainingRefund} for an explicit tenant (AcceptanceTimeoutJob runs without a tenant context). */
+    @Transactional
+    public Optional<RefundResponse> requestRemainingRefundForTenant(UUID tenantId, UUID paymentId, String reason, String idempotencyKey) {
         Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
         boolean keyUsed = refundRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey).isPresent();
         BigDecimal remaining = payment.getAmount().subtract(committedRefunds(tenantId, paymentId));
         if (!keyUsed && remaining.signum() <= 0) {
             return Optional.empty();
         }
-        return Optional.of(requestRefund(paymentId, new RefundRequest(remaining, reason, idempotencyKey)));
+        return Optional.of(requestRefundForTenant(tenantId, paymentId, new RefundRequest(remaining, reason, idempotencyKey)));
     }
 
     /**
@@ -191,14 +210,49 @@ public class PaymentService {
                     .orElseThrow(() -> new NotFoundException("Payment was not found"));
             refund.approve();
             auditLogService.log("REFUND_APPROVED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
+            PaymentStatus previous = payment.getStatus();
             if (approvedRefunds(tenantId, payment.getId(), refund).compareTo(payment.getAmount()) >= 0) {
                 payment.markFullyRefunded();
+                recordStatusChange(payment, previous, "REFUND_APPROVED");
                 orderHooks.onPaymentFullyRefunded(tenantId, refund.getOrderId());
             } else {
                 payment.markPartiallyRefunded();
+                recordStatusChange(payment, previous, "REFUND_APPROVED");
             }
         }
         return toRefundResponse(refund);
+    }
+
+    /** Records the creation of a payment at checkout (history row {@code null -> PENDING_CONFIRMATION}, V058). */
+    @Transactional
+    public void recordCreated(Payment payment) {
+        recordStatusChange(payment, null, "CHECKOUT");
+    }
+
+    /**
+     * PaymentExpiryJob (W4-A): a payment still {@code PENDING_CONFIRMATION} becomes {@code CANCELLED} (nothing was
+     * captured). Locks the payment row FOR UPDATE (re-entrant after the job's SKIP LOCKED claim). Returns false — and
+     * changes nothing — when the payment is in any other status (confirmed meanwhile, already cancelled).
+     */
+    @Transactional
+    public boolean expirePending(UUID tenantId, UUID paymentId) {
+        Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found"));
+        if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION) {
+            return false;
+        }
+        payment.markCancelled();
+        recordStatusChange(payment, PaymentStatus.PENDING_CONFIRMATION, "PAYMENT_EXPIRED");
+        return true;
+    }
+
+    /** Appends a payment_status_history row in the current transaction when the status actually changed. */
+    private void recordStatusChange(Payment payment, PaymentStatus previous, String reason) {
+        if (previous == payment.getStatus()) {
+            return;
+        }
+        StatusChangeActor actor = StatusChangeActor.current(tenantContext);
+        historyRepository.save(new PaymentStatusHistory(payment, previous, actor.actorType(), actor.actorId(), reason,
+                actor.correlationId(), Instant.now()));
     }
 
     /** Rejects a pending refund once (tenant-scoped; another tenant's refund is a 404) and audits the decision. */

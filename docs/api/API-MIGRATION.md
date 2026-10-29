@@ -485,6 +485,114 @@ before). What clients can observe:
   calls `GET /orders/{id}/tracking` (still available, unchanged).
 - **Flutter customer app**: not migrated yet.
 
+## W4-A — Order state machine, status history and timeouts (LAC-25, LAC-15) — 2026-10-29
+
+### Illegal order transitions are `409 invalid_order_transition` (behaviour change)
+
+- Every order status change now goes through `OrderStateMachine` (transition table in `CLAUDE.md`, Key API
+  Flows). A transition outside the table answers **409** `invalid_order_transition` and changes nothing.
+- `PATCH /api/v1/vendor/orders/{id}/accept|preparing|ready-for-pickup|reject` from a wrong source status:
+  **409** (was **400**, same code `invalid_order_transition`). The message now reads
+  `Order cannot move from <FROM> to <TO>` (reject: `Order cannot be rejected in status <STATUS>`).
+- Approving a refund that would fully refund an order that was never paid (`PAYMENT_PENDING`) is now refused
+  with 409 `invalid_order_transition` (the whole approval rolls back).
+- Unchanged: `sale_not_cancellable`, `transition_not_allowed` (sales override allow-list, a narrower policy),
+  `order_not_ready_for_dispatch`, `order_not_deliverable`.
+
+### Order status follows the courier (behaviour change)
+
+- Courier `PATCH /deliveries/{id}/status` `PICKED_UP` moves the order `ASSIGNED_TO_COURIER → PICKED_UP`;
+  `ON_ROUTE_TO_CUSTOMER` / `ARRIVED_AT_CUSTOMER` move it to `DELIVERING`. Before W4-A the order stayed
+  `ASSIGNED_TO_COURIER` until `DELIVERED`. Clients that only knew `ASSIGNED_TO_COURIER` for "on the way" must
+  treat `PICKED_UP` and `DELIVERING` the same way (the backoffice and customer web already have labels).
+- The sales status override `DELIVERING → DELIVERED` is now reachable for orders whose courier is on the way.
+
+### Automatic cancellations (behaviour change)
+
+- `PAYMENT_PENDING` for longer than `app.orders.payment-timeout` (env `APP_ORDERS_PAYMENT_TIMEOUT`, default
+  `PT20M`) → `CANCELLED` with `cancellationReason = PAYMENT_EXPIRED`; payment `CANCELLED`; no refund.
+- `PAYMENT_CONFIRMED` not accepted within `app.orders.acceptance-timeout` (env `APP_ORDERS_ACCEPTANCE_TIMEOUT`,
+  default `PT10M`) after payment → `CANCELLED` with `cancellationReason = VENDOR_TIMEOUT`, refund of the
+  eligible remainder (`REQUESTED`, key `vendor-timeout-<orderId>`), customer notification
+  `order_cancelled_vendor_timeout`.
+- `cancellationReason` (`OrderResponse`, `AdminOrderResponse`, `/me/orders`) gains the values
+  `PAYMENT_EXPIRED` and `VENDOR_TIMEOUT` (was only `SELLER_REJECTED`/null) — new values of a response enum in
+  the OpenAPI contract; clients that switch on it must handle them (or unknown values).
+- Payment status `CANCELLED` is now written (payment expiry). Sales reports exclude `PAYMENT_EXPIRED`
+  cancellations (never paid).
+- A mock confirmation (`POST /payments/{id}/confirm`) racing the expiry: one wins; the loser gets 409
+  (`concurrent_modification` or `payment_not_confirmable`).
+
+### `GET /api/v1/orders/{orderId}/history` (new, additive)
+
+- Roles: `ADMIN`, `OPS`, `SUPPORT` (tenant-wide), `VENDOR_ADMIN`/`VENDOR_STAFF` (own vendor; another vendor's
+  order → 404). Other roles → 403.
+- Body: `{ orderId, currentStatus, orderStatus: [...], paymentStatus: [...] }`, oldest first; each entry has
+  `fromStatus` (null for the creation row), `toStatus`, `actorType` (`USER`/`SYSTEM`), `actorId` (Keycloak
+  subject or job name; **null for merchant callers**), `reason` (fixed code, never free text), `correlationId`,
+  `createdAt`; payment entries also carry `paymentId`.
+- Orders created before V058 have no history rows before their first transition after deploy.
+
+### Clients / consumers to review
+
+- **Backoffice**: vendor action buttons should handle 409 (they treated any non-2xx as an error, so no
+  breakage); a "history" timeline can use the new endpoint.
+- **Customer web / Flutter**: `cancellationReason` values above; `PICKED_UP`/`DELIVERING` statuses.
+
+## W4-C — Customer web on Authorization Code + PKCE; ROPC removed for `pede-aqui-web` (LAC-10, web part)
+
+No REST endpoint changed. The change is in the identity contract of the Keycloak client `pede-aqui-web`.
+
+### Keycloak client `pede-aqui-web` (breaking for password-grant callers)
+
+- `directAccessGrantsEnabled=false`: `POST /realms/delivery/protocol/openid-connect/token` with
+  `grant_type=password&client_id=pede-aqui-web` now answers **400 `unauthorized_client`**. Any script, test
+  or tool that obtained customer tokens this way must use the code flow (or another client).
+- Code flow requires PKCE S256 (unchanged); implicit flow explicitly off. Post-logout redirect URIs added
+  (`http://localhost:5173/`, `http://localhost:4173/`), so `end_session` with `post_logout_redirect_uri` works.
+- Tokens are still issued to `azp=pede-aqui-web`, so the backend's tenant derivation for customers (ADR-0001)
+  and `POST /api/v1/customers/register` are unchanged.
+- Existing Keycloak containers keep the old client until recreated (`docker compose rm -sf keycloak && docker compose up -d keycloak`).
+
+### Customer web app (`pede-aqui-delivery`)
+
+- Login redirects to the Keycloak login page; `/login` is a landing with "Entrar"/"Criar conta". Registration
+  still posts to `/customers/register` and then starts the PKCE login with `login_hint`.
+- Tokens are in memory only; `sessionStorage.auth_token` is no longer written (a leftover copy is deleted on
+  startup). 401 → one single-flight renewal + replay, then redirect to login.
+- Other clients are unaffected: `delivery-app` (backoffice, W4-D), `pede-aqui-mobile` and
+  `pede-aqui-courier-mobile` keep their current settings.
+
+## W4-D — Backoffice BFF, ROPC removed from `delivery-app` (LAC-10)
+
+No backend endpoint changed. The change is in **who may obtain tokens and how**:
+
+### Keycloak client `delivery-app` (breaking for password-grant callers)
+
+- `directAccessGrantsEnabled: false`: `grant_type=password` with `client_id=delivery-app` now fails
+  (`400 unauthorized_client`). Only Authorization Code + PKCE (S256) is accepted.
+- Redirect URIs narrowed to `http://localhost:3000|3001/api/auth/callback/keycloak` (Auth.js callback);
+  post-logout redirect `http://localhost:3000|3001/login*`; web origins listed explicitly instead of `+`.
+- Effect: the realm's TOTP browser flow (`browser-privileged-mfa`) now applies to every backoffice login of
+  `ADMIN`/`FINANCE`/`OPS`.
+- Token claims are unchanged (`realm_access.roles`, `tenant_id`, optional `vendor_id`, `azp=delivery-app`).
+- Existing local realms keep the old client until re-imported: `docker compose rm -sf keycloak && docker compose up -d keycloak`.
+
+### Clients / consumers to review
+
+- **Backoffice**: migrated. Logs in through Auth.js (server-side PKCE) and calls the API only through
+  its BFF (`/api/bff/*`); the browser holds no token. Platform-admin impersonation (`X-Tenant-Id`) is set
+  server-side from a signed HttpOnly cookie.
+- **Scripts / manual curl**: use the dev-only client from `scripts/lib/keycloak-dev-ropc-client.sh`
+  (`backoffice-dev-cli`, local Keycloak only). `scripts/spec-002-smoke.sh` does this automatically
+  (override with `KEYCLOAK_CLIENT_ID`).
+- **Backend tests**: `KeycloakMerchantRegistrationE2ETest` asserts `delivery-app` refuses ROPC and gets its
+  token from a throwaway test client created in its Testcontainers Keycloak (mappers copied from `delivery-app`).
+- **Flutter customer app** (`pede_aqui_delivery_app/lib/features/auth/data/auth_repository.dart`): still does
+  ROPC + refresh on `delivery-app` — **broken by this change**; must move to `pede-aqui-mobile` with PKCE
+  (follow-up — done in W4-E, below). The courier app uses `courier-app`, which is not in the realm (unchanged).
+- `pede-aqui-web` (customer web) is untouched here (W4-C).
+
 ## W4-E — Flutter apps move to Authorization Code + PKCE (auth part of LAC-61, LAC-62)
 
 No backend API change; this records a client change that the Keycloak ROPC shutdown (W4-C/W4-D) depends on.

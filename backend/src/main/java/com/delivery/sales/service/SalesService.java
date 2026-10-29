@@ -8,6 +8,7 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.notification.service.NotificationService;
+import com.delivery.order.api.OrderStateMachine;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
@@ -57,7 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SalesService {
     /** Pre-dispatch states in which a sale may still be cancelled (AC-6.1). */
-    private static final Set<OrderStatus> CANCELLABLE_STATUSES = EnumSet.of(
+    static final Set<OrderStatus> CANCELLABLE_STATUSES = EnumSet.of(
             OrderStatus.PENDING,
             OrderStatus.PAYMENT_PENDING,
             OrderStatus.PAYMENT_CONFIRMED,
@@ -70,8 +71,14 @@ public class SalesService {
             PaymentStatus.PARTIALLY_REFUNDED,
             PaymentStatus.REFUNDED,
             PaymentStatus.FULLY_REFUNDED);
-    /** Allow-list transition matrix for the gated status override (plan §3.3). */
-    private static final Map<OrderStatus, OrderStatus> OVERRIDE_ALLOW_LIST = Map.of(
+    /**
+     * Allow-list transition matrix for the gated status override (plan §3.3). A narrower policy than the order
+     * state machine: every pair must also be in {@link OrderStateMachine}'s table (pinned by a test), and the override
+     * goes through the state machine, so history and OrderStatusChanged are written like any other transition.
+     * DISPATCH_PENDING is a legacy status no path writes (that pair can only fix old rows); DELIVERING is written
+     * since W4-A (courier on the way), so DELIVERING -> DELIVERED is the ops fix for a courier who cannot enter the PIN.
+     */
+    static final Map<OrderStatus, OrderStatus> OVERRIDE_ALLOW_LIST = Map.of(
             OrderStatus.PAYMENT_CONFIRMED, OrderStatus.CANCELLED,
             OrderStatus.ACCEPTED_BY_VENDOR, OrderStatus.PREPARING,
             OrderStatus.DISPATCH_PENDING, OrderStatus.ASSIGNED_TO_COURIER,
@@ -94,6 +101,7 @@ public class SalesService {
     private final SalesAccessGuard accessGuard;
     private final OrderStockService orderStockService;
     private final DeliveryRetirementService deliveryRetirementService;
+    private final OrderStateMachine stateMachine;
 
     public SalesService(
             OrderRepository orderRepository,
@@ -111,7 +119,9 @@ public class SalesService {
             SalesAccessGuard accessGuard,
             OrderStockService orderStockService,
             PaymentRepository paymentRepository,
-            DeliveryRetirementService deliveryRetirementService) {
+            DeliveryRetirementService deliveryRetirementService,
+            OrderStateMachine stateMachine) {
+        this.stateMachine = stateMachine;
         this.deliveryRetirementService = deliveryRetirementService;
         this.orderStockService = orderStockService;
         this.paymentRepository = paymentRepository;
@@ -214,7 +224,8 @@ public class SalesService {
         if (!CANCELLABLE_STATUSES.contains(order.getStatus())) {
             throw new BusinessException("sale_not_cancellable", "Order can no longer be cancelled in status " + order.getStatus(), HttpStatus.CONFLICT);
         }
-        order.markCancelled();
+        // The free-text reason stays in the audit entry (same correlation id); the history row gets a fixed code.
+        stateMachine.transition(order, OrderStatus.CANCELLED, "SALE_CANCELLED");
         deliveryRetirementService.retireBeforePickup(tenantId, orderId, "sale cancelled");
         orderStockService.release(order); // INC-07 (COR-01): cancellation gives the reservation back
         notificationService.create(order.getCustomerId(), "CUSTOMER", "order_cancelled", "Order Cancelled",
@@ -314,15 +325,15 @@ public class SalesService {
     private void applyOverride(Order order, OrderStatus target) {
         switch (target) {
             case CANCELLED -> {
-                order.markCancelled();
+                stateMachine.transition(order, OrderStatus.CANCELLED, "STATUS_OVERRIDE");
                 deliveryRetirementService.retireBeforePickup(order.getTenantId(), order.getId(), "status override to CANCELLED");
                 orderStockService.release(order);
             }
-            case PREPARING -> order.markPreparing();
-            case ASSIGNED_TO_COURIER -> order.markAssignedToCourier();
+            case PREPARING -> stateMachine.transition(order, OrderStatus.PREPARING, "STATUS_OVERRIDE");
+            case ASSIGNED_TO_COURIER -> stateMachine.transition(order, OrderStatus.ASSIGNED_TO_COURIER, "STATUS_OVERRIDE");
             // INC-07 (COR-01): a manual DELIVERED is a delivery for stock purposes — same closure as DeliveryService.complete
-            // (no-op when the courier's PICKED_UP already committed it). markDelivered() also clears the plain PIN.
-            case DELIVERED -> { order.markDelivered(); orderStockService.commit(order); }
+            // (no-op when the courier's PICKED_UP already committed it). DELIVERED also clears the plain PIN.
+            case DELIVERED -> { stateMachine.transition(order, OrderStatus.DELIVERED, "STATUS_OVERRIDE"); orderStockService.commit(order); }
             default -> throw new BusinessException("transition_not_allowed", "Unsupported override target " + target, HttpStatus.CONFLICT);
         }
     }

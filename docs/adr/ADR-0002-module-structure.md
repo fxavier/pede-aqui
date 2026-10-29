@@ -212,6 +212,8 @@ Ficheiros de teste: as instâncias de serviços nos testes unitários passaram a
 
 **Integração com W3-B/W3-D/W3-C (2026-10-29):** W3-B (`common.ratelimit`) e W3-D não acrescentaram violações. O histórico de encomendas do cliente (W3-C, `order.service.CustomerOrderQueryService`) foi ligado às APIs públicas em vez de repositórios/entidades de outros módulos: perfil do chamador via `auth.api.UserAccounts.profileIdOf`, nomes das lojas via o novo `vendor.api.VendorNames`, morada via `delivery.api.DeliveryAddressResponse` (`OrderMapper.toAddressResponse`). Baseline inalterado (140 `non-exposed`, 0 `cycle-edge`).
 
+**W4-A — máquina de estados da encomenda (LAC-25/LAC-15, 2026-10-29):** `order.api.OrderStateMachine` (API pública do `order`) é a única porta de mudança de estado; `dispatch` e `sales` chamam-na em vez dos antigos `Order.mark*()` (já usavam `Order`/`OrderStatus`, linhas do baseline existentes — nenhuma nova). Os estados intermédios da entrega chegam à encomenda pelo *hook* síncrono `DeliveryOrderHooks.onPickedUp`/`onOutForDelivery` (mantém a invariante entrega + encomenda + stock na mesma transação); o `OrderStatusChanged` passa a ser publicado em todas as transições. A leitura do histórico de pagamento pelo `order` usa o novo `payment.api.PaymentStatusHistoryReader` (sem tocar no repositório interno). Baseline inalterado (140 `non-exposed`, 0 `cycle-edge`).
+
 ## References
 
 - [AS-IS-ARCHITECTURE.md §4.3 (dependências), §4.4 (eventos/jobs), §13 (AS-12, AS-18), §16 (D2)](../assessment/AS-IS-ARCHITECTURE.md)

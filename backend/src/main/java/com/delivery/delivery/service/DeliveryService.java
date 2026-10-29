@@ -153,7 +153,10 @@ public class DeliveryService {
             delivery.recordCashCollected(cashCollectedAmount);
         }
         delivery.updateStatus(status);
-        if (status == DeliveryStatus.PICKED_UP) orderHooks.onPickedUp(tenantId, delivery.getOrderId()); // INC-07 (COR-01)
+        if (status == DeliveryStatus.PICKED_UP) orderHooks.onPickedUp(tenantId, delivery.getOrderId()); // INC-07 (COR-01) + order PICKED_UP
+        if (status == DeliveryStatus.ON_ROUTE_TO_CUSTOMER || status == DeliveryStatus.ARRIVED_AT_CUSTOMER) {
+            orderHooks.onOutForDelivery(tenantId, delivery.getOrderId()); // W4-A: order DELIVERING
+        }
         if (status == DeliveryStatus.FAILED_DELIVERY) {
             orderHooks.onDeliveryFailed(tenantId, delivery.getOrderId()); // order CANCELLED + release (no-op once committed)
         }

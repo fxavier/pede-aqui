@@ -24,17 +24,17 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 
 | Campo | Valor |
 |---|---|
-| Produtor | módulo `order` — `OrderService.acceptByVendor`, `markPreparing`, `markReadyForPickup` (transições de *fulfilment* do comerciante) |
-| Quando | A encomenda mudou de estado nessas transições (`PAYMENT_CONFIRMED → ACCEPTED_BY_VENDOR → PREPARING → READY_FOR_PICKUP`) |
+| Produtor | módulo `order` — **`order.api.OrderStateMachine`** (W4-A, LAC-25): a única porta de mudança de estado da encomenda. Chamadores: checkout (só histórico, ver Notas), confirmação de pagamento (`OrderPaymentHooks`), aceitar/preparar/pronto/rejeitar (`OrderService`), atribuição de estafeta (`DispatchService`), recolha/a caminho/entrega/falha (`OrderDeliveryHooks`), reembolso total (`OrderPaymentHooks`), cancelamento e *override* de vendas (`SalesService`), jobs `payment-expiry` e `acceptance-timeout` (`OrderTimeoutService`) |
+| Quando | **Toda** a transição aceite pela tabela de estados (ver `CLAUDE.md`, Key API Flows), na mesma transação que muda `orders.status` e escreve `order_status_history` (V058). Uma transição recusada (409 `invalid_order_transition`) não publica nada. |
 | Payload | `tenantId` (UUID), `orderId` (UUID), `vendorId` (UUID), `previousStatus` (String, `OrderStatus`), `newStatus` (String, `OrderStatus`), `occurredAt` (Instant) |
 | Consumidores | `dashboard` — `OrderStatusMetricsListener`: incrementa `order_status_transitions_total{from,to}` e regista uma linha de log. Não altera estado. |
-| Garantia | At-least-once; o consumidor atual tolera duplicados (pode apenas sobrecontar a métrica). |
-| Testes | `OrderStatusChangedEventPostgresTest` (publicação persistida e concluída; falha → incompleta → reenviada pelo *retry job*) |
-| Notas | Ainda **não** é publicado por cancelamento, rejeição, reembolso, entrega nem *override* de vendas: esses caminhos entram com a máquina de estados explícita (LAC-25). A quebra dos ciclos C1/C2 (W3-A) **não** os converteu em eventos: ficaram síncronos através de *hooks* nas APIs de `payment`/`delivery` (ver abaixo). Não usar este evento como fonte completa do histórico de estados até lá. |
+| Garantia | At-least-once; o consumidor atual tolera duplicados (pode apenas sobrecontar a métrica). Consumidores novos têm de ser idempotentes (chave natural: `orderId` + `newStatus` — a tabela não tem ciclos, cada estado é atingido no máximo uma vez por encomenda). |
+| Testes | `OrderStatusChangedEventPostgresTest` (publicação persistida e concluída; falha → incompleta → reenviada pelo *retry job*), `OrderStateMachineTest` (um evento por transição aceite, nenhum por recusada; propriedade sobre sequências aleatórias), `OrderTimeoutPostgresTest` (publicação pelos jobs de timeout) |
+| Notas | A criação no checkout escreve a linha de histórico `null → PAYMENT_PENDING` mas **não** publica o evento (não é uma transição; `previousStatus` nunca é nulo). A fonte completa e ordenada do histórico é a tabela `order_status_history` (V058, *append-only*, `GET /api/v1/orders/{id}/history`), não o registo de publicações (as concluídas são apagadas ao fim de 7 dias). Os efeitos síncronos dos ciclos C1/C2 (W3-A) continuam *hooks* (ver abaixo); os estados intermédios da entrega passaram a chegar à encomenda por esses *hooks* (`onPickedUp`, `onOutForDelivery`), não por eventos. |
 
 ## Eventos previstos (ainda não implementados)
 
-Do ADR-0002 e do registo de lacunas (LAC-25, LAC-47) — entram aqui quando forem implementados: `PaymentConfirmed`, `RefundCompleted` (`payment` → `order`), `OrderReadyForPickup`/`OrderCancelled` (`order` → `delivery`), `DeliveryPickedUp`/`DeliveryCompleted`/`DeliveryFailed` (`delivery` → `order`).
+Do ADR-0002 e do registo de lacunas (LAC-25, LAC-47) — entram aqui quando forem implementados: `PaymentConfirmed`, `RefundCompleted` (`payment` → `order`), `OrderReadyForPickup`/`OrderCancelled` (`order` → `delivery`), `DeliveryPickedUp`/`DeliveryCompleted`/`DeliveryFailed` (`delivery` → `order`). Desde W4-A, `OrderReadyForPickup`/`OrderCancelled` são cobertos por `OrderStatusChanged` (filtrar por `newStatus`); um evento de pagamento (`PaymentStatusChanged`) não foi criado — o histórico de pagamento está em `payment_status_history` (V058).
 
 **Decisão W3-A (2026-10-29):** os ciclos `order↔payment` (C1) e `order↔delivery` (C2) foram quebrados **sem** estes eventos. Os efeitos que eles transportariam têm hoje de ser atómicos com o produtor (regra de ordem de *locks* nos caminhos de dinheiro; estado da entrega + estado da encomenda + ciclo de stock como uma invariante; `order_not_deliverable` verificado antes de qualquer efeito), por isso continuam síncronos através de interfaces declaradas pelo módulo de baixo e implementadas por `order`:
 

@@ -1,17 +1,14 @@
 import { useState, FormEvent } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { customerRegistrationService, keycloakService } from '@/lib/api/services'
-import { setUser } from '@/store/auth-slice'
+import { customerRegistrationService } from '@/lib/api/services'
+import { authSession } from '@/features/auth/authSession'
+import { safeRedirect } from '@/features/auth/session'
 import { PASSWORD_POLICY_HINT, passwordPolicyErrors, registrationErrorMessage } from '@/lib/password-policy'
-import type { AppDispatch } from '@/store'
 
 export default function RegisterPage() {
   const [params] = useSearchParams()
-  const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  const redirect = params.get('redirect') ?? '/'
+  const redirect = safeRedirect(params.get('redirect'))
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -38,14 +35,19 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
+      // The backend creates the Keycloak user + customer profile (password policy enforced there).
       await customerRegistrationService.register({ firstName, lastName, email, password })
-      // Auto-login after registration
-      const { access_token, profile } = await keycloakService.login(email, password)
-      dispatch(setUser({ access_token, profile }))
-      navigate(redirect, { replace: true })
     } catch (err) {
       setError(registrationErrorMessage(err))
-    } finally {
+      setLoading(false)
+      return
+    }
+    // The app never exchanges the password for tokens itself (no ROPC): sign in through the
+    // Keycloak login page (PKCE), pre-filled with the new account's email.
+    try {
+      await authSession.login(redirect, email)
+    } catch {
+      setError('Conta criada. Não foi possível abrir o início de sessão — usa "Entrar".')
       setLoading(false)
     }
   }

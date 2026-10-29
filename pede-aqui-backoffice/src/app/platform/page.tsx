@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { enterTenant, logout } from "@/store/slices/auth-slice";
+import { useAppSelector } from "@/store/hooks";
+import { logout, useTenantSwitch } from "@/lib/auth/client";
 import { platformService, tenantService } from "@/lib/api/services";
 import type { PlatformStats, Tenant } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ function StatCard({ icon: Icon, label, value, sub }: {
 
 export default function PlatformPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const tenantSwitch = useTenantSwitch();
   const user = useAppSelector((s) => s.auth.user);
 
   const [stats, setStats] = useState<PlatformStats | null>(null);
@@ -118,17 +118,18 @@ export default function PlatformPage() {
     }
   }
 
-  function handleEnterTenant(tenant: Tenant) {
-    dispatch(enterTenant({ tenantId: tenant.id, tenantName: tenant.name }));
-    router.push("/");
+  async function handleEnterTenant(tenant: Tenant) {
+    try {
+      // Server-side impersonation cookie + query-cache reset (LAC-10), then into the tenant.
+      await tenantSwitch.enter(tenant.id, tenant.name);
+      router.push("/");
+    } catch {
+      setError("Não foi possível entrar no tenant.");
+    }
   }
 
   function handleLogout() {
-    sessionStorage.removeItem("auth_token");
-    sessionStorage.removeItem("tenant_id");
-    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Strict";
-    dispatch(logout());
-    router.push("/login");
+    logout();
   }
 
   return (

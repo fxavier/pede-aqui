@@ -18,7 +18,7 @@ The first release uses mock/static data generated from the uploaded ZIP. React Q
 ## Future API integration
 
 1. Set `NEXT_PUBLIC_ENABLE_MOCKS=false`.
-2. Set `NEXT_PUBLIC_API_BASE_URL` to the backend/API gateway URL.
+2. Set `API_BASE_URL` (server-side; the browser calls the same-origin `/api/bff` proxy) to the backend/API gateway URL, plus `AUTH_SECRET`/`AUTH_URL`/`AUTH_KEYCLOAK_*`.
 3. Replace the placeholder comments in `src/features/screens/screen-service.ts` with calls through `src/lib/http-client.ts`.
 4. Add authentication token injection from the auth state or NextAuth/Keycloak session.
 
