@@ -4,7 +4,7 @@
 # in the live OpenAPI and runs a happy path per feature against the local dev stack
 # (docker compose postgres/keycloak/minio + `mvn spring-boot:run`, dev profile only).
 #
-# Env overrides: BASE_URL, KEYCLOAK_URL, SMOKE_USER, SMOKE_PASS, SMOKE_TENANT_ID.
+# Env overrides: BASE_URL, KEYCLOAK_URL, KEYCLOAK_CLIENT_ID, SMOKE_USER, SMOKE_PASS, SMOKE_TENANT_ID.
 # Set SPEC002_SMOKE_OPENAPI_ONLY=1 to skip the authenticated happy-path section.
 
 set -euo pipefail
@@ -12,7 +12,8 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8081}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-delivery}"
-KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-delivery-app}"
+# Empty = use the dev-only ROPC client from scripts/lib/keycloak-dev-ropc-client.sh (delivery-app is PKCE-only).
+KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-}"
 # Seeded dev realm platform admin (keycloak/delivery-realm.json); never use against prod.
 SMOKE_USER="${SMOKE_USER:-admin}"
 SMOKE_PASS="${SMOKE_PASS:-Admin12345}"
@@ -61,7 +62,15 @@ if [[ "${SPEC002_SMOKE_OPENAPI_ONLY:-0}" == "1" ]]; then
   exit 0
 fi
 
-note "Fetching admin token from Keycloak (${KEYCLOAK_URL}, realm ${KEYCLOAK_REALM})"
+if [[ -z "$KEYCLOAK_CLIENT_ID" ]]; then
+  # delivery-app no longer allows ROPC (LAC-10): use/create the local dev-only password-grant client.
+  # shellcheck source=lib/keycloak-dev-ropc-client.sh
+  source "$(dirname "${BASH_SOURCE[0]}")/lib/keycloak-dev-ropc-client.sh"
+  KEYCLOAK_CLIENT_ID="$(ensure_dev_ropc_client "$KEYCLOAK_URL" "$KEYCLOAK_REALM")" \
+    || fail "could not ensure the dev ROPC client (local Keycloak with compose bootstrap admin required)"
+fi
+
+note "Fetching admin token from Keycloak (${KEYCLOAK_URL}, realm ${KEYCLOAK_REALM}, client ${KEYCLOAK_CLIENT_ID})"
 TOKEN_JSON="$(curl -sf -X POST "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password&client_id=${KEYCLOAK_CLIENT_ID}&username=${SMOKE_USER}&password=${SMOKE_PASS}")" \
