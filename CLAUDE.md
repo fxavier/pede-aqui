@@ -190,6 +190,7 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 - Migrations live in `backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`. (`backend/backend/` is a stray build-artifact dir, not the module.)
 - `ddl-auto: validate` — Hibernate never mutates schema; always create a migration for schema changes.
 - PostGIS extension enabled (used for geo/zone features). `customer_addresses.location` is `geography(Point,4326)` (V046, INC-12 expand phase): the app still writes `latitude`/`longitude` and a DB trigger derives `location`; the contract step (drop lat/lng) is pending.
+- Referential integrity (LAC-58, V050/V051): `customer_id` columns (orders, carts, customer_addresses, promotion_redemption) reference `app_user_profiles(id)` — the profile id, not the Keycloak subject — and every `vendor_id`, `courier_id`, `cart_id`, `category_id`, `operating_zone_id`, promotion target and `verticals.tenant_id` has a validated FK (`fk_<table>_<column>`, ON DELETE NO ACTION). Deliberately without FK: `orders.delivery_address_id` (address snapshot), `orders.quote_*_id` (historical quote ids), `customer_favorite_vendors.customer_id` (stores the Keycloak sub), `ratings.rater_user_id`, and the VARCHAR user ids in `audit_logs`/`support_tickets`. SQL-seeded tests must insert real parents (`common/TestParents` in tests) and delete children before parents. New FKs on existing tables: add `NOT VALID` in one migration (with an orphan report in its header) and `VALIDATE CONSTRAINT` in the next.
 
 ### Caching
 

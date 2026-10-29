@@ -28,6 +28,7 @@ class AddressMigrationTest {
     private static final String DATABASE = "address_migration_test";
     private static final UUID TENANT = UUID.randomUUID();
     private static final UUID CUSTOMER = UUID.randomUUID();
+    private static final UUID VENDOR = UUID.randomUUID();
 
     private static String jdbcUrl;
 
@@ -55,6 +56,11 @@ class AddressMigrationTest {
         try (Connection c = connection()) {
             Timestamp now = Timestamp.from(Instant.now());
             exec(c, "INSERT INTO tenants (id, name, slug, status, default_currency, created_at, updated_at) VALUES (?, 'Addr', 'addr', 'ACTIVE', 'MZN', ?, ?)", TENANT, now, now);
+            // Real parents: V050/V051 (LAC-58) add and validate FKs to app_user_profiles and vendors.
+            exec(c, "INSERT INTO app_user_profiles (id, tenant_id, keycloak_user_id, email, display_name, status, created_at, updated_at) "
+                    + "VALUES (?, ?, 'kc-addr-customer', 'addr@example.test', 'Ana', 'ACTIVE', ?, ?)", CUSTOMER, TENANT, now, now);
+            exec(c, "INSERT INTO vendors (id, tenant_id, name, status, verification_status, created_at, updated_at) "
+                    + "VALUES (?, ?, 'Loja', 'ACTIVE', 'APPROVED', ?, ?)", VENDOR, TENANT, now, now);
             maputo = address(c, -25.9692, 32.5732);
             noCoordinates = address(c, null, null);
             halfCoordinates = address(c, -25.9, null);
@@ -124,7 +130,7 @@ class AddressMigrationTest {
         exec(c, "INSERT INTO orders (id, tenant_id, reference, customer_id, vendor_id, status, subtotal, fees, taxes, discounts, total, "
                 + "checkout_idempotency_key, delivery_confirmation_code_hash, created_at, updated_at) "
                 + "VALUES (?, ?, ?, ?, ?, 'PREPARING', 10, 0, 0, 0, 10, ?, 'hash', ?, ?)",
-                order, TENANT, "REF-" + order, CUSTOMER, UUID.randomUUID(), order.toString(), now, now);
+                order, TENANT, "REF-" + order, CUSTOMER, VENDOR, order.toString(), now, now);
         return order;
     }
 

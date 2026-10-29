@@ -29,6 +29,7 @@ class LegacyOrderDataFixMigrationTest {
     private static final String DATABASE = "legacy_data_fix_test";
     private static final UUID TENANT = UUID.randomUUID();
     private static final UUID VENDOR = UUID.randomUUID();
+    private static final UUID CUSTOMER = UUID.randomUUID();
     private static final String PIN = "123456";
 
     private static String jdbcUrl;
@@ -135,6 +136,23 @@ class LegacyOrderDataFixMigrationTest {
     private void seedCatalog(Connection c) throws SQLException {
         Timestamp now = Timestamp.from(Instant.now());
         exec(c, "INSERT INTO tenants (id, name, slug, status, default_currency, created_at, updated_at) VALUES (?, 'Legacy', 'legacy', 'ACTIVE', 'MZN', ?, ?)", TENANT, now, now);
+        // Real parents: V050/V051 (LAC-58) add and validate FKs from orders, products, inventory and deliveries.
+        exec(c, "INSERT INTO vendors (id, tenant_id, name, status, verification_status, created_at, updated_at) VALUES (?, ?, 'Loja', 'ACTIVE', 'APPROVED', ?, ?)",
+                VENDOR, TENANT, now, now);
+        exec(c, "INSERT INTO app_user_profiles (id, tenant_id, keycloak_user_id, email, display_name, status, created_at, updated_at) VALUES (?, ?, 'kc-legacy-customer', 'customer@example.test', 'Customer', 'ACTIVE', ?, ?)",
+                CUSTOMER, TENANT, now, now);
+    }
+
+    /** One courier per delivery: an active delivery per courier is UNIQUE (V035). */
+    private UUID courier(Connection c) throws SQLException {
+        Timestamp now = Timestamp.from(Instant.now());
+        UUID profile = UUID.randomUUID();
+        UUID courier = UUID.randomUUID();
+        exec(c, "INSERT INTO app_user_profiles (id, tenant_id, keycloak_user_id, email, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'Courier', 'ACTIVE', ?, ?)",
+                profile, TENANT, "kc-" + profile, profile + "@example.test", now, now);
+        exec(c, "INSERT INTO couriers (id, tenant_id, user_profile_id, verification_status, available, created_at, updated_at) VALUES (?, ?, ?, 'APPROVED', TRUE, ?, ?)",
+                courier, TENANT, profile, now, now);
+        return courier;
     }
 
     private UUID sku(Connection c, String code, int available, int reserved) throws SQLException {
@@ -160,11 +178,11 @@ class LegacyOrderDataFixMigrationTest {
         exec(c, "INSERT INTO orders (id, tenant_id, reference, customer_id, vendor_id, status, subtotal, fees, taxes, discounts, total, "
                 + "checkout_idempotency_key, delivery_confirmation_code_hash, delivery_confirmation_code_display, created_at, updated_at, stock_status) "
                 + "VALUES (?, ?, ?, ?, ?, ?, 10, 0, 0, 0, 10, ?, 'legacy-hash', ?, ?, ?, ?)",
-                order, TENANT, "REF-" + order, UUID.randomUUID(), VENDOR, status, order.toString(), PIN, now, now, stockStatus);
+                order, TENANT, "REF-" + order, CUSTOMER, VENDOR, status, order.toString(), PIN, now, now, stockStatus);
         exec(c, "INSERT INTO order_items (id, order_id, tenant_id, sku_id, product_name_snapshot, sku_name_snapshot, unit_price_snapshot, quantity, line_total, created_at) "
                 + "VALUES (?, ?, ?, ?, 'P', 'S', 10, ?, ?, ?)", UUID.randomUUID(), order, TENANT, sku, quantity, 10 * quantity, now);
         exec(c, "INSERT INTO deliveries (id, tenant_id, order_id, courier_id, status, confirmation_code_hash, confirmation_attempts, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, 'legacy-hash', 0, ?, ?)", UUID.randomUUID(), TENANT, order, UUID.randomUUID(), deliveryStatus, now, now);
+                + "VALUES (?, ?, ?, ?, ?, 'legacy-hash', 0, ?, ?)", UUID.randomUUID(), TENANT, order, courier(c), deliveryStatus, now, now);
         return order;
     }
 

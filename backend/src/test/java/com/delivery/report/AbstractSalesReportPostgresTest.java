@@ -3,6 +3,7 @@ package com.delivery.report;
 import static org.mockito.Mockito.mock;
 
 import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.TestParents;
 import com.delivery.common.security.TenantContext;
 import com.delivery.report.mapper.SalesReportMapper;
 import com.delivery.report.repository.SalesReportRepository;
@@ -211,7 +212,7 @@ abstract class AbstractSalesReportPostgresTest {
                                     checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?::numeric, ?::numeric, ?::numeric, 0, ?::numeric, ?::numeric, ?, ?, '123456', ?, ?)""",
-                id, tenantId, "ref-" + id, UUID.randomUUID(), vendorId, status,
+                id, tenantId, "ref-" + id, TestParents.customer(jdbcTemplate, tenantId), vendorId, status,
                 subtotal, fees, taxes, discountTotal, total, "key-" + id, "hash-" + id,
                 Timestamp.from(createdAt), Timestamp.from(createdAt));
     }

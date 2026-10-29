@@ -2,6 +2,7 @@ package com.delivery.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.delivery.common.TestParents;
 import com.delivery.report.dto.ReportInterval;
 import com.delivery.report.dto.SalesReportType;
 import com.delivery.report.service.ReportScope;
@@ -78,12 +79,13 @@ class SalesReportCsvExportTest extends AbstractSalesReportPostgresTest {
         UUID vendor = UUID.randomUUID();
         insertTenant(tenant, "Bulk Tenant");
         insertVendor(vendor, tenant, "Bulk Vendor");
+        UUID customer = TestParents.customer(jdbcTemplate, tenant);
         Instant start = Instant.parse("2025-01-01T12:00:00Z");
         List<Object[]> batch = new ArrayList<>();
         for (int i = 0; i < 250; i++) {
             UUID orderId = UUID.randomUUID();
             Timestamp createdAt = Timestamp.from(start.plus(i, ChronoUnit.DAYS));
-            batch.add(new Object[] {orderId, tenant, "ref-" + orderId, UUID.randomUUID(), vendor,
+            batch.add(new Object[] {orderId, tenant, "ref-" + orderId, customer, vendor,
                     "PAYMENT_CONFIRMED", "key-" + orderId, "hash-" + orderId, createdAt, createdAt});
         }
         jdbcTemplate.batchUpdate("""
