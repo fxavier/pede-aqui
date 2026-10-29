@@ -3,11 +3,12 @@ package com.delivery.order.mapper;
 import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.security.TenantContext;
+import com.delivery.delivery.api.DeliveryAddressResponse;
 import com.delivery.order.dto.AdminOrderResponse;
-import com.delivery.order.dto.DeliveryAddressResponse;
 import com.delivery.order.dto.OrderItemResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
+import com.delivery.order.entity.DeliveryAddressSnapshot;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderItem;
 import java.util.List;
@@ -29,11 +30,20 @@ public class OrderMapper {
         this.tenantContext = tenantContext;
     }
 
+    /** Maps the order's checkout address snapshot to the API shape; null in, null out (orders placed without an address). */
+    public static DeliveryAddressResponse toAddressResponse(DeliveryAddressSnapshot s) {
+        if (s == null) {
+            return null;
+        }
+        return new DeliveryAddressResponse(s.getRecipientName(), s.getPhone(), s.getLine1(), s.getLine2(), s.getCity(), s.getState(),
+                s.getPostalCode(), s.getLatitude(), s.getLongitude(), s.getInstructions());
+    }
+
     /** Customer-only response that includes delivery code and delivery address - only for order owners */
     public OrderResponse toCustomerResponse(Order order) {
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                null, null, null, null, DeliveryAddressResponse.from(order.getDeliveryAddress()), order.getCancellationReason());
+                null, null, null, null, toAddressResponse(order.getDeliveryAddress()), order.getCancellationReason());
     }
 
     /** Customer-only response with names - only for order owners */
@@ -43,7 +53,7 @@ public class OrderMapper {
                 .toList();
         return new OrderResponse(order.getId(), order.getReference(), order.getStatus(),
                 order.getTotal(), order.getDeliveryConfirmationCodeDisplay(),
-                customerName, vendorName, order.getCreatedAt(), items, DeliveryAddressResponse.from(order.getDeliveryAddress()),
+                customerName, vendorName, order.getCreatedAt(), items, toAddressResponse(order.getDeliveryAddress()),
                 order.getCancellationReason());
     }
 

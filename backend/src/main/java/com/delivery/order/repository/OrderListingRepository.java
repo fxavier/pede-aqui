@@ -4,6 +4,7 @@ import com.delivery.order.entity.Order;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -32,7 +33,16 @@ public interface OrderListingRepository extends Repository<Order, UUID> {
     List<Order> findVendorKeysetPage(@Param("tenantId") UUID tenantId, @Param("vendorId") UUID vendorId,
                                      @Param("createdAt") Instant createdAt, @Param("id") UUID id, Pageable limit);
 
-    /** Platform super-admin view across tenants. */
+    /** Offset/capped page of one tenant (ordering comes from the Pageable). */
+    Page<Order> findByTenantId(UUID tenantId, Pageable pageable);
+
+    /** Offset/capped page of one vendor of a tenant (ordering comes from the Pageable). */
+    Page<Order> findByTenantIdAndVendorId(UUID tenantId, UUID vendorId, Pageable pageable);
+
+    /** Offset/capped page across tenants: platform super-admin without X-Tenant-Id only. */
+    Page<Order> findAllBy(Pageable pageable);
+
+    /** Platform super-admin view across tenants (no X-Tenant-Id). */
     @Query("""
             select o from Order o
              where o.createdAt < :createdAt or (o.createdAt = :createdAt and o.id < :id)

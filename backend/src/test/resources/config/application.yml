@@ -4,6 +4,9 @@ spring:
     # No Redis in the test suite; caching is covered by SearchServiceCachingTest and VendorSearchCacheRedisTest.
     type: none
 app:
+  rate-limit:
+    # LAC-11: per-instance buckets (no Redis in the suite); the Redis path is covered by RateLimiterRedisTest.
+    backend: local
   jobs:
     # LAC-46: no background scheduler in tests; job beans exist and tests call run()/reconcile() directly.
     enabled: false

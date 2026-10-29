@@ -87,8 +87,10 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "Accept", "X-Tenant-Id", CorrelationIdFilter.CORRELATION_ID_HEADER));
         // Browsers can only read the correlation id (to show it in error toasts / support tickets) if exposed;
-        // X-Truncated (LAC-14) tells a client that a capped legacy list endpoint returned only the first 200 rows.
-        config.setExposedHeaders(List.of(CorrelationIdFilter.CORRELATION_ID_HEADER, com.delivery.common.pagination.CappedList.TRUNCATED_HEADER));
+        // X-Truncated (LAC-14) tells a client that a capped legacy list endpoint returned only the first 200 rows;
+        // Retry-After (LAC-11) is not CORS-safelisted, so a 429 would hide it from browser clients otherwise.
+        config.setExposedHeaders(List.of(CorrelationIdFilter.CORRELATION_ID_HEADER,
+                com.delivery.common.pagination.CappedList.TRUNCATED_HEADER, "Retry-After"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

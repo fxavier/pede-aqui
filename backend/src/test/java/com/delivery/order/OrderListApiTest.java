@@ -44,7 +44,7 @@ class OrderListApiTest {
 
     @Test
     void legacyListStillReturnsAJsonArray() throws Exception {
-        when(orderService.listForCurrentContext()).thenReturn(new com.delivery.common.pagination.CappedList<>(List.of(), false));
+        when(listingService.listForCurrentContext()).thenReturn(new com.delivery.common.pagination.CappedList<>(List.of(), false));
 
         mockMvc.perform(get("/api/v1/orders").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_VENDOR_ADMIN"))))
                 .andExpect(status().isOk())
@@ -53,7 +53,7 @@ class OrderListApiTest {
 
     @Test
     void pagedListForwardsPagingParamsForVendorStaff() throws Exception {
-        when(orderService.listPageForCurrentContext(2, 50)).thenReturn(new AdminOrderPageResponse(List.of(), 2, 50, 0));
+        when(listingService.listPageForCurrentContext(2, 50)).thenReturn(new AdminOrderPageResponse(List.of(), 2, 50, 0));
 
         mockMvc.perform(get("/api/v1/orders/page").param("page", "2").param("size", "50")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_VENDOR_STAFF"))))
@@ -62,17 +62,17 @@ class OrderListApiTest {
                 .andExpect(jsonPath("$.page").value(2))
                 .andExpect(jsonPath("$.size").value(50));
 
-        verify(orderService).listPageForCurrentContext(2, 50);
+        verify(listingService).listPageForCurrentContext(2, 50);
     }
 
     @Test
     void pagedListDefaultsToFirstPageOfTwenty() throws Exception {
-        when(orderService.listPageForCurrentContext(0, 20)).thenReturn(new AdminOrderPageResponse(List.of(), 0, 20, 0));
+        when(listingService.listPageForCurrentContext(0, 20)).thenReturn(new AdminOrderPageResponse(List.of(), 0, 20, 0));
 
         mockMvc.perform(get("/api/v1/orders/page").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPS"))))
                 .andExpect(status().isOk());
 
-        verify(orderService).listPageForCurrentContext(0, 20);
+        verify(listingService).listPageForCurrentContext(0, 20);
     }
 
     @Test
@@ -82,6 +82,6 @@ class OrderListApiTest {
         mockMvc.perform(get("/api/v1/orders").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER"))))
                 .andExpect(status().isForbidden());
 
-        verifyNoInteractions(orderService);
+        verifyNoInteractions(listingService);
     }
 }

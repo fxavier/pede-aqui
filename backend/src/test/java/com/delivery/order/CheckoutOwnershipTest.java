@@ -20,7 +20,7 @@ import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.CheckoutDiscountResolver;
+import com.delivery.marketing.api.CheckoutDiscountResolver;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.service.PaymentService;
@@ -59,7 +59,7 @@ class CheckoutOwnershipTest {
                 mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class),
                 mock(com.delivery.order.service.OrderStockService.class),
                 mock(com.delivery.cart.service.CartService.class), mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private void stubCaller() {

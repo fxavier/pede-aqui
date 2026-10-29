@@ -15,8 +15,10 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.delivery.service.DeliveryCodeHasher;
-import com.delivery.delivery.service.DeliveryRetirementService;
+import com.delivery.delivery.api.DeliveryRetirementService;
 import com.delivery.inventory.service.InventoryService;
+import com.delivery.marketing.api.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscountResolver;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
@@ -34,7 +36,7 @@ import com.delivery.vendor.repository.VendorRepository;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.payment.service.PaymentService;
 import com.delivery.payment.dto.RefundResponse;
-import com.delivery.sales.service.SalesAccessGuard;
+import com.delivery.order.api.CustomerPiiMasking;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.cart.service.CartService;
 import com.delivery.cart.service.PricingService;
@@ -94,7 +96,8 @@ public class OrderService {
     private final SkuRepository skuRepository;
     private final ProductRepository productRepository;
     private final CheckoutDiscountResolver discountResolver;
-    private final SalesAccessGuard accessGuard;
+    private final MerchantScopeGuard accessGuard;
+    private final CustomerPiiMasking piiMasking;
     private final DeliveryCodeHasher deliveryCodeHasher;
     private final ApplicationEventPublisher eventPublisher;
     private final OrderStockService orderStockService;
@@ -131,9 +134,10 @@ public class OrderService {
         this.skuRepository = skuRepository;
         this.productRepository = productRepository;
         this.discountResolver = discountResolver;
-        // SalesAccessGuard is a stateless facade over the shared MerchantScopeGuard (ADR-0001 step 3); building it
-        // here reuses the sales scoping rules without a second injected bean.
-        this.accessGuard = new SalesAccessGuard(merchantScopeGuard);
+        // Merchant scope comes straight from vendor.api; the SUPPORT masking rule is the order module's own
+        // CustomerPiiMasking, shared with the sales lens (ADR-0002 C5: order no longer depends on sales).
+        this.accessGuard = merchantScopeGuard;
+        this.piiMasking = new CustomerPiiMasking(merchantScopeGuard);
         this.deliveryCodeHasher = deliveryCodeHasher;
     }
 
@@ -167,10 +171,10 @@ public class OrderService {
         Map<UUID, String> vendorNames = vendorRepository.findAllById(vendorIds).stream()
                 .collect(Collectors.toMap(Vendor::getId, Vendor::getName));
         // Same PII rule as the sales lens: only a pure SUPPORT caller gets masked customer names.
-        boolean maskPii = accessGuard.shouldMaskCustomerPii();
+        boolean maskPii = piiMasking.shouldMaskCustomerPii();
         return orders.stream()
                 .map(o -> mapper.toAdminResponse(o,
-                        maskPii ? SalesAccessGuard.maskName(customerNames.getOrDefault(o.getCustomerId(), "Unknown"))
+                        maskPii ? CustomerPiiMasking.maskName(customerNames.getOrDefault(o.getCustomerId(), "Unknown"))
                                 : customerNames.getOrDefault(o.getCustomerId(), "Unknown"),
                         vendorNames.getOrDefault(o.getVendorId(), "Unknown")))
                 .toList();

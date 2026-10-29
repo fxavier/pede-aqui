@@ -1,5 +1,6 @@
 package com.delivery.cart.entity;
 
+import com.delivery.marketing.api.PromotionBasket;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,7 +15,7 @@ import java.util.UUID;
 /** Represents one SKU selection inside a cart. */
 @Entity
 @Table(name = "cart_items")
-public class CartItem {
+public class CartItem implements PromotionBasket.Line {
     @Id
     private UUID id;
     @ManyToOne(fetch = FetchType.LAZY)

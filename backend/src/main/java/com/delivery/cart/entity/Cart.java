@@ -1,5 +1,6 @@
 package com.delivery.cart.entity;
 
+import com.delivery.marketing.api.PromotionBasket;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +17,7 @@ import java.util.UUID;
 /** Represents a customer's active single-vendor cart. */
 @Entity
 @Table(name = "carts")
-public class Cart {
+public class Cart implements PromotionBasket {
     @Id
     private UUID id;
     @Column(name = "tenant_id", nullable = false)

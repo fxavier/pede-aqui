@@ -31,7 +31,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
 import com.delivery.order.service.OrderStockService;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
@@ -88,7 +88,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -213,9 +213,10 @@ class VendorOrderScopeTest {
         when(refundRepository.save(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
         when(refundRepository.saveAndFlush(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
         when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
-        PaymentService realPayments = new PaymentService(paymentRepository, orderRepository, refundRepository,
-                mock(AuditLogService.class), new PaymentMapper(), tenantContext, userProfileRepository,
-                new PaymentMockConfirmationProperties(), mock(DeliveryRepository.class), mock(OrderStockService.class), org.mockito.Mockito.mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+        AuditLogService paymentAudit = mock(AuditLogService.class);
+        PaymentService realPayments = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), paymentAudit), refundRepository,
+                paymentAudit, new PaymentMapper(), tenantContext, userProfileRepository,
+                new PaymentMockConfirmationProperties());
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
@@ -223,7 +224,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 

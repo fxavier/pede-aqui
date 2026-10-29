@@ -22,9 +22,9 @@ Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.Deliver
 Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Upload, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Upload, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Upload, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 @enduml

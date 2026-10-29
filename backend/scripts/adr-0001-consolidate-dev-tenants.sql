@@ -10,7 +10,7 @@
 -- CONSOLIDATED, optionally restricted to an explicit list):
 --   1. verifies the legacy tenant has exactly ONE vendor (otherwise it is skipped and reported);
 --   2. verifies no UNIQUE (tenant_id, …) collision would occur after moving rows into the operator tenant
---      (categories.slug, skus.sku_code, app_user_profiles.keycloak_user_id / nif, verticals.slug, coupons.code,
+--      (categories.slug, app_user_profiles.keycloak_user_id / nif, verticals.slug, coupons.code,
 --      promotion.code, orders.checkout_idempotency_key, payments.idempotency_key, refunds.idempotency_key,
 --      couriers.user_profile_id, inventory_items.sku_id, deliveries.order_id …) — on any collision the whole run
 --      aborts (nothing is guessed; fix the data, re-run);
@@ -88,7 +88,8 @@ DECLARE
     -- UNIQUE (tenant_id, col) constraints that can collide when two tenants merge.
     unique_checks TEXT[][] := ARRAY[
         ARRAY['categories', 'slug'],
-        ARRAY['skus', 'sku_code'],
+        -- skus.sku_code is unique per (tenant, vendor) since V056 and a legacy tenant moves with its own single
+        -- vendor, so SKU codes can no longer collide with the stores of the operator: no check needed.
         ARRAY['app_user_profiles', 'keycloak_user_id'],
         ARRAY['app_user_profiles', 'nif'],
         ARRAY['verticals', 'slug'],

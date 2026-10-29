@@ -9,9 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.delivery.auth.controller.CustomerRegistrationController;
-import com.delivery.auth.controller.MerchantRegistrationController;
+import com.delivery.tenant.controller.MerchantRegistrationController;
 import com.delivery.auth.service.CustomerRegistrationService;
-import com.delivery.auth.service.MerchantRegistrationService;
+import com.delivery.tenant.service.MerchantRegistrationService;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.SecurityConfig;
 import org.junit.jupiter.api.Test;

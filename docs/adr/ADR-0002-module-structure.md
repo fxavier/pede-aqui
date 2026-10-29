@@ -164,6 +164,54 @@ O Spring Modulith dá precisamente as duas coisas que faltam — fronteiras veri
 - `ModularityTest` com *baseline* versionado (`backend/src/test/resources/modulith/violations-baseline.txt`): os ciclos são registados como arestas dentro de componentes fortemente ligados (o ArchUnit trunca a lista de ciclos aos 100 caminhos) e os acessos a internos como `<módulo> -> <tipo>`. Falha em entradas novas e em entradas obsoletas. Com `common` OPEN, os ciclos `common↔tenant` e `common↔auth` deixam de contar como ciclos de módulo.
 - Primeiro evento: `order.OrderStatusChanged` (ver `docs/architecture/EVENT-CATALOG.md`).
 
+**2026-10-29 — W3-A, quebra dos ciclos (LAC-47, restante):**
+
+Resultado: o grafo de módulos ficou **acíclico** — C1–C9, `cart↔geo` e o transitivo `tenant→dispatch→order→cart→tenant` desapareceram; o *baseline* passou de 248 linhas (60 `cycle-edge` + 188 `non-exposed`) para 140 (0 `cycle-edge` + 140 `non-exposed`). Nenhuma linha nova (o `-Dmodulith.baseline.write=true` só apagou linhas). Dependências finais (sem `common`):
+
+```text
+auth -> (nenhum)                 upload, rating, support -> (nenhum)
+vendor -> auth upload            inventory -> vendor
+catalog -> inventory upload vendor
+geo -> catalog vendor            tenant -> auth geo vendor
+marketing -> catalog vendor      customer -> auth geo
+notification -> auth             payment -> auth
+delivery -> upload               finance -> payment
+cart -> auth catalog geo inventory marketing tenant vendor
+order -> auth cart catalog customer delivery inventory marketing notification payment vendor
+dispatch -> auth delivery order upload
+sales -> auth catalog delivery finance notification order payment vendor
+dashboard -> auth delivery dispatch finance order payment tenant vendor
+report -> vendor
+```
+
+| Ciclo | Como foi quebrado | Direção final |
+|---|---|---|
+| C5 `order↔sales` | A regra de mascaramento de PII passou para `order.api.CustomerPiiMasking`; `OrderService`/`OrderListingService` usam `vendor.api.MerchantScopeGuard` diretamente; `SalesAccessGuard` delega em ambos (API pública inalterada). | `sales → order`, ambos `→ vendor` |
+| C6 `catalog↔inventory` | `InventoryService` usa `MerchantScopeGuard` em vez de `CatalogAccessGuard`, com a **mesma** regra (ADMIN/OPS são *tenant-wide*; não `hasTenantWideRole()`, que inclui FINANCE). O `InventoryApi.initialize` do plano não foi feito: `catalog → inventory` já é a direção certa e o acesso fica no *baseline*. | `catalog → inventory → vendor` |
+| C4 `dispatch↔dashboard` | `calculateCourierEarnings` saiu de `DashboardService` para `dispatch.api.CourierEarnings`, usado por `CourierService` e pelo `DashboardService`. | `dashboard → dispatch` |
+| `tenant→dispatch` (transitivo `tenant→dispatch→order→cart→tenant`) | `PlatformController` (`/api/v1/platform/stats`) mudou para o módulo `dashboard` (agregador entre domínios); as contagens de tenants vêm de `tenant.api.TenantStats`. Caminho, `operationId` e *tag* OpenAPI inalterados. | `dashboard → tenant` |
+| C8 `auth↔tenant` / C9 `auth↔vendor` | `MerchantRegistrationService`, `SubscriptionProvisioningService`, os dois *controllers*, os DTOs e a entidade/repositório `ProvisioningRequest` passaram de `auth` para **`tenant`**. Identidade via `auth.api.UserAccounts` (Keycloak + perfis); vendedor + OWNER via `vendor.api.MerchantOnboarding`; `@PasswordPolicy` exposto como *named interface* `auth.validation`. Mesma transação e mesma compensação (apagar o utilizador Keycloak). **Desvio do plano (C9 → `vendor`)**: o registo procura/cria tenants, logo em `vendor` criaria `vendor→tenant` com `tenant→vendor` (provisioning) — em `tenant` fica acíclico. | `tenant → auth`, `tenant → vendor → auth` |
+| C3 `cart↔marketing` (+ `order→cart→marketing→order`) | `marketing.api.PromotionBasket` (interface neutra: tenant, vendedor, cliente, subtotal, cupão, linhas) substitui `Cart`/`CartItem` no `PromotionResolver`; a entidade `Cart` implementa-a (sem cópia, os valores são sempre os do carrinho). `CheckoutDiscountResolver`/`CheckoutDiscount` passaram de `order.service` para `marketing.api`. | `cart → marketing`, `order → marketing` |
+| `cart↔geo` | `geo.api.DeliveryFeeEstimator` (interface) é implementada pelo motor único `cart.service.PricingService`; `SearchService` depende só da interface. Mover o motor para `geo` foi rejeitado: `tenant → geo` (zonas no `AdminController`, ficheiro do W3-D) fecharia `geo→tenant→geo` por causa das `fee_policies`. | `cart → geo` |
+| C7 `delivery↔dispatch` | `delivery` declara `AssignedCourierResolver` (estafeta do chamador) e `DeliveryRetirementListener` (cancelar o *dispatch job* ativo); `dispatch` implementa-os (`CourierIdentityResolver`, `DispatchJobRetirement`). `DeliveryRetirementService` passou para `delivery.api`. **Desvio do plano:** não se extraiu o módulo `courier` — com os dois *hooks* o ciclo desaparece sem mover entidades/tabelas; fica como opção se `courier` crescer. | `dispatch → delivery` |
+| C2 `order↔delivery` | `delivery.api.DeliveryOrderHooks` (implementado por `order.service.OrderDeliveryHooks`): verificação `order_not_deliverable`, DELIVERED + *commit* de stock, FAILED → CANCELLED + *release*, *commit* no PICKED_UP, morada. `DeliveryAddressResponse` passou para `delivery.api` (schema OpenAPI com o mesmo nome). **Desvio do plano (direção `delivery → order` com eventos):** o *checkout* cria a `Delivery` e a rejeição retira-a na mesma transação, por isso `order → delivery` mantém-se e é `delivery` que deixa de ver `order`. | `order → delivery` |
+| C1 `order↔payment` | `payment.api.PaymentOrderHooks` (implementado por `order.service.OrderPaymentHooks`): dados da encomenda para a confirmação, PAYMENT_CONFIRMED, e os efeitos do reembolso total (REFUNDED + auditoria, retirada da entrega e libertação de stock salvo se a mercadoria já saiu da loja). `payment` deixa também de depender de `delivery`. | `order → payment` |
+
+**Decisões "correção primeiro" (síncrono via `api`, não evento):** nenhum dos efeitos cruzados destes ciclos podia passar a *after-commit* sem mudar comportamento, por isso **não foi introduzido nenhum evento novo** e os eventos previstos (`PaymentConfirmed`, `RefundCompleted`, `DeliveryCompleted`/`DeliveryFailed`, `OrderReadyForPickup`) continuam por fazer:
+- *Reembolso total* (`PaymentService.approveRefund` → `PaymentOrderHooks.onPaymentFullyRefunded`) e *rejeição pelo vendedor* (`OrderService.rejectByVendor` → retirada → *release* → `PaymentService.requestRemainingRefund`): regra de ordem de *locks* (pagamento `FOR UPDATE` → encomenda → entrega/*dispatch* → inventário) e "qualquer falha desfaz tudo" — têm de ser uma transação.
+- *Conclusão/falha da entrega* (`DeliveryOrderHooks`): estado da entrega, estado da encomenda e ciclo de stock (INC-07) são uma invariante; testes (`DeliveryCompletionPostgresIntegrationTest`, `RefundAndOverrideStockPinPostgresTest`) verificam-na logo a seguir à chamada; o `order_not_deliverable` tem de ser verificado **antes** de qualquer efeito.
+- *Confirmação de pagamento* (`PaymentOrderHooks.markPaymentConfirmed`): o cliente vê PAYMENT_CONFIRMED na resposta; um evento abriria uma janela em que o pagamento está confirmado e a encomenda não.
+- *Retirada → cancelamento do dispatch job* (`DeliveryRetirementListener`): liberta o estafeta e as vagas dos índices V035 na mesma transação.
+- *Desconto no checkout* (`CheckoutDiscountResolver`): consome a quota da promoção com `UPDATE` condicional e escreve a `promotion_redemption` antes do *commit* do checkout.
+
+Estes *hooks* são inversão de dependência simples (interface no `api` do módulo de baixo, implementação no de cima, ligada pelo Spring) — não um *command bus*. Quando estes fluxos ganharem estados intermédios (LAC-25) ou um PSP real, os efeitos que puderem ser eventuais passam a eventos.
+
+**O que fica no baseline (140 `non-exposed`, nenhum ciclo):** acessos "para baixo" a entidades/repositórios/serviços internos que não formam ciclo — maiores grupos `order→cart/catalog/payment/delivery` (24), `dashboard→*` (23), `sales→order/payment/…` (20), `cart→catalog/vendor/…` (18), `dispatch→delivery/order` (11), `finance→payment` (8), `marketing→catalog` (6), `tenant→auth/geo` (6, `AdminController`, ficheiro do W3-D), `common→auth/geo/tenant` (3, filtros de tenancy). Removê-los exige fachadas de leitura por módulo (ex.: `payment.api` para *sales/finance/dashboard*, `order.api` de leitura para *sales/dashboard*); é o trabalho que falta para o `verify()` estrito.
+
+Ficheiros de teste: as instâncias de serviços nos testes unitários passaram a ligar as implementações reais dos *hooks* com os mesmos *mocks* (as asserções não mudaram); os testes de *slice* (`@DataJpaTest` + `@Import`) importam as implementações dos *hooks*; os testes do registo/provisioning mudaram para o pacote `com.delivery.tenant`.
+
+**Integração com W3-B/W3-D/W3-C (2026-10-29):** W3-B (`common.ratelimit`) e W3-D não acrescentaram violações. O histórico de encomendas do cliente (W3-C, `order.service.CustomerOrderQueryService`) foi ligado às APIs públicas em vez de repositórios/entidades de outros módulos: perfil do chamador via `auth.api.UserAccounts.profileIdOf`, nomes das lojas via o novo `vendor.api.VendorNames`, morada via `delivery.api.DeliveryAddressResponse` (`OrderMapper.toAddressResponse`). Baseline inalterado (140 `non-exposed`, 0 `cycle-edge`).
+
 ## References
 
 - [AS-IS-ARCHITECTURE.md §4.3 (dependências), §4.4 (eventos/jobs), §13 (AS-12, AS-18), §16 (D2)](../assessment/AS-IS-ARCHITECTURE.md)

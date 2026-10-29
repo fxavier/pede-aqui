@@ -65,7 +65,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ApiProblems.create(
                 exception.getStatus(), exception.getCode(), exception.getMessage(), request);
         ApiProblems.withDetails(problem, exception.getDetails());
-        return ResponseEntity.status(exception.getStatus()).body(problem);
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(exception.getStatus());
+        if (exception instanceof RateLimitedException limited) {
+            response.header(HttpHeaders.RETRY_AFTER, Long.toString(limited.getRetryAfterSeconds()));
+        }
+        return response.body(problem);
     }
 
     /** Unique/foreign-key conflicts become a neutral 409; constraint names and SQL never reach the client (COR-06). */

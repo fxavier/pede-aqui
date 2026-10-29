@@ -83,7 +83,7 @@ class SalesServiceTest {
     private SalesStatusOverrideProperties overrideProperties;
     private SalesService service;
     private com.delivery.order.service.OrderStockService orderStockService;
-    private com.delivery.delivery.service.DeliveryRetirementService deliveryRetirementService;
+    private com.delivery.delivery.api.DeliveryRetirementService deliveryRetirementService;
 
     @BeforeEach
     void setUp() {
@@ -101,7 +101,7 @@ class SalesServiceTest {
         auditLogService = mock(AuditLogService.class);
         tenantContext = mock(TenantContext.class);
         overrideProperties = new SalesStatusOverrideProperties();
-        deliveryRetirementService = mock(com.delivery.delivery.service.DeliveryRetirementService.class);
+        deliveryRetirementService = mock(com.delivery.delivery.api.DeliveryRetirementService.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new SalesService(orderRepository, searchRepository, paymentReadRepository, refundReadRepository,
                 commissionReadRepository, vendorRepository, userProfileRepository, paymentService, notificationService,

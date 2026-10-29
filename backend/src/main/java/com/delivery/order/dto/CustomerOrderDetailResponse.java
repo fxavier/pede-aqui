@@ -1,6 +1,7 @@
 package com.delivery.order.dto;
 
 import com.delivery.common.pricing.DeliveryFeeBasis;
+import com.delivery.delivery.api.DeliveryAddressResponse;
 import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.OrderStatus;
 import java.math.BigDecimal;

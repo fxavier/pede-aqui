@@ -1,7 +1,6 @@
 package com.delivery.order.service;
 
-import com.delivery.auth.entity.AppUserProfile;
-import com.delivery.auth.repository.AppUserProfileRepository;
+import com.delivery.auth.api.UserAccounts;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.pagination.CursorPage;
@@ -10,13 +9,11 @@ import com.delivery.common.pagination.PageLimits;
 import com.delivery.common.security.TenantContext;
 import com.delivery.order.dto.CustomerOrderDetailResponse;
 import com.delivery.order.dto.CustomerOrderSummaryResponse;
-import com.delivery.order.dto.DeliveryAddressResponse;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.CustomerOrderQueryRepository;
-import com.delivery.vendor.entity.Vendor;
-import com.delivery.vendor.repository.VendorRepository;
+import com.delivery.vendor.api.VendorNames;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,16 +34,16 @@ public class CustomerOrderQueryService {
     private static final String UNKNOWN_VENDOR = "Unknown";
 
     private final CustomerOrderQueryRepository repository;
-    private final AppUserProfileRepository userProfileRepository;
-    private final VendorRepository vendorRepository;
+    private final UserAccounts userAccounts;
+    private final VendorNames vendorNames;
     private final OrderMapper mapper;
     private final TenantContext tenantContext;
 
-    public CustomerOrderQueryService(CustomerOrderQueryRepository repository, AppUserProfileRepository userProfileRepository,
-                                     VendorRepository vendorRepository, OrderMapper mapper, TenantContext tenantContext) {
+    public CustomerOrderQueryService(CustomerOrderQueryRepository repository, UserAccounts userAccounts,
+                                     VendorNames vendorNames, OrderMapper mapper, TenantContext tenantContext) {
         this.repository = repository;
-        this.userProfileRepository = userProfileRepository;
-        this.vendorRepository = vendorRepository;
+        this.userAccounts = userAccounts;
+        this.vendorNames = vendorNames;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
     }
@@ -78,7 +75,7 @@ public class CustomerOrderQueryService {
         return new CustomerOrderDetailResponse(order.getId(), order.getReference(), order.getStatus(), order.getCancellationReason(),
                 order.getVendorId(), vendorNames(Set.of(order.getVendorId())).getOrDefault(order.getVendorId(), UNKNOWN_VENDOR),
                 order.getCreatedAt(), order.getItems().stream().map(mapper::toItemResponse).toList(),
-                DeliveryAddressResponse.from(order.getDeliveryAddress()),
+                OrderMapper.toAddressResponse(order.getDeliveryAddress()),
                 // The entity clears the plain PIN when the order is delivered, cancelled or refunded.
                 order.getDeliveryConfirmationCodeDisplay(),
                 order.getSubtotal(), order.getFees(),
@@ -103,13 +100,13 @@ public class CustomerOrderQueryService {
     }
 
     private Map<UUID, String> vendorNames(Set<UUID> vendorIds) {
-        return vendorRepository.findAllById(vendorIds).stream().collect(Collectors.toMap(Vendor::getId, Vendor::getName));
+        return vendorNames.namesOf(vendorIds);
     }
 
     private Optional<UUID> currentCustomerId(UUID tenantId) {
         String keycloakUserId = tenantContext.currentKeycloakUserId()
                 .orElseThrow(() -> new BusinessException("user_required", "Authenticated user is required", HttpStatus.FORBIDDEN));
-        return userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId).map(AppUserProfile::getId);
+        return userAccounts.profileIdOf(tenantId, keycloakUserId);
     }
 
     private UUID tenantId() {

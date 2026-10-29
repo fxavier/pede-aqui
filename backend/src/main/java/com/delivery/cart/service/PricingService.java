@@ -7,6 +7,7 @@ import com.delivery.common.pricing.DeliveryFeeQuote;
 import com.delivery.common.pricing.GeoPoint;
 import com.delivery.common.pricing.PriceQuote;
 import com.delivery.common.pricing.PricingMath;
+import com.delivery.geo.api.DeliveryFeeEstimator;
 import com.delivery.geo.entity.DeliveryFeeRule;
 import com.delivery.geo.repository.DeliveryFeeRuleRepository;
 import com.delivery.tenant.entity.FeePolicy;
@@ -39,7 +40,7 @@ import org.springframework.stereotype.Service;
  * defaults when the tenant has no policy (PLATFORM_DEFAULT). It is never silently zero for a non-empty cart.
  */
 @Service
-public class PricingService {
+public class PricingService implements DeliveryFeeEstimator {
     /** Recorded on every order quote; bump when the formula changes. */
     public static final String ENGINE_VERSION = "pricing-v1";
     // Platform defaults = the pre-INC-13 constants, identical to the V048 seed, so tenants without a policy keep today's totals.
@@ -89,7 +90,9 @@ public class PricingService {
     /**
      * Delivery fee per vendor for search, from {@code origin} (the customer's position; null = unknown → base fee
      * estimate). Same rules and distance function as {@link #quote}, loaded in batch (one query per table).
+     * Implements geo's {@link DeliveryFeeEstimator} (ADR-0002: vendor search reaches the engine without geo -> cart).
      */
+    @Override
     public Map<UUID, DeliveryFeeQuote> estimateDeliveryFees(Collection<Vendor> vendors, GeoPoint origin) {
         if (vendors.isEmpty()) {
             return Map.of();

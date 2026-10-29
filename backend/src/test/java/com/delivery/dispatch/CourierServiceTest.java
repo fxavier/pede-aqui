@@ -19,7 +19,7 @@ import com.delivery.dispatch.repository.CourierDocumentRepository;
 import com.delivery.dispatch.repository.CourierRepository;
 import com.delivery.dispatch.service.CourierService;
 import com.delivery.delivery.repository.DeliveryRepository;
-import com.delivery.dashboard.service.DashboardService;
+import com.delivery.dispatch.api.CourierEarnings;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -46,7 +46,7 @@ class CourierServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class), mock(StoredUploadValidator.class), mock(com.delivery.common.service.AuditLogService.class));
+        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(CourierEarnings.class), mock(StoredUploadValidator.class), mock(com.delivery.common.service.AuditLogService.class));
 
         var eligible = service.eligibleInZone(zoneA);
 
@@ -87,7 +87,7 @@ class CourierServiceTest {
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
                 tenantContext,
-                mock(DashboardService.class),
+                mock(CourierEarnings.class),
                 mock(StoredUploadValidator.class),
                 mock(com.delivery.common.service.AuditLogService.class)
         );
@@ -132,7 +132,7 @@ class CourierServiceTest {
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
                 tenantContext,
-                mock(DashboardService.class),
+                mock(CourierEarnings.class),
                 mock(StoredUploadValidator.class),
                 mock(com.delivery.common.service.AuditLogService.class)
         );

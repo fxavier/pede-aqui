@@ -393,6 +393,68 @@ indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …
 - `POST /api/v1/customers/{customerId}/cart/items` with a `skuId` sold by a vendor other than `vendorId`
   → **422** `sku_vendor_mismatch` (previously the item was added to that vendor's cart).
 
+## W3-B — Distributed rate limiting (LAC-11)
+
+No change to request/response shapes and no OpenAPI change (429 is not documented per operation, as
+before). What clients can observe:
+
+- **429 `rate_limited` now carries `Retry-After`** (whole seconds, ≥ 1) and
+  `details.retryAfterSeconds` (same value). Body otherwise unchanged (problem document, legacy
+  `message` = `Too many requests for sensitive endpoint`). Clients should wait at least `Retry-After`
+  before retrying and must not retry 429 in a tight loop.
+- **Newly limited:** `POST /api/v1/register` and `POST /api/v1/customers/register` — 5 requests per
+  15 minutes per client IP. A registration form that retries on validation errors can hit this;
+  surface the 429 as "too many attempts, try again later".
+- **Limits are now per logical endpoint (route pattern) and account, shared by all backend instances**
+  (Redis). Previously each instance counted 20 requests/minute per user *and exact URI*, so
+  `/deliveries/A/complete` and `/deliveries/B/complete` had separate counters. Defaults per group:
+  delivery PIN completion 10 / 5 min per courier; checkout 10 / min; presigned uploads 30 / min;
+  payments/refunds/sales cancel-refund 20 / min; provisioning 20 / min; deliveries, dispatch, ops,
+  support tickets, admin and `/me` endpoints 120 / min; public catalog/search `GET` 300 / min.
+  Buckets refill continuously (token bucket), so a client that pauses briefly regains capacity.
+- Routes outside these groups are no longer limited (the old substring matcher also limited any
+  path containing `/me`, `/admin`, `/auth`, `/login`, …).
+- Anonymous callers are keyed by the connecting IP; `X-Forwarded-For` is ignored unless the
+  deployment configures `app.rate-limit.trusted-proxies`, so clients cannot obtain fresh buckets by
+  sending that header.
+
+## W3-D — Tenancy leftovers (LAC-16, LAC-14) — 2026-10-29
+
+### SKU code unique per vendor (V056)
+
+- `skus.sku_code` is now unique per **(tenant, vendor, sku_code)** (`uq_skus_tenant_vendor_code`) instead of per
+  tenant (`uq_skus_tenant_code`, dropped). Two stores of the operator may use the same code.
+- `POST /api/v1/catalog/skus` with a code the **same vendor** already uses → **409** `sku_code_conflict`
+  (previously the tenant-wide duplicate surfaced as the neutral 409 `conflict`). A code used only by another
+  vendor is now accepted (201) — that was a 409 before.
+- `skus.vendor_id` is a new column derived by trigger from `products.vendor_id` (not exposed in `SkuResponse`).
+- No response shape changes.
+
+### `GET /api/v1/admin/tenants` — tenant ADMIN sees only its own tenant (behaviour change, security fix)
+
+- Platform super-admin (`ADMIN` without `tenant_id` claim): unchanged — newest 200 tenants, `X-Truncated` when capped.
+- Tenant-scoped `ADMIN` (has a `tenant_id` claim): a **one-element array** with its own tenant (previously every
+  tenant). Chosen over 403 so the array contract and the backoffice consumers stay unchanged; `X-Tenant-Id` is
+  ignored for this caller, as for every non-platform-admin.
+
+### `GET /api/v1/orders`, `/orders/page`, `/orders/cursor` — platform admin impersonation is honoured
+
+- Platform super-admin **with** `X-Tenant-Id` (impersonating): only that tenant's orders (previously every tenant
+  even while impersonating).
+- Platform super-admin **without** `X-Tenant-Id`: unchanged, every tenant.
+- Merchant users (own vendor) and OPS/ADMIN of a tenant (whole tenant): unchanged.
+- `/orders/page` now orders by `(createdAt DESC, id DESC)` (stable tie-break; previously `createdAt DESC` only).
+
+### `GET /api/v1/vendors/{vendorId}/closures` — capped list
+
+- Still a plain array of current/future closures, earliest first, but capped at **200** rows with
+  `X-Truncated: true` when more exist (LAC-14 convention). No consumer is expected to have more than a handful.
+
+### Unchanged on purpose (ADR-0001 step 6 still pending)
+
+- The single-vendor fallback (`app.merchant-scope.single-vendor-fallback-enabled`) and the cross-tenant
+  anonymous/customer browse stay until the step-5 dev-data consolidation is confirmed in every environment.
+
 ## W3-C — Customer order history (LAC-21, history half of LAC-59)
 
 ### `GET /api/v1/me/orders?limit=50&cursor=<opaque>` (new, additive)
