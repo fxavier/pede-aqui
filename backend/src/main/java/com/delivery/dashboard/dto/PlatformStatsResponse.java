@@ -1,4 +1,4 @@
-package com.delivery.tenant.dto;
+package com.delivery.dashboard.dto;
 
 /** Cross-tenant aggregate statistics for the platform super-admin dashboard. */
 public record PlatformStatsResponse(

@@ -42,9 +42,7 @@ cycle-edge: payment -> auth
 cycle-edge: payment -> delivery
 cycle-edge: payment -> order
 cycle-edge: tenant -> auth
-cycle-edge: tenant -> dispatch
 cycle-edge: tenant -> geo
-cycle-edge: tenant -> vendor
 cycle-edge: vendor -> auth
 non-exposed: auth -> com.delivery.tenant.entity.Tenant
 non-exposed: auth -> com.delivery.tenant.repository.TenantRepository
@@ -215,13 +213,10 @@ non-exposed: sales -> com.delivery.vendor.entity.Vendor
 non-exposed: sales -> com.delivery.vendor.repository.VendorRepository
 non-exposed: tenant -> com.delivery.auth.dto.CreateUserProfileRequest
 non-exposed: tenant -> com.delivery.auth.dto.MeResponse
-non-exposed: tenant -> com.delivery.auth.repository.AppUserProfileRepository
 non-exposed: tenant -> com.delivery.auth.service.AppUserProfileService
-non-exposed: tenant -> com.delivery.dispatch.repository.CourierRepository
 non-exposed: tenant -> com.delivery.geo.dto.CreateZoneRequest
 non-exposed: tenant -> com.delivery.geo.dto.ZoneResponse
 non-exposed: tenant -> com.delivery.geo.service.ZoneService
-non-exposed: tenant -> com.delivery.vendor.repository.VendorRepository
 non-exposed: vendor -> com.delivery.auth.entity.AppUserProfile
 non-exposed: vendor -> com.delivery.auth.repository.AppUserProfileRepository
 non-exposed: vendor -> com.delivery.upload.service.StoredUploadValidator
