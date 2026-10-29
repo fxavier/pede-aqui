@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.delivery.catalog.service.CatalogAccessGuard;
 import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.TestParents;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
@@ -110,7 +111,7 @@ class RefundConcurrencyPostgresTest {
                                     discount_total, total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 'PAYMENT_CONFIRMED', 90, 10, 0, 0, 0, 100, ?, 'hash', '000000', ?, ?)""",
-                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), UUID.randomUUID(), "key-" + orderId, now, now);
+                orderId, tenantId, "ref-" + orderId, TestParents.customer(jdbcTemplate, tenantId), TestParents.vendor(jdbcTemplate, tenantId), "key-" + orderId, now, now);
         jdbcTemplate.update("INSERT INTO payments (id, tenant_id, order_id, amount, provider, idempotency_key, status, created_at, updated_at) VALUES (?, ?, ?, 100.00, 'LOCAL_MOCK', ?, 'CONFIRMED', ?, ?)",
                 paymentId, tenantId, orderId, "pay-" + paymentId, now, now);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
@@ -122,6 +123,8 @@ class RefundConcurrencyPostgresTest {
         jdbcTemplate.update("DELETE FROM refunds WHERE tenant_id = ?", tenantId);
         jdbcTemplate.update("DELETE FROM payments WHERE tenant_id = ?", tenantId);
         jdbcTemplate.update("DELETE FROM orders WHERE tenant_id = ?", tenantId);
+        jdbcTemplate.update("DELETE FROM app_user_profiles WHERE tenant_id = ?", tenantId);
+        jdbcTemplate.update("DELETE FROM vendors WHERE tenant_id = ?", tenantId);
         jdbcTemplate.update("DELETE FROM tenants WHERE id = ?", tenantId);
     }
 

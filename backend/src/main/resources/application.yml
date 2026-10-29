@@ -32,6 +32,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # LAC-51: Redis cache (vendorSearch, TTL 60 s em RedisConfig). Os testes usam none
+  # (src/test/resources/config/application.yml); CACHE_TYPE=none desliga-a sem Redis.
+  cache:
+    type: ${CACHE_TYPE:redis}
+    cache-names: vendorSearch
   security:
     oauth2:
       resourceserver:

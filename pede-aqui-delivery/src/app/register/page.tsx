@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { customerRegistrationService, keycloakService } from '@/lib/api/services'
 import { setUser } from '@/store/auth-slice'
+import { PASSWORD_POLICY_HINT, passwordPolicyErrors, registrationErrorMessage } from '@/lib/password-policy'
 import type { AppDispatch } from '@/store'
 
 export default function RegisterPage() {
@@ -29,8 +30,9 @@ export default function RegisterPage() {
       setError('As palavras-passe não coincidem.')
       return
     }
-    if (password.length < 8) {
-      setError('A palavra-passe deve ter pelo menos 8 caracteres.')
+    const pwErrors = passwordPolicyErrors(password, email)
+    if (pwErrors.length) {
+      setError(`A palavra-passe precisa de: ${pwErrors.join(', ')}.`)
       return
     }
 
@@ -42,12 +44,7 @@ export default function RegisterPage() {
       dispatch(setUser({ access_token, profile }))
       navigate(redirect, { replace: true })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
-      if (msg.includes('email_exists') || msg.includes('409')) {
-        setError('Este email já está registado. Tenta entrar.')
-      } else {
-        setError(msg || 'Erro ao criar conta. Tenta novamente.')
-      }
+      setError(registrationErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -120,7 +117,7 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="Mínimo 10 caracteres"
                   className="h-11 w-full rounded-xl border border-input bg-white px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <button
@@ -131,6 +128,7 @@ export default function RegisterPage() {
                   {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
             </div>
 
             <div>

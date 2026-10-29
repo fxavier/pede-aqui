@@ -1,0 +1,74 @@
+# Weekly dependency updates (LAC-52). Minor/patch bumps are grouped into one PR per ecosystem/directory;
+# majors arrive as individual PRs so each gets its own review and CI run. Major platform upgrades
+# (Spring Boot line, Keycloak) still go through a dedicated, isolated increment.
+version: 2
+
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, backend]
+    groups:
+      maven-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /pede-aqui-backoffice
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, backoffice]
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /pede-aqui-delivery
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, web]
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pub
+    directories:
+      - /pede_aqui_delivery_app
+      - /pede_aqui_courier_app
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, mobile]
+    groups:
+      pub-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  # Local-stack images in docker-compose.yml (postgis, redis, keycloak, minio, prometheus, maven).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, infra]
+    groups:
+      compose-minor-patch:
+        update-types: [minor, patch]

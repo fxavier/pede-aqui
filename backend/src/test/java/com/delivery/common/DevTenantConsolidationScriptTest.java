@@ -95,7 +95,7 @@ class DevTenantConsolidationScriptTest {
 
         // Apply: the single-vendor tenant is folded in, the two-vendor tenant is left alone.
         notices = run("apply", legacy + "," + ambiguous, true);
-        assertThat(notices).anyMatch(n -> n.contains("legacy-single") && n.contains("CONSOLIDATED (7 rows moved)"));
+        assertThat(notices).anyMatch(n -> n.contains("legacy-single") && n.contains("CONSOLIDATED (8 rows moved)")); // incl. the customer profile behind the order (LAC-58 FK)
         assertThat(notices).anyMatch(n -> n.contains("SKIP tenant legacy-two-vendors"));
         try (Connection c = connection()) {
             assertThat(tenantOf(c, "vendors", vendor)).isEqualTo(OPERATOR);
@@ -107,7 +107,7 @@ class DevTenantConsolidationScriptTest {
             assertThat(status(c, legacy)).isEqualTo("CONSOLIDATED");
             assertThat(status(c, ambiguous)).isEqualTo("ACTIVE");
             assertThat(count(c, "SELECT COUNT(*) FROM vendors WHERE tenant_id = ?", ambiguous)).isEqualTo(2);
-            assertThat(count(c, "SELECT COUNT(*) FROM adr0001_consolidation_log WHERE legacy_tenant_id = ? AND table_name = 'app_user_profiles'", legacy)).isEqualTo(1);
+            assertThat(count(c, "SELECT COUNT(*) FROM adr0001_consolidation_log WHERE legacy_tenant_id = ? AND table_name = 'app_user_profiles'", legacy)).isEqualTo(2);
             // Audit history and the legacy fee policy (if any) are intentionally not rewritten.
             assertThat(count(c, "SELECT COUNT(*) FROM adr0001_consolidation_log WHERE table_name IN ('audit_logs','fee_policies','provisioning_requests')")).isZero();
         }
@@ -225,7 +225,7 @@ class DevTenantConsolidationScriptTest {
         exec(c, "INSERT INTO orders (id, tenant_id, reference, customer_id, vendor_id, status, subtotal, fees, taxes, discounts, discount_total, total, "
                 + "checkout_idempotency_key, delivery_confirmation_code_hash, delivery_confirmation_code_display, created_at, updated_at) "
                 + "VALUES (?, ?, ?, ?, ?, 'DELIVERED', 90, 10, 0, 0, 0, 100, ?, ?, '000000', ?, ?)",
-                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), vendorId, "key-" + orderId, "hash-" + orderId, now, now);
+                orderId, tenantId, "ref-" + orderId, merchantProfile(c, tenantId, "CUSTOMER"), vendorId, "key-" + orderId, "hash-" + orderId, now, now);
         return orderId;
     }
 

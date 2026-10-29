@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.delivery.common.PostgresApiE2ETestBase;
+import com.delivery.common.TestParents;
 import com.delivery.common.security.TenancyProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -206,7 +207,7 @@ class MerchantScopeE2ETest extends PostgresApiE2ETestBase {
                                     discount_total, total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 'PAYMENT_CONFIRMED', 90, 10, 0, 0, 0, 100, ?, 'hash', '000000', ?, ?)""",
-                id, tenant, "ref-" + id, UUID.randomUUID(), vendorId, "key-" + id, now, now);
+                id, tenant, "ref-" + id, TestParents.customer(jdbc, tenant), vendorId, "key-" + id, now, now);
         return id;
     }
 

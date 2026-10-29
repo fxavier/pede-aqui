@@ -9,6 +9,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.TestParents;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenancyProperties;
 import com.delivery.common.security.TenantContext;
@@ -128,7 +129,7 @@ class DeliveryCompletionPostgresIntegrationTest {
                                     total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 'ASSIGNED_TO_COURIER', 10, 0, 0, 0, 10, ?, ?, ?, ?, ?)""",
-                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), UUID.randomUUID(), "key-" + orderId, hasher.hash(CODE), CODE, now(), now());
+                orderId, tenantId, "ref-" + orderId, TestParents.customer(jdbc, tenantId), TestParents.vendor(jdbc, tenantId), "key-" + orderId, hasher.hash(CODE), CODE, now(), now());
         deliveryId = UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO deliveries (id, tenant_id, order_id, courier_id, status, confirmation_code_hash, confirmation_attempts,

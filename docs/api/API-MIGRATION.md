@@ -202,6 +202,25 @@ Not removed yet; removal lands once step 5 has run in every environment and the 
    (`app.tenancy.customer-clients`). Clients see the same data as today once all merchants live in the
    operator tenant; a white-label host will need its own mapping.
 
+## LAC-09 — Realm password policy at registration (2026-10-28)
+
+The Keycloak realm now enforces `length(10) and digits(1) and upperCase(1) and lowerCase(1) and notUsername and passwordHistory(3)`.
+
+### `POST /api/v1/register` and `POST /api/v1/customers/register` (stricter validation, new 400 code)
+
+- `password` must have ≥ 10 characters, at least one digit, one upper-case and one lower-case letter,
+  and must not equal the e-mail. Previously only `@Size(min = 8)` was checked.
+- A non-compliant password is now refused **before** Keycloak is called: **400** `validation_failed`,
+  one `fieldErrors` entry per unmet rule, all with `field: "password"` (e.g. `must have at least 10 characters`,
+  `must contain at least one digit`, `must contain at least one upper-case letter`,
+  `must contain at least one lower-case letter`, `must not be equal to the e-mail`).
+- New code **400** `password_policy_violation`: Keycloak itself rejected the password (realm policy stricter
+  than the API rules, e.g. password history on a future change-password flow). Previously this surfaced as
+  **500** `keycloak_error`. Other Keycloak failures still answer 500 `keycloak_error`.
+- Breaking for clients that accepted 8–9 character passwords. Updated: backoffice `/register` and customer
+  web `/register` (client-side rule + hint, both 400 codes displayed). **Not updated:** the Flutter customer app
+  register screen still checks only 8 characters, so it will get the 400 from the API.
+
 ## W1-A — Security leftovers (LAC-02, LAC-06, LAC-12, LAC-13)
 
 ### LAC-02 — Anonymous writes are always 401

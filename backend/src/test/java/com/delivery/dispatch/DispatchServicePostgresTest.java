@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.TestParents;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
@@ -110,7 +111,7 @@ class DispatchServicePostgresTest {
         tx = new TransactionTemplate(transactionManager);
         tenantId = newTenant();
         otherTenantId = newTenant();
-        zoneId = UUID.randomUUID();
+        zoneId = TestParents.zone(jdbc, tenantId, UUID.randomUUID());
         courierA = newCourier(tenantId);
         courierB = newCourier(tenantId);
 
@@ -130,6 +131,11 @@ class DispatchServicePostgresTest {
             jdbc.update("DELETE FROM orders WHERE tenant_id = ?", t);
             jdbc.update("DELETE FROM couriers WHERE tenant_id = ?", t);
             jdbc.update("DELETE FROM app_user_profiles WHERE tenant_id = ?", t);
+            jdbc.update("DELETE FROM vendors WHERE tenant_id = ?", t);
+        }
+        // Second pass: couriers of every tenant may reference the zone (LAC-58 FK).
+        for (UUID t : tenants) {
+            jdbc.update("DELETE FROM zones WHERE tenant_id = ?", t);
             jdbc.update("DELETE FROM tenants WHERE id = ?", t);
         }
     }
@@ -424,7 +430,7 @@ class DispatchServicePostgresTest {
                                     total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, 10, 0, 0, 0, 10, ?, ?, '000000', now(), now())""",
-                orderId, tenant, "ref-" + orderId, UUID.randomUUID(), UUID.randomUUID(), orderStatus, "key-" + orderId, "hash-" + orderId);
+                orderId, tenant, "ref-" + orderId, TestParents.customer(jdbc, tenant), TestParents.vendor(jdbc, tenant), orderStatus, "key-" + orderId, "hash-" + orderId);
         UUID deliveryId = UUID.randomUUID();
         jdbc.update("INSERT INTO deliveries (id, tenant_id, order_id, status, confirmation_code_hash, confirmation_attempts, created_at, updated_at) VALUES (?, ?, ?, 'DISPATCH_PENDING', ?, 0, now(), now())",
                 deliveryId, tenant, orderId, "hash-" + deliveryId);

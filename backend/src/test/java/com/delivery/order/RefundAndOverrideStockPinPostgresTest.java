@@ -10,6 +10,7 @@ import com.delivery.cart.service.CartService;
 import com.delivery.cart.service.PricingService;
 import com.delivery.catalog.service.CatalogAccessGuard;
 import com.delivery.common.PostgresTestContainerConfig;
+import com.delivery.common.TestParents;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.delivery.config.DeliveryCodeProperties;
@@ -154,7 +155,7 @@ class RefundAndOverrideStockPinPostgresTest {
                                     discount_total, total, checkout_idempotency_key, delivery_confirmation_code_hash,
                                     delivery_confirmation_code_display, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, 'PAYMENT_CONFIRMED', 90, 10, 0, 0, 0, 100, ?, 'hash', '000000', ?, ?)""",
-                orderId, tenantId, "ref-" + orderId, UUID.randomUUID(), vendorId, "key-" + orderId, now, now);
+                orderId, tenantId, "ref-" + orderId, TestParents.customer(jdbc, tenantId), vendorId, "key-" + orderId, now, now);
         jdbc.update("INSERT INTO order_items (id, order_id, tenant_id, sku_id, product_name_snapshot, sku_name_snapshot, unit_price_snapshot, quantity, line_total, created_at) VALUES (?, ?, ?, ?, 'Arroz', 'Arroz 1kg', 18.00, 5, 90.00, ?)",
                 UUID.randomUUID(), orderId, tenantId, skuId, now);
         jdbc.update("INSERT INTO payments (id, tenant_id, order_id, amount, provider, idempotency_key, status, created_at, updated_at) VALUES (?, ?, ?, 100.00, 'LOCAL_MOCK', ?, 'CONFIRMED', ?, ?)",
@@ -171,7 +172,6 @@ class RefundAndOverrideStockPinPostgresTest {
         jdbc.update("DELETE FROM dispatch_jobs WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM deliveries WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM couriers WHERE tenant_id = ?", tenantId);
-        jdbc.update("DELETE FROM app_user_profiles WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM refunds WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM payments WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM order_items WHERE tenant_id = ?", tenantId);
@@ -181,6 +181,8 @@ class RefundAndOverrideStockPinPostgresTest {
         jdbc.update("DELETE FROM products WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM categories WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM vendors WHERE tenant_id = ?", tenantId);
+        // After orders: orders.customer_id references app_user_profiles (LAC-58).
+        jdbc.update("DELETE FROM app_user_profiles WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM tenants WHERE id = ?", tenantId);
     }
 
