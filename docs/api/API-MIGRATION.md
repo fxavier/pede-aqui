@@ -610,11 +610,11 @@ No backend API change; this records a client change that the Keycloak ROPC shutd
   wipes local tokens. Every interactive login sends `prompt=login`.
 - Unchanged API usage: customer registration still `POST /api/v1/customers/register` (then PKCE with
   `login_hint`=email); profile reads still `GET /api/v1/me` (customer) and `GET /api/v1/couriers/me` (courier).
-- Realm follow-up (not done here, realm owned by W4-C/W4-D): `pede-aqui-mobile` and `pede-aqui-courier-mobile`
-  declare no `post.logout.redirect.uris` attribute. If Keycloak rejects the `post_logout_redirect_uri`, the
-  browser shows a Keycloak error page on logout; the app still drops its tokens and the next login forces the
-  password form (`prompt=login`), but the SSO session survives until idle timeout. Fix: add
-  `"post.logout.redirect.uris": "+"` (= same as redirect URIs) to both clients.
+- Realm: `pede-aqui-mobile` and `pede-aqui-courier-mobile` now declare `post.logout.redirect.uris` equal to
+  their redirect URI (`com.pedeaqui.delivery:/oauthredirect` / `com.pedeaqui.courier:/oauthredirect`), so the
+  end-session call with `post_logout_redirect_uri` ends the Keycloak SSO session and returns to the app (before,
+  Keycloak rejected the URI and showed an error page). Existing local realms need a re-import
+  (`docker compose rm -sf keycloak && docker compose up -d keycloak`).
 - Dev: tokens carry `iss` = the host the app used. The backend validates `iss` against
   `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
   than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).

@@ -180,7 +180,8 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "com.pedeaqui.delivery:/oauthredirect"
       },
       "redirectUris": [
         "com.pedeaqui.delivery:/oauthredirect"
@@ -211,7 +212,8 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "com.pedeaqui.courier:/oauthredirect"
       },
       "redirectUris": [
         "com.pedeaqui.courier:/oauthredirect"
