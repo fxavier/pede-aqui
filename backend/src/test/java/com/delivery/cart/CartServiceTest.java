@@ -158,6 +158,40 @@ class CartServiceTest {
         assertThat(service.addItem(vendorId, sku.getId(), 1).items()).hasSize(1);
     }
 
+    // --- W1-D cart bug: the SKU must belong to the vendor named in the request ---
+
+    @Test
+    void rejectsSkuSoldByAnotherVendor() {
+        UUID requestVendor = UUID.randomUUID();
+        Product otherVendorsProduct = activeProduct(UUID.randomUUID());
+        CartRepository cartRepository = cartFor(requestVendor);
+        SkuRepository skuRepository = skuOf(otherVendorsProduct);
+
+        CartService service = service(cartRepository, skuRepository, stocked(requestVendor, skuIdOf(skuRepository)));
+
+        assertThatThrownBy(() -> service.addItem(requestVendor, skuIdOf(skuRepository), 1))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getCode()).isEqualTo("sku_vendor_mismatch");
+                    assertThat(e.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                });
+        verify(cartRepository, never()).save(any());
+    }
+
+    private final java.util.Map<SkuRepository, UUID> skuIds = new java.util.IdentityHashMap<>();
+
+    private SkuRepository skuOf(Product product) {
+        SkuRepository skuRepository = mock(SkuRepository.class);
+        Sku sku = new Sku(UUID.randomUUID(), tenantId, product.getId(), "SKU-1", "1kg", new BigDecimal("9.99"));
+        when(skuRepository.findByTenantIdAndId(tenantId, sku.getId())).thenReturn(Optional.of(sku));
+        when(productRepository.findByTenantIdAndId(tenantId, product.getId())).thenReturn(Optional.of(product));
+        skuIds.put(skuRepository, sku.getId());
+        return skuRepository;
+    }
+
+    private UUID skuIdOf(SkuRepository skuRepository) {
+        return skuIds.get(skuRepository);
+    }
+
     private Product activeProduct(UUID vendorId) {
         Product product = new Product(UUID.randomUUID(), tenantId, vendorId, UUID.randomUUID(), "Arroz", null);
         product.approve();

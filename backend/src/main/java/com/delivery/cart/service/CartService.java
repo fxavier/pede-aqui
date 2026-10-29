@@ -45,7 +45,10 @@ public class CartService {
         this.userProfileRepository = userProfileRepository;
     }
 
-    /** Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts. */
+    /**
+     * Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts and SKUs of another
+     * vendor (sku_vendor_mismatch).
+     */
     @Transactional
     public CartResponse addItem(UUID vendorId, UUID skuId, int quantity) {
         if (quantity <= 0) throw new BusinessException("invalid_quantity", "Quantity must be positive", HttpStatus.BAD_REQUEST);
@@ -61,9 +64,11 @@ public class CartService {
         if (!sku.isActive()) {
             throw new BusinessException("sku_inactive", "This product variant is no longer available", HttpStatus.CONFLICT);
         }
-        boolean productActive = productRepository.findByTenantIdAndId(tenantId, sku.getProductId()).map(Product::isActive).orElse(false);
-        if (!productActive) {
-            throw new BusinessException("product_not_available", "This product is not available for ordering", HttpStatus.CONFLICT);
+        Product product = productRepository.findByTenantIdAndId(tenantId, sku.getProductId()).filter(Product::isActive)
+                .orElseThrow(() -> new BusinessException("product_not_available", "This product is not available for ordering", HttpStatus.CONFLICT));
+        // The SKU must be sold by the vendor named in the request, otherwise another vendor's item would enter this cart.
+        if (!product.getVendorId().equals(vendorId)) {
+            throw new BusinessException("sku_vendor_mismatch", "This product variant is not sold by the given vendor", HttpStatus.UNPROCESSABLE_ENTITY);
         }
         inventoryItemRepository.findByTenantIdAndSkuId(tenantId, skuId)
                 .filter(item -> item.getQuantityAvailable() >= quantity)
