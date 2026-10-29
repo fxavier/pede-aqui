@@ -1,8 +1,11 @@
 package com.delivery.upload.service;
 
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.observability.BusinessMetrics;
 import com.delivery.upload.service.UploadLimits.Kind;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,11 +27,18 @@ public class StoredUploadValidator {
     private final S3Client s3Client;
     private final UploadLimits limits;
     private final String bucket;
+    private BusinessMetrics metrics = BusinessMetrics.NOOP;
 
     public StoredUploadValidator(S3Client s3Client, UploadLimits limits, @Value("${app.storage.s3-bucket}") String bucket) {
         this.s3Client = s3Client;
         this.limits = limits;
         this.bucket = bucket;
+    }
+
+    /** Optional: slice tests without a meter registry keep the no-op metrics. */
+    @Autowired(required = false)
+    public void setBusinessMetrics(BusinessMetrics metrics) {
+        this.metrics = metrics;
     }
 
     /** Validates an image key (product photo, vendor logo, delivery proof) of the tenant. */
@@ -42,6 +52,21 @@ public class StoredUploadValidator {
     }
 
     private void require(Kind kind, UUID tenantId, String storageKey) {
+        try {
+            check(kind, tenantId, storageKey);
+        } catch (BusinessException rejection) {
+            countRejection("link", kind, rejection);
+            throw rejection;
+        }
+    }
+
+    /** LAC-50: uploads_rejected_total{stage,kind,reason} — no key, tenant or file name in the tags. */
+    private void countRejection(String stage, Kind kind, BusinessException rejection) {
+        metrics.increment(BusinessMetrics.UPLOAD_REJECTIONS, "stage", stage, "kind", kind.name().toLowerCase(Locale.ROOT),
+                "reason", BusinessMetrics.safeCode(rejection.getCode()));
+    }
+
+    private void check(Kind kind, UUID tenantId, String storageKey) {
         if (storageKey == null || !storageKey.startsWith(limits.keyPrefix(kind, tenantId)) || storageKey.contains("..")) {
             throw new BusinessException("invalid_storage_key",
                     "storageKey does not belong to this tenant's " + kind.name().toLowerCase() + " upload namespace", HttpStatus.BAD_REQUEST);

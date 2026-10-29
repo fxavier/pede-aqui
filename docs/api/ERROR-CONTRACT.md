@@ -54,7 +54,7 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | `code` | extensão | sim | Código estável, `snake_case` minúsculo. **É o campo em que os clientes devem decidir.** |
 | `details` | extensão | não | Contexto estruturado opcional (ex.: `price_changed` → itens e preços atuais). Omitido quando não há. |
 | `correlationId` | extensão | sim | Igual ao header `X-Correlation-Id` da resposta e ao campo `correlationId` dos logs. |
-| `traceId` | extensão | sim | Id de trace distribuído. Enquanto não houver Micrometer Tracing/OTel, é igual ao `correlationId` (lê `traceId` do MDC quando existir). |
+| `traceId` | extensão | sim | Id do trace W3C (32 hex) do pedido, posto no MDC pelo Micrometer Tracing/OTel (LAC-50) — o mesmo id que aparece no log e no Jaeger/X-Ray quando o span é exportado (amostrado). Só sem tracer ativo (ex.: testes de slice MVC) volta a ser igual ao `correlationId`. |
 | `message` | legado | sim | Cópia de `detail`. **Obsoleto** — usar `detail`. |
 | `timestamp` | legado | sim | Instante ISO-8601 (UTC). **Obsoleto.** |
 | `fieldErrors` | legado | sim | Lista `[{ "field", "message" }]`; vazia exceto em `validation_failed`. Mantém-se até existir substituto acordado. |
@@ -140,7 +140,7 @@ com um `skuCode` já usado pelo **mesmo** vendor; desde V056 o código é único
   `traceparent` W3C), o valor é reutilizado; caso contrário é gerado um UUID. Valores com espaços, aspas,
   quebras de linha ou demasiado longos são descartados, para não injetar conteúdo no log JSON nem no header.
 - O valor fica no MDC (`correlationId`) durante o pedido e aparece em cada linha de log
-  (`logback-spring.xml`). O filtro não regista nada: nenhum token, header ou dado pessoal é logado por ele.
+  (logging estruturado nativo do Spring Boot, `logging.structured.*` em `application.yml`; LAC-50). O filtro não regista nada: nenhum token, header ou dado pessoal é logado por ele.
 - CORS: `X-Correlation-Id` está nos headers permitidos (o cliente pode enviá-lo) e nos **expostos** (o
   browser pode lê-lo da resposta).
 
@@ -171,7 +171,7 @@ campo com os `status` de recursos (ex.: estado de encomenda).
 
 - `type` por código (URI estável por `code`, ex.: `https://api.pede-aqui.mz/problems/price-changed`) quando
   houver onde publicar as páginas.
-- Tracing distribuído (Micrometer Tracing + OTel): `traceId` passa a ser o id do trace sem mudar o contrato.
+- Tracing distribuído (Micrometer Tracing + OTel): **feito em LAC-50/W4-B** — `traceId` passou a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
 
 ## 7. Cobertura: quem escreve corpos de erro

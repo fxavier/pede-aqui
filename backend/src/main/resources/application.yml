@@ -79,6 +79,26 @@ management:
         # /livez e /readyz também na porta da aplicação: as probes continuam a funcionar quando o
         # actuator vive numa porta de gestão separada (MANAGEMENT_SERVER_PORT, ver application-prod.yml).
         add-additional-paths: true
+  # LAC-50: histogram buckets for HTTP server latency (p95/p99 via histogram_quantile in Prometheus/Grafana),
+  # bounded to 5 ms..10 s to keep the bucket count per series small.
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      minimum-expected-value:
+        http.server.requests: 5ms
+      maximum-expected-value:
+        http.server.requests: 10s
+  # LAC-50: Micrometer Tracing (OpenTelemetry bridge). traceId/spanId are always in the MDC (and so in the log line
+  # and in ApiProblems.traceId); spans are only EXPORTED when MANAGEMENT_OTLP_TRACING_ENDPOINT is set
+  # (e.g. http://otel-collector:4318/v1/traces). Do not declare management.otlp.tracing.endpoint here with an empty
+  # default: Boot treats an empty value as "set" and would build an exporter with no URL.
+  # Sampling: 10 % by default (prod), 100 % in application-dev.yml; override with TRACING_SAMPLING_PROBABILITY.
+  # TRACING_ENABLED=false switches span export off (Boot 3.5 still mints trace ids for the MDC/problem bodies).
+  tracing:
+    enabled: ${TRACING_ENABLED:true}
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.1}
 
 springdoc:
   api-docs:
@@ -88,9 +108,24 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# LAC-50 / PROD-08: Spring Boot native structured logging (one JSON object per line, escaping and stack traces
+# handled by Boot) instead of the hand-rolled logback pattern. Logstash format, renamed to keep the historical field
+# names (ts, msg, logger) + app; every MDC key is a top-level field: correlationId, traceId, spanId, job, jobRunId.
+# LOG_FORMAT=ecs|logstash|gelf switches format; application-dev.yml sets it empty (readable pattern) by default.
 logging:
   level:
     com.delivery: INFO
+  structured:
+    format:
+      console: ${LOG_FORMAT:logstash}
+    json:
+      exclude: "@version,level_value"
+      rename:
+        "[@timestamp]": ts
+        "[message]": msg
+        "[logger_name]": logger
+      add:
+        app: ${spring.application.name}
 
 app:
   api-base-path: /api/v1
