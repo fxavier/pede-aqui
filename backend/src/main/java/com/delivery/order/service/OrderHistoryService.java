@@ -47,13 +47,13 @@ public class OrderHistoryService {
         if (merchant && !merchantScopeGuard.requireOwnVendorId(tenantId).equals(order.getVendorId())) {
             throw new NotFoundException("Order was not found");
         }
-        List<OrderHistoryResponse.Entry> orderRows = historyRepository.findByTenantIdAndOrderIdOrderByCreatedAtAscIdAsc(tenantId, orderId).stream()
-                .map(row -> new OrderHistoryResponse.Entry(row.getFromStatus() == null ? null : row.getFromStatus().name(),
+        List<OrderHistoryResponse.OrderStatusHistoryEntry> orderRows = historyRepository.findByTenantIdAndOrderIdOrderByCreatedAtAscIdAsc(tenantId, orderId).stream()
+                .map(row -> new OrderHistoryResponse.OrderStatusHistoryEntry(row.getFromStatus() == null ? null : row.getFromStatus().name(),
                         row.getToStatus().name(), row.getActorType(), merchant ? null : row.getActorId(), row.getReason(),
                         row.getCorrelationId(), row.getCreatedAt()))
                 .toList();
-        List<OrderHistoryResponse.PaymentEntry> paymentRows = paymentHistory.forOrder(tenantId, orderId).stream()
-                .map(row -> new OrderHistoryResponse.PaymentEntry(row.paymentId(), row.fromStatus(), row.toStatus(), row.actorType(),
+        List<OrderHistoryResponse.PaymentStatusHistoryEntry> paymentRows = paymentHistory.forOrder(tenantId, orderId).stream()
+                .map(row -> new OrderHistoryResponse.PaymentStatusHistoryEntry(row.paymentId(), row.fromStatus(), row.toStatus(), row.actorType(),
                         merchant ? null : row.actorId(), row.reason(), row.correlationId(), row.createdAt()))
                 .toList();
         return new OrderHistoryResponse(order.getId(), order.getStatus().name(), orderRows, paymentRows);
