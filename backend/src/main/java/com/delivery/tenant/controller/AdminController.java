@@ -56,9 +56,12 @@ public class AdminController {
         this.appUserProfileService = appUserProfileService;
     }
 
-    /** Capped legacy array (LAC-14): first 200 tenants, newest first, {@code X-Truncated: true} when more exist. */
+    /**
+     * Platform super-admin: capped legacy array (LAC-14) of every tenant, newest first, {@code X-Truncated: true} when
+     * more exist. A tenant-scoped ADMIN gets only its own tenant (W3-D: it used to list every tenant).
+     */
     @GetMapping("/tenants")
-    public ResponseEntity<List<TenantResponse>> tenants() { return tenantService.listTenants().toResponse(); }
+    public ResponseEntity<List<TenantResponse>> tenants() { return tenantService.listTenantsForCurrentAdmin().toResponse(); }
 
     @PostMapping("/zones")
     public ZoneResponse createZone(@Valid @RequestBody CreateZoneRequest request) { return zoneService.create(request); }
