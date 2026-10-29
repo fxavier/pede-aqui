@@ -1,5 +1,7 @@
 package com.delivery.vendor.controller;
 
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.vendor.dto.CreateVendorRequest;
 import com.delivery.vendor.dto.CreateVendorDocumentRequest;
 import com.delivery.vendor.dto.UpdateVendorAvailabilityRequest;
@@ -15,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -48,8 +51,18 @@ public class VendorController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('VENDOR_ADMIN','VENDOR_STAFF','ADMIN')")
-    public List<VendorResponse> list(@RequestParam(required = false) Boolean available) {
-        return vendorService.list(available);
+    public ResponseEntity<List<VendorResponse>> list(@RequestParam(required = false) Boolean available) {
+        return vendorService.list(available).toResponse(); // LAC-14: newest 200, X-Truncated when capped
+    }
+
+    /** Offset page of vendors (LAC-14): size 1..100 (default 20), newest first; same scoping as the list. */
+    @GetMapping("/page")
+    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','VENDOR_STAFF','ADMIN')")
+    public PageResponse<VendorResponse> listPage(
+            @RequestParam(required = false) Boolean available,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PageLimits.DEFAULT_PAGE_SIZE) int size) {
+        return vendorService.listPage(available, page, size);
     }
 
     @PatchMapping("/{vendorId}/availability")

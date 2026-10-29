@@ -4,6 +4,9 @@ import com.delivery.auth.dto.CreateUserProfileRequest;
 import com.delivery.auth.dto.MeResponse;
 import com.delivery.auth.service.AppUserProfileService;
 import com.delivery.common.dto.AuditLogResponse;
+import com.delivery.common.pagination.CursorPage;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.geo.dto.CreateZoneRequest;
 import com.delivery.geo.dto.ZoneResponse;
@@ -17,6 +20,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -51,8 +56,9 @@ public class AdminController {
         this.appUserProfileService = appUserProfileService;
     }
 
+    /** Capped legacy array (LAC-14): first 200 tenants, newest first, {@code X-Truncated: true} when more exist. */
     @GetMapping("/tenants")
-    public List<TenantResponse> tenants() { return tenantService.listTenants(); }
+    public ResponseEntity<List<TenantResponse>> tenants() { return tenantService.listTenants().toResponse(); }
 
     @PostMapping("/zones")
     public ZoneResponse createZone(@Valid @RequestBody CreateZoneRequest request) { return zoneService.create(request); }
@@ -66,8 +72,17 @@ public class AdminController {
     @GetMapping("/policy")
     public FeePolicyResponse policy() { return policyService.get(); }
 
+    /** Capped legacy array (LAC-14): newest 200 audit entries, {@code X-Truncated: true} when more exist. */
     @GetMapping("/audit")
-    public List<AuditLogResponse> audit() { return auditLogService.list(); }
+    public ResponseEntity<List<AuditLogResponse>> audit() { return auditLogService.list().toResponse(); }
+
+    /** Keyset page of audit entries (LAC-14): {@code { items, nextCursor }}, limit 1..200 (default 50). */
+    @GetMapping("/audit/cursor")
+    public CursorPage<AuditLogResponse> auditPage(
+            @RequestParam(defaultValue = "" + PageLimits.DEFAULT_CURSOR_LIMIT) int limit,
+            @RequestParam(required = false) String cursor) {
+        return auditLogService.listPage(limit, cursor);
+    }
 
     @PostMapping("/users")
     // LAC-13: assigning roles is ADMIN-only (method-level rules override the class rule, so state it here).
@@ -79,8 +94,17 @@ public class AdminController {
 
     @GetMapping("/users")
     @PreAuthorize("hasAnyRole('ADMIN','SUPPORT')")
-    public List<MeResponse> listUsers() {
-        return appUserProfileService.listUserProfiles();
+    public ResponseEntity<List<MeResponse>> listUsers() {
+        return appUserProfileService.listUserProfiles().toResponse();
+    }
+
+    /** Offset page of tenant user profiles (LAC-14): size 1..100 (default 20), newest first. */
+    @GetMapping("/users/page")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPPORT')")
+    public PageResponse<MeResponse> listUsersPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PageLimits.DEFAULT_PAGE_SIZE) int size) {
+        return appUserProfileService.listUserProfilesPage(page, size);
     }
 
     @GetMapping("/users/{id}")

@@ -5,6 +5,8 @@ import com.delivery.dispatch.entity.CourierVerificationStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Provides courier queries for dispatch eligibility and profile updates. */
@@ -12,6 +14,7 @@ public interface CourierRepository extends JpaRepository<Courier, UUID> {
     Optional<Courier> findByTenantIdAndId(UUID tenantId, UUID id);
     Optional<Courier> findByTenantIdAndUserProfileId(UUID tenantId, UUID userProfileId);
     List<Courier> findByTenantId(UUID tenantId);
+    Page<Courier> findByTenantId(UUID tenantId, Pageable pageable);
     List<Courier> findByTenantIdAndVerificationStatusAndAvailable(UUID tenantId, CourierVerificationStatus verificationStatus, boolean available);
     List<Courier> findByTenantIdAndVerificationStatusAndAvailableAndOperatingZoneId(UUID tenantId, CourierVerificationStatus verificationStatus, boolean available, UUID operatingZoneId);
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);

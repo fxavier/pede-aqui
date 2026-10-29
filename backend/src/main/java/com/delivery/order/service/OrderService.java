@@ -132,22 +132,29 @@ public class OrderService {
         this.deliveryCodeHasher = deliveryCodeHasher;
     }
 
-    /** Returns the caller's orders with names resolved: tenant-wide for OPS/ADMIN, own vendor only for merchant users. */
+    /**
+     * Returns the caller's newest orders with names resolved: tenant-wide for OPS/ADMIN, all tenants for the platform
+     * admin, own vendor only for merchant users. Capped at 200 (legacy array, LAC-14): the controller adds
+     * {@code X-Truncated: true} when more exist; {@code GET /orders/cursor} pages through everything.
+     */
     @Transactional(readOnly = true)
-    public List<AdminOrderResponse> listForCurrentContext() {
-        List<Order> orders;
+    public com.delivery.common.pagination.CappedList<AdminOrderResponse> listForCurrentContext() {
+        // Fully qualified pagination types: keeps this LAC-14 change inside the method (OrderService is a merge hotspot).
+        Pageable cap = com.delivery.common.pagination.PageLimits.legacyCap();
+        Page<Order> orders;
         if (accessGuard.isMerchantScoped()) {
             UUID tenantId = tenantId();
-            orders = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId));
+            orders = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId), cap);
         } else {
             orders = tenantContext.isPlatformAdmin()
-                    ? orderRepository.findAll()
-                    : orderRepository.findByTenantId(tenantId());
+                    ? orderRepository.findAll(cap)
+                    : orderRepository.findByTenantId(tenantId(), cap);
         }
-        return toAdminResponses(orders);
+        return new com.delivery.common.pagination.CappedList<>(toAdminResponses(orders.getContent()), orders.hasNext());
     }
 
-    private List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
+    /** Resolves customer/vendor names (and SUPPORT masking) for a list of orders; shared with {@link OrderListingService}. */
+    List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
         Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
         Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
         Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()

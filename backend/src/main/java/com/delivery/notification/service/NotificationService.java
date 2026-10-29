@@ -3,6 +3,10 @@ package com.delivery.notification.service;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.CursorPage;
+import com.delivery.common.pagination.KeysetCursor;
+import com.delivery.common.pagination.PageLimits;
 import com.delivery.common.security.TenantContext;
 import com.delivery.notification.dto.NotificationResponse;
 import com.delivery.notification.entity.Notification;
@@ -39,15 +43,25 @@ public class NotificationService {
         return toResponse(saved);
     }
 
-    /** Returns notifications that belong to the authenticated user only. */
+    /** Returns the authenticated user's newest notifications only, capped at 200 (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<NotificationResponse> listMine() {
+    public CappedList<NotificationResponse> listMine() {
         UUID tenantId = tenantId();
         UUID profileId = currentProfileId(tenantId);
-        return notificationRepository.findByTenantIdAndRecipientUserIdOrderByCreatedAtDesc(tenantId, profileId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return CappedList.of(notificationRepository.findByTenantIdAndRecipientUserId(tenantId, profileId, PageLimits.legacyCap()), this::toResponse);
+    }
+
+    /** Returns one keyset page of the authenticated user's notifications, newest first (limit capped, opaque cursor). */
+    @Transactional(readOnly = true)
+    public CursorPage<NotificationResponse> listMinePage(int limit, String cursor) {
+        int effectiveLimit = PageLimits.cursorLimit(limit);
+        KeysetCursor position = KeysetCursor.decodeOrStart(cursor);
+        UUID tenantId = tenantId();
+        UUID profileId = currentProfileId(tenantId);
+        List<Notification> probe = notificationRepository.findKeysetPage(tenantId, profileId, position.createdAt(), position.id(),
+                PageLimits.keysetProbe(effectiveLimit));
+        return CursorPage.fromProbe(probe, effectiveLimit, n -> new KeysetCursor(n.getCreatedAt(), n.getId()),
+                rows -> rows.stream().map(this::toResponse).toList());
     }
 
     /** Marks one of the current user's notifications as read. */

@@ -4,6 +4,10 @@ import com.delivery.common.config.CorrelationIdFilter;
 import com.delivery.common.dto.AuditLogResponse;
 import com.delivery.common.entity.AuditLog;
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.CursorPage;
+import com.delivery.common.pagination.KeysetCursor;
+import com.delivery.common.pagination.PageLimits;
 import com.delivery.common.repository.AuditLogRepository;
 import com.delivery.common.security.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,12 +78,20 @@ public class AuditLogService {
         auditLogRepository.save(entry);
     }
 
-    /** Lists tenant-scoped audit entries for admin and operations visibility. */
+    /** Lists the newest tenant audit entries, capped at {@link PageLimits#LEGACY_LIST_CAP} (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> list() {
-        return auditLogRepository.findByTenantIdOrderByCreatedAtDesc(tenantId()).stream()
-                .map(AuditLogService::toResponse)
-                .toList();
+    public CappedList<AuditLogResponse> list() {
+        return CappedList.of(auditLogRepository.findByTenantId(tenantId(), PageLimits.legacyCap()), AuditLogService::toResponse);
+    }
+
+    /** Lists one keyset page of tenant audit entries, newest first ({@code limit} capped, opaque cursor). */
+    @Transactional(readOnly = true)
+    public CursorPage<AuditLogResponse> listPage(int limit, String cursor) {
+        int effectiveLimit = PageLimits.cursorLimit(limit);
+        KeysetCursor position = KeysetCursor.decodeOrStart(cursor);
+        List<AuditLog> probe = auditLogRepository.findKeysetPage(tenantId(), position.createdAt(), position.id(), PageLimits.keysetProbe(effectiveLimit));
+        return CursorPage.fromProbe(probe, effectiveLimit, item -> new KeysetCursor(item.getCreatedAt(), item.getId()),
+                rows -> rows.stream().map(AuditLogService::toResponse).toList());
     }
 
     static AuditLogResponse toResponse(AuditLog item) {

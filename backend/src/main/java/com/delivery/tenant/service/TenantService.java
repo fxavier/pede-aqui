@@ -2,6 +2,9 @@ package com.delivery.tenant.service;
 
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.tenant.dto.CreateTenantRequest;
@@ -43,10 +46,16 @@ public class TenantService {
         return mapper.toResponse(saved);
     }
 
-    /** Lists tenants for platform administrators. */
+    /** Lists the newest tenants for platform administrators, capped at 200 (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<TenantResponse> listTenants() {
-        return repository.findAll().stream().map(mapper::toResponse).toList();
+    public CappedList<TenantResponse> listTenants() {
+        return CappedList.of(repository.findAll(PageLimits.legacyCap()), mapper::toResponse);
+    }
+
+    /** Lists one offset page of tenants, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<TenantResponse> listTenantsPage(int page, int size) {
+        return PageResponse.of(repository.findAll(PageLimits.page(page, size)), mapper::toResponse);
     }
 
     /** Gets a tenant by ID or returns a not-found error. */

@@ -3,8 +3,13 @@ package com.delivery.dispatch.service;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditActions;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.upload.service.StoredUploadValidator;
 import org.springframework.security.core.GrantedAuthority;
@@ -140,12 +145,22 @@ public class CourierService {
         return dispatchMapper.toCourierResponse(courier);
     }
 
+    /** Lists the newest couriers (all tenants for the platform admin), capped at 200 (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<CourierResponse> listAll() {
-        if (tenantContext.isPlatformAdmin()) {
-            return courierRepository.findAll().stream().map(dispatchMapper::toCourierResponse).toList();
-        }
-        return courierRepository.findByTenantId(tenantId()).stream().map(dispatchMapper::toCourierResponse).toList();
+    public CappedList<CourierResponse> listAll() {
+        return CappedList.of(couriers(PageLimits.legacyCap()), dispatchMapper::toCourierResponse);
+    }
+
+    /** Lists one offset page of couriers, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<CourierResponse> listPage(int page, int size) {
+        return PageResponse.of(couriers(PageLimits.page(page, size)), dispatchMapper::toCourierResponse);
+    }
+
+    private Page<Courier> couriers(Pageable pageable) {
+        return tenantContext.isPlatformAdmin()
+                ? courierRepository.findAll(pageable)
+                : courierRepository.findByTenantId(tenantId(), pageable);
     }
 
     @Transactional(readOnly = true)
