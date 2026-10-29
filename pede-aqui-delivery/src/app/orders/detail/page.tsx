@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin, Bike, Phone, MessageSquare, KeyRound } from 'lucide-
 import { statusLabel, isActiveOrder } from '@/lib/orderStatusLabels'
 import { useMyOrder } from '@/lib/orderHistory'
 import { formatMZN } from '@/lib/utils'
+import { OrderCancellationCard } from '@/components/OrderCancellationCard'
 
 const STATUS_TIMELINE = [
   'PAYMENT_CONFIRMED',
@@ -126,6 +127,8 @@ export default function OrderDetailPage() {
 
         {/* Right — map placeholder (illustrative, no live GPS available) */}
         <div className="space-y-6">
+          <OrderCancellationCard order={order} />
+
           {order.deliveryCode && (
             <div className="bg-white rounded-3xl border border-brand-100 p-5 shadow-sm text-left space-y-2">
               <div className="flex items-center gap-2 text-brand-700">
