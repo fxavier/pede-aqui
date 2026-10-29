@@ -165,12 +165,24 @@
           "businessReference": {
             "type": "string"
           },
+          "correlationId": {
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
           },
+          "details": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "ip": {
             "type": "string"
           },
           "result": {
@@ -180,6 +192,9 @@
             "type": "string"
           },
           "targetType": {
+            "type": "string"
+          },
+          "userAgent": {
             "type": "string"
           }
         },
@@ -1059,6 +1074,29 @@
         ],
         "type": "object"
       },
+      "CreateVendorClosureRequest": {
+        "properties": {
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string"
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endsAt",
+          "reason",
+          "startsAt"
+        ],
+        "type": "object"
+      },
       "CreateVendorDocumentRequest": {
         "properties": {
           "documentType": {
@@ -1146,6 +1184,48 @@
         "required": [
           "name"
         ],
+        "type": "object"
+      },
+      "CursorPageAdminOrderResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminOrderResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CursorPageAuditLogResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CursorPageNotificationResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "CustomerAddressRequest": {
@@ -1899,6 +1979,121 @@
           },
           "vendorName": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseCourierResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/CourierResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseMeResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/MeResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseSupportTicketResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/SupportTicketResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseTenantResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/TenantResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseVendorResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/VendorResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "type": "object"
@@ -2963,6 +3158,13 @@
           "name": {
             "type": "string"
           },
+          "nextOpeningAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "open": {
+            "type": "boolean"
+          },
           "rating": {
             "format": "double",
             "type": "number"
@@ -3591,6 +3793,34 @@
         ],
         "type": "object"
       },
+      "VendorClosureResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "vendorId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "VendorDashboardResponse": {
         "properties": {
           "ordersByStatusCount": {
@@ -3877,6 +4107,56 @@
         ]
       }
     },
+    "/api/v1/admin/audit/cursor": {
+      "get": {
+        "operationId": "auditPage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageAuditLogResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      }
+    },
     "/api/v1/admin/policy": {
       "get": {
         "operationId": "policy",
@@ -4052,6 +4332,58 @@
               }
             },
             "description": "Created"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/users/page": {
+      "get": {
+        "operationId": "listUsersPage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseMeResponse"
+                }
+              }
+            },
+            "description": "OK"
           }
         },
         "tags": [
@@ -5594,7 +5926,7 @@
         ]
       },
       "post": {
-        "operationId": "create_6",
+        "operationId": "create_7",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -5844,7 +6176,7 @@
         ]
       },
       "post": {
-        "operationId": "create_5",
+        "operationId": "create_6",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -5979,6 +6311,58 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CourierEarningsSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "courier-controller"
+        ]
+      }
+    },
+    "/api/v1/couriers/page": {
+      "get": {
+        "operationId": "listPage_3",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseCourierResponse"
                 }
               }
             },
@@ -6208,7 +6592,7 @@
     },
     "/api/v1/customers/me/addresses": {
       "get": {
-        "operationId": "list_3",
+        "operationId": "list_4",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -6241,7 +6625,7 @@
         ]
       },
       "post": {
-        "operationId": "create_4",
+        "operationId": "create_5",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -6929,7 +7313,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_5",
+        "operationId": "list_6",
         "parameters": [
           {
             "in": "query",
@@ -7670,7 +8054,7 @@
     },
     "/api/v1/marketing/promotions": {
       "get": {
-        "operationId": "list_2",
+        "operationId": "list_3",
         "parameters": [
           {
             "in": "query",
@@ -7726,7 +8110,7 @@
         ]
       },
       "post": {
-        "operationId": "create_3",
+        "operationId": "create_4",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -7999,6 +8383,56 @@
         ]
       }
     },
+    "/api/v1/notifications/cursor": {
+      "get": {
+        "operationId": "listMinePage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageNotificationResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "notification-controller"
+        ]
+      }
+    },
     "/api/v1/notifications/{notificationId}/read": {
       "patch": {
         "operationId": "markRead",
@@ -8233,7 +8667,7 @@
     },
     "/api/v1/orders": {
       "get": {
-        "operationId": "list_4",
+        "operationId": "list_5",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -8266,9 +8700,59 @@
         ]
       }
     },
+    "/api/v1/orders/cursor": {
+      "get": {
+        "operationId": "listCursor",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageAdminOrderResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "order-controller"
+        ]
+      }
+    },
     "/api/v1/orders/page": {
       "get": {
-        "operationId": "listPage",
+        "operationId": "listPage_2",
         "parameters": [
           {
             "in": "query",
@@ -9645,7 +10129,7 @@
         ]
       },
       "post": {
-        "operationId": "create_2",
+        "operationId": "create_3",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -9709,6 +10193,58 @@
                     "$ref": "#/components/schemas/SupportTicketResponse"
                   },
                   "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "support-ticket-controller"
+        ]
+      }
+    },
+    "/api/v1/support/tickets/page": {
+      "get": {
+        "operationId": "listBackofficePage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseSupportTicketResponse"
                 }
               }
             },
@@ -9916,7 +10452,7 @@
     },
     "/api/v1/tenants": {
       "get": {
-        "operationId": "list_1",
+        "operationId": "list_2",
         "responses": {
           "200": {
             "content": {
@@ -9932,13 +10468,13 @@
             "description": "OK"
           }
         },
-        "summary": "List tenants",
+        "summary": "List tenants (newest 200; X-Truncated: true when more exist)",
         "tags": [
           "tenant-controller"
         ]
       },
       "post": {
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9962,6 +10498,49 @@
           }
         },
         "summary": "Create a tenant",
+        "tags": [
+          "tenant-controller"
+        ]
+      }
+    },
+    "/api/v1/tenants/page": {
+      "get": {
+        "operationId": "listPage_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseTenantResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "List tenants, one offset page (size 1..100)",
         "tags": [
           "tenant-controller"
         ]
@@ -10382,6 +10961,66 @@
         ]
       }
     },
+    "/api/v1/vendors/page": {
+      "get": {
+        "operationId": "listPage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "available",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseVendorResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "vendor-controller"
+        ]
+      }
+    },
     "/api/v1/vendors/{vendorId}/availability": {
       "patch": {
         "operationId": "updateAvailability",
@@ -10430,6 +11069,142 @@
         },
         "tags": [
           "vendor-controller"
+        ]
+      }
+    },
+    "/api/v1/vendors/{vendorId}/closures": {
+      "get": {
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vendorId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VendorClosureResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "vendor-closure-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vendorId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVendorClosureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorClosureResponse"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "tags": [
+          "vendor-closure-controller"
+        ]
+      }
+    },
+    "/api/v1/vendors/{vendorId}/closures/{closureId}": {
+      "delete": {
+        "operationId": "delete_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vendorId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "closureId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "vendor-closure-controller"
         ]
       }
     },
