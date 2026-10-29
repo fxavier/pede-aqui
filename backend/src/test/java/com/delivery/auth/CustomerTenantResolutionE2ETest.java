@@ -104,7 +104,7 @@ class CustomerTenantResolutionE2ETest extends PostgresApiE2ETestBase {
 
         // 1. Register (public endpoint): Keycloak user + profile in the operator tenant.
         mockMvc.perform(post("/api/v1/customers/register").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"firstName\":\"Ana\",\"lastName\":\"Teste\",\"email\":\"" + email + "\",\"password\":\"segredo-123\"}"))
+                        .content("{\"firstName\":\"Ana\",\"lastName\":\"Teste\",\"email\":\"" + email + "\",\"password\":\"Segredo-1234\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.keycloakUserId").value(keycloakUserId));
         assertThat(profileCount(operatorTenant, keycloakUserId)).isEqualTo(1);

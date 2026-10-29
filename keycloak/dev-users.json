@@ -1,0 +1,88 @@
+{
+  "realm": "delivery",
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@pede-aqui.com",
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin12345",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "finance",
+      "email": "finance@pede-aqui.com",
+      "firstName": "Finance",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Finance12345",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
+      "realmRoles": [
+        "FINANCE"
+      ]
+    },
+    {
+      "username": "support",
+      "email": "support@pede-aqui.com",
+      "firstName": "Support",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Support12345",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
+      "realmRoles": [
+        "SUPPORT"
+      ]
+    },
+    {
+      "username": "ops",
+      "email": "ops@pede-aqui.com",
+      "firstName": "Operations",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Ops1234567",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "tenant_id": [
+          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
+        ]
+      },
+      "realmRoles": [
+        "OPS"
+      ]
+    }
+  ]
+}

@@ -15,7 +15,7 @@ KEYCLOAK_REALM="${KEYCLOAK_REALM:-delivery}"
 KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-delivery-app}"
 # Seeded dev realm platform admin (keycloak/delivery-realm.json); never use against prod.
 SMOKE_USER="${SMOKE_USER:-admin}"
-SMOKE_PASS="${SMOKE_PASS:-admin123}"
+SMOKE_PASS="${SMOKE_PASS:-Admin12345}"
 
 fail() { echo "[spec-002-smoke] FAIL: $*" >&2; exit 1; }
 note() { echo "[spec-002-smoke] $*"; }

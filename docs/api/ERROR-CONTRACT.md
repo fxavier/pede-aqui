@@ -91,6 +91,9 @@ Os códigos de `BusinessException` mantêm-se exatamente iguais (ex.: `not_found
 `idempotency_key_reused`, `delivery_code_locked`, `vendor_scope_unresolved`, `tenant_slug_exists`,
 `email_exists`). Este incremento **não** renomeia nenhum código.
 
+LAC-09 acrescenta `password_policy_violation` (400 — o Keycloak recusou a palavra-passe pela política do realm
+em `POST /register` / `POST /customers/register`; antes era 500 `keycloak_error`).
+
 ADR-0001 (passos 3–4) acrescenta/clarifica: `vendor_access_denied` (403 — comerciante a atuar sobre
 um vendor que não é o seu, ou claim `vendor_id` fora das suas associações em `merchant_users`),
 `vendor_scope_unresolved` (403 — passa a ser a resposta de **todos** os caminhos de comerciante sem vendor

@@ -141,6 +141,6 @@ Faseado (expand → migrate → contract), cada passo num incremento próprio:
 
 - [AS-IS-ARCHITECTURE.md §5, §8.2 (SEC-06), §13 (AS-03), §16 (D1)](../assessment/AS-IS-ARCHITECTURE.md)
 - [FEATURE-INVENTORY.md](../assessment/FEATURE-INVENTORY.md) (registo de cliente/comerciante, pesquisa transversal, impersonação)
-- [`AUDIT.md`](../../AUDIT.md) (SEC-06, SEC-09)
+- [`docs/history/AUDIT.md`](../history/AUDIT.md) (SEC-06, SEC-09)
 - `docs/refactoring/CLAUDE-CODE-PROMPTS.md` — INC-10, INC-11
 - Código: `common/security/TenantContext.java`, `sales/service/SalesAccessGuard.java`, `catalog/service/CatalogAccessGuard.java`, `report/service/SalesReportService.java`, `auth/service/MerchantRegistrationService.java`, `auth/service/CustomerRegistrationService.java`, `keycloak/delivery-realm.json`
