@@ -10,6 +10,7 @@ import '../../data/datasources/remote_courier_data_source.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/courier_repository.dart';
 import '../../presentation/cubits/auth/auth_cubit.dart';
+import '../auth/oidc_session.dart';
 import '../network/api_client.dart';
 import '../storage/token_storage.dart';
 
@@ -34,6 +35,10 @@ void configureDependencies() {
 
   getIt.registerLazySingleton<ApiClient>(() => ApiClient());
   getIt.registerLazySingleton<TokenStorage>(() => SecureTokenStorage());
+  // Keycloak Authorization Code + PKCE on the public client `pede-aqui-courier-mobile`.
+  getIt.registerLazySingleton<OidcSession>(
+    () => OidcSession(config: OidcConfig.fromEnvironment, storage: getIt<TokenStorage>()),
+  );
 
   // Auth services
   getIt.registerLazySingleton<AuthDataSource>(() => _createAuthDataSource());
@@ -43,13 +48,19 @@ void configureDependencies() {
   // Courier services
   getIt.registerLazySingleton<CourierDataSource>(() => _createCourierDataSource());
   getIt.registerLazySingleton<CourierRepository>(() => CourierRepositoryImpl(getIt<CourierDataSource>()));
+
+  if (!_useMock) {
+    // 401 -> single-flight refresh (rotating refresh token) -> retry.
+    final authDataSource = getIt<AuthDataSource>() as RemoteAuthDataSource;
+    getIt<ApiClient>().onRefreshToken = authDataSource.refreshAccessToken;
+  }
 }
 
 AuthDataSource _createAuthDataSource() {
   if (_useMock) {
     return MockAuthDataSource();
   }
-  return RemoteAuthDataSource(getIt<ApiClient>(), getIt<TokenStorage>());
+  return RemoteAuthDataSource(getIt<ApiClient>(), getIt<OidcSession>());
 }
 
 CourierDataSource _createCourierDataSource() {

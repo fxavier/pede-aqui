@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/auth/oidc_session.dart';
 import '../../../data/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -7,14 +8,17 @@ class AuthCubit extends Cubit<AuthState> {
 
   final AuthRepository _repository;
 
-  Future<void> login({required String phone, required String password}) async {
+  /// Opens the Keycloak login page (PKCE). Closing the browser is not an error.
+  Future<void> login() async {
     emit(const AuthLoading());
     try {
-      final result = await _repository.login(phone: phone, password: password);
+      final result = await _repository.login();
       emit(AuthAuthenticated(
         courierId: result.courierId,
         accessToken: result.accessToken,
       ));
+    } on AuthCancelledException {
+      emit(const AuthInitial());
     } on Exception catch (e) {
       emit(AuthError(message: _mapError(e)));
     }
@@ -42,8 +46,9 @@ class AuthCubit extends Cubit<AuthState> {
 
   String _mapError(Exception e) {
     final msg = e.toString().toLowerCase();
-    if (msg.contains('401') || msg.contains('invalid') || msg.contains('unauthorized')) {
-      return 'Credenciais inválidas. Verifique o telefone e a palavra-passe.';
+    // Signed in to Keycloak, but GET /couriers/me refused or found no courier profile.
+    if (msg.contains('403') || msg.contains('404')) {
+      return 'Esta conta não tem perfil de estafeta. Contacte a equipa Pede Aqui.';
     }
     if (msg.contains('network') || msg.contains('connection') || msg.contains('socket')) {
       return 'Sem ligação à internet. Verifique a sua rede.';

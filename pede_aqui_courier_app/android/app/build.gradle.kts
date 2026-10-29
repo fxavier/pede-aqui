@@ -28,6 +28,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // flutter_appauth: scheme of the Keycloak redirect URI (com.pedeaqui.courier:/oauthredirect).
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.pedeaqui.courier"
     }
 
     buildTypes {

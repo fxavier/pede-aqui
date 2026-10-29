@@ -1,10 +1,8 @@
 import '../datasources/auth_data_source.dart';
 
 abstract interface class AuthRepository {
-  Future<({String accessToken, String courierId})> login({
-    required String phone,
-    required String password,
-  });
+  /// Signs the courier in through the Keycloak login page (PKCE).
+  Future<({String accessToken, String courierId})> login();
 
   /// Restores a previously persisted session, or returns null when none exists.
   Future<({String accessToken, String courierId})?> restoreSession();
@@ -18,16 +16,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthDataSource _dataSource;
 
   @override
-  Future<({String accessToken, String courierId})> login({
-    required String phone,
-    required String password,
-  }) async {
-    final result = await _dataSource.login(phone: phone, password: password);
-    return (
-      accessToken: result.accessToken,
-      courierId: result.courierId,
-    );
-  }
+  Future<({String accessToken, String courierId})> login() => _dataSource.login();
 
   @override
   Future<({String accessToken, String courierId})?> restoreSession() {
