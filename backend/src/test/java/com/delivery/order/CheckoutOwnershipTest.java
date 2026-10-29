@@ -20,7 +20,7 @@ import com.delivery.inventory.service.InventoryService;
 import com.delivery.notification.service.NotificationService;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.CheckoutDiscountResolver;
+import com.delivery.marketing.api.CheckoutDiscountResolver;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.service.PaymentService;

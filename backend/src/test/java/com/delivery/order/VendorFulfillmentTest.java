@@ -23,7 +23,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.vendor.repository.VendorRepository;

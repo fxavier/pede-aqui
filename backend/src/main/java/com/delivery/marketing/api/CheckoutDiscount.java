@@ -1,4 +1,4 @@
-package com.delivery.order.service;
+package com.delivery.marketing.api;
 
 import java.math.BigDecimal;
 import java.util.UUID;

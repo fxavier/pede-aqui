@@ -2,18 +2,12 @@
 # see its Javadoc. cycle-edge = module edge inside a dependency cycle (C1-C9 and the transitive ones);
 # non-exposed = <module> uses an internal type of another module. Breaking them is W3-A.
 cycle-edge: cart -> geo
-cycle-edge: cart -> marketing
 cycle-edge: cart -> tenant
-cycle-edge: customer -> geo
 cycle-edge: delivery -> dispatch
 cycle-edge: delivery -> order
 cycle-edge: dispatch -> delivery
 cycle-edge: dispatch -> order
 cycle-edge: geo -> cart
-cycle-edge: marketing -> cart
-cycle-edge: marketing -> order
-cycle-edge: order -> cart
-cycle-edge: order -> customer
 cycle-edge: order -> delivery
 cycle-edge: order -> payment
 cycle-edge: payment -> delivery
@@ -109,15 +103,11 @@ non-exposed: geo -> com.delivery.cart.service.PricingService
 non-exposed: geo -> com.delivery.catalog.repository.ProductRepository
 non-exposed: geo -> com.delivery.vendor.entity.Vendor
 non-exposed: geo -> com.delivery.vendor.repository.VendorRepository
-non-exposed: marketing -> com.delivery.cart.entity.Cart
-non-exposed: marketing -> com.delivery.cart.entity.CartItem
 non-exposed: marketing -> com.delivery.catalog.entity.Product
 non-exposed: marketing -> com.delivery.catalog.entity.Sku
 non-exposed: marketing -> com.delivery.catalog.repository.CategoryRepository
 non-exposed: marketing -> com.delivery.catalog.repository.ProductRepository
 non-exposed: marketing -> com.delivery.catalog.repository.SkuRepository
-non-exposed: marketing -> com.delivery.order.service.CheckoutDiscount
-non-exposed: marketing -> com.delivery.order.service.CheckoutDiscountResolver
 non-exposed: marketing -> com.delivery.vendor.repository.VendorRepository
 non-exposed: notification -> com.delivery.auth.entity.AppUserProfile
 non-exposed: notification -> com.delivery.auth.repository.AppUserProfileRepository
