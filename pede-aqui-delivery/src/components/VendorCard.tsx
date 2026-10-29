@@ -60,10 +60,12 @@ export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
               <span>{vendor.estimatedDeliveryMinutes} min</span>
             </div>
           )}
-          <div className="flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5 text-slate-400" />
-            <span>{vendor.distanceKm.toFixed(1)} km</span>
-          </div>
+          {vendor.distanceKm != null && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <span>{vendor.distanceKm.toFixed(1)} km</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1 text-right">
