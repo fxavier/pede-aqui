@@ -618,3 +618,58 @@ No backend API change; this records a client change that the Keycloak ROPC shutd
 - Dev: tokens carry `iss` = the host the app used. The backend validates `iss` against
   `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
   than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).
+
+## W5-A — Customer cancellation with a per-phase policy (LAC-26) — 2026-10-29
+
+All additive; no existing endpoint changes shape.
+
+### `POST /api/v1/me/orders/{id}/cancel` (new, CUSTOMER)
+
+Optional body `{ "reason": "…" }` (≤ 500 chars, else 400 `validation_failed`; kept only on a cancellation
+request, never in history/audit). Another customer's or tenant's order → **404**. Policy
+(`order/service/CustomerCancellationPolicy`):
+
+| Order status | Result |
+|---|---|
+| `PAYMENT_PENDING` | **200**, `outcome=CANCELLED`, `cancellationReason=CUSTOMER_CANCELLED`; payment `PENDING_CONFIRMATION → CANCELLED`, no refund |
+| `PAYMENT_CONFIRMED` | **200**, `outcome=CANCELLED`, `CUSTOMER_CANCELLED`; refund of the eligible remainder created `REQUESTED` (key `customer-cancel-<orderId>`), `refundAmount` in the body |
+| `ACCEPTED_BY_VENDOR`, `PREPARING` | **202**, `outcome=REQUESTED`, `request` = the open cancellation request with the quoted `feeAmount` (`app.orders.cancellation.fee-rate` × subtotal, HALF_UP 2 dp; default 10 %); the order continues |
+| `CANCELLED` | **200**, current state (idempotent; `refundAmount` = the customer-cancel refund, if any) |
+| `READY_FOR_PICKUP` onwards, `REFUNDED`, legacy rows | **409 `order_not_cancellable`**, `details.orderStatus` |
+
+Free cancellations also retire the delivery/dispatch job, release the stock reservation, notify the customer
+(`order_cancelled_by_customer`) and audit `ORDER_CANCELLED_BY_CUSTOMER` (`refund_remaining=<amount>`).
+Repeats are idempotent (one refund, one history row, one audit); a repeat in the request phase returns the same
+open request. A vendor action racing the call (accept/preparing/ready) has exactly one winner: the loser gets
+409 `concurrent_modification` or `invalid_order_transition` with no effect. Rate-limit group `payments` (20/min).
+
+Response `CustomerCancellationResponse`: `{ orderId, orderStatus, cancellationReason, outcome, refundAmount, request }`.
+
+### OPS queue `/api/v1/ops/cancellation-requests` (new, OPS/ADMIN, tenant-scoped)
+
+- `GET ?status=REQUESTED|APPROVED|REJECTED&page=&size=` → `{ content, page, size, totalElements }` (default
+  `REQUESTED`, newest first, size ≤ 100). Items `CancellationRequestResponse` = `{ id, orderId, orderReference,
+  orderStatus, status, closureReason, reason, feeRate, feeAmount, refundAmount, requestedAt, decidedAt }`.
+- `POST /{id}/approve` → order `CANCELLED` / `CUSTOMER_CANCELLED_WITH_FEE`, delivery retired, stock released,
+  refund = `refundable − fee` where the fee is the quoted fee capped at what is still refundable (never negative;
+  no refund row when nothing remains), customer notified (`order_cancellation_approved`), audit
+  `ORDER_CANCELLATION_APPROVED` (`refund_remaining=…;fee=…`). Repeat on an APPROVED request → 200 same body;
+  on a REJECTED one → 409 `cancellation_request_closed`. If the order already moved on (READY_FOR_PICKUP onwards
+  or ended by another path) → **409 `order_not_cancellable`** and the request is closed (`REJECTED`,
+  `closureReason=ORDER_ADVANCED|ORDER_CLOSED`, committed with the 409).
+- `POST /{id}/reject` → `REJECTED` / `OPS_REJECTED`, the order continues, customer notified
+  (`order_cancellation_rejected`), audit `ORDER_CANCELLATION_REJECTED`. Repeat → 200; on an APPROVED request →
+  409 `cancellation_request_closed`. The customer may file a new request afterwards (one **open** request per
+  order, V059 partial unique index).
+- Another tenant's request → 404. Approve is in rate-limit group `payments`.
+
+### `GET /api/v1/me/orders/{id}` (additive fields)
+
+`cancellationPhase` (`FREE` | `REQUEST` | `ALREADY_CANCELLED` | `NOT_CANCELLABLE`), `cancellationFeeEstimate`
+(REQUEST phase only, else null), `cancellationRequest` (the order's latest request or null).
+
+### New `cancellationReason` values (clients that switch on it)
+
+`CUSTOMER_CANCELLED`, `CUSTOMER_CANCELLED_WITH_FEE` (on `OrderResponse`, `AdminOrderResponse`, the customer
+summary/detail). Unknown values must be treated as a generic cancellation. Backoffice: no OPS screen yet —
+use the API (follow-up). Customer web: `OrderCancellationCard` on the order detail.
