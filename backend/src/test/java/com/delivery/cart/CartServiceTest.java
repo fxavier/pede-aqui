@@ -18,7 +18,9 @@ import com.delivery.cart.service.PricingService;
 import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
+import com.delivery.catalog.repository.CategoryRepository;
 import com.delivery.catalog.repository.SkuRepository;
+import com.delivery.catalog.service.PharmacySalePolicy;
 import com.delivery.vendor.api.StoreAvailabilityService;
 import com.delivery.vendor.api.StoreClosedException;
 import com.delivery.common.exception.BusinessException;
@@ -35,6 +37,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 class CartServiceTest {
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final StoreAvailabilityService storeAvailability = mock(StoreAvailabilityService.class);
+    private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
+    private PharmacySalePolicy pharmacyPolicy = new PharmacySalePolicy(categoryRepository, false);
     private final UUID tenantId = UUID.randomUUID();
     private final UUID customerId = UUID.randomUUID();
     private final String keycloakUserId = "test-keycloak-user-id";
@@ -200,6 +204,86 @@ class CartServiceTest {
         verify(cartRepository, never()).save(any());
     }
 
+    // --- LAC-64: pharmacy vertical blocked by configuration ---
+
+    @Test
+    void rejectsPrescriptionProductWhilePharmacyIsDisabled() {
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        product.markPrescriptionRequired();
+
+        assertPharmacyRejection(vendorId, product, "pharmacy_not_available");
+    }
+
+    @Test
+    void rejectsProductOfThePharmacyVerticalWhilePharmacyIsDisabled() {
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        when(categoryRepository.findById(product.getCategoryId()))
+                .thenReturn(Optional.of(new com.delivery.catalog.entity.Category(product.getCategoryId(), tenantId, "Medicamentos", "pharmacy")));
+
+        assertPharmacyRejection(vendorId, product, "pharmacy_not_available");
+    }
+
+    @Test
+    void prescriptionProductsStayUnsellableWhenPharmacyIsEnabled() {
+        pharmacyPolicy = new PharmacySalePolicy(categoryRepository, true);
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        product.markPrescriptionRequired();
+
+        assertPharmacyRejection(vendorId, product, "prescription_required");
+    }
+
+    @Test
+    void nonPrescriptionPharmacyProductIsSellableWhenPharmacyIsEnabled() {
+        pharmacyPolicy = new PharmacySalePolicy(categoryRepository, true);
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        when(categoryRepository.findById(product.getCategoryId()))
+                .thenReturn(Optional.of(new com.delivery.catalog.entity.Category(product.getCategoryId(), tenantId, "Higiene", "pharmacy")));
+        CartRepository cartRepository = cartFor(vendorId);
+        when(cartRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        SkuRepository skuRepository = skuOf(product);
+
+        CartService service = service(cartRepository, skuRepository, stocked(vendorId, skuIdOf(skuRepository)));
+
+        assertThat(service.addItem(vendorId, skuIdOf(skuRepository), 1).items()).hasSize(1);
+    }
+
+    @Test
+    void checkoutEligibilityRejectsAClosedStoreAndAPharmacyProduct() {
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        SkuRepository skuRepository = skuOf(product);
+        Cart cart = new Cart(UUID.randomUUID(), tenantId, customerId, vendorId);
+        cart.addItem(new com.delivery.cart.entity.CartItem(UUID.randomUUID(), cart, tenantId, skuIdOf(skuRepository), "1kg", "1kg", new BigDecimal("9.99"), 1));
+        CartService service = service(mock(CartRepository.class), skuRepository, mock(InventoryItemRepository.class));
+
+        service.requireCheckoutEligible(tenantId, cart); // open store, ordinary product: no exception
+
+        product.markPrescriptionRequired();
+        assertThatThrownBy(() -> service.requireCheckoutEligible(tenantId, cart))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getCode()).isEqualTo("pharmacy_not_available"));
+
+        org.mockito.Mockito.doThrow(new StoreClosedException(vendorId, null)).when(storeAvailability).requireOpen(vendorId);
+        assertThatThrownBy(() -> service.requireCheckoutEligible(tenantId, cart))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getCode()).isEqualTo("store_closed"));
+    }
+
+    private void assertPharmacyRejection(UUID vendorId, Product product, String expectedCode) {
+        CartRepository cartRepository = cartFor(vendorId);
+        SkuRepository skuRepository = skuOf(product);
+        CartService service = service(cartRepository, skuRepository, stocked(vendorId, skuIdOf(skuRepository)));
+
+        assertThatThrownBy(() -> service.addItem(vendorId, skuIdOf(skuRepository), 1))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getCode()).isEqualTo(expectedCode);
+                    assertThat(e.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                });
+        verify(cartRepository, never()).save(any());
+    }
+
     private final java.util.Map<SkuRepository, UUID> skuIds = new java.util.IdentityHashMap<>();
 
     private SkuRepository skuOf(Product product) {
@@ -243,6 +327,6 @@ class CartServiceTest {
         when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(keycloakUserId));
         when(userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId)).thenReturn(Optional.of(userProfile));
         
-        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, inventoryRepository, userProfileRepository, storeAvailability);
+        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, inventoryRepository, userProfileRepository, storeAvailability, pharmacyPolicy);
     }
 }

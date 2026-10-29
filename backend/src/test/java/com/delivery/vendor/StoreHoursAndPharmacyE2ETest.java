@@ -195,6 +195,36 @@ class StoreHoursAndPharmacyE2ETest extends PostgresApiE2ETestBase {
         assertThat(Instant.parse(after.get(1).get("nextOpeningAt").asText())).isEqualTo(endsAt);
     }
 
+    // ---- LAC-64: pharmacy gate --------------------------------------------------------------------
+
+    @Test
+    void prescriptionProductsAndPharmacyVerticalProductsCannotEnterTheCart() throws Exception {
+        UUID prescriptionSku = product(vendorA, categoryId, true);
+        UUID pharmacyCategory = category("pharmacy");
+        UUID pharmacySku = product(vendorA, pharmacyCategory, false);
+
+        mockMvc.perform(addItem(customerToken(), vendorA, prescriptionSku))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("pharmacy_not_available"));
+        mockMvc.perform(addItem(customerToken(), vendorA, pharmacySku))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("pharmacy_not_available"));
+    }
+
+    @Test
+    void checkoutRevalidatesThePharmacyGate() throws Exception {
+        String ana = customerToken();
+        mockMvc.perform(addItem(ana, vendorA, skuA)).andExpect(status().isOk());
+        UUID cartId = jdbc.queryForObject("SELECT id FROM carts WHERE vendor_id = ? AND status = 'ACTIVE'", UUID.class, vendorA);
+        jdbc.update("UPDATE products SET requires_prescription_metadata = TRUE WHERE id = (SELECT product_id FROM skus WHERE id = ?)", skuA);
+
+        mockMvc.perform(withBearer(post("/api/v1/checkout"), ana).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cartId\":\"" + cartId + "\",\"idempotencyKey\":\"rx-" + cartId + "\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("pharmacy_not_available"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM orders WHERE cart_id = ?", Integer.class, cartId)).isZero();
+    }
+
     // ---- cart bug: SKU of another vendor --------------------------------------------------------------
 
     @Test
