@@ -1,0 +1,23 @@
+@startuml
+set separator none
+title Notification
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
+  Component(DeliveryApplication.DeliveryApplication.Notification, "Notification", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Auth, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Notification, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Notification, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

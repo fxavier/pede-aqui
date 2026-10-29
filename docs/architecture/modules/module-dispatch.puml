@@ -1,0 +1,46 @@
+@startuml
+set separator none
+title Dispatch
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
+  Component(DeliveryApplication.DeliveryApplication.Dispatch, "Dispatch", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Order, "Order", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Upload, "Upload", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Dashboard, "Dashboard", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Delivery, "Delivery", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Auth, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Dispatch, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Order, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Upload, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Delivery, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Order, "listens to", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Dispatch, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Order, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Delivery, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dashboard, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Delivery, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Dashboard, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Upload, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Dispatch, DeliveryApplication.DeliveryApplication.Order, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Upload, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

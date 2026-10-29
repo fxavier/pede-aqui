@@ -1,0 +1,33 @@
+@startuml
+set separator none
+title Geo
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
+  Component(DeliveryApplication.DeliveryApplication.Geo, "Geo", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Vendor, "Vendor", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Cart, "Cart", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Catalog, "Catalog", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Geo, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Geo, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Geo, DeliveryApplication.DeliveryApplication.Cart, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml
