@@ -55,7 +55,8 @@ class PaymentConfirmationApiTest {
     static final String KEY = "checkout-key-1";
 
     @WebMvcTest(PaymentController.class)
-    @Import({SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class})
+    @Import({SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class,
+            com.delivery.order.service.OrderPaymentHooks.class})
     @EnableConfigurationProperties({PaymentMockConfirmationProperties.class, TenancyProperties.class})
     // Customers resolve their tenant from the OIDC client (ADR-0001), so map the test client to this tenant.
     @TestPropertySource(properties = "app.tenancy.customer-clients.pede-aqui-web=" + TENANT)
@@ -69,7 +70,7 @@ class PaymentConfirmationApiTest {
         @MockBean JwtDecoder jwtDecoder;
         @MockBean com.delivery.delivery.repository.DeliveryRepository deliveryRepository;
         @MockBean com.delivery.order.service.OrderStockService orderStockService;
-        @MockBean com.delivery.delivery.service.DeliveryRetirementService deliveryRetirementService;
+        @MockBean com.delivery.delivery.api.DeliveryRetirementService deliveryRetirementService;
 
         Payment payment;
         Order order;

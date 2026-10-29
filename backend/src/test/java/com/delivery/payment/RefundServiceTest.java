@@ -16,7 +16,7 @@ import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
-import com.delivery.delivery.service.DeliveryRetirementService;
+import com.delivery.delivery.api.DeliveryRetirementService;
 import com.delivery.dispatch.entity.DispatchJob;
 import com.delivery.dispatch.entity.DispatchJobStatus;
 import com.delivery.dispatch.repository.DispatchJobRepository;
@@ -76,10 +76,13 @@ class RefundServiceTest {
         dispatchJobRepository = mock(DispatchJobRepository.class);
         deliveryEventRepository = mock(DeliveryEventRepository.class);
         stored.clear();
-        service = new PaymentService(paymentRepository, orderRepository, refundRepository, auditLogService,
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(),
-                deliveryRepository, orderStockService,
-                new DeliveryRetirementService(deliveryRepository, dispatchJobRepository, deliveryEventRepository));
+        service = new PaymentService(paymentRepository,
+                new com.delivery.order.service.OrderPaymentHooks(orderRepository,
+                        new DeliveryRetirementService(deliveryRepository,
+                                new com.delivery.dispatch.service.DispatchJobRetirement(dispatchJobRepository), deliveryEventRepository),
+                        orderStockService, auditLogService),
+                refundRepository, auditLogService,
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties());
 
         payment = new Payment(UUID.randomUUID(), tenantA, orderId, new BigDecimal("100.00"), "pay-key");
         payment.confirm();

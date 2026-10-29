@@ -8,9 +8,9 @@ import com.delivery.dashboard.dto.AdminDashboardResponse;
 import com.delivery.dashboard.dto.CourierDashboardResponse;
 import com.delivery.dashboard.dto.FinanceDashboardResponse;
 import com.delivery.dashboard.dto.VendorDashboardResponse;
-import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.dispatch.api.CourierEarnings;
 import com.delivery.dispatch.entity.Courier;
 import com.delivery.dispatch.entity.DispatchJobStatus;
 import com.delivery.dispatch.repository.CourierRepository;
@@ -27,7 +27,6 @@ import com.delivery.payment.repository.RefundRepository;
 import com.delivery.vendor.repository.VendorRepository;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -48,6 +47,7 @@ public class DashboardService {
     private final RefundRepository refundRepository;
     private final AppUserProfileRepository userProfileRepository;
     private final TenantContext tenantContext;
+    private final CourierEarnings courierEarnings;
 
     public DashboardService(
             VendorRepository vendorRepository,
@@ -60,7 +60,8 @@ public class DashboardService {
             CashReconciliationRepository cashReconciliationRepository,
             RefundRepository refundRepository,
             AppUserProfileRepository userProfileRepository,
-            TenantContext tenantContext) {
+            TenantContext tenantContext,
+            CourierEarnings courierEarnings) {
         this.vendorRepository = vendorRepository;
         this.courierRepository = courierRepository;
         this.orderRepository = orderRepository;
@@ -72,6 +73,7 @@ public class DashboardService {
         this.refundRepository = refundRepository;
         this.userProfileRepository = userProfileRepository;
         this.tenantContext = tenantContext;
+        this.courierEarnings = courierEarnings;
     }
 
     /** Returns top-level operations metrics for admins and operations users. */
@@ -137,21 +139,9 @@ public class DashboardService {
         long failedDeliveries = deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId, courierId, DeliveryStatus.FAILED_DELIVERY).size();
         long activeAssignments = dispatchJobRepository.countByTenantIdAndCourierIdAndStatus(tenantId, courierId, DispatchJobStatus.ASSIGNED);
         
-        BigDecimal earningsTotal = calculateCourierEarnings(tenantId, courierId);
+        BigDecimal earningsTotal = courierEarnings.calculate(tenantId, courierId);
         
         return new CourierDashboardResponse(completedDeliveries, failedDeliveries, activeAssignments, earningsTotal);
-    }
-
-    /** Calculates total earnings for a courier based on delivered order totals. */
-    @Transactional(readOnly = true)
-    public BigDecimal calculateCourierEarnings(UUID tenantId, UUID courierId) {
-        return deliveryRepository.findByTenantIdAndCourierIdAndStatus(tenantId, courierId, DeliveryStatus.DELIVERED).stream()
-                .map(Delivery::getOrderId)
-                .map(orderId -> orderRepository.findByTenantIdAndId(tenantId, orderId))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(order -> order.getTotal())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /** Returns finance aggregates aligned to payment, refund, and reconciliation data. */

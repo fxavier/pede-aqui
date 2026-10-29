@@ -15,11 +15,10 @@ Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "Delivery
   Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
 }
 
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Geo, "depends on", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Tenant, "depends on", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Auth, "depends on", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Tenant, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Geo, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Tenant, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")

@@ -13,7 +13,7 @@ import com.delivery.order.entity.OrderItem;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.service.OrderStockService;
-import com.delivery.delivery.service.DeliveryRetirementService;
+import com.delivery.delivery.api.DeliveryRetirementService;
 import com.delivery.payment.dto.RefundRequest;
 import com.delivery.payment.dto.RefundResponse;
 import com.delivery.payment.entity.PaymentStatus;

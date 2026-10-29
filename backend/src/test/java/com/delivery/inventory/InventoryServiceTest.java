@@ -10,7 +10,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.delivery.catalog.service.CatalogAccessGuard;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditActions;
@@ -47,7 +46,7 @@ class InventoryServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         service = new InventoryService(repository, new InventoryMapper(), tenantContext,
-                new CatalogAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext)), auditLogService);
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), auditLogService);
     }
 
     @AfterEach

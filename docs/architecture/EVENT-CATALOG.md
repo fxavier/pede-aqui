@@ -30,8 +30,18 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 | Consumidores | `dashboard` — `OrderStatusMetricsListener`: incrementa `order_status_transitions_total{from,to}` e regista uma linha de log. Não altera estado. |
 | Garantia | At-least-once; o consumidor atual tolera duplicados (pode apenas sobrecontar a métrica). |
 | Testes | `OrderStatusChangedEventPostgresTest` (publicação persistida e concluída; falha → incompleta → reenviada pelo *retry job*) |
-| Notas | Ainda **não** é publicado por cancelamento, rejeição, reembolso, entrega nem *override* de vendas: esses caminhos entram com a máquina de estados explícita (LAC-25) e a quebra dos ciclos C1/C2 (W3-A). Não usar este evento como fonte completa do histórico de estados até lá. |
+| Notas | Ainda **não** é publicado por cancelamento, rejeição, reembolso, entrega nem *override* de vendas: esses caminhos entram com a máquina de estados explícita (LAC-25). A quebra dos ciclos C1/C2 (W3-A) **não** os converteu em eventos: ficaram síncronos através de *hooks* nas APIs de `payment`/`delivery` (ver abaixo). Não usar este evento como fonte completa do histórico de estados até lá. |
 
 ## Eventos previstos (ainda não implementados)
 
 Do ADR-0002 e do registo de lacunas (LAC-25, LAC-47) — entram aqui quando forem implementados: `PaymentConfirmed`, `RefundCompleted` (`payment` → `order`), `OrderReadyForPickup`/`OrderCancelled` (`order` → `delivery`), `DeliveryPickedUp`/`DeliveryCompleted`/`DeliveryFailed` (`delivery` → `order`).
+
+**Decisão W3-A (2026-10-29):** os ciclos `order↔payment` (C1) e `order↔delivery` (C2) foram quebrados **sem** estes eventos. Os efeitos que eles transportariam têm hoje de ser atómicos com o produtor (regra de ordem de *locks* nos caminhos de dinheiro; estado da entrega + estado da encomenda + ciclo de stock como uma invariante; `order_not_deliverable` verificado antes de qualquer efeito), por isso continuam síncronos através de interfaces declaradas pelo módulo de baixo e implementadas por `order`:
+
+| Interface (API) | Implementação | Substitui o evento previsto |
+|---|---|---|
+| `payment.api.PaymentOrderHooks` | `order.service.OrderPaymentHooks` | `PaymentConfirmed`, `RefundCompleted` |
+| `delivery.api.DeliveryOrderHooks` | `order.service.OrderDeliveryHooks` | `DeliveryPickedUp`, `DeliveryCompleted`, `DeliveryFailed` |
+| `delivery.api.DeliveryRetirementListener` | `dispatch.service.DispatchJobRetirement` | (cancelamento do *dispatch job* na retirada) |
+
+Não são eventos: correm na transação do chamador, sem registo em `event_publication`. Quando um destes efeitos puder ser eventual (estados intermédios da LAC-25, PSP com *callbacks*), passa a evento e entra nesta tabela.

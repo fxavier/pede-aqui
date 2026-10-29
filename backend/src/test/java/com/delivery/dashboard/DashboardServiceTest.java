@@ -35,7 +35,7 @@ class DashboardServiceTest {
         when(orderRepository.countByTenantIdAndStatus(tenantId, OrderStatus.REJECTED_BY_VENDOR)).thenReturn(2L);
         DashboardService service = new DashboardService(mock(VendorRepository.class), mock(CourierRepository.class), orderRepository,
                 mock(DeliveryRepository.class), mock(DispatchJobRepository.class), mock(PaymentRepository.class), mock(CommissionRepository.class),
-                mock(CashReconciliationRepository.class), mock(RefundRepository.class), mock(AppUserProfileRepository.class), tenantContext);
+                mock(CashReconciliationRepository.class), mock(RefundRepository.class), mock(AppUserProfileRepository.class), tenantContext, mock(com.delivery.dispatch.api.CourierEarnings.class));
 
         assertThat(service.vendor().rejectedOrdersCount()).isEqualTo(5L);
     }
