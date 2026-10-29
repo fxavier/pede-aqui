@@ -131,6 +131,15 @@ do operador V045; falha de configuração). `tenant_slug_exists` deixa de ser em
 W3-D acrescenta (detalhe em `API-MIGRATION.md`, secção W3-D): `sku_code_conflict` (409 — `POST /catalog/skus`
 com um `skuCode` já usado pelo **mesmo** vendor; desde V056 o código é único por (tenant, vendor, sku_code)).
 
+W4-A (máquina de estados da encomenda, LAC-25; detalhe em `API-MIGRATION.md`, secção W4-A) muda o estado HTTP
+de um código existente: `invalid_order_transition` passa a **409** em todos os caminhos (antes **400** nas ações
+do comerciante `accept`/`preparing`/`ready-for-pickup`/`reject`). É emitido pela `OrderStateMachine` para
+qualquer transição fora da tabela — ações do comerciante, aprovação de reembolso total de uma encomenda nunca
+paga — sempre **antes** de qualquer efeito (sem histórico, evento, stock, reembolso nem auditoria). Os códigos
+de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transition_not_allowed` (409, lista do
+*override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
+perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
