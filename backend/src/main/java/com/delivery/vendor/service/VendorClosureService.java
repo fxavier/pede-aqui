@@ -11,9 +11,13 @@ import com.delivery.vendor.dto.VendorClosureResponse;
 import com.delivery.vendor.entity.VendorClosure;
 import com.delivery.vendor.repository.VendorClosureRepository;
 import com.delivery.vendor.repository.VendorRepository;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,12 +45,16 @@ public class VendorClosureService {
         this.auditLogService = auditLogService;
     }
 
-    /** Lists the vendor's current and future closures (ended ones are omitted), earliest first. */
+    /**
+     * Lists the vendor's current and future closures (ended ones are omitted), earliest first, capped at
+     * {@link PageLimits#LEGACY_LIST_CAP} rows (LAC-14 capped-list convention; {@code truncated} when more exist).
+     */
     @Transactional(readOnly = true)
-    public List<VendorClosureResponse> list(UUID vendorId) {
+    public CappedList<VendorClosureResponse> list(UUID vendorId) {
         UUID tenantId = authorize(vendorId);
-        return closureRepository.findByTenantIdAndVendorIdAndEndsAtAfterOrderByStartsAtAsc(tenantId, vendorId, Instant.now())
-                .stream().map(VendorClosureResponse::of).toList();
+        Pageable cap = PageRequest.of(0, PageLimits.LEGACY_LIST_CAP, Sort.by(Sort.Order.asc("startsAt"), Sort.Order.asc("id")));
+        return CappedList.of(closureRepository.findByTenantIdAndVendorIdAndEndsAtAfter(tenantId, vendorId, Instant.now(), cap),
+                VendorClosureResponse::of);
     }
 
     /** Creates a closure; the period must be non-empty and must not already be over. */
