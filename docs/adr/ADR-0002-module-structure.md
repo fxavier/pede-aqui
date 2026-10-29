@@ -155,6 +155,15 @@ O Spring Modulith dá precisamente as duas coisas que faltam — fronteiras veri
 - Testes de integração confirmam que, após `PaymentConfirmed`/`DeliveryCompleted`, a encomenda chega ao estado esperado e que reentregar o mesmo evento é idempotente.
 - Tabela `event_publication` sem publicações incompletas após a suite E2E.
 
+## Implementation notes
+
+**2026-10-29 — incremento "Modulith baseline" (W2-A, LAC-46/LAC-47):**
+- Spring Modulith **1.4.14** (BOM) com `spring-modulith-starter-core` (sem `spring-modulith-moments`, excluído), `spring-modulith-starter-jdbc` e `spring-modulith-starter-test`.
+- **Registo de eventos JDBC em vez de JPA.** O texto acima diz "JPA", mas a mitigação de risco deste mesmo ADR usa a propriedade `spring.modulith.events.jdbc.schema-initialization.enabled` e o LAC-47 pede `-starter-jdbc`. Escolheu-se JDBC porque: (1) não acrescenta uma entidade ao *persistence unit*, logo não há risco de o `ddl-auto: validate` divergir do esquema Flyway; (2) a escrita usa a mesma ligação/transação do `JpaTransactionManager`, portanto a atomicidade com a transação de negócio é a mesma; (3) o esquema é exatamente o `schema-postgresql.sql` do módulo, copiado para a migração V052. A garantia (at-least-once, republicação) é idêntica.
+- Republicação no arranque desligada; um job com ShedLock (`EventPublicationRetryJob`) reenvia as incompletas (seguro com várias réplicas). Limpeza de concluídas aos 7 dias.
+- `ModularityTest` com *baseline* versionado (`backend/src/test/resources/modulith/violations-baseline.txt`): os ciclos são registados como arestas dentro de componentes fortemente ligados (o ArchUnit trunca a lista de ciclos aos 100 caminhos) e os acessos a internos como `<módulo> -> <tipo>`. Falha em entradas novas e em entradas obsoletas. Com `common` OPEN, os ciclos `common↔tenant` e `common↔auth` deixam de contar como ciclos de módulo.
+- Primeiro evento: `order.OrderStatusChanged` (ver `docs/architecture/EVENT-CATALOG.md`).
+
 ## References
 
 - [AS-IS-ARCHITECTURE.md §4.3 (dependências), §4.4 (eventos/jobs), §13 (AS-12, AS-18), §16 (D2)](../assessment/AS-IS-ARCHITECTURE.md)
