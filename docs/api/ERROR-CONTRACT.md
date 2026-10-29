@@ -140,6 +140,19 @@ de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transitio
 *override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
 perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
 
+W5-B (estado e GPS do estafeta, LAC-42/LAC-40; detalhe em `API-MIGRATION.md`, secção W5-B) acrescenta:
+- LAC-42: `invalid_courier_status` (400 — o estafeta pediu `BUSY`/`SUSPENDED` em `PUT /couriers/me/status`),
+  `courier_suspended` (409 — estafeta suspenso a ficar online ou a aceitar uma oferta), `courier_has_active_delivery`
+  (409 — ficar offline ou retirar o consentimento com uma entrega aceite em curso), `courier_not_suspended` (409 —
+  `reinstate` de um estafeta não suspenso), `invalid_vehicle_type` (400 — `vehicleType` desconhecido em
+  `POST /couriers`). `courier_not_verified` (409) passa a ser emitido também por `PUT /couriers/me/status`.
+- LAC-40: `location_consent_required` (409 — lote de localizações sem consentimento na versão atual),
+  `location_consent_outdated` (409 — `PUT /couriers/me/location-consent` com uma versão que não é a atual),
+  `courier_off_duty` (409 — lote de localizações com o estafeta fora de serviço e sem entrega aceite),
+  `location_batch_too_large` (400 — mais pontos do que `app.courier-location.max-batch-size`, só alcançável se
+  o limite configurado for menor que os 50 da validação). Pontos de baixa qualidade não são erro: são
+  descartados e contados em `droppedByReason`.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
