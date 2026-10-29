@@ -14,21 +14,12 @@ cycle-edge: catalog -> inventory
 cycle-edge: catalog -> vendor
 cycle-edge: customer -> auth
 cycle-edge: customer -> geo
-cycle-edge: dashboard -> auth
-cycle-edge: dashboard -> delivery
-cycle-edge: dashboard -> dispatch
-cycle-edge: dashboard -> finance
-cycle-edge: dashboard -> order
-cycle-edge: dashboard -> payment
-cycle-edge: dashboard -> vendor
 cycle-edge: delivery -> auth
 cycle-edge: delivery -> dispatch
 cycle-edge: delivery -> order
 cycle-edge: dispatch -> auth
-cycle-edge: dispatch -> dashboard
 cycle-edge: dispatch -> delivery
 cycle-edge: dispatch -> order
-cycle-edge: finance -> payment
 cycle-edge: geo -> cart
 cycle-edge: geo -> catalog
 cycle-edge: geo -> vendor
@@ -96,7 +87,6 @@ non-exposed: customer -> com.delivery.geo.dto.SearchVendorResponse
 non-exposed: customer -> com.delivery.geo.service.SearchService
 non-exposed: dashboard -> com.delivery.auth.entity.AppUserProfile
 non-exposed: dashboard -> com.delivery.auth.repository.AppUserProfileRepository
-non-exposed: dashboard -> com.delivery.delivery.entity.Delivery
 non-exposed: dashboard -> com.delivery.delivery.entity.DeliveryStatus
 non-exposed: dashboard -> com.delivery.delivery.repository.DeliveryRepository
 non-exposed: dashboard -> com.delivery.dispatch.entity.Courier
@@ -133,7 +123,6 @@ non-exposed: delivery -> com.delivery.order.service.OrderStockService
 non-exposed: delivery -> com.delivery.upload.service.StoredUploadValidator
 non-exposed: dispatch -> com.delivery.auth.entity.AppUserProfile
 non-exposed: dispatch -> com.delivery.auth.repository.AppUserProfileRepository
-non-exposed: dispatch -> com.delivery.dashboard.service.DashboardService
 non-exposed: dispatch -> com.delivery.delivery.entity.Delivery
 non-exposed: dispatch -> com.delivery.delivery.entity.DeliveryEvent
 non-exposed: dispatch -> com.delivery.delivery.entity.DeliveryStatus
