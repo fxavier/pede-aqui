@@ -40,6 +40,9 @@ class OrderListApiTest {
     private com.delivery.order.service.OrderListingService listingService;
 
     @MockBean
+    private com.delivery.order.service.OrderHistoryService historyService; // W4-A: OrderController dependency
+
+    @MockBean
     private JwtDecoder jwtDecoder;
 
     @Test

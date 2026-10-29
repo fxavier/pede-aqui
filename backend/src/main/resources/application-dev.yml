@@ -26,3 +26,17 @@ app:
 spring:
   datasource:
     password: ${DB_PASSWORD:delivery}
+
+# LAC-50: dev traces everything (exported only if MANAGEMENT_OTLP_TRACING_ENDPOINT is set — see
+# `docker compose --profile observability`) and logs a readable line instead of JSON (LOG_FORMAT=logstash for JSON).
+# The correlation block shows traceId/spanId, the request correlation id and, for scheduled jobs, job/jobRunId.
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:}
+  pattern:
+    correlation: "[%X{traceId:-}/%X{spanId:-}%replace( cid=%X{correlationId}){' cid=$', ''}%replace( job=%X{job}/%X{jobRunId}){' job=/$', ''}] "

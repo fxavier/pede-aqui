@@ -104,6 +104,36 @@ curl -H "Authorization: Bearer <token>" \
 
 Admin users can create or list tenants through `/api/v1/tenants` without `X-Tenant-Id`.
 
+## Observability (LAC-50)
+
+Opt-in stack — the default `docker compose up` is unchanged:
+
+```bash
+docker compose --profile observability up -d otel-collector jaeger grafana   # also starts prometheus
+```
+
+- OpenTelemetry Collector: OTLP on `localhost:4317` (gRPC) / `localhost:4318` (HTTP) → forwards traces to Jaeger
+  (`observability/otel-collector.yaml`; `docker compose logs otel-collector` shows one line per received batch).
+- Jaeger UI: `http://localhost:16686` (service `delivery-marketplace`).
+- Grafana: `http://localhost:3030` (anonymous admin; 3000 is the backoffice). Datasources Prometheus + Jaeger and the
+  starter dashboard **Pede Aqui — Backend** (HTTP RED, jobs, rate limiting, business metrics, Hikari/JVM) are
+  provisioned from `observability/grafana/`.
+
+The backend only **exports** spans when `MANAGEMENT_OTLP_TRACING_ENDPOINT` is set (trace ids are always generated and
+logged). Never set it to an empty string — Boot then tries to build an exporter without a URL and startup fails.
+
+- Backend on the host: `MANAGEMENT_OTLP_TRACING_ENDPOINT=http://localhost:4318/v1/traces mvn spring-boot:run`.
+  For Prometheus to scrape it too, also set `MANAGEMENT_SERVER_PORT=8091` (job `backend-host` →
+  `host.docker.internal:8091`).
+- Backend in compose: add `MANAGEMENT_OTLP_TRACING_ENDPOINT=http://otel-collector:4318/v1/traces` to the repo-root
+  `.env` (the service loads it via `env_file`); remove it again before running the backend on the host, where that
+  hostname does not resolve.
+- Sampling: 100 % in the `dev` profile, 10 % otherwise (`TRACING_SAMPLING_PROBABILITY`).
+- Logs: readable in `dev` (`[traceId/spanId cid=<correlationId> job=<job>/<runId>]` block); JSON with
+  `LOG_FORMAT=logstash` (the default outside `dev`). An error response's `traceId` is the trace to search in Jaeger.
+
+Tear down: `docker compose --profile observability down` (add `-v` to drop volumes).
+
 ## Troubleshooting
 
 - If Flyway fails, verify PostgreSQL is healthy and credentials match `application.yml`.

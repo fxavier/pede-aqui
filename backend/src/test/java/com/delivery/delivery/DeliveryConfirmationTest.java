@@ -72,10 +72,12 @@ class DeliveryConfirmationTest {
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
         properties.setMaxCodeAttempts(5);
         service = new DeliveryService(deliveryRepository, eventRepository,
-                new com.delivery.order.service.OrderDeliveryHooks(orderRepository, orderStockService), new DeliveryMapper(), tenantContext,
+                new com.delivery.order.service.OrderDeliveryHooks(orderRepository, orderStockService, com.delivery.order.OrderTestStatus.stateMachine()), new DeliveryMapper(), tenantContext,
                 new DeliveryAccessGuard(new com.delivery.dispatch.service.CourierIdentityResolver(profileRepository, courierRepository, tenantContext)),
                 hasher, properties, auditLogService, mock(StoredUploadValidator.class));
         order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hasher.hash(CODE), CODE);
+        // W4-A: a delivery a courier works on belongs to an order dispatch moved to ASSIGNED_TO_COURIER.
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.ASSIGNED_TO_COURIER);
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
         Courier courier = mock(Courier.class);
         when(courier.getId()).thenReturn(courierId);
@@ -122,7 +124,7 @@ class DeliveryConfirmationTest {
                 });
         assertThat(delivery.getConfirmationAttempts()).isEqualTo(1);
         assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_CUSTOMER);
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.ASSIGNED_TO_COURIER);
     }
 
     @Test

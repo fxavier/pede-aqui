@@ -47,6 +47,12 @@ public class SalesReportRepository {
      */
     public static final List<String> CANCELLED_STATUSES = List.of("CANCELLED", "REJECTED_BY_VENDOR");
 
+    /**
+     * orders.cancellation_reason of an order the payment-expiry job cancelled (W4-A): its payment was never captured,
+     * so it is excluded from every report figure (gross, counts, cancelled count) — it was never a sale.
+     */
+    static final String PAYMENT_EXPIRED = "PAYMENT_EXPIRED";
+
     private static final int STREAM_FETCH_SIZE = 500;
 
     private static final String REFUND_JOIN =
@@ -242,7 +248,9 @@ public class SalesReportRepository {
     }
 
     private String orderFilter(UUID vendorId) {
+        // W4-A: an order cancelled by the payment-expiry job (PAYMENT_EXPIRED) was never paid — not revenue.
         String base = "o.tenant_id = :tenantId AND o.status IN (:confirmedStatuses)"
+                + " AND (o.cancellation_reason IS NULL OR o.cancellation_reason <> '" + PAYMENT_EXPIRED + "')"
                 + " AND o.created_at >= :fromTs AND o.created_at <= :toTs";
         return vendorId == null ? base : base + " AND o.vendor_id = :vendorId";
     }

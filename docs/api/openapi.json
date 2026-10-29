@@ -85,7 +85,9 @@
         "properties": {
           "cancellationReason": {
             "enum": [
-              "SELLER_REJECTED"
+              "SELLER_REJECTED",
+              "PAYMENT_EXPIRED",
+              "VENDOR_TIMEOUT"
             ],
             "type": "string"
           },
@@ -1370,7 +1372,9 @@
         "properties": {
           "cancellationReason": {
             "enum": [
-              "SELLER_REJECTED"
+              "SELLER_REJECTED",
+              "PAYMENT_EXPIRED",
+              "VENDOR_TIMEOUT"
             ],
             "type": "string"
           },
@@ -1464,7 +1468,9 @@
         "properties": {
           "cancellationReason": {
             "enum": [
-              "SELLER_REJECTED"
+              "SELLER_REJECTED",
+              "PAYMENT_EXPIRED",
+              "VENDOR_TIMEOUT"
             ],
             "type": "string"
           },
@@ -2071,6 +2077,30 @@
         },
         "type": "object"
       },
+      "OrderHistoryResponse": {
+        "properties": {
+          "currentStatus": {
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderStatus": {
+            "items": {
+              "$ref": "#/components/schemas/OrderStatusHistoryEntry"
+            },
+            "type": "array"
+          },
+          "paymentStatus": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentStatusHistoryEntry"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "OrderItemResponse": {
         "properties": {
           "id": {
@@ -2100,7 +2130,9 @@
         "properties": {
           "cancellationReason": {
             "enum": [
-              "SELLER_REJECTED"
+              "SELLER_REJECTED",
+              "PAYMENT_EXPIRED",
+              "VENDOR_TIMEOUT"
             ],
             "type": "string"
           },
@@ -2154,6 +2186,33 @@
             "type": "number"
           },
           "vendorName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "OrderStatusHistoryEntry": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fromStatus": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "toStatus": {
             "type": "string"
           }
         },
@@ -2299,6 +2358,37 @@
               "REFUNDED",
               "FULLY_REFUNDED"
             ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PaymentStatusHistoryEntry": {
+        "properties": {
+          "actorId": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fromStatus": {
+            "type": "string"
+          },
+          "paymentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "toStatus": {
             "type": "string"
           }
         },
@@ -9058,6 +9148,47 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminOrderPageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "order-controller"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/history": {
+      "get": {
+        "operationId": "history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderHistoryResponse"
                 }
               }
             },

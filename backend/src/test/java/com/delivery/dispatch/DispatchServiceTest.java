@@ -84,7 +84,8 @@ class DispatchServiceTest {
                 new DispatchMapper(),
                 mock(AuditLogService.class),
                 tenantContext,
-                Duration.ofSeconds(60));
+                Duration.ofSeconds(60),
+                com.delivery.order.OrderTestStatus.stateMachine());
     }
 
     private Courier approvedCourier() {
@@ -97,7 +98,7 @@ class DispatchServiceTest {
     /** Characterization: the happy path assign → reject (by the assignee) → reassign still works. */
     @Test
     void coversAssignmentRejectionAndReassignment() {
-        order.markReadyForPickup();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.READY_FOR_PICKUP);
         var assigned = service.assign(orderId, deliveryId, zoneId);
         UUID jobId = UUID.randomUUID();
         DispatchJob job = new DispatchJob(jobId, tenantId, orderId, deliveryId, assigned.courierId());
@@ -148,7 +149,7 @@ class DispatchServiceTest {
 
     @Test
     void exclusivityIndexViolationsAreMappedToConflictButOtherIntegrityErrorsPropagate() {
-        order.markReadyForPickup();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.READY_FOR_PICKUP);
         doThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_deliveries_active_courier\""))
                 .when(jobRepository).flush();
         assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
@@ -158,14 +159,14 @@ class DispatchServiceTest {
                     assertThat(((BusinessException) e).getCode()).isEqualTo("courier_busy");
                 });
 
-        order.markReadyForPickup();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.READY_FOR_PICKUP);
         doThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_dispatch_jobs_active_delivery\""))
                 .when(jobRepository).flush();
         assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getCode()).isEqualTo("dispatch_job_already_active"));
 
-        order.markReadyForPickup();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.READY_FOR_PICKUP);
         doThrow(new DataIntegrityViolationException("violates foreign key constraint \"fk_other\""))
                 .when(jobRepository).flush();
         assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
@@ -174,7 +175,7 @@ class DispatchServiceTest {
 
     @Test
     void assignOfOrderNotReadyForPickupIsConflictAndCreatesNoJob() {
-        order.markPreparing();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.PREPARING);
 
         assertThatThrownBy(() -> service.assign(orderId, deliveryId, zoneId))
                 .isInstanceOf(BusinessException.class)

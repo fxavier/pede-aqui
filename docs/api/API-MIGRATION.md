@@ -485,6 +485,60 @@ before). What clients can observe:
   calls `GET /orders/{id}/tracking` (still available, unchanged).
 - **Flutter customer app**: not migrated yet.
 
+## W4-A — Order state machine, status history and timeouts (LAC-25, LAC-15) — 2026-10-29
+
+### Illegal order transitions are `409 invalid_order_transition` (behaviour change)
+
+- Every order status change now goes through `OrderStateMachine` (transition table in `CLAUDE.md`, Key API
+  Flows). A transition outside the table answers **409** `invalid_order_transition` and changes nothing.
+- `PATCH /api/v1/vendor/orders/{id}/accept|preparing|ready-for-pickup|reject` from a wrong source status:
+  **409** (was **400**, same code `invalid_order_transition`). The message now reads
+  `Order cannot move from <FROM> to <TO>` (reject: `Order cannot be rejected in status <STATUS>`).
+- Approving a refund that would fully refund an order that was never paid (`PAYMENT_PENDING`) is now refused
+  with 409 `invalid_order_transition` (the whole approval rolls back).
+- Unchanged: `sale_not_cancellable`, `transition_not_allowed` (sales override allow-list, a narrower policy),
+  `order_not_ready_for_dispatch`, `order_not_deliverable`.
+
+### Order status follows the courier (behaviour change)
+
+- Courier `PATCH /deliveries/{id}/status` `PICKED_UP` moves the order `ASSIGNED_TO_COURIER → PICKED_UP`;
+  `ON_ROUTE_TO_CUSTOMER` / `ARRIVED_AT_CUSTOMER` move it to `DELIVERING`. Before W4-A the order stayed
+  `ASSIGNED_TO_COURIER` until `DELIVERED`. Clients that only knew `ASSIGNED_TO_COURIER` for "on the way" must
+  treat `PICKED_UP` and `DELIVERING` the same way (the backoffice and customer web already have labels).
+- The sales status override `DELIVERING → DELIVERED` is now reachable for orders whose courier is on the way.
+
+### Automatic cancellations (behaviour change)
+
+- `PAYMENT_PENDING` for longer than `app.orders.payment-timeout` (env `APP_ORDERS_PAYMENT_TIMEOUT`, default
+  `PT20M`) → `CANCELLED` with `cancellationReason = PAYMENT_EXPIRED`; payment `CANCELLED`; no refund.
+- `PAYMENT_CONFIRMED` not accepted within `app.orders.acceptance-timeout` (env `APP_ORDERS_ACCEPTANCE_TIMEOUT`,
+  default `PT10M`) after payment → `CANCELLED` with `cancellationReason = VENDOR_TIMEOUT`, refund of the
+  eligible remainder (`REQUESTED`, key `vendor-timeout-<orderId>`), customer notification
+  `order_cancelled_vendor_timeout`.
+- `cancellationReason` (`OrderResponse`, `AdminOrderResponse`, `/me/orders`) gains the values
+  `PAYMENT_EXPIRED` and `VENDOR_TIMEOUT` (was only `SELLER_REJECTED`/null) — new values of a response enum in
+  the OpenAPI contract; clients that switch on it must handle them (or unknown values).
+- Payment status `CANCELLED` is now written (payment expiry). Sales reports exclude `PAYMENT_EXPIRED`
+  cancellations (never paid).
+- A mock confirmation (`POST /payments/{id}/confirm`) racing the expiry: one wins; the loser gets 409
+  (`concurrent_modification` or `payment_not_confirmable`).
+
+### `GET /api/v1/orders/{orderId}/history` (new, additive)
+
+- Roles: `ADMIN`, `OPS`, `SUPPORT` (tenant-wide), `VENDOR_ADMIN`/`VENDOR_STAFF` (own vendor; another vendor's
+  order → 404). Other roles → 403.
+- Body: `{ orderId, currentStatus, orderStatus: [...], paymentStatus: [...] }`, oldest first; each entry has
+  `fromStatus` (null for the creation row), `toStatus`, `actorType` (`USER`/`SYSTEM`), `actorId` (Keycloak
+  subject or job name; **null for merchant callers**), `reason` (fixed code, never free text), `correlationId`,
+  `createdAt`; payment entries also carry `paymentId`.
+- Orders created before V058 have no history rows before their first transition after deploy.
+
+### Clients / consumers to review
+
+- **Backoffice**: vendor action buttons should handle 409 (they treated any non-2xx as an error, so no
+  breakage); a "history" timeline can use the new endpoint.
+- **Customer web / Flutter**: `cancellationReason` values above; `PICKED_UP`/`DELIVERING` statuses.
+
 ## W4-C — Customer web on Authorization Code + PKCE; ROPC removed for `pede-aqui-web` (LAC-10, web part)
 
 No REST endpoint changed. The change is in the identity contract of the Keycloak client `pede-aqui-web`.

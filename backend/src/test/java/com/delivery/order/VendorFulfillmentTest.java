@@ -112,7 +112,7 @@ class VendorFulfillmentTest {
 
     private Order cancelledByOps() {
         Order order = paymentConfirmedOrder(UUID.randomUUID());
-        order.markCancelled();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.CANCELLED);
         return order;
     }
 
@@ -127,7 +127,7 @@ class VendorFulfillmentTest {
     void movesAcceptedOrderToPreparingAndReadyForPickup() {
         UUID orderId = UUID.randomUUID();
         Order order = paymentConfirmedOrder(orderId);
-        order.markAcceptedByVendor();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.ACCEPTED_BY_VENDOR);
         OrderRepository repository = repositoryWith(orderId, order);
         AuditLogService auditLogService = mock(AuditLogService.class);
         OrderService service = serviceWithAuditService(repository, mock(PaymentRepository.class), auditLogService);
@@ -149,7 +149,14 @@ class VendorFulfillmentTest {
 
         assertThatThrownBy(() -> service.markPreparing(orderId))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Only accepted orders can move to preparing");
+                .hasMessage("Order cannot move from PAYMENT_CONFIRMED to PREPARING")
+                .satisfies(e -> {
+                    // W4-A: illegal transitions are 409 invalid_order_transition (was 400) and change nothing
+                    assertThat(((BusinessException) e).getCode()).isEqualTo("invalid_order_transition");
+                    assertThat(((BusinessException) e).getStatus()).isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
+                });
+        assertThat(repository.findByTenantIdAndId(tenantId, orderId).orElseThrow().getStatus())
+                .isEqualTo(com.delivery.order.entity.OrderStatus.PAYMENT_CONFIRMED);
     }
 
     private OrderService service(OrderRepository orderRepository) {
@@ -188,7 +195,7 @@ class VendorFulfillmentTest {
                 mock(com.delivery.cart.service.CartService.class),
                 mock(org.springframework.transaction.PlatformTransactionManager.class),
                 new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine());
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {
@@ -212,7 +219,7 @@ class VendorFulfillmentTest {
                 "idem-1",
                 "hash",
                 "123456");
-        order.markPaymentConfirmed();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.PAYMENT_CONFIRMED);
         return order;
     }
 }

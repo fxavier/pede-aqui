@@ -54,7 +54,7 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | `code` | extensão | sim | Código estável, `snake_case` minúsculo. **É o campo em que os clientes devem decidir.** |
 | `details` | extensão | não | Contexto estruturado opcional (ex.: `price_changed` → itens e preços atuais). Omitido quando não há. |
 | `correlationId` | extensão | sim | Igual ao header `X-Correlation-Id` da resposta e ao campo `correlationId` dos logs. |
-| `traceId` | extensão | sim | Id de trace distribuído. Enquanto não houver Micrometer Tracing/OTel, é igual ao `correlationId` (lê `traceId` do MDC quando existir). |
+| `traceId` | extensão | sim | Id do trace W3C (32 hex) do pedido, posto no MDC pelo Micrometer Tracing/OTel (LAC-50) — o mesmo id que aparece no log e no Jaeger/X-Ray quando o span é exportado (amostrado). Só sem tracer ativo (ex.: testes de slice MVC) volta a ser igual ao `correlationId`. |
 | `message` | legado | sim | Cópia de `detail`. **Obsoleto** — usar `detail`. |
 | `timestamp` | legado | sim | Instante ISO-8601 (UTC). **Obsoleto.** |
 | `fieldErrors` | legado | sim | Lista `[{ "field", "message" }]`; vazia exceto em `validation_failed`. Mantém-se até existir substituto acordado. |
@@ -131,6 +131,15 @@ do operador V045; falha de configuração). `tenant_slug_exists` deixa de ser em
 W3-D acrescenta (detalhe em `API-MIGRATION.md`, secção W3-D): `sku_code_conflict` (409 — `POST /catalog/skus`
 com um `skuCode` já usado pelo **mesmo** vendor; desde V056 o código é único por (tenant, vendor, sku_code)).
 
+W4-A (máquina de estados da encomenda, LAC-25; detalhe em `API-MIGRATION.md`, secção W4-A) muda o estado HTTP
+de um código existente: `invalid_order_transition` passa a **409** em todos os caminhos (antes **400** nas ações
+do comerciante `accept`/`preparing`/`ready-for-pickup`/`reject`). É emitido pela `OrderStateMachine` para
+qualquer transição fora da tabela — ações do comerciante, aprovação de reembolso total de uma encomenda nunca
+paga — sempre **antes** de qualquer efeito (sem histórico, evento, stock, reembolso nem auditoria). Os códigos
+de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transition_not_allowed` (409, lista do
+*override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
+perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
@@ -140,7 +149,7 @@ com um `skuCode` já usado pelo **mesmo** vendor; desde V056 o código é único
   `traceparent` W3C), o valor é reutilizado; caso contrário é gerado um UUID. Valores com espaços, aspas,
   quebras de linha ou demasiado longos são descartados, para não injetar conteúdo no log JSON nem no header.
 - O valor fica no MDC (`correlationId`) durante o pedido e aparece em cada linha de log
-  (`logback-spring.xml`). O filtro não regista nada: nenhum token, header ou dado pessoal é logado por ele.
+  (logging estruturado nativo do Spring Boot, `logging.structured.*` em `application.yml`; LAC-50). O filtro não regista nada: nenhum token, header ou dado pessoal é logado por ele.
 - CORS: `X-Correlation-Id` está nos headers permitidos (o cliente pode enviá-lo) e nos **expostos** (o
   browser pode lê-lo da resposta).
 
@@ -171,7 +180,7 @@ campo com os `status` de recursos (ex.: estado de encomenda).
 
 - `type` por código (URI estável por `code`, ex.: `https://api.pede-aqui.mz/problems/price-changed`) quando
   houver onde publicar as páginas.
-- Tracing distribuído (Micrometer Tracing + OTel): `traceId` passa a ser o id do trace sem mudar o contrato.
+- Tracing distribuído (Micrometer Tracing + OTel): **feito em LAC-50/W4-B** — `traceId` passou a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
 
 ## 7. Cobertura: quem escreve corpos de erro
