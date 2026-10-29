@@ -6,14 +6,7 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
-import com.delivery.delivery.entity.Delivery;
-import com.delivery.delivery.entity.DeliveryStatus;
-import com.delivery.delivery.repository.DeliveryRepository;
-import com.delivery.delivery.service.DeliveryRetirementService;
-import com.delivery.order.entity.Order;
-import com.delivery.order.entity.OrderStatus;
-import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.OrderStockService;
+import com.delivery.payment.api.PaymentOrderHooks;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.PaymentResponse;
 import com.delivery.payment.dto.RefundRequest;
@@ -26,9 +19,7 @@ import com.delivery.payment.mapper.PaymentMapper;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.payment.repository.RefundRepository;
 import java.math.BigDecimal;
-import java.util.EnumSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -38,47 +29,39 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Handles local/mock payment confirmation and the administrative refund workflow (no PSP: refunds are records only). */
+/**
+ * Handles local/mock payment confirmation and the administrative refund workflow (no PSP: refunds are records only).
+ * Order-side effects go through {@link PaymentOrderHooks} (implemented by the order module, same transaction —
+ * ADR-0002 C1: payment does not depend on order or delivery).
+ */
 @Service
 public class PaymentService {
-    /** Order statuses that by themselves mean the goods left the store (V043 COMMIT set) — covers rows without a delivery. */
-    private static final Set<OrderStatus> ORDER_STATUSES_PAST_PICKUP = EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.DELIVERING, OrderStatus.DELIVERED);
-
     private final PaymentRepository paymentRepository;
-    private final OrderRepository orderRepository;
+    private final PaymentOrderHooks orderHooks;
     private final RefundRepository refundRepository;
     private final AuditLogService auditLogService;
     private final PaymentMapper mapper;
     private final TenantContext tenantContext;
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
-    private final DeliveryRepository deliveryRepository;
-    private final OrderStockService orderStockService;
-    private final DeliveryRetirementService deliveryRetirementService;
 
     public PaymentService(
             PaymentRepository paymentRepository,
-            OrderRepository orderRepository,
+            PaymentOrderHooks orderHooks,
             RefundRepository refundRepository,
             AuditLogService auditLogService,
             PaymentMapper mapper,
             TenantContext tenantContext,
             AppUserProfileRepository userProfileRepository,
-            PaymentMockConfirmationProperties mockConfirmationProperties,
-            DeliveryRepository deliveryRepository,
-            OrderStockService orderStockService,
-            DeliveryRetirementService deliveryRetirementService) {
-        this.orderStockService = orderStockService;
-        this.deliveryRetirementService = deliveryRetirementService;
+            PaymentMockConfirmationProperties mockConfirmationProperties) {
         this.paymentRepository = paymentRepository;
-        this.orderRepository = orderRepository;
+        this.orderHooks = orderHooks;
         this.refundRepository = refundRepository;
         this.auditLogService = auditLogService;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
         this.userProfileRepository = userProfileRepository;
         this.mockConfirmationProperties = mockConfirmationProperties;
-        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -101,9 +84,9 @@ public class PaymentService {
         UUID tenantId = tenantId();
         Payment payment = paymentRepository.findByTenantIdAndIdempotencyKey(tenantId, idempotencyKey)
                 .orElseGet(() -> paymentRepository.findByTenantIdAndId(tenantId, paymentId).orElseThrow(() -> new NotFoundException("Payment was not found")));
-        Order order = orderRepository.findByTenantIdAndId(tenantId, payment.getOrderId()).orElseThrow(() -> new NotFoundException("Order was not found"));
+        PaymentOrderHooks.OrderForPayment order = orderHooks.orderForPayment(tenantId, payment.getOrderId());
         // Ownership before the key/id check so a customer cannot probe other customers' payments; 404 hides existence.
-        if (!staff && !order.getCustomerId().equals(currentCustomerId(tenantId))) {
+        if (!staff && !order.customerId().equals(currentCustomerId(tenantId))) {
             throw new NotFoundException("Payment was not found");
         }
         if (!payment.getId().equals(paymentId)) {
@@ -112,12 +95,12 @@ public class PaymentService {
         if (payment.getStatus() == PaymentStatus.CONFIRMED) {
             return mapper.toResponse(payment);
         }
-        if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION || order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+        if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION || !order.awaitingPayment()) {
             throw new BusinessException("payment_not_confirmable", "Payment can no longer be confirmed", HttpStatus.CONFLICT);
         }
         payment.confirm();
-        order.markPaymentConfirmed();
-        auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.getReference(), "SUCCESS");
+        orderHooks.markPaymentConfirmed(tenantId, payment.getOrderId());
+        auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(), "SUCCESS");
         return mapper.toResponse(payment);
     }
 
@@ -187,9 +170,10 @@ public class PaymentService {
      * are independent); a partial approval leaves the order status unchanged.
      *
      * Full coverage also closes what the order's delivery row allows (lock order: payment row first, then the
-     * order, then the delivery/dispatch rows, then inventory): the plain PIN is always cleared (DeliveryService refuses
+     * order, then the delivery/dispatch rows, then inventory — done by the order module's
+     * {@link PaymentOrderHooks#onPaymentFullyRefunded}): the plain PIN is always cleared (DeliveryService refuses
      * to progress or complete a REFUNDED order, 409 order_not_deliverable, so no courier needs it any more), and unless
-     * the goods already left the store ({@link DeliveryStatus#isGoodsLeftTheStore}, or an order status past pickup —
+     * the goods already left the store ({@code DeliveryStatus.isGoodsLeftTheStore}, or an order status past pickup —
      * V043 rule) the delivery is retired (CANCELLED, active dispatch job CANCELLED) and the stock reservation released.
      * Both are idempotent (delivery status, stock_status), so an order cancelled earlier is not retired or released
      * twice. After pickup the delivery is left as it is (the goods are out; ops resolve it).
@@ -209,21 +193,7 @@ public class PaymentService {
             auditLogService.log("REFUND_APPROVED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
             if (approvedRefunds(tenantId, payment.getId(), refund).compareTo(payment.getAmount()) >= 0) {
                 payment.markFullyRefunded();
-                Order order = orderRepository.findByTenantIdAndId(tenantId, refund.getOrderId())
-                        .orElseThrow(() -> new NotFoundException("Order was not found"));
-                // One delivery per order (uq_deliveries_tenant_order); absent only for legacy rows.
-                Optional<Delivery> delivery = deliveryRepository.findByTenantIdAndOrderId(tenantId, order.getId());
-                // Decide on the stock before markRefunded() changes the order status it reads.
-                boolean goodsLeftTheStore = delivery.map(Delivery::getStatus).map(DeliveryStatus::isGoodsLeftTheStore).orElse(false)
-                        || ORDER_STATUSES_PAST_PICKUP.contains(order.getStatus());
-                if (order.getStatus() != OrderStatus.CANCELLED) {
-                    order.markRefunded();
-                    auditLogService.log("ORDER_REFUNDED", "order", order.getId().toString(), order.getReference(), "SUCCESS");
-                }
-                if (!goodsLeftTheStore) {
-                    delivery.ifPresent(d -> deliveryRetirementService.retireBeforePickup(d, "order fully refunded"));
-                    orderStockService.release(order); // INC-07 (COR-01): the sale is undone before pickup; no-op if already released/committed
-                }
+                orderHooks.onPaymentFullyRefunded(tenantId, refund.getOrderId());
             } else {
                 payment.markPartiallyRefunded();
             }

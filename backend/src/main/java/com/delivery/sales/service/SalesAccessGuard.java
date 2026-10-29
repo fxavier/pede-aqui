@@ -1,27 +1,26 @@
 package com.delivery.sales.service;
 
 import com.delivery.common.exception.BusinessException;
+import com.delivery.order.api.CustomerPiiMasking;
 import com.delivery.vendor.api.MerchantScopeGuard;
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
  * Sales-lens access rules: PII masking plus the merchant vendor scope, which is delegated to the shared
- * {@link MerchantScopeGuard} (ADR-0001 step 3 / ADR-0002 C5). Also reused by order fulfilment and order listing
- * (INC-04). Every scope method fails closed (403 {@code vendor_scope_unresolved}) when the vendor cannot be resolved.
+ * {@link MerchantScopeGuard} (ADR-0001 step 3 / ADR-0002 C5); the PII rule is the order module's
+ * {@link CustomerPiiMasking} (order listings use it directly, so order no longer depends on sales). Every scope method
+ * fails closed (403 {@code vendor_scope_unresolved}) when the vendor cannot be resolved.
  */
 @Component
 public class SalesAccessGuard {
     private final MerchantScopeGuard merchantScopeGuard;
+    private final CustomerPiiMasking piiMasking;
 
     public SalesAccessGuard(MerchantScopeGuard merchantScopeGuard) {
         this.merchantScopeGuard = merchantScopeGuard;
+        this.piiMasking = new CustomerPiiMasking(merchantScopeGuard);
     }
 
     /** True when the caller must be confined to their own vendor (VENDOR_ADMIN without a tenant-wide role). */
@@ -41,19 +40,12 @@ public class SalesAccessGuard {
 
     /** Masks a person's name: keeps the first letter of each word ("Ana Lima" -> "A*** L***"). */
     public static String maskName(String name) {
-        if (name == null || name.isBlank()) {
-            return name;
-        }
-        return Arrays.stream(name.trim().split("\\s+"))
-                .map(word -> word.charAt(0) + "***")
-                .collect(Collectors.joining(" "));
+        return CustomerPiiMasking.maskName(name);
     }
 
     /** True when customer PII must be masked (SUPPORT without any wider role). */
     public boolean shouldMaskCustomerPii() {
-        return hasAuthority("ROLE_SUPPORT")
-                && !merchantScopeGuard.hasTenantWideRole()
-                && !hasAuthority("ROLE_VENDOR_ADMIN");
+        return piiMasking.shouldMaskCustomerPii();
     }
 
     /**
@@ -75,11 +67,4 @@ public class SalesAccessGuard {
         }
     }
 
-    private boolean hasAuthority(String authority) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) {
-            return false;
-        }
-        return auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(authority::equals);
-    }
 }

@@ -19,7 +19,7 @@ import com.delivery.marketing.repository.PromotionRedemptionRepository;
 import com.delivery.marketing.repository.PromotionRepository;
 import com.delivery.marketing.service.CheckoutPromotionResolver;
 import com.delivery.marketing.service.PromotionResolver;
-import com.delivery.order.service.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscount;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

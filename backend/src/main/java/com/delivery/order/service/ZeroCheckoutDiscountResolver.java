@@ -1,6 +1,8 @@
 package com.delivery.order.service;
 
-import com.delivery.cart.entity.Cart;
+import com.delivery.marketing.api.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscountResolver;
+import com.delivery.marketing.api.PromotionBasket;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +12,7 @@ public class ZeroCheckoutDiscountResolver implements CheckoutDiscountResolver {
 
     /** Always resolves to a zero discount. */
     @Override
-    public CheckoutDiscount resolve(Cart cart, UUID customerId) {
+    public CheckoutDiscount resolve(PromotionBasket basket, UUID customerId) {
         return CheckoutDiscount.none();
     }
 }

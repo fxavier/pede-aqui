@@ -120,6 +120,74 @@ app:
   verticals:
     pharmacy:
       enabled: ${APP_VERTICALS_PHARMACY_ENABLED:false}
+  # LAC-11: rate limiting distribuído (Bucket4j + Redis, ver RateLimitConfig). Token bucket por
+  # (grupo, método + padrão de rota, conta = JWT sub | IP do cliente). capacity pedidos, reposto ao longo de period.
+  # Vários grupos a casar → ganha o padrão mais específico. 429 rate_limited + Retry-After.
+  # Redis em baixo → buckets locais por instância (não fail-open) + WARN + rate_limit_backend_errors_total.
+  # trusted-proxies: IP/CIDR do ALB/proxy; só então X-Forwarded-For é usado (vazio = getRemoteAddr()).
+  # Sobrepor um valor por ambiente: APP_RATE_LIMIT_GROUPS_CHECKOUT_CAPACITY=20, etc.
+  rate-limit:
+    enabled: ${APP_RATE_LIMIT_ENABLED:true}
+    backend: ${APP_RATE_LIMIT_BACKEND:redis}
+    redis-timeout: 500ms
+    redis-connect-timeout: 2s
+    trusted-proxies: ${APP_RATE_LIMIT_TRUSTED_PROXIES:}
+    groups:
+      # Registo anónimo de comerciantes e clientes (por IP): a primeira linha é o WAF (LAC-11 §1).
+      registration:
+        paths: [/api/v1/register, /api/v1/customers/register]
+        methods: [POST]
+        capacity: 5
+        period: 15m
+      # Conclusão de entrega com PIN: limita tentativas por estafeta em todas as entregas (o bloqueio por
+      # entrega após app.delivery.max-code-attempts continua no DeliveryService).
+      delivery-code:
+        paths: [/api/v1/deliveries/*/complete]
+        methods: [POST]
+        capacity: 10
+        period: 5m
+      checkout:
+        paths: [/api/v1/checkout, /api/v1/checkout/**]
+        methods: [POST]
+        capacity: 10
+        period: 1m
+      uploads:
+        paths: [/api/v1/uploads/**]
+        methods: [POST]
+        capacity: 30
+        period: 1m
+      payments:
+        paths:
+          - /api/v1/payments/**
+          - /api/v1/finance/refunds/**
+          - /api/v1/sales/orders/*/refund
+          - /api/v1/sales/orders/*/cancel
+        capacity: 20
+        period: 1m
+      provisioning:
+        paths: [/api/v1/provisioning/**]
+        capacity: 20
+        period: 1m
+      # Cobertura herdada do limitador em memória (dispatch, entregas, tickets, admin, /me).
+      sensitive:
+        paths:
+          - /api/v1/deliveries/**
+          - /api/v1/dispatch-jobs/**
+          - /api/v1/ops/**
+          - /api/v1/support/tickets/**
+          - /api/v1/admin/**
+          - /api/v1/me
+          - /api/v1/me/**
+          - /api/v1/customers/me/**
+          - /api/v1/couriers/me/**
+        capacity: 120
+        period: 1m
+      # Navegação pública: generoso, só trava scraping.
+      browse:
+        paths: [/api/v1/catalog/**, /api/v1/search/**]
+        methods: [GET]
+        capacity: 300
+        period: 1m
   provisioning:
     max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
     max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}

@@ -10,7 +10,6 @@ import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.entity.Order;
 import com.delivery.order.repository.OrderListingRepository;
-import com.delivery.sales.service.SalesAccessGuard;
 import com.delivery.vendor.api.MerchantScopeGuard;
 import java.util.List;
 import java.util.Optional;
@@ -33,14 +32,14 @@ public class OrderListingService {
     private final OrderListingRepository listingRepository;
     private final OrderService orderService;
     private final TenantContext tenantContext;
-    private final SalesAccessGuard accessGuard;
+    private final MerchantScopeGuard accessGuard;
 
     public OrderListingService(OrderListingRepository listingRepository, OrderService orderService, TenantContext tenantContext,
                                MerchantScopeGuard merchantScopeGuard) {
         this.listingRepository = listingRepository;
         this.orderService = orderService;
         this.tenantContext = tenantContext;
-        this.accessGuard = new SalesAccessGuard(merchantScopeGuard);
+        this.accessGuard = merchantScopeGuard;
     }
 
     /** Returns the caller's newest 200 orders (legacy array; {@code truncated} when more exist). */

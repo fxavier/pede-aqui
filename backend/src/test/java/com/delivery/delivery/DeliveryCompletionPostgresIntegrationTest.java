@@ -74,7 +74,9 @@ import org.testcontainers.DockerClientFactory;
 @Import({DeliveryService.class, DeliveryMapper.class, TenantContext.class, TenancyProperties.class, DeliveryAccessGuard.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, AuditLogService.class,
         OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
-        com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class})
+        com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class,
+        // ADR-0002 W3-A: implementations of the delivery/payment API hooks
+        com.delivery.order.service.OrderDeliveryHooks.class, com.delivery.dispatch.service.CourierIdentityResolver.class})
 class DeliveryCompletionPostgresIntegrationTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();

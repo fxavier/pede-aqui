@@ -10,28 +10,17 @@ top to bottom direction
 
 Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
   Component(DeliveryApplication.DeliveryApplication.Marketing, "Marketing", $techn="Module", $descr="", $tags="", $link="")
-  Component(DeliveryApplication.DeliveryApplication.Order, "Order", $techn="Module", $descr="", $tags="", $link="")
   Component(DeliveryApplication.DeliveryApplication.Vendor, "Vendor", $techn="Module", $descr="", $tags="", $link="")
-  Component(DeliveryApplication.DeliveryApplication.Cart, "Cart", $techn="Module", $descr="", $tags="", $link="")
   Component(DeliveryApplication.DeliveryApplication.Catalog, "Catalog", $techn="Module", $descr="", $tags="", $link="")
   Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
 }
 
-Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Marketing, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Cart, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Cart, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Marketing, DeliveryApplication.DeliveryApplication.Order, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Marketing, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Marketing, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Marketing, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 @enduml

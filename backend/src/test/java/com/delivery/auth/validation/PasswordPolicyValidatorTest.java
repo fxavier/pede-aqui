@@ -3,7 +3,7 @@ package com.delivery.auth.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.delivery.auth.dto.CustomerRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

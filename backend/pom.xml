@@ -23,6 +23,9 @@
         <spring-modulith.version>1.4.14</spring-modulith.version>
         <!-- LAC-46: ShedLock 6.x targets Spring Framework 6 / Boot 3 (7.x moves to Spring 7). -->
         <shedlock.version>6.10.0</shedlock.version>
+        <!-- LAC-11: Bucket4j 8.19 (jdk17 line). The Lettuce module declares lettuce-core as provided, so the
+             Lettuce version managed by Spring Boot (spring-boot-starter-data-redis) is the one on the classpath. -->
+        <bucket4j.version>8.19.0</bucket4j.version>
     </properties>
 
     <dependencyManagement>
@@ -65,6 +68,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-core</artifactId>
+            <version>${bucket4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-lettuce</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>

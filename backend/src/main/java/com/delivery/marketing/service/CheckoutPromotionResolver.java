@@ -1,13 +1,13 @@
 package com.delivery.marketing.service;
 
-import com.delivery.cart.entity.Cart;
 import com.delivery.common.exception.BusinessException;
+import com.delivery.marketing.api.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscountResolver;
+import com.delivery.marketing.api.PromotionBasket;
 import com.delivery.marketing.entity.Promotion;
 import com.delivery.marketing.entity.PromotionRedemption;
 import com.delivery.marketing.repository.PromotionRedemptionRepository;
 import com.delivery.marketing.repository.PromotionRepository;
-import com.delivery.order.service.CheckoutDiscount;
-import com.delivery.order.service.CheckoutDiscountResolver;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public class CheckoutPromotionResolver implements CheckoutDiscountResolver {
 
     /** Resolves the single effective discount and books usage atomically; limit breaches abort checkout. */
     @Override
-    public CheckoutDiscount resolve(Cart cart, UUID customerId) {
+    public CheckoutDiscount resolve(PromotionBasket cart, UUID customerId) {
         // Coupon wins over automatic; an attached-but-invalid coupon aborts checkout with a clear error
         // rather than silently dropping the discount the customer saw on the cart.
         Optional<PromotionResolver.ResolvedDiscount> resolved = cart.getCouponCode() != null
