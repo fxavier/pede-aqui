@@ -4,6 +4,8 @@ import com.delivery.common.pagination.CursorPage;
 import com.delivery.common.pagination.PageLimits;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
+import com.delivery.order.dto.OrderHistoryResponse;
+import com.delivery.order.service.OrderHistoryService;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
 import com.delivery.order.service.OrderListingService;
@@ -24,10 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
     private final OrderTrackingService trackingService;
     private final OrderListingService listingService;
+    private final OrderHistoryService historyService;
 
-    public OrderController(OrderTrackingService trackingService, OrderListingService listingService) {
+    public OrderController(OrderTrackingService trackingService, OrderListingService listingService, OrderHistoryService historyService) {
         this.trackingService = trackingService;
         this.listingService = listingService;
+        this.historyService = historyService;
     }
 
     @GetMapping
@@ -51,6 +55,16 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
     public AdminOrderPageResponse listPage(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return listingService.listPageForCurrentContext(page, size);
+    }
+
+    /**
+     * W4-A (LAC-15): the order's status transitions and its payment's status changes, oldest first. OPS/ADMIN/SUPPORT
+     * tenant-wide; merchant users only their own vendor's orders (another vendor's → 404) and without actor ids.
+     */
+    @GetMapping("/{orderId}/history")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','SUPPORT','VENDOR_ADMIN','VENDOR_STAFF')")
+    public OrderHistoryResponse history(@PathVariable UUID orderId) {
+        return historyService.history(orderId);
     }
 
     @GetMapping("/{orderId}/tracking")
