@@ -1,35 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pede_aqui_mobile/core/auth/oidc_session.dart';
 import 'package:pede_aqui_mobile/core/network/api_client.dart';
-import 'package:pede_aqui_mobile/core/storage/token_storage.dart';
 import 'package:pede_aqui_mobile/features/auth/data/auth_repository.dart';
+import 'package:pede_aqui_mobile/features/auth/data/password_policy.dart';
 
-/// In-memory TokenStorage fake so tests avoid platform channels.
-class InMemoryTokenStorage implements TokenStorage {
-  String? accessToken;
-  String? refreshToken;
-
-  @override
-  Future<void> saveTokens({required String accessToken, String? refreshToken}) async {
-    this.accessToken = accessToken;
-    if (refreshToken != null) this.refreshToken = refreshToken;
-  }
-
-  @override
-  Future<String?> readAccessToken() async => accessToken;
-
-  @override
-  Future<String?> readRefreshToken() async => refreshToken;
-
-  @override
-  Future<void> clear() async {
-    accessToken = null;
-    refreshToken = null;
-  }
-}
+import 'support/auth_fakes.dart';
 
 /// Routes Dio requests to canned responses and records them for assertions.
 class FakeHttpAdapter implements HttpClientAdapter {
@@ -62,12 +43,6 @@ ResponseBody jsonResponse(Map<String, dynamic> body, {int status = 200}) {
   );
 }
 
-Dio testDio(FakeHttpAdapter adapter, {String? baseUrl}) {
-  final dio = Dio(BaseOptions(baseUrl: baseUrl ?? ''));
-  dio.httpClientAdapter = adapter;
-  return dio;
-}
-
 const meProfile = {
   'id': 'profile-id-1',
   'keycloakUserId': 'kc-user-1',
@@ -75,106 +50,228 @@ const meProfile = {
   'email': 'felix@example.com',
 };
 
+/// Answers /me with the profile, but only for the [validToken] bearer.
+ResponseBody Function(RequestOptions) profileFor(String validToken) => (options) {
+      if (options.headers['Authorization'] != 'Bearer $validToken') {
+        return jsonResponse({'code': 'unauthorized'}, status: 401);
+      }
+      return jsonResponse(meProfile);
+    };
+
+class Harness {
+  Harness({ResponseBody Function(RequestOptions)? api})
+      : adapter = FakeHttpAdapter(api ?? (_) => jsonResponse(meProfile)) {
+    apiClient = ApiClient(
+      dio: Dio(BaseOptions(baseUrl: 'http://test.local/api/v1'))..httpClientAdapter = adapter,
+    );
+    session = OidcSession(config: testOidcConfig, storage: storage, appAuth: appAuth);
+    repo = ApiAuthRepository(apiClient, session);
+    apiClient.onRefreshToken = repo.refreshToken;
+  }
+
+  final FakeHttpAdapter adapter;
+  final storage = InMemoryTokenStorage();
+  final appAuth = FakeAppAuth();
+  late final ApiClient apiClient;
+  late final OidcSession session;
+  late final ApiAuthRepository repo;
+}
+
 void main() {
-  group('ApiAuthRepository token persistence', () {
-    test('login stores access and refresh tokens in secure storage', () async {
-      final storage = InMemoryTokenStorage();
-      final tokenAdapter = FakeHttpAdapter((options) => jsonResponse({
-            'access_token': 'acc-1',
-            'refresh_token': 'ref-1',
-          }),);
-      final apiAdapter = FakeHttpAdapter((options) => jsonResponse(meProfile));
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(apiAdapter, baseUrl: 'http://test.local/api/v1')),
-        storage,
-        authDio: testDio(tokenAdapter),
-      );
+  group('login (Authorization Code + PKCE)', () {
+    test('maps the PKCE tokens: refresh/id token persisted, access token in memory', () async {
+      final h = Harness();
 
-      final user = await repo.login(email: 'felix@example.com', password: 'secret123');
+      final user = await h.repo.login();
 
-      expect(storage.accessToken, 'acc-1');
-      expect(storage.refreshToken, 'ref-1');
+      final request = h.appAuth.authorizeRequests.single;
+      expect(request.clientId, 'pede-aqui-mobile');
+      expect(request.redirectUrl, 'com.pedeaqui.delivery:/oauthredirect');
+      expect(request.issuer, 'http://keycloak.test/realms/delivery');
+      expect(request.scopes, containsAll(['openid', 'profile', 'email']));
+      expect(request.promptValues, [Prompt.login]);
+      expect(request.allowInsecureConnections, isTrue); // http issuer (local dev)
+      expect(h.storage.refreshToken, 'ref-1');
+      expect(h.storage.idToken, 'id-1');
+      expect(h.session.accessToken, 'acc-1');
       expect(user.token, 'acc-1');
       expect(user.name, 'Felix Tester');
-      expect(repo.customerId, 'kc-user-1');
+      expect(h.repo.customerId, 'kc-user-1');
+      expect(h.adapter.requests.single.headers['Authorization'], 'Bearer acc-1');
     });
 
-    test('logout clears persisted tokens and customer id', () async {
-      final storage = InMemoryTokenStorage()
-        ..accessToken = 'acc-1'
-        ..refreshToken = 'ref-1';
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(FakeHttpAdapter((_) => jsonResponse({})))),
-        storage,
-        authDio: testDio(FakeHttpAdapter((_) => jsonResponse({}))),
-      );
+    test('no password grant: nothing is posted to a token endpoint by the app', () async {
+      final h = Harness();
 
-      await repo.logout();
+      await h.repo.login();
 
-      expect(storage.accessToken, isNull);
-      expect(storage.refreshToken, isNull);
-      expect(() => repo.customerId, throwsStateError);
+      expect(h.adapter.requests.map((r) => r.path), ['/me']);
+      expect(h.appAuth.tokenRequests, isEmpty);
     });
 
-    test('restoreSession returns null when nothing is persisted', () async {
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(FakeHttpAdapter((_) => jsonResponse({})))),
-        InMemoryTokenStorage(),
-        authDio: testDio(FakeHttpAdapter((_) => jsonResponse({}))),
-      );
+    test('closing the browser surfaces AuthCancelledException and stores nothing', () async {
+      final h = Harness();
+      h.appAuth.onAuthorize = (_) async => throw userCancelled();
 
-      expect(await repo.restoreSession(), isNull);
+      await expectLater(h.repo.login(), throwsA(isA<AuthCancelledException>()));
+      expect(h.storage.refreshToken, isNull);
+      expect(h.adapter.requests, isEmpty);
     });
 
-    test('restoreSession restores the user from a stored token', () async {
-      final storage = InMemoryTokenStorage()
-        ..accessToken = 'acc-restored'
-        ..refreshToken = 'ref-restored';
-      final apiAdapter = FakeHttpAdapter((options) => jsonResponse(meProfile));
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(apiAdapter, baseUrl: 'http://test.local/api/v1')),
-        storage,
-        authDio: testDio(FakeHttpAdapter((_) => jsonResponse({}))),
-      );
+    test('a profile failure after sign-in drops the half-open session', () async {
+      final h = Harness(api: (_) => jsonResponse({'code': 'boom'}, status: 500));
 
-      final user = await repo.restoreSession();
-
-      expect(user, isNotNull);
-      expect(user!.token, 'acc-restored');
-      expect(repo.customerId, 'kc-user-1');
-      // The restored token was sent as a bearer header on /me.
-      expect(apiAdapter.requests.single.headers['Authorization'], 'Bearer acc-restored');
-    });
-
-    test('restoreSession clears storage when the stored token is rejected', () async {
-      final storage = InMemoryTokenStorage()..accessToken = 'acc-expired';
-      final apiAdapter = FakeHttpAdapter((options) => jsonResponse({}, status: 401));
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(apiAdapter, baseUrl: 'http://test.local/api/v1')),
-        storage,
-        authDio: testDio(FakeHttpAdapter((_) => jsonResponse({}, status: 401))),
-      );
-
-      final user = await repo.restoreSession();
-
-      expect(user, isNull);
-      expect(storage.accessToken, isNull);
+      await expectLater(h.repo.login(), throwsA(isA<DioException>()));
+      expect(h.storage.refreshToken, isNull);
+      expect(h.session.accessToken, isNull);
     });
   });
 
-  group('registration request mapping', () {
+  group('refresh with rotation', () {
+    test('concurrent 401s trigger a single refresh and store the rotated token', () async {
+      final h = Harness(api: profileFor('acc-2'));
+      h.storage.refreshToken = 'ref-1';
+      h.apiClient.setAuthToken('acc-expired');
+      final gate = Completer<void>();
+      h.appAuth.onToken = (_) async {
+        await gate.future; // keep the refresh in flight while the other 401s arrive
+        return tokenResponse(access: 'acc-2', refresh: 'ref-2', id: 'id-2');
+      };
+
+      final pending = [for (var i = 0; i < 3; i++) h.apiClient.get<Map<String, dynamic>>('/me')];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      gate.complete();
+      final responses = await Future.wait(pending);
+
+      expect(responses.map((r) => r.statusCode), everyElement(200));
+      expect(h.appAuth.tokenRequests, hasLength(1));
+      final refresh = h.appAuth.tokenRequests.single;
+      expect(refresh.refreshToken, 'ref-1');
+      expect(refresh.grantType, GrantType.refreshToken);
+      expect(refresh.clientId, 'pede-aqui-mobile');
+      expect(h.storage.refreshToken, 'ref-2');
+      expect(h.storage.idToken, 'id-2');
+    });
+
+    test('direct concurrent refresh calls share one token request', () async {
+      final h = Harness();
+      h.storage.refreshToken = 'ref-1';
+
+      await Future.wait([for (var i = 0; i < 3; i++) h.repo.refreshToken()]);
+
+      expect(h.appAuth.tokenRequests, hasLength(1));
+    });
+
+    test('the next refresh uses the rotated refresh token', () async {
+      final h = Harness();
+      h.storage.refreshToken = 'ref-1';
+      var n = 1;
+      h.appAuth.onToken = (_) async {
+        n++;
+        return tokenResponse(access: 'acc-$n', refresh: 'ref-$n');
+      };
+
+      await h.repo.refreshToken();
+      await h.repo.refreshToken();
+
+      expect(h.appAuth.tokenRequests.map((r) => r.refreshToken), ['ref-1', 'ref-2']);
+      expect(h.storage.refreshToken, 'ref-3');
+    });
+
+    test('invalid_grant expires the session and wipes storage', () async {
+      final h = Harness();
+      h.storage
+        ..refreshToken = 'ref-dead'
+        ..idToken = 'id-1';
+      h.appAuth.onToken = (_) async => throw oauthError('invalid_grant');
+
+      await expectLater(h.repo.refreshToken(), throwsA(isA<SessionExpiredException>()));
+      expect(h.storage.refreshToken, isNull);
+      expect(h.storage.idToken, isNull);
+    });
+  });
+
+  group('restoreSession', () {
+    test('returns null without contacting Keycloak when nothing is persisted', () async {
+      final h = Harness();
+
+      expect(await h.repo.restoreSession(), isNull);
+      expect(h.appAuth.tokenRequests, isEmpty);
+    });
+
+    test('refreshes the stored session and loads the profile', () async {
+      final h = Harness(api: profileFor('acc-2'));
+      h.storage.refreshToken = 'ref-stored';
+
+      final user = await h.repo.restoreSession();
+
+      expect(user, isNotNull);
+      expect(user!.token, 'acc-2');
+      expect(h.appAuth.tokenRequests.single.refreshToken, 'ref-stored');
+      expect(h.storage.refreshToken, 'ref-2');
+      expect(h.repo.customerId, 'kc-user-1');
+    });
+
+    test('a rejected refresh token clears storage', () async {
+      final h = Harness();
+      h.storage.refreshToken = 'ref-dead';
+      h.appAuth.onToken = (_) async => throw oauthError('invalid_grant');
+
+      expect(await h.repo.restoreSession(), isNull);
+      expect(h.storage.refreshToken, isNull);
+    });
+
+    test('a network failure keeps the stored tokens for the next start', () async {
+      final h = Harness();
+      h.storage.refreshToken = 'ref-ok';
+      h.appAuth.onToken = (_) async => throw oauthError('network_error');
+
+      expect(await h.repo.restoreSession(), isNull);
+      expect(h.storage.refreshToken, 'ref-ok');
+    });
+  });
+
+  group('logout', () {
+    test('ends the Keycloak session with the id token hint and clears storage', () async {
+      final h = Harness();
+      await h.repo.login();
+
+      await h.repo.logout();
+
+      final request = h.appAuth.endSessionRequests.single;
+      expect(request.idTokenHint, 'id-1');
+      expect(request.postLogoutRedirectUrl, 'com.pedeaqui.delivery:/oauthredirect');
+      expect(request.issuer, 'http://keycloak.test/realms/delivery');
+      expect(h.storage.refreshToken, isNull);
+      expect(h.storage.idToken, isNull);
+      expect(h.session.accessToken, isNull);
+      expect(() => h.repo.customerId, throwsStateError);
+    });
+
+    test('clears local tokens even when end-session fails', () async {
+      final h = Harness();
+      await h.repo.login();
+      h.appAuth.endSessionError = oauthError('network_error');
+
+      await h.repo.logout();
+
+      expect(h.storage.refreshToken, isNull);
+    });
+  });
+
+  group('registration', () {
     test('splits a full name into firstName and lastName', () {
       final payload = ApiAuthRepository.buildRegistrationPayload(
         name: 'Ana Maria dos Santos',
         email: 'ana@example.com',
-        password: 'password123',
+        password: 'Password123',
       );
 
       expect(payload, {
         'firstName': 'Ana',
         'lastName': 'Maria dos Santos',
         'email': 'ana@example.com',
-        'password': 'password123',
+        'password': 'Password123',
       });
     });
 
@@ -182,54 +279,76 @@ void main() {
       final payload = ApiAuthRepository.buildRegistrationPayload(
         name: '  Felix ',
         email: 'felix@example.com',
-        password: 'password123',
+        password: 'Password123',
       );
 
       expect(payload['firstName'], 'Felix');
       expect(payload['lastName'], 'Felix');
     });
 
-    test('register posts to /customers/register and then logs in', () async {
-      final storage = InMemoryTokenStorage();
-      final tokenAdapter = FakeHttpAdapter((options) => jsonResponse({
-            'access_token': 'acc-new',
-            'refresh_token': 'ref-new',
-          }),);
-      final apiAdapter = FakeHttpAdapter((options) {
+    test('posts to /customers/register, then starts PKCE with login_hint', () async {
+      final h = Harness(api: (options) {
         if (options.path.contains('/customers/register')) {
-          return jsonResponse({
-            'keycloakUserId': 'kc-user-1',
-            'email': 'felix@example.com',
-            'displayName': 'Felix Tester',
-          }, status: 201,);
+          return jsonResponse({'keycloakUserId': 'kc-user-1'}, status: 201);
         }
         return jsonResponse(meProfile);
-      });
-      final repo = ApiAuthRepository(
-        ApiClient(dio: testDio(apiAdapter, baseUrl: 'http://test.local/api/v1')),
-        storage,
-        authDio: testDio(tokenAdapter),
-      );
+      },);
 
-      final user = await repo.register(
+      final user = await h.repo.register(
         name: 'Felix Tester',
         email: 'felix@example.com',
-        password: 'password123',
+        password: 'Password123',
       );
 
       final registerRequest =
-          apiAdapter.requests.firstWhere((r) => r.path.contains('/customers/register'));
+          h.adapter.requests.firstWhere((r) => r.path.contains('/customers/register'));
       expect(registerRequest.method, 'POST');
       expect(registerRequest.data, {
         'firstName': 'Felix',
         'lastName': 'Tester',
         'email': 'felix@example.com',
-        'password': 'password123',
+        'password': 'Password123',
       });
-      // Registration returns no tokens, so a login must follow.
-      expect(tokenAdapter.requests, hasLength(1));
-      expect(storage.accessToken, 'acc-new');
-      expect(user.token, 'acc-new');
+      expect(h.appAuth.authorizeRequests.single.loginHint, 'felix@example.com');
+      expect(user.token, 'acc-1');
+      expect(h.storage.refreshToken, 'ref-1');
+    });
+
+    test('a password policy rejection becomes a readable RegistrationException', () async {
+      final h = Harness(
+        api: (_) => jsonResponse({
+          'code': 'validation_failed',
+          'fieldErrors': [
+            {'field': 'password', 'message': 'must contain at least one digit'},
+          ],
+        }, status: 400,),
+      );
+
+      await expectLater(
+        h.repo.register(name: 'Felix', email: 'felix@example.com', password: 'Passwordxx'),
+        throwsA(
+          isA<RegistrationException>().having(
+            (e) => e.message,
+            'message',
+            'A palavra-passe não cumpre a política de segurança.',
+          ),
+        ),
+      );
+      expect(h.appAuth.authorizeRequests, isEmpty);
+    });
+  });
+
+  group('passwordPolicyError (mirrors the realm policy)', () {
+    test('accepts a compliant password', () {
+      expect(passwordPolicyError('Password123', email: 'a@b.co'), isNull);
+    });
+
+    test('rejects each unmet rule', () {
+      expect(passwordPolicyError('Pass1', email: 'a@b.co'), contains('10 caracteres'));
+      expect(passwordPolicyError('Passwordxyz', email: 'a@b.co'), contains('algarismo'));
+      expect(passwordPolicyError('password123', email: 'a@b.co'), contains('maiúscula'));
+      expect(passwordPolicyError('PASSWORD123', email: 'a@b.co'), contains('minúscula'));
+      expect(passwordPolicyError('Felix1@Ex.com', email: 'felix1@ex.com'), contains('email'));
     });
   });
 }

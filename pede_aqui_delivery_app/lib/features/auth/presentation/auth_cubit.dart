@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/auth/oidc_session.dart';
 import '../data/auth_repository.dart';
 
 class AuthState extends Equatable {
@@ -33,21 +34,30 @@ class AuthCubit extends Cubit<AuthState> {
 
   final AuthRepository _repository;
 
-  Future<void> login(String email, String password) async {
+  /// Opens the Keycloak login page (PKCE). Closing the browser is not an error.
+  Future<void> login() async {
     emit(state.copyWith(loading: true));
     try {
-      final user = await _repository.login(email: email, password: password);
+      final user = await _repository.login();
       emit(state.copyWith(loading: false, user: user));
+    } on AuthCancelledException {
+      emit(state.copyWith(loading: false));
     } catch (_) {
-      emit(state.copyWith(loading: false, error: 'Credenciais inválidas.'));
+      emit(state.copyWith(loading: false, error: 'Não foi possível iniciar sessão. Tente novamente.'));
     }
   }
 
+  /// Creates the account on the backend, then continues to the Keycloak login.
   Future<void> register(String name, String email, String password) async {
     emit(state.copyWith(loading: true));
     try {
       final user = await _repository.register(name: name, email: email, password: password);
       emit(state.copyWith(loading: false, user: user));
+    } on AuthCancelledException {
+      // Account exists now; the user just did not finish signing in.
+      emit(state.copyWith(loading: false, error: 'Conta criada. Entre para continuar.'));
+    } on RegistrationException catch (e) {
+      emit(state.copyWith(loading: false, error: e.message));
     } catch (_) {
       emit(state.copyWith(loading: false, error: 'Não foi possível criar conta.'));
     }

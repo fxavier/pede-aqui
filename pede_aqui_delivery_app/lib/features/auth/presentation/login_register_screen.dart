@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/screen_shell.dart';
+import '../data/password_policy.dart';
 import 'auth_cubit.dart';
 
 class LoginRegisterScreen extends StatefulWidget {
@@ -64,46 +65,54 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                       _TabButton(
                           label: 'Entrar',
                           selected: !_register,
-                          onTap: () => setState(() => _register = false),),
+                          onTap: () => setState(() {
+                            _register = false;
+                            _validationError = null;
+                          }),),
                       _TabButton(
                           label: 'Registar',
                           selected: _register,
-                          onTap: () => setState(() => _register = true),),
+                          onTap: () => setState(() {
+                            _register = true;
+                            _validationError = null;
+                          }),),
                     ],
                   ),
                   const SizedBox(height: 24),
                   if (_register) ...[
                     TextField(
+                      key: const Key('register-name'),
                       controller: _nameController,
                       decoration:
                           const InputDecoration(labelText: 'Nome completo'),
                     ),
                     const SizedBox(height: 14),
-                  ],
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Palavra-passe'),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      child: const Text('Esqueceu a palavra-passe?',
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,),),
+                    TextField(
+                      key: const Key('register-email'),
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(labelText: 'Email'),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 14),
+                    TextField(
+                      key: const Key('register-password'),
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Palavra-passe',
+                        helperText:
+                            'Mín. 10 caracteres, com maiúscula, minúscula e algarismo.',
+                        helperMaxLines: 2,
+                      ),
+                    ),
+                  ] else
+                    const Text(
+                      'Vai abrir a página segura de autenticação Pede Aqui. '
+                      'A sua palavra-passe é introduzida apenas lá.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.mutedText, height: 1.5),
+                    ),
+                  const SizedBox(height: 22),
                   if (_validationError != null) ...[
                     Text(
                       _validationError!,
@@ -133,9 +142,13 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {
                       return PrimaryButton(
-                        label: _register ? 'CRIAR CONTA' : 'ENTRAR',
+                        label:
+                            _register ? 'CRIAR CONTA' : 'Entrar com Pede Aqui',
+                        icon: _register ? null : Icons.lock_outline_rounded,
                         loading: state.loading,
-                        onPressed: _validateAndSubmit,
+                        onPressed: _register
+                            ? _validateAndRegister
+                            : () => context.read<AuthCubit>().login(),
                       );
                     },
                   ),
@@ -197,14 +210,14 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
     );
   }
 
-  void _validateAndSubmit() {
+  void _validateAndRegister() {
     setState(() => _validationError = null);
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final name = _nameController.text.trim();
 
-    if (_register && name.isEmpty) {
+    if (name.isEmpty) {
       setState(() => _validationError = 'O nome é obrigatório.');
       return;
     }
@@ -214,20 +227,13 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       return;
     }
 
-    // Backend registration requires at least 8 characters.
-    final minLength = _register ? 8 : 6;
-    if (password.length < minLength) {
-      setState(() => _validationError =
-          'A palavra-passe deve ter pelo menos $minLength caracteres.',);
+    final policyError = passwordPolicyError(password, email: email);
+    if (policyError != null) {
+      setState(() => _validationError = policyError);
       return;
     }
 
-    final cubit = context.read<AuthCubit>();
-    if (_register) {
-      cubit.register(name, email, password);
-    } else {
-      cubit.login(email, password);
-    }
+    context.read<AuthCubit>().register(name, email, password);
   }
 }
 

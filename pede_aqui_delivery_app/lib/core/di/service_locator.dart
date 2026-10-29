@@ -9,6 +9,7 @@ import '../../features/catalog/data/catalog_repository.dart';
 import '../../features/catalog/presentation/catalog_cubit.dart';
 import '../../features/orders/data/order_repository.dart';
 import '../../features/orders/presentation/order_tracking_cubit.dart';
+import '../auth/oidc_session.dart';
 import '../network/api_client.dart';
 import '../storage/token_storage.dart';
 
@@ -38,8 +39,12 @@ void setupServiceLocator() {
     getIt.registerLazySingleton<CartRepository>(() => MockCartRepository());
     getIt.registerLazySingleton<OrderRepository>(() => MockOrderRepository());
   } else {
+    // Keycloak Authorization Code + PKCE on the public client `pede-aqui-mobile`.
+    getIt.registerLazySingleton<OidcSession>(
+      () => OidcSession(config: OidcConfig.fromEnvironment, storage: getIt<TokenStorage>()),
+    );
     getIt.registerLazySingleton<AuthRepository>(
-        () => ApiAuthRepository(getIt<ApiClient>(), getIt<TokenStorage>()),);
+        () => ApiAuthRepository(getIt<ApiClient>(), getIt<OidcSession>()),);
     getIt.registerLazySingleton<CatalogRepository>(() => ApiCatalogRepository(getIt<ApiClient>()));
     // Customer id comes from the authenticated session (Keycloak user id),
     // resolved lazily so the repository can be registered before login.
