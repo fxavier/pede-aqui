@@ -56,6 +56,24 @@ class SalesReportAggregationTest extends AbstractSalesReportPostgresTest {
     }
 
     @Test
+    void ordersCancelledByThePaymentExpiryJobAreNotRevenue() {
+        // W4-A: PAYMENT_PENDING expired by the job -> CANCELLED + PAYMENT_EXPIRED; nothing was ever captured.
+        UUID expired = UUID.randomUUID();
+        insertOrder(expired, tenant1, vendor1, "CANCELLED", DAY_2, "70.00", "0.00", "0.00", "0.00", "70.00");
+        jdbcTemplate.update("UPDATE orders SET cancellation_reason = 'PAYMENT_EXPIRED' WHERE id = ?", expired);
+        // A vendor-timeout cancellation was paid (and refunded): it stays in the post-payment basis like a rejection.
+        UUID vendorTimeout = UUID.randomUUID();
+        insertOrder(vendorTimeout, tenant1, vendor1, "CANCELLED", DAY_2, "30.00", "0.00", "0.00", "0.00", "30.00");
+        jdbcTemplate.update("UPDATE orders SET cancellation_reason = 'VENDOR_TIMEOUT' WHERE id = ?", vendorTimeout);
+
+        SalesSummaryResponse summary = service.summary(new ReportScope(tenant1, null), FROM, TO);
+
+        assertThat(summary.orderCount()).isEqualTo(4); // O1 + O2 + O3 + vendor timeout
+        assertThat(summary.gross()).isEqualByComparingTo("430.00");
+        assertThat(summary.cancelledCount()).isEqualTo(2); // O3 + vendor timeout
+    }
+
+    @Test
     void summaryIsTenantIsolated() {
         SalesSummaryResponse summary = service.summary(new ReportScope(tenant2, null), FROM, TO);
 
