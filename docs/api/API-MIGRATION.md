@@ -484,3 +484,33 @@ before). What clients can observe:
   localStorage order cache (`pede-aqui:orders`) is gone and purged on startup. The detail page no longer
   calls `GET /orders/{id}/tracking` (still available, unchanged).
 - **Flutter customer app**: not migrated yet.
+
+## W4-D — Backoffice BFF, ROPC removed from `delivery-app` (LAC-10)
+
+No backend endpoint changed. The change is in **who may obtain tokens and how**:
+
+### Keycloak client `delivery-app` (breaking for password-grant callers)
+
+- `directAccessGrantsEnabled: false`: `grant_type=password` with `client_id=delivery-app` now fails
+  (`400 unauthorized_client`). Only Authorization Code + PKCE (S256) is accepted.
+- Redirect URIs narrowed to `http://localhost:3000|3001/api/auth/callback/keycloak` (Auth.js callback);
+  post-logout redirect `http://localhost:3000|3001/login*`; web origins listed explicitly instead of `+`.
+- Effect: the realm's TOTP browser flow (`browser-privileged-mfa`) now applies to every backoffice login of
+  `ADMIN`/`FINANCE`/`OPS`.
+- Token claims are unchanged (`realm_access.roles`, `tenant_id`, optional `vendor_id`, `azp=delivery-app`).
+- Existing local realms keep the old client until re-imported: `docker compose rm -sf keycloak && docker compose up -d keycloak`.
+
+### Clients / consumers to review
+
+- **Backoffice**: migrated. Logs in through Auth.js (server-side PKCE) and calls the API only through
+  its BFF (`/api/bff/*`); the browser holds no token. Platform-admin impersonation (`X-Tenant-Id`) is set
+  server-side from a signed HttpOnly cookie.
+- **Scripts / manual curl**: use the dev-only client from `scripts/lib/keycloak-dev-ropc-client.sh`
+  (`backoffice-dev-cli`, local Keycloak only). `scripts/spec-002-smoke.sh` does this automatically
+  (override with `KEYCLOAK_CLIENT_ID`).
+- **Backend tests**: `KeycloakMerchantRegistrationE2ETest` asserts `delivery-app` refuses ROPC and gets its
+  token from a throwaway test client created in its Testcontainers Keycloak (mappers copied from `delivery-app`).
+- **Flutter customer app** (`pede_aqui_delivery_app/lib/features/auth/data/auth_repository.dart`): still does
+  ROPC + refresh on `delivery-app` — **broken by this change**; must move to `pede-aqui-mobile` with PKCE
+  (follow-up). The courier app uses `courier-app`, which is not in the realm (unchanged).
+- `pede-aqui-web` (customer web) is untouched here (W4-C).

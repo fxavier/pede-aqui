@@ -1,73 +1,32 @@
-'use client';
+import { signInWithKeycloak } from "./actions";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppDispatch } from '@/store/hooks';
-import { setUser } from '@/store/slices/auth-slice';
-import { authService } from '@/lib/api/services';
+/**
+ * Backoffice sign-in (LAC-10). No credentials are typed here any more: the button starts the Auth.js
+ * Authorization Code + PKCE flow and Keycloak renders the login (and TOTP for ADMIN/FINANCE/OPS).
+ */
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const ERROR_MESSAGES: Record<string, string> = {
+  AccessDenied: "Acesso recusado pelo servidor de identidade.",
+  Configuration: "Autenticação mal configurada no servidor. Contacte o suporte.",
+  Verification: "O pedido de autenticação expirou. Tente novamente.",
+};
 
-  const router = useRouter();
-  const dispatch = useAppDispatch();
+function safeCallbackUrl(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+  // Only same-origin relative paths; never protocol-relative (//host) or absolute URLs.
+  return raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/";
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const keycloakUrl = process.env.NEXT_PUBLIC_KEYCLOAK_URL ?? 'http://localhost:8081';
-      const keycloakRealm = process.env.NEXT_PUBLIC_KEYCLOAK_REALM ?? 'delivery';
-      const keycloakClientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID ?? 'delivery-app';
-
-      const tokenResponse = await fetch(
-        `${keycloakUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-          body: `grant_type=password&client_id=${keycloakClientId}&username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
-        }
-      );
-
-      if (!tokenResponse.ok) throw new Error('Credenciais inválidas');
-
-      const tokenData = await tokenResponse.json();
-      const accessToken = tokenData.access_token;
-
-      sessionStorage.setItem('auth_token', accessToken);
-      document.cookie = `auth_token=${accessToken}; path=/; SameSite=Strict`;
-
-      const profileData = await authService.getMe();
-      const tenantId: string | null = profileData.tenantId ?? null;
-      if (tenantId) sessionStorage.setItem('tenant_id', tenantId);
-      else sessionStorage.removeItem('tenant_id');
-
-      const isPlatformAdmin = !tenantId && (profileData.roles ?? []).includes('ADMIN');
-
-      dispatch(setUser({
-        name: profileData.displayName,
-        role: profileData.roles?.[0] || '',
-        tenant: profileData.tenantId ?? 'Pede Aqui Platform',
-        tenantId,
-        activeTenantId: null,
-        activeTenantName: null,
-        email: profileData.email,
-        token: accessToken,
-      }));
-
-      router.push(isPlatformAdmin ? '/platform' : '/');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Credenciais inválidas. Verifique o email e a palavra-passe.');
-    } finally {
-      setLoading(false);
-    }
-  };
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const callbackUrl = safeCallbackUrl(params.callbackUrl);
+  const errorCode = Array.isArray(params.error) ? params.error[0] : params.error;
+  const error = errorCode ? (ERROR_MESSAGES[errorCode] ?? "Não foi possível iniciar sessão. Tente novamente.") : "";
+  const notice = params.expired ? "A sua sessão expirou. Inicie sessão novamente." : params.logged_out ? "Sessão terminada." : "";
 
   return (
     <>
@@ -278,62 +237,23 @@ export default function LoginPage() {
                 Bem-vindo de volta
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Entre com as suas credenciais de administrador.
+                Será redireccionado para o servidor de identidade seguro.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form action={signInWithKeycloak} className="space-y-4">
+              <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
-              {/* Email */}
-              <div className="pa-fadeup-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
-                <div className="field-wrap">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    placeholder="admin@empresa.co.mz"
-                    className="auth-input"
-                    style={{ paddingLeft: 44 }}
-                  />
-                  <span className="field-icon material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 0" }}>
-                    mail
+              {/* Notice (expired / logged out) */}
+              {notice && !error && (
+                <div className="flex items-start gap-2.5 rounded-xl px-4 py-3"
+                     style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                  <span className="material-symbols-outlined text-gray-500 shrink-0 mt-0.5" style={{ fontSize: 16 }}>
+                    info
                   </span>
+                  <p className="text-sm text-gray-600">{notice}</p>
                 </div>
-              </div>
-
-              {/* Password */}
-              <div className="pa-fadeup-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Palavra-passe</label>
-                <div className="field-wrap">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    className="auth-input"
-                    style={{ paddingLeft: 44, paddingRight: 44 }}
-                  />
-                  <span className="field-icon material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 0" }}>
-                    lock
-                  </span>
-                  <button
-                    type="button"
-                    className="eye-btn"
-                    onClick={() => setShowPassword(v => !v)}
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-                      {showPassword ? 'visibility_off' : 'visibility'}
-                    </span>
-                  </button>
-                </div>
-              </div>
+              )}
 
               {/* Error */}
               {error && (
@@ -348,16 +268,9 @@ export default function LoginPage() {
 
               {/* Submit */}
               <div className="pa-fadeup-3 pt-1">
-                <button type="submit" disabled={loading} className="btn-auth">
-                  {loading ? (
-                    <>
-                      <svg className="pa-spinner w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
-                        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                      </svg>
-                      A entrar…
-                    </>
-                  ) : 'Entrar'}
+                <button type="submit" className="btn-auth">
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock</span>
+                  Entrar com a conta Pede Aqui
                 </button>
               </div>
             </form>

@@ -95,7 +95,7 @@ The current implementation uses mock/static data. To connect a future backend:
 
 1. Copy `.env.example` to `.env.local`.
 2. Set `NEXT_PUBLIC_ENABLE_MOCKS=false`.
-3. Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api` or your deployed API Gateway URL.
+3. Set `API_BASE_URL` (server-side, read by the `/api/bff` proxy) to `http://localhost:8080/api/v1` or your deployed API URL, plus the `AUTH_*` variables (see `docs/local-development.md`, "Backoffice").
 4. Implement the service calls in `src/features/screens/screen-service.ts` using `src/lib/http-client.ts`.
 
 ## Notes

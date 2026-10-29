@@ -32,11 +32,26 @@ Dev seed users (password policy: ≥10 chars, upper + lower + digit, not the use
 | `support` | `Support12345` | SUPPORT | `5e6d0c1a-…` |
 | `ops` | `Ops1234567` | OPS | `5e6d0c1a-…` |
 
-`admin`, `finance` and `ops` must enrol TOTP (authenticator app) on their first **browser** login
-(e.g. the account console at `http://localhost:8081/realms/delivery/account`). The backoffice still uses
-the password grant, which does not enforce that requirement; but after enrolling TOTP the password grant
-for that user requires a `totp` parameter the backoffice does not send — keep a non-enrolled user for
-local backoffice work until LAC-10 (PKCE) lands.
+`admin`, `finance` and `ops` must enrol TOTP (authenticator app) on their first **browser** login. The
+backoffice signs in with Authorization Code + PKCE (LAC-10), i.e. through that browser flow, so the
+first backoffice login of those users shows the Keycloak "configure OTP" screen. `support` has no TOTP
+requirement and is the quickest user for local backoffice work.
+
+**No password grant on `delivery-app`.** The backoffice client is PKCE-only (`directAccessGrantsEnabled:
+false`). Scripts that need a token without a browser (e.g. `scripts/spec-002-smoke.sh`) use the
+**dev-only** client `backoffice-dev-cli`, created on demand in your *local* Keycloak by
+`scripts/lib/keycloak-dev-ropc-client.sh` through the admin API (compose bootstrap admin `admin`/`admin`);
+it copies `delivery-app`'s `tenant_id`/`vendor_id` mappers and refuses non-localhost URLs. Manual curl:
+
+```bash
+source scripts/lib/keycloak-dev-ropc-client.sh
+CLIENT=$(ensure_dev_ropc_client http://localhost:8081 delivery)
+curl -s -X POST http://localhost:8081/realms/delivery/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=$CLIENT -d username=support -d password=Support12345
+```
+
+Never create that client outside local dev: ROPC skips the TOTP browser flow. The backend Keycloak E2E
+test creates its own throwaway equivalent inside its Testcontainers Keycloak.
 
 Access tokens last 5 minutes and refresh tokens rotate (a refresh token can be used once).
 
@@ -65,6 +80,32 @@ curl -H "Authorization: Bearer <token>" \
 ```
 
 Admin users can create or list tenants through `/api/v1/tenants` without `X-Tenant-Id`.
+
+## Backoffice (Next.js BFF)
+
+The backoffice authenticates server-side with Auth.js (`next-auth` v5) — Authorization Code + PKCE
+against the `delivery-app` client — and proxies every API call through `/api/bff/*`, which attaches the
+access token server-side. The browser only holds the encrypted HttpOnly session cookie.
+
+`pede-aqui-backoffice/.env.local` (git-ignored; all server-side — the old `NEXT_PUBLIC_KEYCLOAK_*` and
+`NEXT_PUBLIC_API_BASE_URL` are no longer read by the browser):
+
+```dotenv
+AUTH_SECRET=<openssl rand -base64 33>          # session JWE key + impersonation-cookie HMAC key
+AUTH_URL=http://localhost:3000                 # https in prod → Secure / __Secure- cookies
+AUTH_KEYCLOAK_ISSUER=http://localhost:8081/realms/delivery
+AUTH_KEYCLOAK_ID=delivery-app                  # public client; AUTH_KEYCLOAK_SECRET only if made confidential
+API_BASE_URL=http://localhost:8080/api/v1      # backend reached by /api/bff/*, not by the browser
+# CSP_UPLOAD_ORIGINS="http://localhost:9000 https://*.amazonaws.com"   # build-time CSP (presigned uploads)
+# NEXT_PUBLIC_ENABLE_SCREENS=true              # /screens prototype viewer in production builds
+```
+
+```bash
+cd pede-aqui-backoffice
+npm ci && npm run dev           # http://localhost:3000 → "Entrar" → Keycloak login → back
+``` The Keycloak redirect URIs registered for
+`delivery-app` are `http://localhost:3000|3001/api/auth/callback/keycloak`; another port or host needs a
+realm change. The realm must be re-imported after pulling this change (see above).
 
 ## Troubleshooting
 
