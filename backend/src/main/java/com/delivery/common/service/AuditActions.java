@@ -27,6 +27,9 @@ public final class AuditActions {
     public static final String PROMOTION_DELETED = "PROMOTION_DELETED";
     // Users (LAC-13)
     public static final String USER_ROLES_ASSIGNED = "USER_ROLES_ASSIGNED";
+    // Store closures (LAC-27)
+    public static final String VENDOR_CLOSURE_CREATED = "VENDOR_CLOSURE_CREATED";
+    public static final String VENDOR_CLOSURE_DELETED = "VENDOR_CLOSURE_DELETED";
 
     private AuditActions() {
     }

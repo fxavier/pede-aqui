@@ -106,6 +106,6 @@ class VendorSearchCacheRedisTest {
 
     private static SearchVendorResponse row() {
         return new SearchVendorResponse(UUID.fromString("00000000-0000-0000-0000-0000000000b2"), "Loja", 1.25, 1250,
-                true, 4.5, 30, new BigDecimal("75.50"), "DISTANCE_RULE");
+                true, 4.5, 30, new BigDecimal("75.50"), "DISTANCE_RULE", false, null);
     }
 }

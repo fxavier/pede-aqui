@@ -276,6 +276,9 @@ public class OrderService {
         if (!"ACTIVE".equals(cart.getStatus()) || cart.getItems().isEmpty()) {
             throw new BusinessException("invalid_cart", "Cart must be active and contain items", HttpStatus.BAD_REQUEST);
         }
+        // LAC-27/LAC-64: store open now and no pharmacy product while the vertical is blocked (422 store_closed /
+        // pharmacy_not_available), checked before the price revalidation so a closed store never reprices the cart.
+        cartService.requireCheckoutEligible(tenantId, cart);
         revalidateItems(tenantId, cart);
         // Fees and tax are re-quoted here with the delivery address (INC-13): the cart's own fees were estimated
         // without one. Discounts are applied below through the spec-002 seam, on top of this quote.

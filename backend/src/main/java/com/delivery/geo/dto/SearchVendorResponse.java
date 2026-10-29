@@ -1,12 +1,16 @@
 package com.delivery.geo.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
  * Vendor search result returned by the MVP discovery endpoint. deliveryFee comes from the same pricing engine as
  * checkout (INC-13, BigDecimal per ADR-0003); deliveryFeeBasis says whether it is a distance rule or an estimate
  * (POLICY_BASE / PLATFORM_DEFAULT when the customer's or vendor's position is unknown).
+ * <p>{@code open} and {@code nextOpeningAt} (LAC-27) are the store's state at request time: they are computed after the
+ * cached result set is read (never cached), so the values stored in the "vendorSearch" cache for these two members
+ * are meaningless placeholders.
  */
 public record SearchVendorResponse(
     UUID vendorId,
@@ -17,5 +21,13 @@ public record SearchVendorResponse(
     double rating,
     Integer estimatedDeliveryMinutes,
     BigDecimal deliveryFee,
-    String deliveryFeeBasis
-) {}
+    String deliveryFeeBasis,
+    boolean open,
+    Instant nextOpeningAt
+) {
+    /** Copy with the request-time open state (LAC-27). */
+    public SearchVendorResponse withOpenState(boolean open, Instant nextOpeningAt) {
+        return new SearchVendorResponse(vendorId, name, distanceKm, distanceMeters, available, rating,
+                estimatedDeliveryMinutes, deliveryFee, deliveryFeeBasis, open, nextOpeningAt);
+    }
+}

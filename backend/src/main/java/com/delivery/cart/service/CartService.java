@@ -15,6 +15,7 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.repository.InventoryItemRepository;
+import com.delivery.vendor.api.StoreAvailabilityService;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
@@ -33,8 +34,10 @@ public class CartService {
     private final TenantContext tenantContext;
     private final InventoryItemRepository inventoryItemRepository;
     private final AppUserProfileRepository userProfileRepository;
+    private final StoreAvailabilityService storeAvailability;
 
-    public CartService(CartRepository cartRepository, SkuRepository skuRepository, ProductRepository productRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository) {
+    public CartService(CartRepository cartRepository, SkuRepository skuRepository, ProductRepository productRepository, CartMapper mapper, PricingService pricingService, TenantContext tenantContext, InventoryItemRepository inventoryItemRepository, AppUserProfileRepository userProfileRepository, StoreAvailabilityService storeAvailability) {
+        this.storeAvailability = storeAvailability;
         this.cartRepository = cartRepository;
         this.skuRepository = skuRepository;
         this.productRepository = productRepository;
@@ -46,8 +49,8 @@ public class CartService {
     }
 
     /**
-     * Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts and SKUs of another
-     * vendor (sku_vendor_mismatch).
+     * Adds an active SKU of an ACTIVE product to the active cart and rejects mixed-vendor carts, SKUs of another vendor
+     * (sku_vendor_mismatch) and closed stores (LAC-27).
      */
     @Transactional
     public CartResponse addItem(UUID vendorId, UUID skuId, int quantity) {
@@ -70,6 +73,7 @@ public class CartService {
         if (!product.getVendorId().equals(vendorId)) {
             throw new BusinessException("sku_vendor_mismatch", "This product variant is not sold by the given vendor", HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        storeAvailability.requireOpen(vendorId);     // LAC-27
         inventoryItemRepository.findByTenantIdAndSkuId(tenantId, skuId)
                 .filter(item -> item.getQuantityAvailable() >= quantity)
                 .orElseThrow(() -> new BusinessException("insufficient_stock", "Not enough stock is available", HttpStatus.CONFLICT));
@@ -92,6 +96,11 @@ public class CartService {
             var quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), null);
             cart.updateTotals(quote.fees(), quote.taxes(), BigDecimal.ZERO, quote.total());
         });
+    }
+
+    /** Checkout-time eligibility (LAC-27): the store must be open now. Runs inside the caller's checkout transaction. */
+    public void requireCheckoutEligible(UUID tenantId, Cart cart) {
+        storeAvailability.requireOpen(cart.getVendorId());
     }
 
     /** Loads a tenant-scoped cart for checkout with customer ownership validation. */

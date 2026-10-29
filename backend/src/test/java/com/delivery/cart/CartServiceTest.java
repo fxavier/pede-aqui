@@ -19,6 +19,8 @@ import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
+import com.delivery.vendor.api.StoreAvailabilityService;
+import com.delivery.vendor.api.StoreClosedException;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.inventory.entity.InventoryItem;
@@ -32,6 +34,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class CartServiceTest {
     private final ProductRepository productRepository = mock(ProductRepository.class);
+    private final StoreAvailabilityService storeAvailability = mock(StoreAvailabilityService.class);
     private final UUID tenantId = UUID.randomUUID();
     private final UUID customerId = UUID.randomUUID();
     private final String keycloakUserId = "test-keycloak-user-id";
@@ -177,6 +180,26 @@ class CartServiceTest {
         verify(cartRepository, never()).save(any());
     }
 
+    // --- LAC-27: closed stores do not accept items ---
+
+    @Test
+    void rejectsItemWhenTheStoreIsClosed() {
+        UUID vendorId = UUID.randomUUID();
+        Product product = activeProduct(vendorId);
+        CartRepository cartRepository = cartFor(vendorId);
+        SkuRepository skuRepository = skuOf(product);
+        org.mockito.Mockito.doThrow(new StoreClosedException(vendorId, null)).when(storeAvailability).requireOpen(vendorId);
+
+        CartService service = service(cartRepository, skuRepository, stocked(vendorId, skuIdOf(skuRepository)));
+
+        assertThatThrownBy(() -> service.addItem(vendorId, skuIdOf(skuRepository), 1))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getCode()).isEqualTo("store_closed");
+                    assertThat(e.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+                });
+        verify(cartRepository, never()).save(any());
+    }
+
     private final java.util.Map<SkuRepository, UUID> skuIds = new java.util.IdentityHashMap<>();
 
     private SkuRepository skuOf(Product product) {
@@ -220,6 +243,6 @@ class CartServiceTest {
         when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of(keycloakUserId));
         when(userProfileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId)).thenReturn(Optional.of(userProfile));
         
-        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, inventoryRepository, userProfileRepository);
+        return new CartService(cartRepository, skuRepository, productRepository, new CartMapper(), com.delivery.cart.PricingFixtures.platformDefaults(), tenantContext, inventoryRepository, userProfileRepository, storeAvailability);
     }
 }
