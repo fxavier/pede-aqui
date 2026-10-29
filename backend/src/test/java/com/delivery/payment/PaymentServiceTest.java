@@ -67,8 +67,8 @@ class PaymentServiceTest {
         userProfileRepository = mock(AppUserProfileRepository.class);
         properties = new PaymentMockConfirmationProperties();
         properties.setEnabled(true);
-        service = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), auditLogService), mock(RefundRepository.class), auditLogService,
-                new PaymentMapper(), tenantContext, userProfileRepository, properties);
+        service = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), auditLogService, com.delivery.order.OrderTestStatus.stateMachine()), mock(RefundRepository.class), auditLogService,
+                new PaymentMapper(), tenantContext, userProfileRepository, properties, mock(com.delivery.payment.repository.PaymentStatusHistoryRepository.class));
 
         payment = new Payment(UUID.randomUUID(), tenantId, orderId, new BigDecimal("21.50"), "pay-key");
         order = new Order(orderId, tenantId, "PA-1", ownerProfileId, UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE,
@@ -133,8 +133,8 @@ class PaymentServiceTest {
         when(refundRepository.saveAndFlush(any(Refund.class))).thenReturn(refund);
 
         AuditLogService refundAudit = mock(AuditLogService.class);
-        PaymentService refundService = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(mock(OrderRepository.class), org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), refundAudit), refundRepository,
-                refundAudit, new PaymentMapper(), tenantContext, userProfileRepository, properties);
+        PaymentService refundService = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(mock(OrderRepository.class), org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), refundAudit, com.delivery.order.OrderTestStatus.stateMachine()), refundRepository,
+                refundAudit, new PaymentMapper(), tenantContext, userProfileRepository, properties, mock(com.delivery.payment.repository.PaymentStatusHistoryRepository.class));
 
         var response = refundService.requestRefund(paymentId, new RefundRequest(new BigDecimal("100.00"), "Vendor rejection: Sem ingredientes", idempotencyKey));
 
@@ -208,7 +208,7 @@ class PaymentServiceTest {
 
     @Test
     void cancelledOrderCannotBeRevivedByConfirmingItsPayment() {
-        order.markCancelled();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.CANCELLED);
         authenticateAs(ownerSubject, "ROLE_CUSTOMER");
 
         assertThatThrownBy(() -> service.confirm(payment.getId(), "pay-key"))

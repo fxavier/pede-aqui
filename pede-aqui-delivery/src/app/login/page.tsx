@@ -1,36 +1,39 @@
-import { useState, FormEvent } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { keycloakService } from '@/lib/api/services'
-import { setUser } from '@/store/auth-slice'
-import type { AppDispatch } from '@/store'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { Loader2 } from 'lucide-react'
+import { authSession } from '@/features/auth/authSession'
+import { safeRedirect } from '@/features/auth/session'
+import type { RootState } from '@/store'
 
+/**
+ * Login entry point. Credentials are never typed into the app: "Entrar" starts the
+ * Authorization Code + PKCE redirect to the Keycloak login page, which sends the user back to
+ * /auth/callback. The page stays as a landing (instead of auto-redirecting) so new customers can
+ * pick "Criar conta" — self-registration goes through the app's /register form.
+ */
 export default function LoginPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  const redirect = params.get('redirect') ?? '/'
+  const status = useSelector((s: RootState) => s.auth.status)
+  const redirect = safeRedirect(params.get('redirect'))
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPwd, setShowPwd] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState<string | null>(
+    params.get('error') ? 'Não foi possível concluir a autenticação. Tenta novamente.' : null,
+  )
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  useEffect(() => {
+    if (status === 'authenticated') navigate(redirect, { replace: true })
+  }, [status, redirect, navigate])
+
+  function startLogin() {
     setError(null)
-    setLoading(true)
-    try {
-      const { access_token, profile } = await keycloakService.login(email, password)
-      dispatch(setUser({ access_token, profile }))
-      navigate(redirect, { replace: true })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao entrar. Tenta novamente.')
-    } finally {
-      setLoading(false)
-    }
+    setStarting(true)
+    authSession.login(redirect).catch(() => {
+      setStarting(false)
+      setError('Serviço de autenticação indisponível. Tenta novamente.')
+    })
   }
 
   return (
@@ -42,7 +45,7 @@ export default function LoginPage() {
         <p className="mt-2 font-body text-white/60">Entrega rápida em Maputo</p>
       </div>
 
-      {/* Bottom — form */}
+      {/* Bottom — actions */}
       <div className="bg-background px-6 py-8">
         <div className="mx-auto max-w-xs space-y-5">
           <div>
@@ -50,57 +53,19 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-muted-foreground">Entra para adicionar ao carrinho e fazer pedidos.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Email</label>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="o.teu@email.com"
-                className="h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">{error}</p>
+          )}
 
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Palavra-passe</label>
-              <div className="relative">
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-11 w-full rounded-xl border border-input bg-white px-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-sm font-bold text-white shadow-warm-md transition-all hover:bg-brand-500 active:scale-[0.98] disabled:opacity-60"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Entrar
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={startLogin}
+            disabled={starting || status === 'loading'}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-sm font-bold text-white shadow-warm-md transition-all hover:bg-brand-500 active:scale-[0.98] disabled:opacity-60"
+          >
+            {(starting || status === 'loading') && <Loader2 className="h-4 w-4 animate-spin" />}
+            Entrar
+          </button>
 
           <p className="text-center text-sm text-muted-foreground">
             Não tens conta?{' '}

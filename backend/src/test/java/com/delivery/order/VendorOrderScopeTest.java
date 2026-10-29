@@ -88,7 +88,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine());
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -130,10 +130,10 @@ class VendorOrderScopeTest {
     void vendorStaffCannotPrepareOrMarkReadyAnotherVendorsOrder() {
         authenticate(vendorA, "ROLE_VENDOR_STAFF");
         Order accepted = stored(paymentConfirmed(vendorB));
-        accepted.markAcceptedByVendor();
+        com.delivery.order.OrderTestStatus.force(accepted, com.delivery.order.entity.OrderStatus.ACCEPTED_BY_VENDOR);
         Order preparing = stored(paymentConfirmed(vendorB));
-        preparing.markAcceptedByVendor();
-        preparing.markPreparing();
+        com.delivery.order.OrderTestStatus.force(preparing, com.delivery.order.entity.OrderStatus.ACCEPTED_BY_VENDOR);
+        com.delivery.order.OrderTestStatus.force(preparing, com.delivery.order.entity.OrderStatus.PREPARING);
 
         assertThatThrownBy(() -> service.markPreparing(accepted.getId())).isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> service.markReadyForPickup(preparing.getId())).isInstanceOf(NotFoundException.class);
@@ -214,9 +214,9 @@ class VendorOrderScopeTest {
         when(refundRepository.saveAndFlush(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
         when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         AuditLogService paymentAudit = mock(AuditLogService.class);
-        PaymentService realPayments = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), paymentAudit), refundRepository,
+        PaymentService realPayments = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), paymentAudit, com.delivery.order.OrderTestStatus.stateMachine()), refundRepository,
                 paymentAudit, new PaymentMapper(), tenantContext, userProfileRepository,
-                new PaymentMockConfirmationProperties());
+                new PaymentMockConfirmationProperties(), mock(com.delivery.payment.repository.PaymentStatusHistoryRepository.class));
         OrderService withRealPayments = new OrderService(
                 mock(CartRepository.class), orderRepository, paymentRepository, mock(DeliveryRepository.class),
                 mock(InventoryService.class), userProfileRepository, vendorRepository, notificationService,
@@ -224,7 +224,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine());
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 
@@ -331,7 +331,7 @@ class VendorOrderScopeTest {
         Order order = new Order(UUID.randomUUID(), tenantId, "PA-TEST-" + UUID.randomUUID(), UUID.randomUUID(), vendorId,
                 new BigDecimal("100.00"), new BigDecimal("10.00"), new BigDecimal("5.00"), BigDecimal.ZERO,
                 new BigDecimal("115.00"), "idem-" + UUID.randomUUID(), "hash", "000000");
-        order.markPaymentConfirmed();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.PAYMENT_CONFIRMED);
         return order;
     }
 }

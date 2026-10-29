@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { store } from '@/store'
 import { clearUser } from '@/store/auth-slice'
+import { authSession } from '@/features/auth/authSession'
+import { installAuthInterceptors } from './authInterceptors'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
@@ -9,24 +11,24 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-apiClient.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('auth_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+let sessionLostHandled = false
 
-// Central 401 handling: an expired/invalid session clears local auth state
-// (Redux + sessionStorage auth_token) and sends the user back to login.
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      store.dispatch(clearUser())
-      if (!window.location.pathname.startsWith('/login')) {
-        const redirect = encodeURIComponent(window.location.pathname + window.location.search)
-        window.location.assign(`/login?redirect=${redirect}`)
-      }
-    }
-    return Promise.reject(error)
+// Token comes from the in-memory oidc-client-ts session (never from browser storage).
+// 401 → one single-flight renewal + replay; if that fails the session is cleared and the user is
+// sent to the Keycloak login, returning to the current page afterwards.
+installAuthInterceptors(apiClient, {
+  getAccessToken: () => authSession.getAccessToken(),
+  renew: () => authSession.renew().then((user) => user?.access_token ?? null),
+  onSessionLost: () => {
+    if (sessionLostHandled) return
+    sessionLostHandled = true
+    store.dispatch(clearUser())
+    const here = window.location.pathname + window.location.search
+    void authSession
+      .clear()
+      .then(() => authSession.login(here))
+      .catch(() => {
+        sessionLostHandled = false
+      })
   },
-)
+})

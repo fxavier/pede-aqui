@@ -7,3 +7,10 @@ scrape_configs:
     static_configs:
       # Porta de gestão interna do backend (MANAGEMENT_SERVER_PORT), sem autenticação.
       - targets: ["backend:8091"]
+
+  # Backend a correr no host (mvn spring-boot:run) com MANAGEMENT_SERVER_PORT=8091 — ver docs/local-development.md.
+  # Fica DOWN quando o backend corre só no compose; é inofensivo.
+  - job_name: backend-host
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8091"]
