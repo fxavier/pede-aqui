@@ -62,7 +62,8 @@ class KeycloakMerchantRegistrationE2ETest {
             .withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
             .withCopyFileToContainer(MountableFile.forHostPath(REALM), "/opt/keycloak/data/import/delivery-realm.json")
             .withExposedPorts(8080)
-            .waitingFor(Wait.forHttp("/realms/delivery").forPort(8080).withStartupTimeout(Duration.ofMinutes(4)));
+            // start-dev + realm import alone takes ~2.5-3 min on a loaded dev machine; 4 min timed out in a full verify.
+            .waitingFor(Wait.forHttp("/realms/delivery").forPort(8080).withStartupTimeout(Duration.ofMinutes(8)));
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbc;
