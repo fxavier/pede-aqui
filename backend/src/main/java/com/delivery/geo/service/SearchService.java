@@ -1,10 +1,10 @@
 package com.delivery.geo.service;
 
-import com.delivery.cart.service.PricingService;
 import com.delivery.common.pricing.DeliveryFeeQuote;
 import com.delivery.common.pricing.GeoPoint;
 import com.delivery.common.security.TenantContext;
 import com.delivery.catalog.repository.ProductRepository;
+import com.delivery.geo.api.DeliveryFeeEstimator;
 import com.delivery.geo.dto.SearchResponse;
 import com.delivery.geo.dto.SearchSortOption;
 import com.delivery.geo.dto.SearchVendorResponse;
@@ -23,7 +23,7 @@ public class SearchService {
     private final TenantContext tenantContext;
     private final ProductRepository productRepository;
     private final VendorRepository vendorRepository;
-    private final PricingService pricingService;
+    private final DeliveryFeeEstimator feeEstimator;
     private final VendorSearchCache searchCache;
     private final StoreAvailabilityService storeAvailability;
     private static final int PAGE_SIZE = 20;
@@ -31,12 +31,12 @@ public class SearchService {
     private static final int PER_KM_MINUTES = 3;
 
     public SearchService(TenantContext tenantContext, ProductRepository productRepository, VendorRepository vendorRepository,
-                         PricingService pricingService, VendorSearchCache searchCache, StoreAvailabilityService storeAvailability) {
+                         DeliveryFeeEstimator feeEstimator, VendorSearchCache searchCache, StoreAvailabilityService storeAvailability) {
         this.storeAvailability = storeAvailability;
         this.tenantContext = tenantContext;
         this.productRepository = productRepository;
         this.vendorRepository = vendorRepository;
-        this.pricingService = pricingService;
+        this.feeEstimator = feeEstimator;
         this.searchCache = searchCache;
     }
 
@@ -90,7 +90,7 @@ public class SearchService {
         Double minRating = query.minRating();
         Integer maxDeliveryMinutes = query.maxDeliveryMinutes();
         // Same engine and distance function as checkout (INC-13): the fee shown is the fee charged for this position.
-        Map<UUID, DeliveryFeeQuote> fees = pricingService.estimateDeliveryFees(vendors, GeoPoint.of(query.latitude(), query.longitude()).orElse(null));
+        Map<UUID, DeliveryFeeQuote> fees = feeEstimator.estimateDeliveryFees(vendors, GeoPoint.of(query.latitude(), query.longitude()).orElse(null));
 
         return vendors.stream()
                 .map(vendor -> createVendorResponse(vendor, fees.get(vendor.getId()), normalizedLat, normalizedLng))
