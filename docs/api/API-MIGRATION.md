@@ -618,3 +618,33 @@ No backend API change; this records a client change that the Keycloak ROPC shutd
 - Dev: tokens carry `iss` = the host the app used. The backend validates `iss` against
   `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
   than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).
+
+## W5-C — Vendor search on PostGIS (LAC-39) — 2026-10-29
+
+### `GET /api/v1/search/vendors` (same parameters; behaviour and one nullability change)
+
+- **Radius filtering is real.** With `lat`/`lng` the result set is the vendors whose stored position lies
+  within `radius` metres (default 5000) of the point — `ST_DWithin` on `vendors.location` (geography, GiST
+  index), boundary inclusive — that sell at least one ACTIVE product in scope. `distanceKm` (2 decimals) and
+  `distanceMeters` are the geodesic (spheroid) distance the filter used, and `sort=DISTANCE` orders by it.
+- **Vendors without a usable position are excluded when `lat`/`lng` are sent** (coordinates missing, half-set,
+  `(0,0)` placeholder or out of range). Before, they appeared with a made-up "pseudo distance" derived from the
+  vendor id. OPS should fix those vendors (report query in V062's header).
+- **`distanceKm` is now nullable** (`number | null`, was always a number) and `distanceMeters` is null in the same
+  case: when the request has no usable `lat`/`lng` (missing, `(0,0)`, out of range). Then no radius is applied —
+  every vendor in scope is returned, as before, but without the fake distance. `RELEVANCE` scoring treats an
+  unknown distance as contributing 0; `DISTANCE` sorts unknown distances last.
+- `deliveryFee`/`deliveryFeeBasis` are unchanged (same pricing engine; its distance now reads `vendors.location`,
+  which yields the same value as the previous lat/lng computation).
+- Cache (`vendorSearch`, 60 s) and the request-time `open`/`nextOpeningAt` are unchanged; the key still rounds
+  the point to 3 decimals and the search runs on the rounded point.
+- `GET /api/v1/search/vendors/legacy` and `GET /api/v1/customers/me/favorites` (built on the same search)
+  inherit the same rules.
+
+### Clients / consumers to review
+
+- Customer web (`pede-aqui-delivery`): `VendorSearchResult.distanceKm` is typed `number | null` and `VendorCard`
+  hides the distance when it is null (it called `toFixed` on it). Updated in this package.
+- Customer Flutter app: already maps a missing/null `distanceKm` to 0 (`catalog_repository.dart`); no change.
+- Integrators sending `lat`/`lng`: expect fewer results if some stores have no position.
+
