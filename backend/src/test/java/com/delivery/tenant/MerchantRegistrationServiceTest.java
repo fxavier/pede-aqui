@@ -1,4 +1,4 @@
-package com.delivery.auth;
+package com.delivery.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,12 +11,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.delivery.auth.dto.MerchantRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationResponse;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationResponse;
 import com.delivery.auth.entity.AppUserProfile;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.auth.service.KeycloakAdminService;
-import com.delivery.auth.service.MerchantRegistrationService;
+import com.delivery.tenant.service.MerchantRegistrationService;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.common.security.TenancyProperties;
@@ -55,8 +55,9 @@ class MerchantRegistrationServiceTest {
                 .thenReturn(Optional.of(new Tenant(operatorTenantId, "Pede-Aqui", "pede-aqui-operador", "MZN")));
         when(appUserProfileRepository.existsByEmail(anyString())).thenReturn(false);
         when(keycloakAdminService.createUser(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(KEYCLOAK_USER);
-        service = new MerchantRegistrationService(tenantRepository, appUserProfileRepository, keycloakAdminService,
-                vendorRepository, merchantUserRepository, tenancy);
+        service = new MerchantRegistrationService(tenantRepository,
+                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService),
+                new com.delivery.vendor.api.MerchantOnboarding(vendorRepository, merchantUserRepository), tenancy);
     }
 
     @Test

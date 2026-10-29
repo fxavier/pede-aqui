@@ -1,13 +1,12 @@
-package com.delivery.auth.service;
+package com.delivery.tenant.service;
 
-import com.delivery.auth.dto.MerchantRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationResponse;
-import com.delivery.auth.dto.TenantProvisioningRequest;
-import com.delivery.auth.dto.TenantProvisioningResponse;
-import com.delivery.auth.entity.AppUserProfile;
-import com.delivery.auth.entity.ProvisioningRequest;
-import com.delivery.auth.repository.AppUserProfileRepository;
-import com.delivery.auth.repository.ProvisioningRequestRepository;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationResponse;
+import com.delivery.tenant.dto.TenantProvisioningRequest;
+import com.delivery.tenant.dto.TenantProvisioningResponse;
+import com.delivery.auth.api.UserAccounts;
+import com.delivery.tenant.entity.ProvisioningRequest;
+import com.delivery.tenant.repository.ProvisioningRequestRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.tenant.entity.Tenant;
 import com.delivery.tenant.repository.TenantRepository;
@@ -33,7 +32,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Idempotently provisions a tenant + owner from a thin subscription lead by mapping it onto the
  * existing merchant-registration saga. Effectively-once via the provisioning_requests ledger and a
- * per-email Postgres advisory lock.
+ * per-email Postgres advisory lock. In the tenant module since ADR-0002 W3-A (C8); users go through
+ * {@code auth.api.UserAccounts}.
  */
 @Service
 public class SubscriptionProvisioningService {
@@ -42,9 +42,8 @@ public class SubscriptionProvisioningService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final MerchantRegistrationService merchantRegistrationService;
-    private final KeycloakAdminService keycloakAdminService;
+    private final UserAccounts userAccounts;
     private final TenantRepository tenantRepository;
-    private final AppUserProfileRepository appUserProfileRepository;
     private final ProvisioningRequestRepository provisioningRequestRepository;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
@@ -56,18 +55,16 @@ public class SubscriptionProvisioningService {
 
     public SubscriptionProvisioningService(
             MerchantRegistrationService merchantRegistrationService,
-            KeycloakAdminService keycloakAdminService,
+            UserAccounts userAccounts,
             TenantRepository tenantRepository,
-            AppUserProfileRepository appUserProfileRepository,
             ProvisioningRequestRepository provisioningRequestRepository,
             ObjectMapper objectMapper,
             PlatformTransactionManager transactionManager,
             @Value("${app.provisioning.max-tenants-per-hour:50}") int maxTenantsPerHour,
             @Value("${app.provisioning.max-per-email-domain-per-hour:10}") int maxPerEmailDomainPerHour) {
         this.merchantRegistrationService = merchantRegistrationService;
-        this.keycloakAdminService = keycloakAdminService;
+        this.userAccounts = userAccounts;
         this.tenantRepository = tenantRepository;
-        this.appUserProfileRepository = appUserProfileRepository;
         this.provisioningRequestRepository = provisioningRequestRepository;
         this.objectMapper = objectMapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -104,7 +101,7 @@ public class SubscriptionProvisioningService {
         }
 
         if (outcome.keycloakUserIdForOnboarding() != null) {
-            keycloakAdminService.sendPasswordSetupEmail(outcome.keycloakUserIdForOnboarding());
+            userAccounts.sendPasswordSetupEmail(outcome.keycloakUserIdForOnboarding());
         }
         return outcome.response();
     }
@@ -117,15 +114,13 @@ public class SubscriptionProvisioningService {
             return new Outcome(replayResponse(existingRow), null);
         }
 
-        AppUserProfile existingProfile = appUserProfileRepository.findFirstByEmail(email).orElse(null);
+        UserAccounts.UserAccount existingProfile = userAccounts.findFirstByEmail(email).orElse(null);
         if (existingProfile != null) {
             return new Outcome(existingTenantResponse(existingProfile), null);
         }
 
         MerchantRegistrationResponse saga = merchantRegistrationService.provisionTenant(toRegistrationRequest(request, email));
-        String keycloakUserId = appUserProfileRepository.findById(saga.userProfileId())
-                .map(AppUserProfile::getKeycloakUserId)
-                .orElse(null);
+        String keycloakUserId = userAccounts.keycloakUserIdOf(saga.userProfileId()).orElse(null);
 
         TenantProvisioningResponse response = new TenantProvisioningResponse(
                 saga.tenantId(), saga.tenantSlug(), saga.userProfileId(), saga.email(),
@@ -215,12 +210,12 @@ public class SubscriptionProvisioningService {
         }
     }
 
-    private TenantProvisioningResponse existingTenantResponse(AppUserProfile profile) {
-        Tenant tenant = tenantRepository.findById(profile.getTenantId())
+    private TenantProvisioningResponse existingTenantResponse(UserAccounts.UserAccount profile) {
+        Tenant tenant = tenantRepository.findById(profile.tenantId())
                 .orElseThrow(() -> new BusinessException("downstream_db", "Tenant missing for existing profile", HttpStatus.BAD_GATEWAY));
         return new TenantProvisioningResponse(
-                tenant.getId(), tenant.getSlug(), profile.getId(), profile.getEmail(),
-                profile.getDisplayName(), tenant.getStatus(), false, true);
+                tenant.getId(), tenant.getSlug(), profile.profileId(), profile.email(),
+                profile.displayName(), tenant.getStatus(), false, true);
     }
 
     private TenantProvisioningResponse asExisting(TenantProvisioningResponse response) {
@@ -238,7 +233,7 @@ public class SubscriptionProvisioningService {
         if (cached != null) {
             return cached;
         }
-        return appUserProfileRepository.findFirstByEmail(email)
+        return userAccounts.findFirstByEmail(email)
                 .map(this::existingTenantResponse)
                 .orElse(null);
     }

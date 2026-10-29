@@ -1,4 +1,4 @@
-package com.delivery.auth.dto;
+package com.delivery.tenant.dto;
 
 import java.util.UUID;
 

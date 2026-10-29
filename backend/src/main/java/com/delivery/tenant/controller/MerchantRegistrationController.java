@@ -1,8 +1,8 @@
-package com.delivery.auth.controller;
+package com.delivery.tenant.controller;
 
-import com.delivery.auth.dto.MerchantRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationResponse;
-import com.delivery.auth.service.MerchantRegistrationService;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationResponse;
+import com.delivery.tenant.service.MerchantRegistrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

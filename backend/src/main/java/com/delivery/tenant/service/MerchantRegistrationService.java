@@ -1,19 +1,14 @@
-package com.delivery.auth.service;
+package com.delivery.tenant.service;
 
-import com.delivery.auth.dto.MerchantRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationResponse;
-import com.delivery.auth.entity.AppUserProfile;
-import com.delivery.auth.repository.AppUserProfileRepository;
+import com.delivery.auth.api.UserAccounts;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.common.security.TenancyProperties;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationResponse;
 import com.delivery.tenant.entity.Tenant;
 import com.delivery.tenant.repository.TenantRepository;
-import com.delivery.vendor.entity.MerchantRole;
-import com.delivery.vendor.entity.MerchantUser;
-import com.delivery.vendor.entity.Vendor;
-import com.delivery.vendor.repository.MerchantUserRepository;
-import com.delivery.vendor.repository.VendorRepository;
+import com.delivery.vendor.api.MerchantOnboarding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -32,6 +27,9 @@ import java.util.UUID;
  *       and bootstrap vendor, kept for white-label operators.</li>
  * </ul>
  * On any failure after the Keycloak user was created, the user is deleted again (compensation).
+ * Lives in the tenant module since ADR-0002 W3-A (C8/C9: it creates/looks up tenants, so in auth it closed the
+ * auth-tenant and auth-vendor cycles); identity goes through {@code auth.api.UserAccounts} and the vendor
+ * through {@code vendor.api.MerchantOnboarding}, both inside this transaction as before.
  */
 @Service
 @Transactional
@@ -39,24 +37,18 @@ public class MerchantRegistrationService {
     private static final Logger logger = LoggerFactory.getLogger(MerchantRegistrationService.class);
 
     private final TenantRepository tenantRepository;
-    private final AppUserProfileRepository appUserProfileRepository;
-    private final KeycloakAdminService keycloakAdminService;
-    private final VendorRepository vendorRepository;
-    private final MerchantUserRepository merchantUserRepository;
+    private final UserAccounts userAccounts;
+    private final MerchantOnboarding merchantOnboarding;
     private final TenancyProperties tenancyProperties;
 
     public MerchantRegistrationService(
             TenantRepository tenantRepository,
-            AppUserProfileRepository appUserProfileRepository,
-            KeycloakAdminService keycloakAdminService,
-            VendorRepository vendorRepository,
-            MerchantUserRepository merchantUserRepository,
+            UserAccounts userAccounts,
+            MerchantOnboarding merchantOnboarding,
             TenancyProperties tenancyProperties) {
         this.tenantRepository = tenantRepository;
-        this.appUserProfileRepository = appUserProfileRepository;
-        this.keycloakAdminService = keycloakAdminService;
-        this.vendorRepository = vendorRepository;
-        this.merchantUserRepository = merchantUserRepository;
+        this.userAccounts = userAccounts;
+        this.merchantOnboarding = merchantOnboarding;
         this.tenancyProperties = tenancyProperties;
     }
 
@@ -82,14 +74,14 @@ public class MerchantRegistrationService {
     }
 
     private MerchantRegistrationResponse onboard(MerchantRegistrationRequest request, Tenant tenant, boolean persistTenant) {
-        if (appUserProfileRepository.existsByEmail(request.email())) {
+        if (userAccounts.emailExists(request.email())) {
             throw new BusinessException("email_exists", "Email already exists", HttpStatus.CONFLICT);
         }
         UUID tenantId = tenant.getId();
         String keycloakUserId = null;
         try {
             // Keycloak first: the tenant_id attribute must be on the user before any token is issued.
-            keycloakUserId = keycloakAdminService.createUser(
+            keycloakUserId = userAccounts.createKeycloakUser(
                     request.email(),
                     request.firstName(),
                     request.lastName(),
@@ -103,35 +95,14 @@ public class MerchantRegistrationService {
 
             UUID userProfileId = UUID.randomUUID();
             String displayName = request.firstName() + " " + request.lastName();
-            AppUserProfile userProfile = new AppUserProfile(
-                    userProfileId,
-                    tenantId,
-                    keycloakUserId,
-                    request.email(),
-                    displayName,
-                    Set.of(MarketplaceRole.VENDOR_ADMIN)
-            );
-            appUserProfileRepository.save(userProfile);
+            userAccounts.createProfile(userProfileId, tenantId, keycloakUserId, request.email(), displayName,
+                    Set.of(MarketplaceRole.VENDOR_ADMIN));
 
-            // Vendor is created pending verification (VendorVerificationStatus.PENDING) and unavailable.
-            UUID vendorId = UUID.randomUUID();
-            Vendor vendor = new Vendor(
-                    vendorId,
-                    tenantId,
-                    request.companyName(),
-                    null,
-                    null,
-                    null,
-                    displayName,
-                    request.taxNumber(),
-                    request.companyPhone(),
-                    request.address(),
-                    null,
-                    null
-            );
-            vendorRepository.save(vendor);
-
-            merchantUserRepository.save(new MerchantUser(UUID.randomUUID(), tenantId, vendorId, userProfileId, MerchantRole.OWNER));
+            // Vendor is created pending verification (VendorVerificationStatus.PENDING) and unavailable, with its OWNER.
+            MerchantOnboarding.OnboardedVendor vendor = merchantOnboarding.createPendingVendorWithOwner(tenantId,
+                    request.companyName(), displayName, request.taxNumber(), request.companyPhone(), request.address(),
+                    userProfileId);
+            UUID vendorId = vendor.vendorId();
 
             logger.info("Registered merchant: tenantId={}, vendorId={}, userProfileId={}, newTenant={}",
                     tenantId, vendorId, userProfileId, persistTenant);
@@ -143,7 +114,7 @@ public class MerchantRegistrationService {
                     request.email(),
                     displayName,
                     vendorId,
-                    vendor.getVerificationStatus().name()
+                    vendor.verificationStatus()
             );
 
         } catch (BusinessException e) {
@@ -158,7 +129,7 @@ public class MerchantRegistrationService {
             // Compensation: the Keycloak user exists but nothing was persisted — remove it so the email can retry.
             if (keycloakUserId != null) {
                 try {
-                    keycloakAdminService.deleteUser(keycloakUserId);
+                    userAccounts.deleteKeycloakUser(keycloakUserId);
                     logger.info("Cleaned up Keycloak user {} after registration failure", keycloakUserId);
                 } catch (Exception deleteException) {
                     logger.error("Failed to delete Keycloak user {} during compensation - manual cleanup required: {}",

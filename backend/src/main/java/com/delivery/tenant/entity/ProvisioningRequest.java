@@ -1,4 +1,4 @@
-package com.delivery.auth.entity;
+package com.delivery.tenant.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,17 +1,17 @@
-package com.delivery.auth;
+package com.delivery.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.delivery.auth.dto.TenantProvisioningRequest;
-import com.delivery.auth.dto.TenantProvisioningResponse;
-import com.delivery.auth.entity.ProvisioningRequest;
-import com.delivery.auth.repository.ProvisioningRequestRepository;
+import com.delivery.tenant.dto.TenantProvisioningRequest;
+import com.delivery.tenant.dto.TenantProvisioningResponse;
+import com.delivery.tenant.entity.ProvisioningRequest;
+import com.delivery.tenant.repository.ProvisioningRequestRepository;
 import com.delivery.auth.service.KeycloakAdminService;
-import com.delivery.auth.service.MerchantRegistrationService;
-import com.delivery.auth.service.SubscriptionProvisioningService;
+import com.delivery.tenant.service.MerchantRegistrationService;
+import com.delivery.tenant.service.SubscriptionProvisioningService;
 import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.tenant.repository.TenantRepository;
@@ -53,6 +53,7 @@ import org.testcontainers.DockerClientFactory;
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Import({MerchantRegistrationService.class, SubscriptionProvisioningService.class,
+        com.delivery.auth.api.UserAccounts.class, com.delivery.vendor.api.MerchantOnboarding.class,
         ProvisioningPostgresIntegrationTest.TestBeans.class})
 class ProvisioningPostgresIntegrationTest {
 

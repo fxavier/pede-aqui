@@ -1,16 +1,16 @@
-package com.delivery.auth;
+package com.delivery.tenant;
 
-import com.delivery.auth.dto.MerchantRegistrationRequest;
-import com.delivery.auth.dto.MerchantRegistrationResponse;
-import com.delivery.auth.dto.TenantProvisioningRequest;
-import com.delivery.auth.dto.TenantProvisioningResponse;
+import com.delivery.tenant.dto.MerchantRegistrationRequest;
+import com.delivery.tenant.dto.MerchantRegistrationResponse;
+import com.delivery.tenant.dto.TenantProvisioningRequest;
+import com.delivery.tenant.dto.TenantProvisioningResponse;
 import com.delivery.auth.entity.AppUserProfile;
-import com.delivery.auth.entity.ProvisioningRequest;
+import com.delivery.tenant.entity.ProvisioningRequest;
 import com.delivery.auth.repository.AppUserProfileRepository;
-import com.delivery.auth.repository.ProvisioningRequestRepository;
+import com.delivery.tenant.repository.ProvisioningRequestRepository;
 import com.delivery.auth.service.KeycloakAdminService;
-import com.delivery.auth.service.MerchantRegistrationService;
-import com.delivery.auth.service.SubscriptionProvisioningService;
+import com.delivery.tenant.service.MerchantRegistrationService;
+import com.delivery.tenant.service.SubscriptionProvisioningService;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.tenant.entity.Tenant;
@@ -72,9 +72,8 @@ class SubscriptionProvisioningServiceTest {
 
         service = new SubscriptionProvisioningService(
                 merchantRegistrationService,
-                keycloakAdminService,
+                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService),
                 tenantRepository,
-                appUserProfileRepository,
                 provisioningRequestRepository,
                 objectMapper,
                 transactionManager,

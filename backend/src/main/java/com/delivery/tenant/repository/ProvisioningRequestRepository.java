@@ -1,6 +1,6 @@
-package com.delivery.auth.repository;
+package com.delivery.tenant.repository;
 
-import com.delivery.auth.entity.ProvisioningRequest;
+import com.delivery.tenant.entity.ProvisioningRequest;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

@@ -1,8 +1,8 @@
-package com.delivery.auth.controller;
+package com.delivery.tenant.controller;
 
-import com.delivery.auth.dto.TenantProvisioningRequest;
-import com.delivery.auth.dto.TenantProvisioningResponse;
-import com.delivery.auth.service.SubscriptionProvisioningService;
+import com.delivery.tenant.dto.TenantProvisioningRequest;
+import com.delivery.tenant.dto.TenantProvisioningResponse;
+import com.delivery.tenant.service.SubscriptionProvisioningService;
 import com.delivery.common.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;

@@ -1,4 +1,4 @@
-package com.delivery.auth.dto;
+package com.delivery.tenant.dto;
 
 import com.delivery.auth.validation.PasswordPolicy;
 import io.swagger.v3.oas.annotations.media.Schema;
