@@ -46,19 +46,10 @@ cycle-edge: order -> delivery
 cycle-edge: order -> inventory
 cycle-edge: order -> notification
 cycle-edge: order -> payment
-cycle-edge: order -> sales
 cycle-edge: order -> vendor
 cycle-edge: payment -> auth
 cycle-edge: payment -> delivery
 cycle-edge: payment -> order
-cycle-edge: sales -> auth
-cycle-edge: sales -> catalog
-cycle-edge: sales -> delivery
-cycle-edge: sales -> finance
-cycle-edge: sales -> notification
-cycle-edge: sales -> order
-cycle-edge: sales -> payment
-cycle-edge: sales -> vendor
 cycle-edge: tenant -> auth
 cycle-edge: tenant -> dispatch
 cycle-edge: tenant -> geo
@@ -200,7 +191,6 @@ non-exposed: order -> com.delivery.payment.dto.RefundResponse
 non-exposed: order -> com.delivery.payment.entity.Payment
 non-exposed: order -> com.delivery.payment.repository.PaymentRepository
 non-exposed: order -> com.delivery.payment.service.PaymentService
-non-exposed: order -> com.delivery.sales.service.SalesAccessGuard
 non-exposed: order -> com.delivery.vendor.entity.Vendor
 non-exposed: order -> com.delivery.vendor.repository.VendorRepository
 non-exposed: payment -> com.delivery.auth.entity.AppUserProfile
