@@ -1,5 +1,6 @@
 package com.delivery.order;
 
+import com.delivery.upload.service.StoredUploadValidator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.Mockito.when;
@@ -113,6 +114,8 @@ class CheckoutConcurrencyPostgresTest {
     @Autowired private SalesService salesService;
     @Autowired private DeliveryService deliveryService;
 
+    /** LAC-12: storage HeadObject is out of scope for these database tests. */
+    @MockitoBean private StoredUploadValidator storedUploadValidator;
     @MockitoBean private TenantContext tenantContext;
     @MockitoBean private NotificationService notificationService;
     @MockitoBean private PaymentService paymentService;
