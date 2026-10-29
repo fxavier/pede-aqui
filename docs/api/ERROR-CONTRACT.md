@@ -104,6 +104,9 @@ W1-A acrescenta (detalhe em `API-MIGRATION.md`, secção W1-A):
   `keycloak_user_not_found` (404 — utilizador/role inexistente no Keycloak); outras falhas do Keycloak
   continuam 500 `keycloak_error`.
 
+W2-B acrescenta (detalhe em `API-MIGRATION.md`, secção W2-B): `invalid_cursor` (400 — parâmetro `cursor`
+malformado nos endpoints keyset `/admin/audit/cursor`, `/notifications/cursor`, `/orders/cursor`).
+
 ADR-0001 (passos 3–4) acrescenta/clarifica: `vendor_access_denied` (403 — comerciante a atuar sobre
 um vendor que não é o seu, ou claim `vendor_id` fora das suas associações em `merchant_users`),
 `vendor_scope_unresolved` (403 — passa a ser a resposta de **todos** os caminhos de comerciante sem vendor
