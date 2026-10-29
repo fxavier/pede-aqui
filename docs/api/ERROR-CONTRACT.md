@@ -18,7 +18,7 @@ Todas as respostas de erro da API (`4xx`/`5xx`) passam a ser um **documento de p
 - `400`/`404` do `TenantRequestFilter` (INC-11) quando um administrador de plataforma envia um `X-Tenant-Id`
   malformado ou de um tenant inexistente — o filtro corre depois da cadeia de segurança e escreve o corpo
   diretamente via `ApiProblems.create(...)`;
-- `429` do limitador de pedidos sensíveis.
+- `429` do limitador de pedidos (LAC-11, `common/ratelimit`), com header `Retry-After`.
 
 Os campos do formato antigo (`code`, `message`, `correlationId`, `timestamp`, `fieldErrors`, `details`)
 continuam presentes **em paralelo**, pelo que os clientes atuais não precisam de alterações.
@@ -82,7 +82,7 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | 409 | `concurrent_modification` | Conflito de `@Version` (recarregar e repetir). |
 | 413 | `payload_too_large` | Upload acima do limite. |
 | 415 | `unsupported_media_type` | `Content-Type` não suportado. Antes 500. |
-| 429 | `rate_limited` | Limitador de endpoints sensíveis (inalterado, agora no formato comum). |
+| 429 | `rate_limited` | Limitador distribuído (LAC-11): header `Retry-After` (segundos) e `details.retryAfterSeconds`. Também usado pelos limites de provisionamento. |
 | 500 | `internal_error` | Qualquer exceção não mapeada; `detail` = `Unexpected error`. |
 
 ### 3.2 De negócio
@@ -181,7 +181,7 @@ Só três sítios produzem corpos de erro, todos via `ApiProblems`:
 | `ProblemDetailSecurityHandlers` | 401/403 da cadeia de segurança | `ErrorContractApiTest` |
 | `TenantRequestFilter` | 400/404 de impersonação de tenant (corre **depois** da cadeia de segurança) | `TenantRequestFilterProblemDetailTest`, `CustomerTenantResolutionE2ETest` |
 
-O limitador (`RateLimitConfig`) lança `BusinessException`, pelo que cai no handler. Qualquer novo filtro ou
+O limitador (`common/ratelimit/RateLimitInterceptor`) lança `RateLimitedException` (subclasse de `BusinessException`), pelo que cai no handler, que acrescenta `Retry-After`. Qualquer novo filtro ou
 interceptor que tenha de responder diretamente deve usar `ApiProblems.create(...)` e
 `Content-Type: application/problem+json`, nunca JSON escrito à mão.
 

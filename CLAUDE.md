@@ -160,7 +160,7 @@ dto/           Request and response payloads
 mapper/        Entity ↔ DTO conversion
 ```
 
-Cross-cutting packages: `common/config`, `common/exception`, `common/security`.
+Cross-cutting packages: `common/config`, `common/exception`, `common/security`, `common/ratelimit`.
 
 Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`, `dispatch`, `finance`, `geo`, `inventory`, `marketing`, `notification`, `order`, `payment`, `rating`, `support`, `tenant`, `upload`, `vendor`.
 
@@ -182,6 +182,15 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 - Every error body is an RFC 9457 problem document built by `ApiProblems` (`common/exception`): `type/title/status/detail/instance` plus `code` (stable lowercase snake_case — clients branch on it), optional `details`, `correlationId`, `traceId`, and the legacy `message`/`timestamp`/`fieldErrors` kept for a compatibility window. Contract and consumer analysis: `docs/api/ERROR-CONTRACT.md`.
 - `GlobalExceptionHandler` extends `ResponseEntityExceptionHandler`, so Spring's MVC exceptions map to proper 4xx (unknown path 404, 405, 415, malformed body/params 400) instead of the 500 catch-all. Throw `BusinessException(code, message, status)` for business errors; don't write JSON error bodies by hand — filters/interceptors that must answer directly use `ApiProblems.create(...)` (the security chain does, via `ProblemDetailSecurityHandlers`; so does `TenantRequestFilter` for `invalid_tenant_header`/`tenant_not_found`).
 - `CorrelationIdFilter` runs first (`HIGHEST_PRECEDENCE`, before Spring Security): reuses an incoming `X-Correlation-Id` only if it matches `[A-Za-z0-9._:-]{1,128}`, else generates a UUID; puts it in MDC `correlationId` (logged by `logback-spring.xml`) and the response header (CORS-exposed).
+
+### Rate limiting (LAC-11)
+
+- `common/ratelimit`: Bucket4j token buckets in **Redis** (`bucket4j_jdk17-lettuce`, own Lettuce client on the `spring.data.redis.*` server, standalone only), enforced by `RateLimitInterceptor` after the security chain. Key = `rl:<group>:<METHOD> <route pattern>:<identity>` — route pattern from the handler mapping (ids in the URI never give a fresh bucket); identity = JWT `sub`, else client IP. The IP is `getRemoteAddr()`; `X-Forwarded-For` is honoured only when the peer is in `app.rate-limit.trusted-proxies` (IP/CIDR, empty by default; then the right-most non-trusted hop wins). Don't also enable `server.forward-headers-strategy`.
+- Groups and limits live in `app.rate-limit.groups.*` (application.yml): `registration` (POST `/register`, `/customers/register`, 5/15 min per IP), `delivery-code` (POST `/deliveries/*/complete`, 10/5 min), `checkout` (10/min), `uploads` (30/min), `payments` (payments/refunds/sales cancel+refund, 20/min), `provisioning` (20/min), `sensitive` (deliveries, dispatch, ops, tickets, admin, `/me`, 120/min), `browse` (GET catalog/search, 300/min). Overlapping groups: the most specific path pattern wins. Unlisted routes are not limited. Override per env with e.g. `APP_RATE_LIMIT_GROUPS_CHECKOUT_CAPACITY`; a changed limit applies to existing Redis buckets only once they expire (≤ one period).
+- Rejection = `RateLimitedException` → 429 `rate_limited` problem document + `Retry-After` (seconds) + `details.retryAfterSeconds`. Metrics: `rate_limit_rejections_total{group}`, `rate_limit_backend_errors_total`.
+- **Redis down → per-instance local buckets, not fail-open** (WARN throttled to one per 30 s + the backend-errors metric; reconnect retried at most every `reconnect-backoff`). Chosen because the limited routes include brute-force targets (PIN, registration); the trade-off is that during an outage the effective limit is N × the configured one (N instances).
+- Tests run `app.rate-limit.backend=local` (`src/test/resources/config/application.yml`) with the shipped limits — test code that hammers a limited route must vary the remote address / JWT subject. `RateLimiterRedisTest` (Testcontainers) proves two contexts share one bucket; `RateLimitApiTest` covers 429/Retry-After/body.
+- Out of scope for the app (LAC-11 §1/§3, external): AWS WAF managed + rate-based rules in front of `/register`, `/customers/register` and Keycloak login; CAPTCHA (Turnstile/reCAPTCHA) and `VERIFY_EMAIL` on merchant registration. Keycloak's own brute-force protection covers password login.
 
 ### Tenant model
 
