@@ -38,6 +38,20 @@ jobs:
           path: backend/target/openapi.json
           if-no-files-found: ignore
 
+  # LAC-18 / ADR-0004: Keycloak SMS-OTP provider. `verify` = unit tests + PhoneOtpKeycloakIT (real Keycloak
+  # 26.8.1 container with the packaged jar and the repository realm; Docker is available on ubuntu-latest).
+  keycloak-sms-otp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Keycloak SMS-OTP provider
+        run: cd keycloak/extensions/sms-otp && mvn -B verify
+
   backoffice:
     runs-on: ubuntu-latest
     steps:

@@ -168,8 +168,39 @@
             "claim.name": "tenant_id",
             "jsonType.label": "String"
           }
+        },
+        {
+          "name": "phone_number",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "phone_e164",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "phone_number_verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "phone_verified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number_verified",
+            "jsonType.label": "boolean"
+          }
         }
-      ]
+      ],
+      "authenticationFlowBindingOverrides": {
+        "browser": "5f0a7c2e-3d41-4b8a-9e6f-1a2b3c4d5e60"
+      }
     },
     {
       "clientId": "pede-aqui-mobile",
@@ -200,8 +231,39 @@
             "claim.name": "tenant_id",
             "jsonType.label": "String"
           }
+        },
+        {
+          "name": "phone_number",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "phone_e164",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "phone_number_verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "phone_verified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number_verified",
+            "jsonType.label": "boolean"
+          }
         }
-      ]
+      ],
+      "authenticationFlowBindingOverrides": {
+        "browser": "5f0a7c2e-3d41-4b8a-9e6f-1a2b3c4d5e60"
+      }
     },
     {
       "clientId": "pede-aqui-courier-mobile",
@@ -243,7 +305,7 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"tenant_id\",\"displayName\":\"Tenant\",\"validations\":{\"length\":{\"max\":36}},\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"tenant_id\",\"displayName\":\"Tenant\",\"validations\":{\"length\":{\"max\":36}},\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"phone_e164\",\"displayName\":\"Phone (E.164)\",\"validations\":{\"length\":{\"max\":16},\"pattern\":{\"pattern\":\"^\\\\+[1-9][0-9]{7,14}$\",\"error-message\":\"Phone must be E.164, e.g. +258841234567\"}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"phone_verified\",\"displayName\":\"Phone verified\",\"validations\":{\"options\":{\"options\":[\"true\",\"false\"]}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
           ]
         }
       }
@@ -466,6 +528,248 @@
           "userSetupAllowed": false
         }
       ]
+    },
+    {
+      "alias": "browser-customer-phone",
+      "description": "Customer clients (pede-aqui-web, pede-aqui-mobile) only, bound by client override (LAC-18, ADR-0004): SSO cookie, else phone + SMS code, else username/password with the same privileged TOTP subflows as browser-privileged-mfa.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "flowAlias": "browser-customer-phone forms",
+          "userSetupAllowed": false
+        }
+      ],
+      "id": "5f0a7c2e-3d41-4b8a-9e6f-1a2b3c4d5e60"
+    },
+    {
+      "alias": "browser-customer-phone forms",
+      "description": "Phone + SMS code first; 'email and password' falls through to the password subflow.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "pede-aqui-phone-otp",
+          "authenticatorConfig": "customer-phone-otp",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "flowAlias": "browser-customer-phone password",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-customer-phone password",
+      "description": "Username/password + conditional TOTP for privileged roles (copy of browser-privileged-mfa forms).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "flowAlias": "customer-phone otp ADMIN",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 21,
+          "flowAlias": "customer-phone otp FINANCE",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 22,
+          "flowAlias": "customer-phone otp OPS",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 23,
+          "flowAlias": "customer-phone otp configured",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "customer-phone otp ADMIN",
+      "description": "Copy of 'browser-privileged-mfa otp ADMIN' for the customer phone flow (LAC-18).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-admin-has-admin"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "customer-phone otp FINANCE",
+      "description": "Copy of 'browser-privileged-mfa otp FINANCE' for the customer phone flow (LAC-18).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-finance-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-finance-has-finance"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "customer-phone otp OPS",
+      "description": "Copy of 'browser-privileged-mfa otp OPS' for the customer phone flow (LAC-18).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-ops-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-ops-not-finance"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 12,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-ops-has-ops"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "customer-phone otp configured",
+      "description": "Copy of 'browser-privileged-mfa otp configured' for the customer phone flow (LAC-18).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-configured-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-configured-not-finance"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 12,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "customer-phone-mfa-configured-not-ops"
+        },
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 13,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
     }
   ],
   "authenticatorConfig": [
@@ -530,6 +834,86 @@
       "config": {
         "condUserRole": "OPS",
         "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-admin-has-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-finance-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-finance-has-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-ops-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-ops-not-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-ops-has-ops",
+      "config": {
+        "condUserRole": "OPS",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-configured-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-configured-not-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-mfa-configured-not-ops",
+      "config": {
+        "condUserRole": "OPS",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "customer-phone-otp",
+      "config": {
+        "codeTtlSeconds": "300",
+        "maxFailedAttempts": "5",
+        "resendCooldownSeconds": "60",
+        "sendsPerPhone": "3",
+        "sendsPerIp": "10",
+        "failuresPerIp": "20",
+        "windowSeconds": "900",
+        "lockBaseSeconds": "900",
+        "lockMaxSeconds": "86400",
+        "allowedCountryCodes": "258",
+        "blockedRoles": "ADMIN,OPS,FINANCE,SUPPORT,VENDOR_ADMIN,VENDOR_STAFF,COURIER",
+        "requiredRole": "CUSTOMER"
       }
     }
   ],
