@@ -104,6 +104,20 @@ W1-A acrescenta (detalhe em `API-MIGRATION.md`, secção W1-A):
   `keycloak_user_not_found` (404 — utilizador/role inexistente no Keycloak); outras falhas do Keycloak
   continuam 500 `keycloak_error`.
 
+W2-D acrescenta (detalhe em `API-MIGRATION.md`, secção W2-D):
+- LAC-27 (horários/encerramentos): `store_closed` (422 — loja fechada em `POST /customers/{id}/cart/items` ou
+  em `POST /checkout`; `details` = `{ vendorId, nextOpeningAt }`, com `nextOpeningAt` ISO-8601 ou `null` quando
+  não há reabertura conhecida nos próximos 8 dias), `invalid_closure_period` (400 — encerramento com
+  `endsAt` ≤ `startsAt` ou já terminado).
+- LAC-64 (farmácia): `pharmacy_not_available` (422 — produto com receita ou da vertical `pharmacy` enquanto
+  `app.verticals.pharmacy.enabled=false`), `prescription_required` (422 — produto com receita com a vertical
+  ativa; ainda não há fluxo de receita).
+- Carrinho: `sku_vendor_mismatch` (422 — o SKU não pertence ao `vendorId` do pedido).
+- A ordem de avaliação em `addItem` é: `invalid_quantity` → `single_vendor_cart` → `sku_inactive` →
+  `product_not_available` → `sku_vendor_mismatch` → `pharmacy_not_available`/`prescription_required` →
+  `store_closed` → `insufficient_stock`. No checkout: `invalid_cart` → `store_closed` → farmácia →
+  `sku_inactive`/`product_not_available`/`price_changed`.
+
 ADR-0001 (passos 3–4) acrescenta/clarifica: `vendor_access_denied` (403 — comerciante a atuar sobre
 um vendor que não é o seu, ou claim `vendor_id` fora das suas associações em `merchant_users`),
 `vendor_scope_unresolved` (403 — passa a ser a resposta de **todos** os caminhos de comerciante sem vendor
