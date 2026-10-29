@@ -94,6 +94,16 @@ Os códigos de `BusinessException` mantêm-se exatamente iguais (ex.: `not_found
 LAC-09 acrescenta `password_policy_violation` (400 — o Keycloak recusou a palavra-passe pela política do realm
 em `POST /register` / `POST /customers/register`; antes era 500 `keycloak_error`).
 
+W1-A acrescenta (detalhe em `API-MIGRATION.md`, secção W1-A):
+- LAC-12 (uploads): `invalid_content_length` (400 — `contentLength` ausente ou ≤ 0 no presign),
+  `upload_too_large` (400 — acima do limite no presign ou no objeto guardado), `upload_not_found` (400 — o
+  `storageKey` ligado não existe no storage), `storage_unavailable` (503 — storage inacessível ao validar o
+  objeto); `invalid_content_type` e `invalid_storage_key` (400) passam a ser emitidos também ao ligar um
+  `storageKey` (tipo/namespace do objeto guardado).
+- LAC-13 (`POST /admin/users`): `roles_required` (400), `role_assignment_forbidden` (403),
+  `keycloak_user_not_found` (404 — utilizador/role inexistente no Keycloak); outras falhas do Keycloak
+  continuam 500 `keycloak_error`.
+
 ADR-0001 (passos 3–4) acrescenta/clarifica: `vendor_access_denied` (403 — comerciante a atuar sobre
 um vendor que não é o seu, ou claim `vendor_id` fora das suas associações em `merchant_users`),
 `vendor_scope_unresolved` (403 — passa a ser a resposta de **todos** os caminhos de comerciante sem vendor
