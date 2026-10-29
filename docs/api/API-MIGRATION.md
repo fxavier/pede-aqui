@@ -279,6 +279,74 @@ The Keycloak realm now enforces `length(10) and digits(1) and upperCase(1) and l
   **500** `keycloak_error`; in both cases no profile is created. Audited as `USER_ROLES_ASSIGNED`.
 - Clients: the backoffice `/users` page is ADMIN-only already; no request-shape change.
 
+## W2-B — Bounded lists and audit context (LAC-14, LAC-15)
+
+### LAC-14 — Every list is bounded (array contract kept)
+
+Conventions (`backend/.../common/pagination`): every list is ordered **newest first** by
+`(createdAt DESC, id DESC)` within the caller's tenant/scope.
+
+**Legacy array endpoints keep returning a plain JSON array** but now return at most the **newest 200**
+rows. When more rows exist the response carries **`X-Truncated: true`** (exposed to browsers via CORS);
+otherwise the header is absent. Affected: `GET /tenants`, `GET /admin/tenants`, `GET /orders`,
+`GET /couriers`, `GET /vendors`, `GET /admin/users`, `GET /admin/audit`, `GET /notifications`,
+`GET /support/tickets`, `GET /support/tickets/mine`. Behaviour notes:
+
+- Ordering is now explicit newest-first (several of these were unordered before).
+- No consumer breaks: the backoffice (`services.ts`), the customer web and the Flutter apps all read an
+  array and none has more than 200 rows per tenant today. Clients that may exceed 200 rows must move to
+  the paged endpoints below; the capped arrays stay until a deprecation window is announced here.
+- `GET /orders` keeps the INC-04 scoping (merchant → own vendor, OPS/ADMIN → tenant, platform admin →
+  every tenant).
+
+**New keyset (cursor) endpoints** — large / append-only lists. `?limit=50&cursor=<opaque>`; `limit` is
+clamped to `1..200` (default 50); omit `cursor` for the first page. Response
+`{ "items": [...], "nextCursor": "<opaque>" | null }`; `nextCursor` is null on the last page. The cursor
+is an opaque base64url token of `(createdAt, id)`: rows inserted after the first page never shift or
+duplicate later pages. A malformed cursor → **400** `invalid_cursor`. A cursor carries no tenant; the
+caller's scope always applies.
+
+| Endpoint | Roles / scope |
+|---|---|
+| `GET /api/v1/admin/audit/cursor` | ADMIN; current tenant |
+| `GET /api/v1/notifications/cursor` | any authenticated user; own notifications only |
+| `GET /api/v1/orders/cursor` | ADMIN, OPS, VENDOR_ADMIN, VENDOR_STAFF; same scoping as `GET /orders` |
+
+**New offset endpoints** — smaller admin lists. `?page=0&size=20`; `page < 0` → 0, `size` clamped to
+`1..100` (default 20). Response `{ "content": [...], "page", "size", "totalElements" }` (same shape as
+`/orders/page` and `/sales/orders`).
+
+| Endpoint | Roles / scope |
+|---|---|
+| `GET /api/v1/tenants/page` | platform admin |
+| `GET /api/v1/couriers/page` | ADMIN, OPS (platform admin: all tenants) |
+| `GET /api/v1/vendors/page?available=` | VENDOR_ADMIN, VENDOR_STAFF, ADMIN (same scoping as `GET /vendors`) |
+| `GET /api/v1/admin/users/page` | ADMIN, SUPPORT; current tenant |
+| `GET /api/v1/support/tickets/page` | SUPPORT, ADMIN; current tenant |
+
+`GET /orders/page` (INC-04) is unchanged. Database: V054 adds `(tenant_id, created_at DESC, id DESC)`
+indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …)`,
+`(tenant_id, creator_user_id, …)` and a cross-tenant `orders (created_at DESC, id DESC)`).
+
+### LAC-15 — Audit entries carry request context; `audit_logs` is append-only
+
+- `GET /api/v1/admin/audit` (and `/admin/audit/cursor`) items gain four **additive, nullable** fields:
+  `ip` (remote address of the request — `X-Forwarded-For` is not trusted), `userAgent` (≤ 512 chars),
+  `correlationId` (the request's `X-Correlation-Id`) and `details` (JSON object; keys that look like
+  secrets — pin, code, otp, password, token, secret … — are stored as `"***"`). Entries written before
+  V053, or outside an HTTP request, have them null.
+- New audited actions: `FEE_POLICY_UPDATED` (`PUT /admin/policy`, details = new values + version),
+  `ZONE_CREATED` (`POST /admin/zones`), `TENANT_CREATED` / `TENANT_STATUS_CHANGED` (platform admin,
+  recorded against the affected tenant, details `from`/`to`), `COURIER_APPROVED` / `COURIER_REJECTED`,
+  `VENDOR_VERIFICATION_APPROVED` / `VENDOR_VERIFICATION_REJECTED` (details `reason`).
+- `audit_logs` rejects `UPDATE`, `DELETE` and `TRUNCATE` (trigger, SQLSTATE 42501). Retention target is
+  24 months (LAC-63) but **no purge job exists yet**; the future job (W2-A scheduling) must run its
+  `DELETE` inside a transaction that first executes `SET LOCAL app.audit_logs_purge = 'on'` (UPDATE stays
+  forbidden). Operational scripts that tried to rewrite audit rows will now fail — by design.
+- Not in this change: `order_status_history` / `payment_status_history` (register LAC-15 first bullet)
+  belong to the order/payment state machine (W4-A, LAC-25) and will be written there.
+- Clients: none affected (additive fields; no frontend renders the audit list yet).
+
 ## W2-D — Store hours and closures, pharmacy gate, cart SKU check (LAC-27, LAC-64)
 
 ### LAC-27 — Opening hours and closures are enforced (behaviour change)

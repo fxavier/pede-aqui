@@ -42,8 +42,8 @@ class SupportTicketApiTest {
         SupportTicketResponse customerView = new SupportTicketResponse(id, UUID.randomUUID(), "Atraso", "Pedido atrasado", SupportTicketStatus.OPEN, IncidentClassification.DELIVERY, null, null, Instant.now());
         SupportTicketResponse supportView = new SupportTicketResponse(id, UUID.randomUUID(), "Atraso", "Pedido atrasado", SupportTicketStatus.OPEN, IncidentClassification.DELIVERY, "nota interna", "support-1", Instant.now());
 
-        when(supportTicketService.listMine()).thenReturn(List.of(customerView));
-        when(supportTicketService.listBackoffice()).thenReturn(List.of(supportView));
+        when(supportTicketService.listMine()).thenReturn(new com.delivery.common.pagination.CappedList<>(List.of(customerView), false));
+        when(supportTicketService.listBackoffice()).thenReturn(new com.delivery.common.pagination.CappedList<>(List.of(supportView), false));
 
         mockMvc.perform(get("/api/v1/support/tickets/mine").with(jwt().authorities(() -> "ROLE_CUSTOMER")))
                 .andExpect(status().isOk())

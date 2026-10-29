@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,8 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     List<Vendor> findByTenantIdAndStatus(UUID tenantId, String status);
     List<Vendor> findByTenantIdAndAvailable(UUID tenantId, boolean available);
     List<Vendor> findByTenantId(UUID tenantId);
+    Page<Vendor> findByTenantId(UUID tenantId, Pageable pageable);
+    Page<Vendor> findByTenantIdAndAvailable(UUID tenantId, boolean available, Pageable pageable);
     List<Vendor> findByTenantIdAndCategoryId(UUID tenantId, UUID categoryId);
     List<Vendor> findByTenantIdAndVerificationStatus(UUID tenantId, VendorVerificationStatus verificationStatus);
     long countByTenantIdAndAvailable(UUID tenantId, boolean available);

@@ -2,6 +2,9 @@ package com.delivery.support.service;
 
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.support.dto.CreateSupportTicketRequest;
@@ -38,16 +41,23 @@ public class SupportTicketService {
         return supportTicketMapper.toCustomerResponse(ticket);
     }
 
-    /** Lists only current customer tickets and hides internal notes by design. */
+    /** Lists the current customer's newest tickets (capped at 200, LAC-14) and hides internal notes by design. */
     @Transactional(readOnly = true)
-    public List<SupportTicketResponse> listMine() {
-        return supportTicketRepository.findByTenantIdAndCreatorUserId(tenantId(), userId()).stream().map(supportTicketMapper::toCustomerResponse).toList();
+    public CappedList<SupportTicketResponse> listMine() {
+        return CappedList.of(supportTicketRepository.findByTenantIdAndCreatorUserId(tenantId(), userId(), PageLimits.legacyCap()),
+                supportTicketMapper::toCustomerResponse);
     }
 
-    /** Lists all tenant support tickets for support/admin backoffice users. */
+    /** Lists the newest tenant support tickets for support/admin backoffice users (capped at 200, LAC-14). */
     @Transactional(readOnly = true)
-    public List<SupportTicketResponse> listBackoffice() {
-        return supportTicketRepository.findByTenantId(tenantId()).stream().map(supportTicketMapper::toBackofficeResponse).toList();
+    public CappedList<SupportTicketResponse> listBackoffice() {
+        return CappedList.of(supportTicketRepository.findByTenantId(tenantId(), PageLimits.legacyCap()), supportTicketMapper::toBackofficeResponse);
+    }
+
+    /** Lists one offset page of tenant support tickets for the backoffice, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<SupportTicketResponse> listBackofficePage(int page, int size) {
+        return PageResponse.of(supportTicketRepository.findByTenantId(tenantId(), PageLimits.page(page, size)), supportTicketMapper::toBackofficeResponse);
     }
 
     /** Classifies incident type for a ticket and writes an audit entry. */

@@ -1,5 +1,7 @@
 package com.delivery.support.controller;
 
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.support.dto.ClassifyTicketRequest;
 import com.delivery.support.dto.CreateSupportTicketRequest;
 import com.delivery.support.dto.InternalNoteRequest;
@@ -9,6 +11,7 @@ import com.delivery.support.service.SupportTicketService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Exposes customer and backoffice support ticket workflows. */
@@ -36,11 +40,20 @@ public class SupportTicketController {
 
     @GetMapping("/mine")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public List<SupportTicketResponse> mine() { return service.listMine(); }
+    public ResponseEntity<List<SupportTicketResponse>> mine() { return service.listMine().toResponse(); } // LAC-14: capped
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPPORT','ADMIN')")
-    public List<SupportTicketResponse> listBackoffice() { return service.listBackoffice(); }
+    public ResponseEntity<List<SupportTicketResponse>> listBackoffice() { return service.listBackoffice().toResponse(); } // LAC-14: capped
+
+    /** Offset page of tenant tickets (LAC-14): size 1..100 (default 20), newest first. */
+    @GetMapping("/page")
+    @PreAuthorize("hasAnyRole('SUPPORT','ADMIN')")
+    public PageResponse<SupportTicketResponse> listBackofficePage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + PageLimits.DEFAULT_PAGE_SIZE) int size) {
+        return service.listBackofficePage(page, size);
+    }
 
     @PatchMapping("/{ticketId}/classify")
     @PreAuthorize("hasAnyRole('SUPPORT','ADMIN')")

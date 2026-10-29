@@ -3,7 +3,14 @@ package com.delivery.dispatch.service;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.delivery.common.service.AuditLogService;
 import com.delivery.upload.service.StoredUploadValidator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,9 +46,11 @@ public class CourierService {
     private final TenantContext tenantContext;
     private final DashboardService dashboardService;
     private final StoredUploadValidator uploadValidator;
+    private final AuditLogService auditLogService;
 
-    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext, DashboardService dashboardService, StoredUploadValidator uploadValidator) {
+    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext, DashboardService dashboardService, StoredUploadValidator uploadValidator, AuditLogService auditLogService) {
         this.uploadValidator = uploadValidator;
+        this.auditLogService = auditLogService;
         this.courierRepository = courierRepository;
         this.courierDocumentRepository = courierDocumentRepository;
         this.userProfileRepository = userProfileRepository;
@@ -136,12 +145,22 @@ public class CourierService {
         return dispatchMapper.toCourierResponse(courier);
     }
 
+    /** Lists the newest couriers (all tenants for the platform admin), capped at 200 (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<CourierResponse> listAll() {
-        if (tenantContext.isPlatformAdmin()) {
-            return courierRepository.findAll().stream().map(dispatchMapper::toCourierResponse).toList();
-        }
-        return courierRepository.findByTenantId(tenantId()).stream().map(dispatchMapper::toCourierResponse).toList();
+    public CappedList<CourierResponse> listAll() {
+        return CappedList.of(couriers(PageLimits.legacyCap()), dispatchMapper::toCourierResponse);
+    }
+
+    /** Lists one offset page of couriers, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<CourierResponse> listPage(int page, int size) {
+        return PageResponse.of(couriers(PageLimits.page(page, size)), dispatchMapper::toCourierResponse);
+    }
+
+    private Page<Courier> couriers(Pageable pageable) {
+        return tenantContext.isPlatformAdmin()
+                ? courierRepository.findAll(pageable)
+                : courierRepository.findByTenantId(tenantId(), pageable);
     }
 
     @Transactional(readOnly = true)
@@ -177,6 +196,7 @@ public class CourierService {
         Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
                 .orElseThrow(() -> new NotFoundException("Courier not found"));
         courier.approve();
+        auditLogService.log(AuditActions.COURIER_APPROVED, "courier", courierId.toString(), null, "SUCCESS"); // LAC-15
         return dispatchMapper.toCourierResponse(courier);
     }
 
@@ -187,6 +207,7 @@ public class CourierService {
         Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
                 .orElseThrow(() -> new NotFoundException("Courier not found"));
         courier.reject();
+        auditLogService.log(AuditActions.COURIER_REJECTED, "courier", courierId.toString(), null, "SUCCESS"); // LAC-15
         return dispatchMapper.toCourierResponse(courier);
     }
 

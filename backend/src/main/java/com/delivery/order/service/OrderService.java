@@ -55,6 +55,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.delivery.order.OrderStatusChanged;
+import java.time.Instant;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -93,6 +96,7 @@ public class OrderService {
     private final CheckoutDiscountResolver discountResolver;
     private final SalesAccessGuard accessGuard;
     private final DeliveryCodeHasher deliveryCodeHasher;
+    private final ApplicationEventPublisher eventPublisher;
     private final OrderStockService orderStockService;
     private final CartService cartService;
     private final TransactionTemplate transactionTemplate;
@@ -102,11 +106,12 @@ public class OrderService {
     private final DeliveryRetirementService deliveryRetirementService;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService, ApplicationEventPublisher eventPublisher) {
         this.deliveryRetirementService = deliveryRetirementService;
         this.addressResolver = addressResolver;
         this.pricingService = pricingService;
         this.orderStockService = orderStockService;
+        this.eventPublisher = eventPublisher;
         this.cartService = cartService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.readOnlyTransactionTemplate = new TransactionTemplate(transactionManager);
@@ -132,22 +137,29 @@ public class OrderService {
         this.deliveryCodeHasher = deliveryCodeHasher;
     }
 
-    /** Returns the caller's orders with names resolved: tenant-wide for OPS/ADMIN, own vendor only for merchant users. */
+    /**
+     * Returns the caller's newest orders with names resolved: tenant-wide for OPS/ADMIN, all tenants for the platform
+     * admin, own vendor only for merchant users. Capped at 200 (legacy array, LAC-14): the controller adds
+     * {@code X-Truncated: true} when more exist; {@code GET /orders/cursor} pages through everything.
+     */
     @Transactional(readOnly = true)
-    public List<AdminOrderResponse> listForCurrentContext() {
-        List<Order> orders;
+    public com.delivery.common.pagination.CappedList<AdminOrderResponse> listForCurrentContext() {
+        // Fully qualified pagination types: keeps this LAC-14 change inside the method (OrderService is a merge hotspot).
+        Pageable cap = com.delivery.common.pagination.PageLimits.legacyCap();
+        Page<Order> orders;
         if (accessGuard.isMerchantScoped()) {
             UUID tenantId = tenantId();
-            orders = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId));
+            orders = orderRepository.findByTenantIdAndVendorId(tenantId, accessGuard.requireOwnVendorId(tenantId), cap);
         } else {
             orders = tenantContext.isPlatformAdmin()
-                    ? orderRepository.findAll()
-                    : orderRepository.findByTenantId(tenantId());
+                    ? orderRepository.findAll(cap)
+                    : orderRepository.findByTenantId(tenantId(), cap);
         }
-        return toAdminResponses(orders);
+        return new com.delivery.common.pagination.CappedList<>(toAdminResponses(orders.getContent()), orders.hasNext());
     }
 
-    private List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
+    /** Resolves customer/vendor names (and SUPPORT masking) for a list of orders; shared with {@link OrderListingService}. */
+    List<AdminOrderResponse> toAdminResponses(List<Order> orders) {
         Set<UUID> customerIds = orders.stream().map(Order::getCustomerId).collect(Collectors.toSet());
         Set<UUID> vendorIds = orders.stream().map(Order::getVendorId).collect(Collectors.toSet());
         Map<UUID, String> customerNames = userProfileRepository.findAllById(customerIds).stream()
@@ -369,7 +381,9 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PAYMENT_CONFIRMED) {
             throw new BusinessException("invalid_order_transition", "Only payment confirmed orders can be accepted", HttpStatus.BAD_REQUEST);
         }
+        OrderStatus previous = order.getStatus();
         order.markAcceptedByVendor();
+        publishStatusChanged(order, previous);
         auditLogService.log("ORDER_ACCEPTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
     }
@@ -436,7 +450,9 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.ACCEPTED_BY_VENDOR) {
             throw new BusinessException("invalid_order_transition", "Only accepted orders can move to preparing", HttpStatus.BAD_REQUEST);
         }
+        OrderStatus previous = order.getStatus();
         order.markPreparing();
+        publishStatusChanged(order, previous);
         auditLogService.log("ORDER_PREPARING", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
     }
@@ -448,9 +464,17 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PREPARING) {
             throw new BusinessException("invalid_order_transition", "Only preparing orders can move to ready for pickup", HttpStatus.BAD_REQUEST);
         }
+        OrderStatus previous = order.getStatus();
         order.markReadyForPickup();
+        publishStatusChanged(order, previous);
         auditLogService.log("ORDER_READY_FOR_PICKUP", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
+    }
+
+    /** Publishes OrderStatusChanged in the current transaction (LAC-47); delivered to listeners after commit. */
+    private void publishStatusChanged(Order order, OrderStatus previous) {
+        eventPublisher.publishEvent(new OrderStatusChanged(order.getTenantId(), order.getId(), order.getVendorId(),
+                previous.name(), order.getStatus().name(), Instant.now()));
     }
 
     /**

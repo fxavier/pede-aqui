@@ -35,7 +35,8 @@ class SupportTicketServiceTest {
         SupportTicket saved = new SupportTicket(ticketId, tenantId, userId, UUID.randomUUID(), "Atraso", "Pedido atrasado");
         when(repository.save(any(SupportTicket.class))).thenReturn(saved);
         when(repository.findByTenantIdAndId(tenantId, ticketId)).thenReturn(Optional.of(saved));
-        when(repository.findByTenantIdAndCreatorUserId(tenantId, userId)).thenReturn(List.of(saved));
+        when(repository.findByTenantIdAndCreatorUserId(org.mockito.ArgumentMatchers.eq(tenantId), org.mockito.ArgumentMatchers.eq(userId), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(saved)));
 
         SupportTicketService service = new SupportTicketService(repository, new SupportTicketMapper(), auditLogService, tenantContext);
 
@@ -47,7 +48,8 @@ class SupportTicketServiceTest {
         var resolved = service.resolve(ticketId);
 
         assertThat(created.subject()).isEqualTo("Atraso");
-        assertThat(mine).hasSize(1);
+        assertThat(mine.items()).hasSize(1);
+        assertThat(mine.truncated()).isFalse();
         assertThat(classified.classification()).isEqualTo(IncidentClassification.DELIVERY);
         assertThat(status.status()).isEqualTo(SupportTicketStatus.IN_PROGRESS);
         assertThat(noted.internalNote()).isEqualTo("cliente contactado");

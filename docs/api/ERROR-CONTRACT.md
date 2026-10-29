@@ -104,6 +104,9 @@ W1-A acrescenta (detalhe em `API-MIGRATION.md`, secção W1-A):
   `keycloak_user_not_found` (404 — utilizador/role inexistente no Keycloak); outras falhas do Keycloak
   continuam 500 `keycloak_error`.
 
+W2-B acrescenta (detalhe em `API-MIGRATION.md`, secção W2-B): `invalid_cursor` (400 — parâmetro `cursor`
+malformado nos endpoints keyset `/admin/audit/cursor`, `/notifications/cursor`, `/orders/cursor`).
+
 W2-D acrescenta (detalhe em `API-MIGRATION.md`, secção W2-D):
 - LAC-27 (horários/encerramentos): `store_closed` (422 — loja fechada em `POST /customers/{id}/cart/items` ou
   em `POST /checkout`; `details` = `{ vendorId, nextOpeningAt }`, com `nextOpeningAt` ISO-8601 ou `null` quando

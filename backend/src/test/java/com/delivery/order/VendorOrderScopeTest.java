@@ -88,7 +88,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private static DeliveryCodeHasher testCodeHasher() {
@@ -223,7 +223,7 @@ class VendorOrderScopeTest {
                 tenantContext, mock(SkuRepository.class), mock(ProductRepository.class),
                 (cart, customerId) -> CheckoutDiscount.none(), testCodeHasher(),
                 orderStockService, mock(CartService.class), mock(PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
 
         withRealPayments.rejectByVendor(order.getId(), "Fechado");
 
@@ -243,10 +243,10 @@ class VendorOrderScopeTest {
         authenticate(vendorA, "ROLE_VENDOR_ADMIN");
         Order own = paymentConfirmed(vendorA);
         Order foreign = paymentConfirmed(vendorB);
-        when(orderRepository.findByTenantId(tenantId)).thenReturn(List.of(own, foreign));
-        when(orderRepository.findByTenantIdAndVendorId(tenantId, vendorA)).thenReturn(List.of(own));
+        when(orderRepository.findByTenantId(org.mockito.ArgumentMatchers.eq(tenantId), any(Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(own, foreign)));
+        when(orderRepository.findByTenantIdAndVendorId(org.mockito.ArgumentMatchers.eq(tenantId), org.mockito.ArgumentMatchers.eq(vendorA), any(Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(own)));
 
-        List<AdminOrderResponse> rows = service.listForCurrentContext();
+        List<AdminOrderResponse> rows = service.listForCurrentContext().items();
 
         assertThat(rows).extracting(AdminOrderResponse::id).containsExactly(own.getId());
     }
@@ -255,24 +255,24 @@ class VendorOrderScopeTest {
     void opsAndAdminStillSeeAllTenantOrders() {
         Order a = paymentConfirmed(vendorA);
         Order b = paymentConfirmed(vendorB);
-        when(orderRepository.findByTenantId(tenantId)).thenReturn(List.of(a, b));
+        when(orderRepository.findByTenantId(org.mockito.ArgumentMatchers.eq(tenantId), any(Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(a, b)));
 
         for (String role : List.of("ROLE_OPS", "ROLE_ADMIN")) {
             authenticate(null, role);
-            assertThat(service.listForCurrentContext()).extracting(AdminOrderResponse::id).containsExactly(a.getId(), b.getId());
+            assertThat(service.listForCurrentContext().items()).extracting(AdminOrderResponse::id).containsExactly(a.getId(), b.getId());
         }
-        verify(orderRepository, never()).findByTenantIdAndVendorId(any(), any());
+        verify(orderRepository, never()).findByTenantIdAndVendorId(any(), any(), any(Pageable.class));
     }
 
     @Test
     void vendorListShowsOwnCustomersNamesUnmaskedLikeSales() {
         authenticate(vendorA, "ROLE_VENDOR_ADMIN");
         Order own = paymentConfirmed(vendorA);
-        when(orderRepository.findByTenantIdAndVendorId(tenantId, vendorA)).thenReturn(List.of(own));
+        when(orderRepository.findByTenantIdAndVendorId(org.mockito.ArgumentMatchers.eq(tenantId), org.mockito.ArgumentMatchers.eq(vendorA), any(Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(own)));
         when(userProfileRepository.findAllById(Set.of(own.getCustomerId()))).thenReturn(List.of(
                 new AppUserProfile(own.getCustomerId(), tenantId, "kc", "ana@example.test", "Ana Lima", Set.of())));
 
-        assertThat(service.listForCurrentContext().get(0).customerName()).isEqualTo("Ana Lima");
+        assertThat(service.listForCurrentContext().items().get(0).customerName()).isEqualTo("Ana Lima");
     }
 
     @Test
