@@ -21,6 +21,8 @@ import com.delivery.dispatch.dto.CreateCourierDocumentRequest;
 import com.delivery.dispatch.dto.CourierDocumentResponse;
 import com.delivery.dispatch.entity.Courier;
 import com.delivery.dispatch.entity.CourierDocument;
+import com.delivery.dispatch.entity.CourierStatus;
+import com.delivery.dispatch.entity.CourierVehicleType;
 import com.delivery.dispatch.entity.CourierVerificationStatus;
 import com.delivery.dispatch.mapper.DispatchMapper;
 import com.delivery.dispatch.repository.CourierRepository;
@@ -76,24 +78,13 @@ public class CourierService {
         return dispatchMapper.toCourierResponse(courier);
     }
 
-    /** Updates the availability of the authenticated courier. */
-    @Transactional
-    public CourierResponse setMyAvailability(boolean available) {
-        Courier courier = requireMine();
-        if (courier.getVerificationStatus() != CourierVerificationStatus.APPROVED) {
-            throw new BusinessException("courier_not_verified", "Courier must be verified before going online", HttpStatus.CONFLICT);
-        }
-        courier.setAvailable(available);
-        return dispatchMapper.toCourierResponse(courier);
-    }
-
-    /** Lists couriers eligible for assignment in a given operating zone. */
+    /** Lists couriers eligible for assignment in a given operating zone: verified and AVAILABLE (LAC-42). */
     @Transactional(readOnly = true)
     public List<Courier> eligibleInZone(UUID operatingZoneId) {
-        return courierRepository.findByTenantIdAndVerificationStatusAndAvailableAndOperatingZoneId(
+        return courierRepository.findByTenantIdAndVerificationStatusAndStatusAndOperatingZoneId(
                 tenantId(),
                 CourierVerificationStatus.APPROVED,
-                true,
+                CourierStatus.AVAILABLE,
                 operatingZoneId);
     }
 
@@ -140,7 +131,7 @@ public class CourierService {
         }
         
         Courier courier = new Courier(UUID.randomUUID(), tenantId, request.userProfileId(), request.operatingZoneId());
-        courier.updateProfile(request.fullName(), request.phone(), request.nif(), request.vehicleType(), request.vehiclePlate(), request.dateOfBirth());
+        courier.updateProfile(request.fullName(), request.phone(), request.nif(), vehicleType(request.vehicleType()), request.vehiclePlate(), request.dateOfBirth());
         courierRepository.save(courier);
         return dispatchMapper.toCourierResponse(courier);
     }
@@ -218,6 +209,16 @@ public class CourierService {
                 .stream()
                 .map(dispatchMapper::toCourierDocumentResponse)
                 .toList();
+    }
+
+    /** Parses the request's vehicle (enum name or pt/en alias, LAC-42); unknown text is 400 invalid_vehicle_type. */
+    private static CourierVehicleType vehicleType(String raw) {
+        try {
+            return CourierVehicleType.parse(raw);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("invalid_vehicle_type",
+                    "vehicleType must be one of MOTORBIKE, BICYCLE, CAR, ON_FOOT, OTHER", HttpStatus.BAD_REQUEST);
+        }
     }
 
     private UUID tenantId() {

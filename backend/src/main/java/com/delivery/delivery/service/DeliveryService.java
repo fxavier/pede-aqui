@@ -15,9 +15,11 @@ import com.delivery.delivery.mapper.DeliveryMapper;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.delivery.api.DeliveryAddressResponse;
+import com.delivery.delivery.api.DeliveryCourierListener;
 import com.delivery.delivery.api.DeliveryOrderHooks;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +58,7 @@ public class DeliveryService {
     private final DeliveryCodeProperties codeProperties;
     private final AuditLogService auditLogService;
     private final StoredUploadValidator uploadValidator;
+    private DeliveryCourierListener courierListener = DeliveryCourierListener.NOOP;
 
     public DeliveryService(DeliveryRepository deliveryRepository, DeliveryEventRepository eventRepository, DeliveryOrderHooks orderHooks, DeliveryMapper mapper, TenantContext tenantContext,
                            DeliveryAccessGuard accessGuard, DeliveryCodeHasher codeHasher, DeliveryCodeProperties codeProperties, AuditLogService auditLogService,
@@ -71,6 +74,10 @@ public class DeliveryService {
         this.codeProperties = codeProperties;
         this.auditLogService = auditLogService;
     }
+
+    /** LAC-42: dispatch frees the courier (BUSY -> AVAILABLE) when a delivery ends; optional for slice tests. */
+    @Autowired(required = false)
+    public void setCourierListener(DeliveryCourierListener courierListener) { this.courierListener = courierListener; }
 
     /**
      * Marks delivery and order delivered when the assigned courier submits the matching 6-digit code.
@@ -109,6 +116,7 @@ public class DeliveryService {
         // Order DELIVERED + INC-07 (COR-01) x INC-02: complete() is also allowed straight from ACCEPTED (no PICKED_UP
         // PATCH), so the hook closes the stock lifecycle here too; no-op when pickup already committed it.
         orderHooks.onDelivered(tenantId, delivery.getOrderId());
+        if (delivery.getCourierId() != null) courierListener.onCourierFreed(tenantId, delivery.getCourierId()); // LAC-42
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), "DELIVERED", "Delivery completed with customer code"));
         return mapper.toResponse(delivery);
     }
@@ -159,6 +167,7 @@ public class DeliveryService {
         }
         if (status == DeliveryStatus.FAILED_DELIVERY) {
             orderHooks.onDeliveryFailed(tenantId, delivery.getOrderId()); // order CANCELLED + release (no-op once committed)
+            if (delivery.getCourierId() != null) courierListener.onCourierFreed(tenantId, delivery.getCourierId()); // LAC-42
         }
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), EVENT_STATUS_UPDATE, "Delivery moved to " + status));
         if (operatorOverride) {
