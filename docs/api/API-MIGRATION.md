@@ -392,3 +392,33 @@ indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …
 
 - `POST /api/v1/customers/{customerId}/cart/items` with a `skuId` sold by a vendor other than `vendorId`
   → **422** `sku_vendor_mismatch` (previously the item was added to that vendor's cart).
+
+## W3-C — Customer order history (LAC-21, history half of LAC-59)
+
+### `GET /api/v1/me/orders?limit=50&cursor=<opaque>` (new, additive)
+
+- **CUSTOMER only** (other roles → 403, anonymous → 401). Returns the caller's own orders in their tenant
+  (resolved from the OIDC client, ADR-0001), newest first, with the LAC-14 keyset contract:
+  `{ "items": [...], "nextCursor": "<opaque>" | null }`, `limit` clamped to `1..200` (default 50), malformed
+  cursor → 400 `invalid_cursor`.
+- Item (`CustomerOrderSummaryResponse`): `id`, `reference`, `status`, `cancellationReason`
+  (`SELLER_REJECTED` or null), `vendorId`, `vendorName`, `itemCount`, `subtotal`, `fees`, `taxes`,
+  `discountTotal`, `total`, `createdAt`. No PIN and no address in the list.
+- A customer without a profile in the tenant gets an empty page.
+
+### `GET /api/v1/me/orders/{id}` (new, additive)
+
+- **CUSTOMER only**; an order that is not the caller's (other customer, other tenant, unknown id) → **404**
+  (existence never revealed).
+- Body (`CustomerOrderDetailResponse`): summary fields plus `items[]` (snapshot lines), `deliveryAddress`
+  (checkout snapshot; null for pre-INC-12 orders), `deliveryCode` (plain PIN while the order is active, null
+  once delivered/cancelled/refunded), and the quote breakdown `deliveryFee`, `serviceFee`,
+  `deliveryFeeBasis`, `distanceKm` (null for pre-INC-13 orders).
+- Not included yet (LAC-21 leftovers): `?status=` filter and courier name/masked phone.
+
+### Clients
+
+- **Customer web**: `/orders`, `/orders/:id` and `/orders/:id/confirmation` read these endpoints; the
+  localStorage order cache (`pede-aqui:orders`) is gone and purged on startup. The detail page no longer
+  calls `GET /orders/{id}/tracking` (still available, unchanged).
+- **Flutter customer app**: not migrated yet.
