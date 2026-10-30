@@ -303,6 +303,11 @@ app:
       enabled: ${APP_JOBS_COURIER_LOCATION_RETENTION_ENABLED:true}
       cron: "0 15 4 * * *"
       zone: Africa/Maputo
+    # W6-B (LAC-33): verificação diária do razão (Σ débitos = Σ créditos por tenant/transação) — só métricas e log.
+    ledger-reconciliation:
+      enabled: ${APP_JOBS_LEDGER_RECONCILIATION_ENABLED:true}
+      cron: "0 45 4 * * *"
+      zone: Africa/Maputo
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -312,6 +317,15 @@ app:
       cron: "0 30 3 * * *"
       zone: Africa/Maputo
       retention: P7D
+  # W6-B (LAC-33/34, ADR-0005 Proposed): razão de partidas dobradas — modelo de lançamentos "a validar" (LAC-38).
+  settlement:
+    enabled: ${APP_SETTLEMENT_ENABLED:true}
+    # Taxa de comissão quando o tenant não tem plano por defeito em vigor (V066 semeia 15% por tenant).
+    default-commission-rate: ${APP_SETTLEMENT_DEFAULT_COMMISSION_RATE:0.15}
+    # IVA embutido na receita própria da plataforma (comissão + taxas); 0 = sem linhas de IVA até o contabilista validar.
+    platform-vat-rate: ${APP_SETTLEMENT_PLATFORM_VAT_RATE:0}
+    # PLATFORM = desconto de promoção é despesa da plataforma; MERCHANT = reduz o valor devido ao comerciante.
+    discount-funded-by: ${APP_SETTLEMENT_DISCOUNT_FUNDED_BY:PLATFORM}
   # W5-B (LAC-40): GPS do estafeta — consentimento, filtros de qualidade, presença Redis e retenção do histórico.
   courier-location:
     # Versão do texto de consentimento aceite no onboarding; mudar obriga a novo consentimento.
