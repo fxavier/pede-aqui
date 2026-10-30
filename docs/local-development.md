@@ -91,15 +91,15 @@ docker compose exec -T postgres psql -U delivery delivery < delivery-local.sql
 MinIO object backup (all buckets):
 
 ```bash
-docker run --rm --network host -v "$PWD":/backup minio/mc:RELEASE.2025-02-20T20-33-30Z \
-  sh -c "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mirror --overwrite local /backup/minio-backup"
+docker run --rm --network host -v "$PWD":/backup --entrypoint /bin/sh bitnamilegacy/minio-client:2024.10.8-debian-12-r1 \
+  -c "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mirror --overwrite local /backup/minio-backup"
 ```
 
 MinIO restore:
 
 ```bash
-docker run --rm --network host -v "$PWD":/backup minio/mc:RELEASE.2025-02-20T20-33-30Z \
-  sh -c "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mirror --overwrite /backup/minio-backup local"
+docker run --rm --network host -v "$PWD":/backup --entrypoint /bin/sh bitnamilegacy/minio-client:2024.10.8-debian-12-r1 \
+  -c "mc alias set local http://host.docker.internal:9000 minioadmin minioadmin && mc mirror --overwrite /backup/minio-backup local"
 ```
 
 ## End-to-End MVP Flow
