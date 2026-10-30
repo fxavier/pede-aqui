@@ -36,6 +36,8 @@ docker compose up -d postgres redis keycloak minio minio-init
 
 (`minio-init` creates the `pede-aqui-uploads` bucket used by the backend's `dev` profile; it's idempotent.)
 
+MinIO images come from Bitnami's frozen public archive (`bitnamilegacy/minio:2024.10.13-debian-12-r1` = MinIO `RELEASE.2024-10-13T13-34-11Z`, `bitnamilegacy/minio-client` for `minio-init`), used by both compose and `MinioUploadLimitsIntegrationTest`. Don't switch back to `minio/minio`/`minio/mc` (removed from Docker Hub) or `quay.io/minio/*` (needs login) — CI cannot pull them. The Bitnami entrypoint starts the server itself, so pass no `command`.
+
 ### Backend (Spring Boot)
 
 ```bash

@@ -48,9 +48,13 @@ class MinioUploadLimitsIntegrationTest {
     /** Small limits keep the payloads tiny: images 1 KB, documents 2 KB. */
     private static final UploadLimits LIMITS = new UploadLimits(1024, 2048);
 
+    /**
+     * MinIO RELEASE.2024-10-13T13-34-11Z from Bitnami's frozen public archive: {@code minio/minio} was removed from
+     * Docker Hub and {@code quay.io/minio/*} now needs a login. The Bitnami entrypoint starts {@code minio server}
+     * itself (data under /bitnami/minio/data), so no command is passed.
+     */
     @Container
-    private static final GenericContainer<?> MINIO = new GenericContainer<>("minio/minio:RELEASE.2024-10-13T13-34-11Z")
-            .withCommand("server", "/data")
+    private static final GenericContainer<?> MINIO = new GenericContainer<>("bitnamilegacy/minio:2024.10.13-debian-12-r1")
             .withEnv("MINIO_ROOT_USER", USER)
             .withEnv("MINIO_ROOT_PASSWORD", PASSWORD)
             .withExposedPorts(9000)
