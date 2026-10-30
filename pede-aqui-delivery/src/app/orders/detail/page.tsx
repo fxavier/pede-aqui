@@ -1,9 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Bike, Phone, MessageSquare } from 'lucide-react'
-import { orderService } from '@/lib/api/services'
+import { ArrowLeft, MapPin, Bike, Phone, MessageSquare, KeyRound } from 'lucide-react'
 import { statusLabel, isActiveOrder } from '@/lib/orderStatusLabels'
-import type { OrderResponse } from '@/lib/api/types'
+import { useMyOrder } from '@/lib/orderHistory'
 import { formatMZN } from '@/lib/utils'
 
 const STATUS_TIMELINE = [
@@ -18,20 +16,13 @@ const STATUS_TIMELINE = [
 
 export default function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>()
-  const orders: OrderResponse[] = JSON.parse(localStorage.getItem('pede-aqui:orders') ?? '[]')
-  const cached = orders.find((o) => o.id === orderId)
+  const { data: order, isPending, isError } = useMyOrder(orderId)
 
-  const { data: tracking, isError } = useQuery({
-    queryKey: ['order-tracking', orderId],
-    queryFn: () => orderService.track(orderId!),
-    enabled: !!orderId,
-    refetchInterval: (query) => {
-      const status = query.state.data?.orderStatus
-      return status && isActiveOrder(status) ? 30_000 : false
-    },
-  })
+  if (isPending) {
+    return <div className="max-w-lg mx-auto px-4 py-20 text-center text-slate-400 text-sm">A carregar encomenda…</div>
+  }
 
-  if (isError && !cached) {
+  if (isError || !order) {
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center space-y-4">
         <p className="text-slate-500">Encomenda não encontrada.</p>
@@ -40,10 +31,10 @@ export default function OrderDetailPage() {
     )
   }
 
-  const currentStatus = tracking?.orderStatus ?? cached?.status ?? ''
+  const currentStatus = order.status
   const currentIdx = STATUS_TIMELINE.indexOf(currentStatus)
   const active = isActiveOrder(currentStatus)
-  const reference = tracking?.reference ?? cached?.reference
+  const address = order.deliveryAddress
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-6 sm:py-10">
@@ -54,12 +45,12 @@ export default function OrderDetailPage() {
             <ArrowLeft className="w-3.5 h-3.5" /> Encomendas
           </Link>
           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${active ? 'bg-emerald-100 text-emerald-800 animate-pulse' : 'bg-slate-100 text-slate-600'}`}>
-            ● {active ? 'EM ANDAMENTO' : statusLabel(currentStatus, cached?.cancellationReason)}
+            ● {active ? 'EM ANDAMENTO' : statusLabel(currentStatus, order.cancellationReason)}
           </span>
           <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-slate-800 tracking-tight leading-none mt-1.5 capitalize">
-            {cached?.vendorName ?? 'Acompanhar Encomenda'}
+            {order.vendorName}
           </h1>
-          {reference && <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase mt-1">Ref: {reference}</p>}
+          <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase mt-1">Ref: {order.reference}</p>
         </div>
       </div>
 
@@ -110,25 +101,52 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Items (real, from cache) */}
-          {cached?.items && cached.items.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-sm text-left space-y-3">
-              <h3 className="font-display font-extrabold text-slate-800 text-base pb-2 border-b border-slate-50">Itens</h3>
-              {cached.items.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm text-slate-600">
-                  <span>{item.quantity}× {item.productName}</span>
-                  <span className="font-semibold text-slate-800">{formatMZN(item.lineTotal)}</span>
-                </div>
-              ))}
-              <div className="border-t border-slate-100 pt-2 flex justify-between font-extrabold text-slate-800">
-                <span>Total</span><span className="text-brand-600">{formatMZN(cached.total)}</span>
+          {/* Items and totals (from GET /me/orders/{id}) */}
+          <div className="bg-white rounded-3xl border border-slate-100 p-5 sm:p-6 shadow-sm text-left space-y-3">
+            <h3 className="font-display font-extrabold text-slate-800 text-base pb-2 border-b border-slate-50">Itens</h3>
+            {order.items.map((item) => (
+              <div key={item.id} className="flex justify-between text-sm text-slate-600">
+                <span>{item.quantity}× {item.productName}</span>
+                <span className="font-semibold text-slate-800">{formatMZN(item.lineTotal)}</span>
               </div>
+            ))}
+            <div className="border-t border-slate-100 pt-2 space-y-1 text-sm text-slate-500">
+              <Row label="Subtotal" value={formatMZN(order.subtotal)} />
+              {order.deliveryFee != null && <Row label="Taxa de entrega" value={formatMZN(order.deliveryFee)} />}
+              {order.serviceFee != null && <Row label="Taxa de serviço" value={formatMZN(order.serviceFee)} />}
+              {order.deliveryFee == null && <Row label="Taxas" value={formatMZN(order.fees)} />}
+              {order.taxes > 0 && <Row label="IVA" value={formatMZN(order.taxes)} />}
+              {order.discountTotal > 0 && <Row label="Desconto" value={`−${formatMZN(order.discountTotal)}`} />}
             </div>
-          )}
+            <div className="border-t border-slate-100 pt-2 flex justify-between font-extrabold text-slate-800">
+              <span>Total</span><span className="text-brand-600">{formatMZN(order.total)}</span>
+            </div>
+          </div>
         </div>
 
         {/* Right — map placeholder (illustrative, no live GPS available) */}
         <div className="space-y-6">
+          {order.deliveryCode && (
+            <div className="bg-white rounded-3xl border border-brand-100 p-5 shadow-sm text-left space-y-2">
+              <div className="flex items-center gap-2 text-brand-700">
+                <KeyRound className="w-4 h-4" />
+                <h3 className="font-display font-extrabold text-base">Código de entrega</h3>
+              </div>
+              <p className="font-display font-extrabold text-3xl tracking-[0.3em] text-slate-800">{order.deliveryCode}</p>
+              <p className="text-xs text-slate-400">Diga este código ao estafeta apenas quando receber a encomenda.</p>
+            </div>
+          )}
+
+          {address && (
+            <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm text-left space-y-1">
+              <h3 className="font-display font-extrabold text-slate-800 text-base pb-2">Morada de entrega</h3>
+              <p className="text-sm font-semibold text-slate-700">{address.recipientName}</p>
+              <p className="text-sm text-slate-500">{[address.line1, address.line2].filter(Boolean).join(', ')}</p>
+              <p className="text-sm text-slate-500">{[address.city, address.state, address.postalCode].filter(Boolean).join(', ')}</p>
+              {address.instructions && <p className="text-xs text-slate-400 pt-1">{address.instructions}</p>}
+            </div>
+          )}
+
           <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-4 text-left">
             <h3 className="font-display font-extrabold text-slate-800 text-base">Localização</h3>
             <div className="relative h-80 w-full rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 overflow-hidden flex items-center justify-center">
@@ -147,6 +165,14 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span>{label}</span><span className="font-semibold text-slate-700">{value}</span>
     </div>
   )
 }

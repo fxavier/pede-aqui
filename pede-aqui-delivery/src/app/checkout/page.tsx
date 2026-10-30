@@ -11,6 +11,7 @@ import { clearCart, cartTotal, cartItemCount } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { useIdempotencyKey } from '@/lib/idempotency'
+import { myOrdersQueryKey } from '@/lib/orderHistory'
 import { cartErrorMessage } from '@/lib/cart-errors'
 import {
   type AddressForm, type AddressFormErrors,
@@ -106,9 +107,8 @@ export default function CheckoutPage() {
       if (!addressId) return
       // Payment method is still cosmetic (no PSP yet); the address goes as a saved-address reference.
       const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey, addressId })
-      const history: unknown[] = JSON.parse(localStorage.getItem('pede-aqui:orders') ?? '[]')
-      history.unshift(order)
-      localStorage.setItem('pede-aqui:orders', JSON.stringify(history.slice(0, 50)))
+      // Order history comes from GET /me/orders: refresh it instead of caching the order locally (LAC-59).
+      void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey })
       dispatch(clearCart())
       navigate(`/orders/${order.id}/confirmation`, { replace: true })
     } catch (err) {

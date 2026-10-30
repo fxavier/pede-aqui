@@ -1214,6 +1214,20 @@
         },
         "type": "object"
       },
+      "CursorPageCustomerOrderSummaryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerOrderSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CursorPageNotificationResponse": {
         "properties": {
           "items": {
@@ -1347,6 +1361,168 @@
           },
           "updatedAt": {
             "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CustomerOrderDetailResponse": {
+        "properties": {
+          "cancellationReason": {
+            "enum": [
+              "SELLER_REJECTED"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/DeliveryAddressResponse"
+          },
+          "deliveryCode": {
+            "type": "string"
+          },
+          "deliveryFee": {
+            "type": "number"
+          },
+          "deliveryFeeBasis": {
+            "enum": [
+              "DISTANCE_RULE",
+              "POLICY_BASE",
+              "PLATFORM_DEFAULT",
+              "EMPTY_CART"
+            ],
+            "type": "string"
+          },
+          "discountTotal": {
+            "type": "number"
+          },
+          "distanceKm": {
+            "type": "number"
+          },
+          "fees": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemResponse"
+            },
+            "type": "array"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "serviceFee": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PAYMENT_PENDING",
+              "PAYMENT_CONFIRMED",
+              "ACCEPTED_BY_VENDOR",
+              "REJECTED_BY_VENDOR",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "DISPATCH_PENDING",
+              "ASSIGNED_TO_COURIER",
+              "PICKED_UP",
+              "DELIVERING",
+              "DELIVERED",
+              "CANCELLED",
+              "REFUND_PENDING",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "taxes": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "vendorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "vendorName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CustomerOrderSummaryResponse": {
+        "properties": {
+          "cancellationReason": {
+            "enum": [
+              "SELLER_REJECTED"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "discountTotal": {
+            "type": "number"
+          },
+          "fees": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "itemCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PAYMENT_PENDING",
+              "PAYMENT_CONFIRMED",
+              "ACCEPTED_BY_VENDOR",
+              "REJECTED_BY_VENDOR",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "DISPATCH_PENDING",
+              "ASSIGNED_TO_COURIER",
+              "PICKED_UP",
+              "DELIVERING",
+              "DELIVERED",
+              "CANCELLED",
+              "REFUND_PENDING",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "taxes": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "vendorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "vendorName": {
             "type": "string"
           }
         },
@@ -7313,7 +7489,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_6",
+        "operationId": "list_7",
         "parameters": [
           {
             "in": "query",
@@ -8345,6 +8521,97 @@
         "summary": "Get current user profile and roles",
         "tags": [
           "me-controller"
+        ]
+      }
+    },
+    "/api/v1/me/orders": {
+      "get": {
+        "operationId": "list_6",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageCustomerOrderSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "customer-order-controller"
+        ]
+      }
+    },
+    "/api/v1/me/orders/{orderId}": {
+      "get": {
+        "operationId": "get_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "customer-order-controller"
         ]
       }
     },

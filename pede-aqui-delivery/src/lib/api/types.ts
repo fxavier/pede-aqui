@@ -181,6 +181,54 @@ export interface OrderResponse {
   deliveryAddress: DeliveryAddress | null
 }
 
+/** Keyset page `{ items, nextCursor }`; `nextCursor` is null on the last page (backend common/pagination). */
+export interface CursorPage<T> {
+  items: T[]
+  nextCursor: string | null
+}
+
+/** One row of the customer's own order history (GET /api/v1/me/orders). */
+export interface CustomerOrderSummary {
+  id: string
+  reference: string
+  status: string
+  /** Why a CANCELLED order was cancelled; currently only 'SELLER_REJECTED', null otherwise. */
+  cancellationReason: string | null
+  vendorId: string
+  vendorName: string
+  itemCount: number
+  subtotal: number
+  fees: number
+  taxes: number
+  discountTotal: number
+  total: number
+  createdAt: string
+}
+
+/** The customer's own order (GET /api/v1/me/orders/{id}); `deliveryCode` is null once the order is finished. */
+export interface CustomerOrderDetail {
+  id: string
+  reference: string
+  status: string
+  cancellationReason: string | null
+  vendorId: string
+  vendorName: string
+  createdAt: string
+  items: OrderItemResponse[]
+  deliveryAddress: DeliveryAddress | null
+  deliveryCode: string | null
+  subtotal: number
+  fees: number
+  /** Null for orders placed before the pricing quote existed. */
+  deliveryFee: number | null
+  serviceFee: number | null
+  taxes: number
+  discountTotal: number
+  total: number
+  deliveryFeeBasis: string | null
+  distanceKm: number | null
+}
+
 // Tracking (GET /api/v1/orders/{orderId}/tracking)
 export interface TrackingResponse {
   orderId: string

@@ -7,6 +7,9 @@ import type {
   CheckoutRequest,
   CustomerAddress,
   CustomerAddressRequest,
+  CustomerOrderDetail,
+  CustomerOrderSummary,
+  CursorPage,
   MeResponse,
   OrderResponse,
   Product,
@@ -102,4 +105,16 @@ export const checkoutService = {
 export const orderService = {
   track: (orderId: string) =>
     apiClient.get<TrackingResponse>(`/orders/${orderId}/tracking`).then((r) => r.data),
+
+  /** One page of the signed-in customer's orders, newest first; pass the previous page's `nextCursor`. */
+  listMine: (params: { limit?: number; cursor?: string | null } = {}) =>
+    apiClient
+      .get<CursorPage<CustomerOrderSummary>>('/me/orders', {
+        params: { limit: params.limit, ...(params.cursor ? { cursor: params.cursor } : {}) },
+      })
+      .then((r) => r.data),
+
+  /** The signed-in customer's own order (404 when it is not theirs). */
+  getMine: (orderId: string) =>
+    apiClient.get<CustomerOrderDetail>(`/me/orders/${orderId}`).then((r) => r.data),
 }

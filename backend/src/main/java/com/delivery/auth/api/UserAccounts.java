@@ -38,6 +38,11 @@ public class UserAccounts {
         return profileRepository.findFirstByEmail(email).map(UserAccounts::toAccount);
     }
 
+    /** Profile id of the Keycloak user in this tenant, if that user has a profile there. */
+    public Optional<UUID> profileIdOf(UUID tenantId, String keycloakUserId) {
+        return profileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId).map(AppUserProfile::getId);
+    }
+
     /** Keycloak user id of a profile, if the profile exists. */
     public Optional<String> keycloakUserIdOf(UUID profileId) {
         return profileRepository.findById(profileId).map(AppUserProfile::getKeycloakUserId);
