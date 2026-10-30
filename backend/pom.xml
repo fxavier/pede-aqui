@@ -20,7 +20,7 @@
         <springdoc.version>2.10.0</springdoc.version>
         <aws.sdk.version>2.57.4</aws.sdk.version>
         <!-- ADR-0002 / LAC-47: Spring Modulith 1.4.x is the line built for Spring Boot 3.5. -->
-        <spring-modulith.version>1.4.14</spring-modulith.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
         <!-- LAC-46: ShedLock 6.x targets Spring Framework 6 / Boot 3 (7.x moves to Spring 7). -->
         <shedlock.version>7.10.1</shedlock.version>
         <!-- LAC-11: Bucket4j 8.19 (jdk17 line). The Lettuce module declares lettuce-core as provided, so the
