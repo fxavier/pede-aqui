@@ -38,6 +38,24 @@ class SalesReportAggregationTest extends AbstractSalesReportPostgresTest {
     }
 
     @Test
+    void summaryAndTimeseriesExposeTheVatContainedInGross() {
+        // W6-A: pre-W6-A orders contribute their added tax line (O1 taxes 5.00); W6-A orders their extracted VAT.
+        SalesSummaryResponse before = service.summary(new ReportScope(tenant1, null), FROM, TO);
+        assertThat(before.vatIncluded()).isEqualByComparingTo("5.00");
+        assertThat(before.grossExVat()).isEqualByComparingTo("395.00");
+
+        jdbcTemplate.update("UPDATE orders SET quote_vat_total = 13.79, quote_net_total = 86.21 WHERE id = ?", order2);
+
+        SalesSummaryResponse after = service.summary(new ReportScope(tenant1, null), FROM, TO);
+        assertThat(after.gross()).isEqualByComparingTo("400.00");
+        assertThat(after.vatIncluded()).isEqualByComparingTo("18.79");
+        assertThat(after.grossExVat()).isEqualByComparingTo("381.21");
+        List<SalesBucketResponse> buckets = service.timeseries(new ReportScope(tenant1, null), FROM, TO, ReportInterval.DAY);
+        assertThat(buckets).extracting(SalesBucketResponse::vatIncluded).usingElementComparator(java.math.BigDecimal::compareTo)
+                .containsExactly(new java.math.BigDecimal("5.00"), new java.math.BigDecimal("13.79"));
+    }
+
+    @Test
     void cancelledCountIncludesSellerRejectionsAndLegacyRejectedOrders() {
         // Unified seller rejection: CANCELLED + cancellation_reason SELLER_REJECTED ...
         UUID sellerRejected = UUID.randomUUID();

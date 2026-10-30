@@ -20,6 +20,9 @@ import java.util.UUID;
  * <p>Cancellation (LAC-26): {@code cancellationPhase} = FREE (cancel now), REQUEST (ask OPS; {@code
  * cancellationFeeEstimate} is the fee that would be withheld), ALREADY_CANCELLED or NOT_CANCELLABLE;
  * {@code cancellationRequest} is the order's most recent request (null when none).
+ *
+ * <p>VAT (W6-A, additive): {@code taxInclusive} and {@code vatIncluded} (VAT contained in {@code total}, "IVA
+ * incluído") are null for orders placed before W6-A, whose VAT is the {@code taxes} line added on top.
  */
 public record CustomerOrderDetailResponse(
         UUID id,
@@ -43,4 +46,6 @@ public record CustomerOrderDetailResponse(
         BigDecimal distanceKm,
         CustomerCancellationPolicy.Phase cancellationPhase,
         BigDecimal cancellationFeeEstimate,
-        CancellationRequestResponse cancellationRequest) {}
+        CancellationRequestResponse cancellationRequest,
+        Boolean taxInclusive,
+        BigDecimal vatIncluded) {}

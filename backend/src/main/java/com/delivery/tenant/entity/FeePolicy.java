@@ -11,7 +11,10 @@ import java.util.UUID;
 
 /**
  * Stores tenant-level fees, commission, taxes, and cancellation policy rules. Read by the pricing engine (INC-13):
- * delivery_fee is the base delivery fee, service fee = service_fee (flat) + subtotal × service_fee_rate, tax = subtotal × tax_rate.
+ * delivery_fee is the base delivery fee, service fee = service_fee (flat) + subtotal × service_fee_rate. tax_rate is the
+ * standard VAT rate (16 % since V064); with tax_inclusive (default, W6-A) catalogue prices and fees already contain it and
+ * VAT is extracted, otherwise it is added on top (subtotal × tax_rate, the pre-W6-A formula). max_delivery_distance_km
+ * (null = no limit) caps the straight-line delivery distance at checkout unless the vendor sets its own.
  */
 @Entity
 @Table(name = "fee_policies")
@@ -28,6 +31,10 @@ public class FeePolicy {
     private BigDecimal serviceFeeRate = BigDecimal.ZERO;
     @Column(name = "tax_rate", nullable = false)
     private BigDecimal taxRate;
+    @Column(name = "tax_inclusive", nullable = false)
+    private boolean taxInclusive = true;
+    @Column(name = "max_delivery_distance_km")
+    private BigDecimal maxDeliveryDistanceKm;
     @Column(name = "commission_rate", nullable = false)
     private BigDecimal commissionRate;
     @Column(name = "cancellation_policy", nullable = false)
@@ -60,6 +67,18 @@ public class FeePolicy {
         this.updatedAt = Instant.now();
     }
 
+    /** Sets whether catalogue prices and fees include VAT (true, W6-A default) or VAT is added on top (false). */
+    public void changeTaxInclusive(boolean taxInclusive) {
+        this.taxInclusive = taxInclusive;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Sets the tenant's maximum straight-line delivery distance in km (null = no limit). */
+    public void changeMaxDeliveryDistanceKm(BigDecimal maxDeliveryDistanceKm) {
+        this.maxDeliveryDistanceKm = maxDeliveryDistanceKm;
+        this.updatedAt = Instant.now();
+    }
+
     public void update(BigDecimal deliveryFee, BigDecimal serviceFee, BigDecimal taxRate, BigDecimal commissionRate, String cancellationPolicy) {
         this.deliveryFee = deliveryFee;
         this.serviceFee = serviceFee;
@@ -78,4 +97,6 @@ public class FeePolicy {
     public long getVersion() { return version; }
     public BigDecimal getCommissionRate() { return commissionRate; }
     public String getCancellationPolicy() { return cancellationPolicy; }
+    public boolean isTaxInclusive() { return taxInclusive; }
+    public BigDecimal getMaxDeliveryDistanceKm() { return maxDeliveryDistanceKm; }
 }

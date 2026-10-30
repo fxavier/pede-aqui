@@ -69,7 +69,8 @@ public class SalesReportRepository {
             COALESCE(SUM(rf.amount), 0) AS refunds,
             COALESCE(SUM(cm.amount), 0) AS commission,
             COUNT(o.id) FILTER (WHERE o.status = 'DELIVERED') AS delivered_count,
-            COUNT(o.id) FILTER (WHERE o.status IN (:cancelledStatuses)) AS cancelled_count""";
+            COUNT(o.id) FILTER (WHERE o.status IN (:cancelledStatuses)) AS cancelled_count,
+            COALESCE(SUM(COALESCE(o.quote_vat_total, o.taxes)), 0) AS vat_included""";
 
     private static final RowMapper<SummaryRow> SUMMARY_MAPPER = (rs, rowNum) -> new SummaryRow(
             rs.getLong("order_count"),
@@ -78,7 +79,8 @@ public class SalesReportRepository {
             rs.getBigDecimal("refunds"),
             rs.getBigDecimal("commission"),
             rs.getLong("delivered_count"),
-            rs.getLong("cancelled_count"));
+            rs.getLong("cancelled_count"),
+            rs.getBigDecimal("vat_included"));
 
     private static final RowMapper<BucketRow> BUCKET_MAPPER = (rs, rowNum) -> new BucketRow(
             rs.getObject("bucket", OffsetDateTime.class).toInstant(),
@@ -88,7 +90,8 @@ public class SalesReportRepository {
             rs.getBigDecimal("refunds"),
             rs.getBigDecimal("commission"),
             rs.getLong("delivered_count"),
-            rs.getLong("cancelled_count"));
+            rs.getLong("cancelled_count"),
+            rs.getBigDecimal("vat_included"));
 
     private static final RowMapper<DimensionAggregateRow> DIMENSION_MAPPER = (rs, rowNum) -> new DimensionAggregateRow(
             rs.getString("key"),
@@ -269,16 +272,29 @@ public class SalesReportRepository {
         return params;
     }
 
-    /** Raw summary aggregates as returned by the database (pre-rounding). */
+    /**
+     * Raw summary aggregates as returned by the database (pre-rounding). {@code vatIncluded} (W6-A) = VAT contained in
+     * gross: orders.quote_vat_total, or the tax line orders.taxes for pre-W6-A orders (VAT added on top then).
+     */
     public record SummaryRow(long orderCount, BigDecimal gross, BigDecimal discountTotal,
                              BigDecimal refunds, BigDecimal commission,
-                             long deliveredCount, long cancelledCount) {
+                             long deliveredCount, long cancelledCount, BigDecimal vatIncluded) {
+        /** Pre-W6-A shape (no VAT figure). */
+        public SummaryRow(long orderCount, BigDecimal gross, BigDecimal discountTotal, BigDecimal refunds, BigDecimal commission,
+                          long deliveredCount, long cancelledCount) {
+            this(orderCount, gross, discountTotal, refunds, commission, deliveredCount, cancelledCount, BigDecimal.ZERO);
+        }
     }
 
-    /** Raw timeseries bucket aggregates as returned by the database. */
+    /** Raw timeseries bucket aggregates as returned by the database ({@code vatIncluded} as in {@link SummaryRow}). */
     public record BucketRow(Instant bucket, long orderCount, BigDecimal gross, BigDecimal discountTotal,
                             BigDecimal refunds, BigDecimal commission,
-                            long deliveredCount, long cancelledCount) {
+                            long deliveredCount, long cancelledCount, BigDecimal vatIncluded) {
+        /** Pre-W6-A shape (no VAT figure). */
+        public BucketRow(Instant bucket, long orderCount, BigDecimal gross, BigDecimal discountTotal, BigDecimal refunds,
+                         BigDecimal commission, long deliveredCount, long cancelledCount) {
+            this(bucket, orderCount, gross, discountTotal, refunds, commission, deliveredCount, cancelledCount, BigDecimal.ZERO);
+        }
     }
 
     /** Raw per-dimension aggregates (quantitySold is 0 for non-product dimensions). */

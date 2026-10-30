@@ -26,7 +26,7 @@ function order(overrides: Partial<CustomerOrderDetail> = {}): CustomerOrderDetai
     id: 'o1', reference: 'REF-1', status: 'PAYMENT_CONFIRMED', cancellationReason: null, vendorId: 'v1', vendorName: 'Loja',
     createdAt: '2026-10-29T10:00:00Z', items: [], deliveryAddress: null, deliveryCode: '123456', subtotal: 90, fees: 10,
     deliveryFee: null, serviceFee: null, taxes: 0, discountTotal: 0, total: 100, deliveryFeeBasis: null, distanceKm: null,
-    cancellationPhase: 'FREE', cancellationFeeEstimate: null, cancellationRequest: null,
+    cancellationPhase: 'FREE', cancellationFeeEstimate: null, cancellationRequest: null, taxInclusive: null, vatIncluded: null,
     ...overrides,
   }
 }

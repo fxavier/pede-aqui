@@ -69,11 +69,11 @@ class BusinessMetricsTest {
         controller.setBusinessMetrics(metrics);
         UUID cartId = UUID.randomUUID();
         UUID addressId = UUID.randomUUID();
-        when(orderService.checkout(cartId, "k1", addressId)).thenReturn(new CheckoutResult(null, false));
-        when(orderService.checkout(cartId, "k2", addressId)).thenReturn(new CheckoutResult(null, true));
-        when(orderService.checkout(cartId, "k3", addressId))
+        when(orderService.checkout(cartId, "k1", addressId, null)).thenReturn(new CheckoutResult(null, false));
+        when(orderService.checkout(cartId, "k2", addressId, null)).thenReturn(new CheckoutResult(null, true));
+        when(orderService.checkout(cartId, "k3", addressId, null))
                 .thenThrow(new BusinessException("insufficient_stock", "No stock", HttpStatus.CONFLICT));
-        when(orderService.checkout(cartId, "k4", addressId)).thenThrow(new IllegalStateException("boom"));
+        when(orderService.checkout(cartId, "k4", addressId, null)).thenThrow(new IllegalStateException("boom"));
 
         controller.checkout(new CheckoutRequest(cartId, "k1", addressId));
         controller.checkout(new CheckoutRequest(cartId, "k2", addressId));
