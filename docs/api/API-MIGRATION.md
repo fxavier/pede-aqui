@@ -794,3 +794,55 @@ Additive only; no client breaks.
 - Consumers that assumed `email` is always present in a customer token or in `MeResponse.email` semantics: for a
   phone-only customer `MeResponse.email` falls back to the Keycloak subject (column is NOT NULL), as it already did
   for any token without an email claim.
+
+## W6-C — Notifications foundation: push/SMS/e-mail channels (LAC-48) — 2026-10-30
+
+Additive only; no existing contract changes. The in-app inbox (`/api/v1/notifications*`) keeps its shape and content.
+
+### `POST /api/v1/me/devices` (new, any authenticated user with a profile in the tenant)
+
+- Body `{ "platform": "ANDROID" | "IOS" | "WEB", "token": "<FCM/APNs/Web Push token, ≤ 4096>" }` →
+  **200** `{ id, platform, tokenMasked: "****abcd", lastSeenAt }`. Idempotent: re-registering refreshes
+  `lastSeenAt`/platform. A token already registered by another account **moves** to the caller (shared device,
+  new login). The token is never echoed back. 400 `validation_failed` for an unknown platform or blank token;
+  403 `profile_required` when the caller has no profile in the tenant. Rate-limit group `sensitive`.
+
+### `DELETE /api/v1/me/devices` (new)
+
+- Body `{ "token": "..." }` (in the body, so the token never reaches access logs) → **204** always; deletes the
+  token only if it belongs to the caller. Apps must call it **before logout** (the backend also drops tokens the
+  provider reports as unregistered).
+
+### `GET /api/v1/ops/notification-templates` · `PUT /api/v1/ops/notification-templates/{templateKey}/{channel}` (new, OPS/ADMIN)
+
+- `GET` → array of the tenant's effective templates `{ templateKey, channel, locale, title, body, active, version,
+  source: "DEFAULT" | "TENANT", updatedAt }` (config data, bounded by the key × channel set; not paged).
+- `PUT` body `{ title?, body, active }` creates/replaces the tenant override (title ignored for SMS; SMS body
+  ≤ 320 chars, others ≤ 2000) → 200 with the override (`source: "TENANT"`, `version` + 1). Only keys/channels that
+  have a platform default can be overridden (else 404). Allowed placeholder: `{orderReference}`; anything else —
+  in particular PIN/OTP/code/token names — → 400 `template_placeholder_not_allowed`. Audited
+  `NOTIFICATION_TEMPLATE_UPDATED`. `channel` ∈ `IN_APP|PUSH|SMS|EMAIL` (other values → 400).
+
+### `GET /api/v1/support/notification-deliveries` (new, SUPPORT/OPS/ADMIN, tenant-scoped)
+
+- Query `status` (`QUEUED|SENT|FAILED|SKIPPED`), `channel`, `recipientProfileId`, `businessReference` (all optional),
+  `page`, `size` (1..100, default 20) → `{ content, page, size, totalElements }`, newest first. Rows:
+  `{ id, channel, templateKey, templateVersion, status, attempts, lastError, recipientProfileId, recipientMasked,
+  businessReference, providerMessageId, createdAt, nextAttemptAt, sentAt }` — masked: no rendered text, recipient
+  only as e.g. `+25884*****67` / `a***@e***.mz` / `****abcd`. `lastError` is a short code (`preference_disabled`,
+  `no_device`, `no_verified_phone`, `no_email`, `invalid_recipient`, `provider_timeout`, …).
+
+### Behaviour (no request/response change)
+
+- Customers with a registered device now get pushes for: order accepted, ready for pickup, delivered (after-commit
+  listener of `OrderStatusChanged`), seller rejection, vendor-timeout cancellation, sales cancellation, cancellation
+  request approved/rejected (fan-out of the existing in-app notifications). SMS templates exist for seller
+  rejection and vendor timeout but SMS is **off by default** (`user_notification_preferences.sms_enabled`, no
+  endpoint to change it yet) and only goes to a **verified** phone. Delivery-code and OTP texts are never sent on
+  external channels.
+
+### Clients / consumers to review
+
+- Customer Flutter app / courier app / web: register the push token after login and on token refresh; call
+  `DELETE /me/devices` before logout. Not implemented in the clients by this package (no FCM project yet).
+- Backoffice: template editor and delivery-log screens are not built (LAC-60).

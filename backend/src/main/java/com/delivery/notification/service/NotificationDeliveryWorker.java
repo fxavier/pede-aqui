@@ -185,7 +185,8 @@ public class NotificationDeliveryWorker {
 
     private Attempt email(ClaimedDelivery delivery) {
         String address = userAccounts.contactOf(delivery.tenantId(), delivery.recipientProfileId())
-                .map(UserAccounts.ContactPoints::email).filter(value -> !value.isBlank()).orElse(null);
+                // Phone-only customers (W5-D) have the Keycloak subject in the NOT NULL email column: not an address.
+                .map(UserAccounts.ContactPoints::email).filter(value -> value != null && value.contains("@")).orElse(null);
         if (address == null) {
             return Attempt.terminal(Status.SKIPPED, "no_email", null, null);
         }

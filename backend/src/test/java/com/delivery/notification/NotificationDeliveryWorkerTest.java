@@ -133,6 +133,20 @@ class NotificationDeliveryWorkerTest {
     }
 
     @Test
+    void aPhoneOnlyCustomerWithoutARealEmailAddressIsSkipped() {
+        UserNotificationPreference row = new UserNotificationPreference(UUID.randomUUID(), tenant, profile);
+        row.updatePreferences(true, false, true);
+        when(preferences.findByTenantIdAndUserProfileId(tenant, profile)).thenReturn(Optional.of(row));
+        UUID id = claim(NotificationChannel.EMAIL, 1);
+        when(userAccounts.contactOf(tenant, profile)).thenReturn(Optional.of(new UserAccounts.ContactPoints("phone-123", "+258841234567")));
+
+        worker.deliverDue();
+
+        verify(store).recordResult(id, 1, Status.SKIPPED, null, "no_email", null, null);
+        verify(email, never()).send(any(), any(), any(), any());
+    }
+
+    @Test
     void aLostClaimIsCountedAndNotOverwritten() {
         claim(NotificationChannel.PUSH, 1);
         when(devices.findForRecipient(eq(tenant), eq(profile), any())).thenReturn(List.of());

@@ -4,15 +4,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import com.delivery.auth.api.UserAccounts;
 import com.delivery.common.PostgresApiE2ETestBase;
 import com.delivery.common.TestParents;
 import com.delivery.notification.api.NotificationChannel;
 import com.delivery.notification.api.NotificationDispatcher;
 import com.delivery.notification.api.NotificationRequest;
+import com.delivery.notification.config.NotificationProperties;
+import com.delivery.notification.repository.DeviceTokenRepository;
 import com.delivery.notification.repository.NotificationDeliveryStore;
+import com.delivery.notification.repository.UserNotificationPreferenceRepository;
+import com.delivery.notification.sender.EmailSender;
+import com.delivery.notification.sender.SmsSender;
 import com.delivery.notification.repository.NotificationDeliveryStore.ClaimedDelivery;
 import com.delivery.notification.sender.PushSender;
 import com.delivery.notification.sender.SendResult;
@@ -38,27 +45,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * LAC-48 outbox on real Postgres: idempotent dispatch (UNIQUE idempotency key), the delivery job's retry with
  * exponential backoff and give-up, the in-app fan-out, and the claim's {@code FOR UPDATE SKIP LOCKED} + lease under
- * concurrency. Own context (mocked push provider) with a small pool, like OrderStatusChangedEventPostgresTest.
+ * concurrency. Runs in the shared E2E context (no extra connection pool): the worker under test is built here from the
+ * context's store/repositories with a mocked push provider and max-attempts 3.
  */
-@TestPropertySource(properties = {
-        "spring.datasource.hikari.maximum-pool-size=4",
-        "app.notifications.max-attempts=3",
-        "app.notifications.base-backoff=PT30S"})
 class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
 
-    @MockitoBean private PushSender pushSender;
+    private final PushSender pushSender = mock(PushSender.class);
     @Autowired private JdbcTemplate jdbc;
     @Autowired private NotificationDispatcher dispatcher;
     @Autowired private NotificationService notificationService;
-    @Autowired private NotificationDeliveryWorker worker;
+    @Autowired private DeviceTokenRepository deviceTokenRepository;
+    @Autowired private UserNotificationPreferenceRepository preferenceRepository;
+    @Autowired private UserAccounts userAccounts;
+    private NotificationDeliveryWorker worker;
     @Autowired private NotificationDeliveryStore store;
     @Autowired private PlatformTransactionManager transactionManager;
 
@@ -70,6 +75,11 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
     void seed() {
         reset(pushSender);
         tx = new TransactionTemplate(transactionManager);
+        NotificationProperties properties = new NotificationProperties();
+        properties.setMaxAttempts(3);
+        properties.setBaseBackoff(Duration.ofSeconds(30));
+        worker = new NotificationDeliveryWorker(store, transactionManager, properties, pushSender, mock(SmsSender.class),
+                mock(EmailSender.class), deviceTokenRepository, preferenceRepository, userAccounts);
         tenant = UUID.randomUUID();
         jdbc.update("INSERT INTO tenants (id, name, slug, status, default_currency, created_at, updated_at) VALUES (?, ?, ?, 'ACTIVE', 'MZN', now(), now())",
                 tenant, "Tenant " + tenant, "slug-" + tenant);
