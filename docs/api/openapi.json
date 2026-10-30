@@ -2001,6 +2001,25 @@
         },
         "type": "object"
       },
+      "DeviceResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "tokenMasked": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "DimensionRowResponse": {
         "properties": {
           "commission": {
@@ -2417,6 +2436,60 @@
         },
         "type": "object"
       },
+      "NotificationDeliveryResponse": {
+        "properties": {
+          "attempts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "businessReference": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastError": {
+            "type": "string"
+          },
+          "nextAttemptAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "providerMessageId": {
+            "type": "string"
+          },
+          "recipientMasked": {
+            "type": "string"
+          },
+          "recipientProfileId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sentAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "templateKey": {
+            "type": "string"
+          },
+          "templateVersion": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "NotificationResponse": {
         "properties": {
           "businessReference": {
@@ -2442,6 +2515,40 @@
           },
           "type": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "NotificationTemplateResponse": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "body": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "templateKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
           }
         },
         "type": "object"
@@ -2640,6 +2747,29 @@
           "content": {
             "items": {
               "$ref": "#/components/schemas/MeResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseNotificationDeliveryResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationDeliveryResponse"
             },
             "type": "array"
           },
@@ -3363,6 +3493,25 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "RegisterDeviceRequest": {
+        "properties": {
+          "platform": {
+            "minLength": 1,
+            "pattern": "ANDROID|IOS|WEB",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 4096,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ],
         "type": "object"
       },
       "RejectDispatchRequest": {
@@ -4142,6 +4291,19 @@
         },
         "type": "object"
       },
+      "UnregisterDeviceRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 4096,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
       "UpdateCategoryRequest": {
         "properties": {
           "active": {
@@ -4194,6 +4356,28 @@
         },
         "required": [
           "status"
+        ],
+        "type": "object"
+      },
+      "UpdateNotificationTemplateRequest": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "body": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 180,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "active",
+          "body"
         ],
         "type": "object"
       },
@@ -6691,7 +6875,7 @@
         ]
       },
       "put": {
-        "operationId": "update_1",
+        "operationId": "update_2",
         "parameters": [
           {
             "in": "path",
@@ -7709,7 +7893,7 @@
         ]
       },
       "put": {
-        "operationId": "update",
+        "operationId": "update_1",
         "parameters": [
           {
             "in": "path",
@@ -7879,7 +8063,7 @@
     },
     "/api/v1/customers/register": {
       "post": {
-        "operationId": "register_1",
+        "operationId": "register_2",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -8284,7 +8468,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_8",
+        "operationId": "list_9",
         "parameters": [
           {
             "in": "query",
@@ -9155,7 +9339,7 @@
         ]
       },
       "patch": {
-        "operationId": "update_2",
+        "operationId": "update_3",
         "parameters": [
           {
             "in": "path",
@@ -9319,9 +9503,84 @@
         ]
       }
     },
+    "/api/v1/me/devices": {
+      "delete": {
+        "operationId": "unregister",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnregisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "device-controller"
+        ]
+      },
+      "post": {
+        "operationId": "register_1",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "device-controller"
+        ]
+      }
+    },
     "/api/v1/me/orders": {
       "get": {
-        "operationId": "list_7",
+        "operationId": "list_8",
         "parameters": [
           {
             "in": "query",
@@ -9588,7 +9847,7 @@
     },
     "/api/v1/ops/cancellation-requests": {
       "get": {
-        "operationId": "list_6",
+        "operationId": "list_7",
         "parameters": [
           {
             "in": "query",
@@ -9965,6 +10224,105 @@
         },
         "tags": [
           "operations-dispatch-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/notification-templates": {
+      "get": {
+        "operationId": "list_6",
+        "parameters": [
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationTemplateResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "notification-template-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/notification-templates/{templateKey}/{channel}": {
+      "put": {
+        "operationId": "update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "templateKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "IN_APP",
+                "PUSH",
+                "SMS",
+                "EMAIL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationTemplateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "notification-template-controller"
         ]
       }
     },
@@ -10890,7 +11248,7 @@
     },
     "/api/v1/sales/orders": {
       "get": {
-        "operationId": "search",
+        "operationId": "search_1",
         "parameters": [
           {
             "in": "query",
@@ -11435,6 +11793,103 @@
         },
         "tags": [
           "search-controller"
+        ]
+      }
+    },
+    "/api/v1/support/notification-deliveries": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "QUEUED",
+                "SENT",
+                "FAILED",
+                "SKIPPED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "enum": [
+                "IN_APP",
+                "PUSH",
+                "SMS",
+                "EMAIL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recipientProfileId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "businessReference",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseNotificationDeliveryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "notification-delivery-log-controller"
         ]
       }
     },
