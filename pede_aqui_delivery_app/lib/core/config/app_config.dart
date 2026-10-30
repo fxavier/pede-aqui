@@ -7,14 +7,24 @@ class AppConfig {
   );
 
   /// Keycloak realm issuer, configurable per environment via --dart-define.
-  /// The default preserves the previous hardcoded localhost behaviour for dev.
+  /// Local Keycloak listens on 8081 (docker compose).
   static const String keycloakIssuer = String.fromEnvironment(
     'KEYCLOAK_ISSUER',
-    defaultValue: 'http://localhost:8080/realms/delivery',
+    defaultValue: 'http://localhost:8081/realms/delivery',
   );
 
-  static const String keycloakTokenEndpoint =
-      '$keycloakIssuer/protocol/openid-connect/token';
+  /// Public Keycloak client for this app (Authorization Code + PKCE only).
+  static const String keycloakClientId = String.fromEnvironment(
+    'KEYCLOAK_CLIENT_ID',
+    defaultValue: 'pede-aqui-mobile',
+  );
+
+  /// Must match the client's redirect URI in the realm and the
+  /// `appAuthRedirectScheme` (Android) / CFBundleURLSchemes (iOS) scheme.
+  static const String keycloakRedirectUri = String.fromEnvironment(
+    'KEYCLOAK_REDIRECT_URI',
+    defaultValue: 'com.pedeaqui.delivery:/oauthredirect',
+  );
 
   static const Duration requestTimeout = Duration(seconds: 20);
 }

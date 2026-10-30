@@ -1,80 +1,74 @@
-import 'package:dio/dio.dart';
+import '../../core/auth/oidc_session.dart';
 import '../../core/network/api_client.dart';
-import '../../core/storage/token_storage.dart';
 import 'auth_data_source.dart';
 
+/// Real-backend auth: Keycloak PKCE session on the public client
+/// `pede-aqui-courier-mobile` via [OidcSession], courier id from `GET /couriers/me`.
 class RemoteAuthDataSource implements AuthDataSource {
-  RemoteAuthDataSource(this._apiClient, this._tokenStorage, {Dio? authDio})
-      : _authDio = authDio ?? Dio();
+  RemoteAuthDataSource(this._apiClient, this._session);
 
   final ApiClient _apiClient;
-  final TokenStorage _tokenStorage;
-
-  /// Bare Dio for the Keycloak token endpoint (absolute URL, no API base/auth).
-  final Dio _authDio;
+  final OidcSession _session;
 
   @override
-  Future<({String accessToken, String refreshToken, String courierId})> login({
-    required String phone,
-    required String password,
-  }) async {
+  Future<({String accessToken, String courierId})> login() async {
+    final accessToken = await _session.signIn();
+    _apiClient.setAuthToken(accessToken);
     try {
-      final tokenResponse = await _authDio.post<Map<String, dynamic>>(
-        ApiClient.keycloakTokenEndpoint,
-        data: 'grant_type=password&client_id=courier-app&username=$phone&password=$password',
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {'Accept': 'application/json'},
-        ),
-      );
-
-      final tokenData = tokenResponse.data!;
-      final accessToken = tokenData['access_token'] as String;
-      final refreshToken = tokenData['refresh_token'] as String;
-
-      _apiClient.setAuthToken(accessToken);
-      await _tokenStorage.saveTokens(accessToken: accessToken, refreshToken: refreshToken);
-
-      final profileResponse = await _apiClient.get<Map<String, dynamic>>('/couriers/me');
-      final profileData = profileResponse.data!;
-
-      return (
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        courierId: profileData['id'] as String,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw Exception('Credenciais inválidas');
-      }
-      throw Exception('Erro de autenticação: ${e.message}');
+      final courierId = await _loadCourierId();
+      return (accessToken: _session.accessToken ?? accessToken, courierId: courierId);
+    } catch (_) {
+      // Signed in to Keycloak but not usable here (no courier profile,
+      // backend down): do not keep a half-open session around.
+      await _dropLocalSession();
+      rethrow;
     }
   }
 
   @override
   Future<({String accessToken, String courierId})?> restoreSession() async {
-    final accessToken = await _tokenStorage.readAccessToken();
-    if (accessToken == null || accessToken.isEmpty) return null;
+    final String? accessToken;
+    try {
+      accessToken = await _session.restore();
+    } catch (_) {
+      return null; // offline or Keycloak unreachable: stored tokens are kept for the next start
+    }
+    if (accessToken == null) return null;
 
     _apiClient.setAuthToken(accessToken);
     try {
-      final profileResponse = await _apiClient.get<Map<String, dynamic>>('/couriers/me');
-      final profileData = profileResponse.data!;
-      return (
-        accessToken: accessToken,
-        courierId: profileData['id'] as String,
-      );
+      final courierId = await _loadCourierId();
+      return (accessToken: _session.accessToken ?? accessToken, courierId: courierId);
     } catch (_) {
-      // Stored token is no longer valid: drop it and require a fresh login.
-      _apiClient.clearAuthToken();
-      await _tokenStorage.clear();
+      await _dropLocalSession();
       return null;
+    }
+  }
+
+  /// Refreshes the access token (rotating the refresh token). Wired as the
+  /// [ApiClient.onRefreshToken] callback for transparent 401 retries.
+  Future<void> refreshAccessToken() async {
+    try {
+      _apiClient.setAuthToken(await _session.refresh());
+    } on SessionExpiredException {
+      _apiClient.clearAuthToken();
+      rethrow;
     }
   }
 
   @override
   Future<void> logout() async {
     _apiClient.clearAuthToken();
-    await _tokenStorage.clear();
+    await _session.signOut();
+  }
+
+  Future<void> _dropLocalSession() async {
+    _apiClient.clearAuthToken();
+    await _session.clearLocal();
+  }
+
+  Future<String> _loadCourierId() async {
+    final profileResponse = await _apiClient.get<Map<String, dynamic>>('/couriers/me');
+    return profileResponse.data!['id'] as String;
   }
 }

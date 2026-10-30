@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../app.dart';
 import '../../core/constants/app_colors.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/profile/profile_state.dart';
 import '../widgets/app_avatar.dart';
@@ -11,6 +13,13 @@ import '../widgets/app_top_bar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  /// Ends the Keycloak session (end-session + local token wipe), then returns to login.
+  Future<void> _logout(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    await GetIt.instance<AuthRepository>().logout();
+    navigator.pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +61,7 @@ class ProfileScreen extends StatelessWidget {
                     _ProfileAction(icon: Icons.motorcycle_outlined, label: profile?.vehicle ?? 'Mota', onTap: () {}),
                     _ProfileAction(icon: Icons.notifications_none, label: 'Notificações', onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications)),
                     _ProfileAction(icon: Icons.settings_outlined, label: 'Definições', onTap: () => Navigator.of(context).pushNamed(AppRoutes.settings)),
-                    _ProfileAction(icon: Icons.logout, label: 'Terminar sessão', color: AppColors.error, onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false)),
+                    _ProfileAction(icon: Icons.logout, label: 'Terminar sessão', color: AppColors.error, onTap: () => _logout(context)),
                   ],
                 ),
               ),

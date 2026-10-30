@@ -1,8 +1,7 @@
 abstract interface class AuthDataSource {
-  Future<({String accessToken, String refreshToken, String courierId})> login({
-    required String phone,
-    required String password,
-  });
+  /// Signs the courier in (Keycloak Authorization Code + PKCE in the real
+  /// implementation) and resolves their courier id.
+  Future<({String accessToken, String courierId})> login();
 
   /// Restores a previously persisted session, or returns null when none exists.
   Future<({String accessToken, String courierId})?> restoreSession();

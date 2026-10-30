@@ -222,8 +222,8 @@ The Keycloak realm now enforces `length(10) and digits(1) and upperCase(1) and l
   than the API rules, e.g. password history on a future change-password flow). Previously this surfaced as
   **500** `keycloak_error`. Other Keycloak failures still answer 500 `keycloak_error`.
 - Breaking for clients that accepted 8–9 character passwords. Updated: backoffice `/register` and customer
-  web `/register` (client-side rule + hint, both 400 codes displayed). **Not updated:** the Flutter customer app
-  register screen still checks only 8 characters, so it will get the 400 from the API.
+  web `/register` (client-side rule + hint, both 400 codes displayed). Flutter customer app register screen: updated in W4-E
+  (same client-side rule; both 400 codes shown as a password-policy message).
 
 ## W1-A — Security leftovers (LAC-02, LAC-06, LAC-12, LAC-13)
 
@@ -590,5 +590,31 @@ No backend endpoint changed. The change is in **who may obtain tokens and how**:
   token from a throwaway test client created in its Testcontainers Keycloak (mappers copied from `delivery-app`).
 - **Flutter customer app** (`pede_aqui_delivery_app/lib/features/auth/data/auth_repository.dart`): still does
   ROPC + refresh on `delivery-app` — **broken by this change**; must move to `pede-aqui-mobile` with PKCE
-  (follow-up). The courier app uses `courier-app`, which is not in the realm (unchanged).
+  (follow-up — done in W4-E, below). The courier app uses `courier-app`, which is not in the realm (unchanged).
 - `pede-aqui-web` (customer web) is untouched here (W4-C).
+
+## W4-E — Flutter apps move to Authorization Code + PKCE (auth part of LAC-61, LAC-62)
+
+No backend API change; this records a client change that the Keycloak ROPC shutdown (W4-C/W4-D) depends on.
+
+- **Mobile apps no longer use ROPC.** Before: the customer app posted `grant_type=password` to the
+  Keycloak token endpoint with client `delivery-app`; the courier app did the same with `courier-app`, a client
+  that does not exist in the realm (courier login could never work against real Keycloak). Now both use
+  Authorization Code + PKCE (S256) through `flutter_appauth` ^11.0.0 on the existing public clients:
+  customer `pede-aqui-mobile` (`com.pedeaqui.delivery:/oauthredirect`), courier `pede-aqui-courier-mobile`
+  (`com.pedeaqui.courier:/oauthredirect`). Turning off `directAccessGrantsEnabled` on `delivery-app` /
+  `pede-aqui-web` therefore does not break the mobile apps.
+- Tokens: refresh + id token in `flutter_secure_storage`, access token in memory; refresh is single-flight and
+  stores the rotated refresh token (`revokeRefreshToken=true`, `refreshTokenMaxReuse=0`); logout calls the
+  end-session endpoint with `id_token_hint` and `post_logout_redirect_uri` = the client's redirect URI, then
+  wipes local tokens. Every interactive login sends `prompt=login`.
+- Unchanged API usage: customer registration still `POST /api/v1/customers/register` (then PKCE with
+  `login_hint`=email); profile reads still `GET /api/v1/me` (customer) and `GET /api/v1/couriers/me` (courier).
+- Realm: `pede-aqui-mobile` and `pede-aqui-courier-mobile` now declare `post.logout.redirect.uris` equal to
+  their redirect URI (`com.pedeaqui.delivery:/oauthredirect` / `com.pedeaqui.courier:/oauthredirect`), so the
+  end-session call with `post_logout_redirect_uri` ends the Keycloak SSO session and returns to the app (before,
+  Keycloak rejected the URI and showed an error page). Existing local realms need a re-import
+  (`docker compose rm -sf keycloak && docker compose up -d keycloak`).
+- Dev: tokens carry `iss` = the host the app used. The backend validates `iss` against
+  `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
+  than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).

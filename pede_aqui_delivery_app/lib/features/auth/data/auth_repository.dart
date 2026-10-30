@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import '../../../core/config/app_config.dart';
+
+import '../../../core/auth/oidc_session.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/storage/token_storage.dart';
 
 class AuthUser {
   const AuthUser({
@@ -17,8 +17,22 @@ class AuthUser {
   final String token;
 }
 
+/// Registration refused by the backend, with a message safe to show the user.
+class RegistrationException implements Exception {
+  const RegistrationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'RegistrationException: $message';
+}
+
 abstract class AuthRepository {
-  Future<AuthUser> login({required String email, required String password});
+  /// Signs in through the Keycloak login page (Authorization Code + PKCE).
+  /// [loginHint] pre-fills the username field.
+  Future<AuthUser> login({String? loginHint});
+
+  /// Creates the customer account on the backend, then signs in via PKCE.
   Future<AuthUser> register({required String name, required String email, required String password});
   Future<void> logout();
 
@@ -26,14 +40,15 @@ abstract class AuthRepository {
   Future<AuthUser?> restoreSession();
 }
 
+/// Demo-mode repository (USE_MOCK_DATA=true): no Keycloak, no backend.
 class MockAuthRepository implements AuthRepository {
   @override
-  Future<AuthUser> login({required String email, required String password}) async {
+  Future<AuthUser> login({String? loginHint}) async {
     await Future<void>.delayed(const Duration(milliseconds: 450));
     return AuthUser(
       id: 'usr_001',
       name: 'Felix',
-      email: email,
+      email: loginHint ?? 'felix@pedeaqui.co.mz',
       token: 'mock.jwt.token',
     );
   }
@@ -58,17 +73,14 @@ class MockAuthRepository implements AuthRepository {
   Future<AuthUser?> restoreSession() async => null;
 }
 
+/// Real-backend repository: Keycloak PKCE session via [OidcSession], customer
+/// profile from `GET /me`, registration via `POST /customers/register`.
 class ApiAuthRepository implements AuthRepository {
-  ApiAuthRepository(this._apiClient, this._tokenStorage, {Dio? authDio})
-      : _authDio = authDio ?? Dio();
+  ApiAuthRepository(this._apiClient, this._session);
 
   final ApiClient _apiClient;
-  final TokenStorage _tokenStorage;
+  final OidcSession _session;
 
-  /// Bare Dio for the Keycloak token endpoint (absolute URL, no API base/auth).
-  final Dio _authDio;
-
-  String? _refreshToken;
   String? _customerId;
 
   /// Customer id used by /customers/{customerId}/... paths. Mirrors the web
@@ -101,30 +113,16 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser> login({required String email, required String password}) async {
+  Future<AuthUser> login({String? loginHint}) async {
+    final accessToken = await _session.signIn(loginHint: loginHint);
+    _apiClient.setAuthToken(accessToken);
     try {
-      final tokenResponse = await _authDio.post<Map<String, dynamic>>(
-        AppConfig.keycloakTokenEndpoint,
-        data: 'grant_type=password&client_id=delivery-app&username=$email&password=$password',
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {'Accept': 'application/json'},
-        ),
-      );
-
-      final tokenData = tokenResponse.data!;
-      final accessToken = tokenData['access_token'] as String;
-      _refreshToken = tokenData['refresh_token'] as String?;
-
-      _apiClient.setAuthToken(accessToken);
-      await _tokenStorage.saveTokens(accessToken: accessToken, refreshToken: _refreshToken);
-
-      return _loadProfile(accessToken, fallbackEmail: email);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw Exception('Credenciais inválidas');
-      }
-      throw Exception('Erro de autenticação: ${e.message}');
+      return await _loadProfile(accessToken, fallbackEmail: loginHint);
+    } catch (_) {
+      // Signed in to Keycloak but unusable here (no profile, backend down):
+      // do not keep a half-open session around.
+      await _dropLocalSession();
+      rethrow;
     }
   }
 
@@ -136,73 +134,56 @@ class ApiAuthRepository implements AuthRepository {
         data: buildRegistrationPayload(name: name, email: email, password: password),
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = data is Map<String, dynamic>
-          ? (data['message'] as String? ?? data['error'] as String?)
-          : null;
-      throw Exception(message ?? 'Não foi possível criar conta: ${e.message}');
+      throw RegistrationException(_registrationMessage(e));
     }
-    // Registration returns no tokens, so authenticate right away.
-    return login(email: email, password: password);
+    // Registration returns no tokens: continue on the Keycloak login page with
+    // the e-mail pre-filled (the password is typed there, never sent by the app).
+    return login(loginHint: email);
   }
 
   @override
   Future<void> logout() async {
     _apiClient.clearAuthToken();
-    _refreshToken = null;
     _customerId = null;
-    await _tokenStorage.clear();
+    await _session.signOut();
   }
 
+  /// Refreshes the access token (rotating the refresh token). Wired as the
+  /// [ApiClient.onRefreshToken] callback for transparent 401 retries.
   Future<void> refreshToken() async {
-    if (_refreshToken == null) throw Exception('Sessão expirou');
-
     try {
-      final response = await _authDio.post<Map<String, dynamic>>(
-        AppConfig.keycloakTokenEndpoint,
-        data: 'grant_type=refresh_token&client_id=delivery-app&refresh_token=$_refreshToken',
-        options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          headers: {'Accept': 'application/json'},
-        ),
-      );
-
-      final tokenData = response.data!;
-      final accessToken = tokenData['access_token'] as String;
-      _refreshToken = tokenData['refresh_token'] as String?;
-
+      final accessToken = await _session.refresh();
       _apiClient.setAuthToken(accessToken);
-      await _tokenStorage.saveTokens(accessToken: accessToken, refreshToken: _refreshToken);
-    } on DioException {
-      _refreshToken = null;
+    } on SessionExpiredException {
       _apiClient.clearAuthToken();
-      await _tokenStorage.clear();
-      throw Exception('Sessão expirou');
+      _customerId = null;
+      rethrow;
     }
   }
 
   @override
   Future<AuthUser?> restoreSession() async {
-    final accessToken = await _tokenStorage.readAccessToken();
-    if (accessToken == null || accessToken.isEmpty) return null;
+    final String? accessToken;
+    try {
+      accessToken = await _session.restore();
+    } catch (_) {
+      return null; // offline or Keycloak unreachable: stored tokens are kept for the next start
+    }
+    if (accessToken == null) return null;
 
-    _refreshToken = await _tokenStorage.readRefreshToken();
     _apiClient.setAuthToken(accessToken);
     try {
-      // On 401 the ApiClient interceptor transparently refreshes and retries.
-      return await verifySession();
+      return await _loadProfile(accessToken);
     } catch (_) {
-      _apiClient.clearAuthToken();
-      _refreshToken = null;
-      _customerId = null;
-      await _tokenStorage.clear();
+      await _dropLocalSession();
       return null;
     }
   }
 
-  Future<AuthUser> verifySession() async {
-    final accessToken = await _tokenStorage.readAccessToken() ?? '';
-    return _loadProfile(accessToken);
+  Future<void> _dropLocalSession() async {
+    _apiClient.clearAuthToken();
+    _customerId = null;
+    await _session.clearLocal();
   }
 
   Future<AuthUser> _loadProfile(String accessToken, {String? fallbackEmail}) async {
@@ -213,7 +194,27 @@ class ApiAuthRepository implements AuthRepository {
       id: data['id'] as String? ?? data['keycloakUserId'] as String,
       name: data['displayName'] as String? ?? data['name'] as String? ?? '',
       email: data['email'] as String? ?? fallbackEmail ?? '',
-      token: accessToken,
+      // The ApiClient may have refreshed during /me; report the live token.
+      token: _session.accessToken ?? accessToken,
     );
+  }
+
+  static String _registrationMessage(DioException e) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final code = data['code'] as String?;
+      if (code == 'password_policy_violation' ||
+          (code == 'validation_failed' && _hasFieldError(data, 'password'))) {
+        return 'A palavra-passe não cumpre a política de segurança.';
+      }
+      final detail = data['detail'] as String? ?? data['message'] as String?;
+      if (detail != null && detail.isNotEmpty) return detail;
+    }
+    return 'Não foi possível criar conta.';
+  }
+
+  static bool _hasFieldError(Map<String, dynamic> data, String field) {
+    final errors = data['fieldErrors'];
+    return errors is List && errors.any((e) => e is Map && e['field'] == field);
   }
 }
