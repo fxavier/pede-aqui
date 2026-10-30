@@ -43,6 +43,16 @@ public class UserAccounts {
         return profileRepository.findByTenantIdAndKeycloakUserId(tenantId, keycloakUserId).map(AppUserProfile::getId);
     }
 
+    /** Where a profile can be reached outside the app (LAC-48): e-mail and the verified phone only (never the free-text one). */
+    public record ContactPoints(String email, String verifiedPhoneE164) {}
+
+    /** Contact points of a profile of this tenant, if it exists; the phone is present only when verified (V063). */
+    public Optional<ContactPoints> contactOf(UUID tenantId, UUID profileId) {
+        return profileRepository.findByIdAndTenantId(profileId, tenantId)
+                .map(profile -> new ContactPoints(profile.getEmail(),
+                        profile.getPhoneVerifiedAt() != null ? profile.getPhoneE164() : null));
+    }
+
     /** Keycloak user id of a profile, if the profile exists. */
     public Optional<String> keycloakUserIdOf(UUID profileId) {
         return profileRepository.findById(profileId).map(AppUserProfile::getKeycloakUserId);
