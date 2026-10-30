@@ -73,7 +73,7 @@ services:
       - "9090:9090"
 
   backend:
-    image: maven:3.9-eclipse-temurin-21
+    image: maven:3.9-eclipse-temurin-26
     working_dir: /workspace/backend
     command: mvn spring-boot:run
     env_file:
