@@ -18,18 +18,34 @@ Services:
 
 ## Keycloak Realm
 
-Create a local realm named `delivery` and roles:
+Docker Compose imports the realm automatically (`start-dev --import-realm`) from two files:
 
-- `CUSTOMER`
-- `VENDOR_ADMIN`
-- `VENDOR_STAFF`
-- `COURIER`
-- `ADMIN`
-- `OPS`
-- `FINANCE`
-- `SUPPORT`
+- `keycloak/delivery-realm.json` — environment-neutral realm (roles, clients, flows, policies, service accounts only);
+- `keycloak/dev-users.json` — **dev-only** human users, mounted as `delivery-users-0.json`.
 
-Include a `tenant_id` claim in local test users so the backend can enforce tenant isolation.
+Dev seed users (password policy: ≥10 chars, upper + lower + digit, not the username, last 3 not reusable):
+
+| User | Password | Role | tenant_id |
+|---|---|---|---|
+| `admin` | `Admin12345` | ADMIN (platform) | — |
+| `finance` | `Finance12345` | FINANCE | `5e6d0c1a-…` |
+| `support` | `Support12345` | SUPPORT | `5e6d0c1a-…` |
+| `ops` | `Ops1234567` | OPS | `5e6d0c1a-…` |
+
+`admin`, `finance` and `ops` must enrol TOTP (authenticator app) on their first **browser** login
+(e.g. the account console at `http://localhost:8081/realms/delivery/account`). The backoffice still uses
+the password grant, which does not enforce that requirement; but after enrolling TOTP the password grant
+for that user requires a `totp` parameter the backoffice does not send — keep a non-enrolled user for
+local backoffice work until LAC-10 (PKCE) lands.
+
+Access tokens last 5 minutes and refresh tokens rotate (a refresh token can be used once).
+
+Keycloak only imports a realm that does not exist yet. After changing either file, recreate the container:
+
+```bash
+docker compose rm -sf keycloak && docker compose up -d keycloak
+```
+
 For local Swagger or curl testing, authenticated requests may also pass `X-Tenant-Id`
 with an active tenant UUID.
 

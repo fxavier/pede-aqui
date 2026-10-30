@@ -132,9 +132,29 @@ public class KeycloakAdminService {
                 logger.warn("User creation failed due to conflict (user already exists): {}", email);
                 throw new BusinessException("email_exists", "User with this email already exists", HttpStatus.CONFLICT);
             }
+            if (isPasswordPolicyRejection(e)) {
+                // Realm passwordPolicy rejected the credential (e.g. policy changed before the DTO rules were synced).
+                logger.warn("Keycloak rejected the password of {} by the realm password policy", email);
+                throw new BusinessException("password_policy_violation",
+                        "Password does not meet the password policy: at least 10 characters, one digit, one upper-case "
+                                + "and one lower-case letter, and not equal to the e-mail",
+                        HttpStatus.BAD_REQUEST);
+            }
             logger.error("Keycloak user creation failed with status {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new BusinessException("keycloak_error", "Failed to create Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Keycloak answers 400 with an error such as {@code invalidPasswordMinLengthMessage} or
+     * "Password policy not met" when the credential violates the realm passwordPolicy.
+     */
+    static boolean isPasswordPolicyRejection(HttpClientErrorException e) {
+        if (e.getStatusCode() != HttpStatus.BAD_REQUEST) {
+            return false;
+        }
+        String body = e.getResponseBodyAsString().toLowerCase(java.util.Locale.ROOT);
+        return body.contains("invalidpassword") || body.contains("password policy");
     }
 
     private void assignRole(String adminToken, String userId, String roleName) {

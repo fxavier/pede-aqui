@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { registrationService } from '@/lib/api/services';
 import type { MerchantRegistrationPayload } from '@/lib/api/types';
+import { PASSWORD_POLICY_HINT, passwordPolicyErrors } from '@/lib/password-policy';
 
 interface FormData extends Omit<MerchantRegistrationPayload, 'confirmPassword'> {
   confirmPassword: string;
@@ -80,7 +81,8 @@ export default function RegisterPage() {
     if (!form.email.trim()) e.email = 'Email é obrigatório';
     if (form.email && !emailRe.test(form.email)) e.email = 'Email inválido';
     if (!form.password.trim()) e.password = 'Palavra-passe é obrigatória';
-    if (form.password && form.password.length < 8) e.password = 'Mínimo 8 caracteres';
+    const pwErrors = form.password ? passwordPolicyErrors(form.password, form.email) : [];
+    if (pwErrors.length) e.password = `Palavra-passe inválida: ${pwErrors.join(', ')}.`;
     if (!form.confirmPassword.trim()) e.confirmPassword = 'Confirmação é obrigatória';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'As palavras-passe não coincidem';
     setErrors(e);
@@ -116,11 +118,14 @@ export default function RegisterPage() {
         const fe: Record<string, string> = {};
         let firstStep = 3;
         error.fieldErrors.forEach((f) => {
-          fe[f.field] = f.message;
+          // A field can carry several messages (e.g. every unmet password rule): keep them all.
+          fe[f.field] = fe[f.field] ? `${fe[f.field]}; ${f.message}` : f.message;
           const s = getStepForField(f.field);
           if (s < firstStep) firstStep = s;
         });
         setErrors(fe); setStep(firstStep as 1 | 2 | 3);
+      } else if (error.code === 'password_policy_violation') {
+        setErrors({ password: `A palavra-passe não cumpre a política de segurança. ${PASSWORD_POLICY_HINT}` }); setStep(2);
       } else {
         setGlobalError(error.message || 'Erro inesperado. Tente novamente.');
       }
@@ -546,7 +551,7 @@ export default function RegisterPage() {
                     <div className="pw-wrap">
                       <input type={showPassword ? 'text' : 'password'} value={form.password}
                         onChange={e => updateForm('password', e.target.value)}
-                        placeholder="Mínimo 8 caracteres"
+                        placeholder="Mínimo 10 caracteres"
                         className={`${inputCls} pw-input ${errors.password ? 'has-error' : ''}`}
                         autoComplete="new-password" />
                       <button type="button" className="pw-eye" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
@@ -555,6 +560,7 @@ export default function RegisterPage() {
                         </span>
                       </button>
                     </div>
+                    {!errors.password && <p style={{ fontSize:11, color:'#6B7280', marginTop:3 }}>{PASSWORD_POLICY_HINT}</p>}
                     {errors.password && <p className="field-error"><span className="material-symbols-outlined" style={{fontSize:12,fontVariationSettings:"'FILL' 1"}}>error</span>{errors.password}</p>}
                   </div>
 

@@ -6,6 +6,21 @@
   "bruteForceProtected": true,
   "permanentLockout": false,
   "failureFactor": 10,
+  "passwordPolicy": "length(10) and digits(1) and upperCase(1) and lowerCase(1) and notUsername and passwordHistory(3)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyCodeReusable": false,
+  "browserFlow": "browser-privileged-mfa",
   "roles": {
     "realm": [
       {
@@ -226,90 +241,291 @@
       }
     ]
   },
+  "authenticationFlows": [
+    {
+      "alias": "browser-privileged-mfa",
+      "description": "Browser flow: TOTP mandatory for ADMIN/FINANCE/OPS, optional (if configured) for everyone else",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "flowAlias": "browser-privileged-mfa forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-privileged-mfa forms",
+      "description": "Username/password then role-conditional OTP",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "flowAlias": "browser-privileged-mfa otp ADMIN",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 21,
+          "flowAlias": "browser-privileged-mfa otp FINANCE",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 22,
+          "flowAlias": "browser-privileged-mfa otp OPS",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 23,
+          "flowAlias": "browser-privileged-mfa otp configured",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-privileged-mfa otp ADMIN",
+      "description": "OTP required for users with realm role ADMIN",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-admin-has-admin"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-privileged-mfa otp FINANCE",
+      "description": "OTP required for users with realm role FINANCE",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-finance-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-finance-has-finance"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-privileged-mfa otp OPS",
+      "description": "OTP required for users with realm role OPS",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-ops-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-ops-not-finance"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 12,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-ops-has-ops"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-privileged-mfa otp configured",
+      "description": "OTP for non-privileged users who configured it (default Keycloak behaviour)",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-configured-not-admin"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 11,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-configured-not-finance"
+        },
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 12,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "mfa-configured-not-ops"
+        },
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 13,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "mfa-admin-has-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "mfa-finance-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "mfa-finance-has-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "mfa-ops-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "mfa-ops-not-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "mfa-ops-has-ops",
+      "config": {
+        "condUserRole": "OPS",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "mfa-configured-not-admin",
+      "config": {
+        "condUserRole": "ADMIN",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "mfa-configured-not-finance",
+      "config": {
+        "condUserRole": "FINANCE",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "mfa-configured-not-ops",
+      "config": {
+        "condUserRole": "OPS",
+        "negate": "true"
+      }
+    }
+  ],
   "users": [
-    {
-      "username": "admin",
-      "email": "admin@pede-aqui.com",
-      "firstName": "Platform",
-      "lastName": "Admin",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "admin123",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "ADMIN"
-      ]
-    },
-    {
-      "username": "finance",
-      "email": "finance@pede-aqui.com",
-      "firstName": "Finance",
-      "lastName": "User",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "finance123",
-          "temporary": false
-        }
-      ],
-      "attributes": {
-        "tenant_id": [
-          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
-        ]
-      },
-      "realmRoles": [
-        "FINANCE"
-      ]
-    },
-    {
-      "username": "support",
-      "email": "support@pede-aqui.com",
-      "firstName": "Support",
-      "lastName": "User",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "support123",
-          "temporary": false
-        }
-      ],
-      "attributes": {
-        "tenant_id": [
-          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
-        ]
-      },
-      "realmRoles": [
-        "SUPPORT"
-      ]
-    },
-    {
-      "username": "ops",
-      "email": "ops@pede-aqui.com",
-      "firstName": "Operations",
-      "lastName": "User",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "ops123",
-          "temporary": false
-        }
-      ],
-      "attributes": {
-        "tenant_id": [
-          "5e6d0c1a-7b2f-4f3e-9c8a-0d1e2f3a4b5c"
-        ]
-      },
-      "realmRoles": [
-        "OPS"
-      ]
-    },
     {
       "username": "service-account-delivery-admin-service",
       "email": "service-account-delivery-admin-service@localhost",
