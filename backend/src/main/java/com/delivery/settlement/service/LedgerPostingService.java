@@ -30,7 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  * ({@link LedgerTransactionType#key}) that is UNIQUE per tenant, so a redelivered event changes nothing. Postings
  * read the committed order/payment facts rather than trusting event order, and first make sure the facts they build
  * on are posted (capture before anything else, delivery before a post-delivery refund) — always in the order
- * capture → delivery → refund/fee, which is also the order in which their keys are locked (no deadlocks).
+ * capture → delivery → refund/fee, which is also the order in which their keys are locked (a deadlock is only
+ * possible while two postings create the same new accounts; Postgres aborts one and the event registry retries it).
  * Runs inside the caller's transaction (the {@code @ApplicationModuleListener}'s own one).
  */
 @Service
