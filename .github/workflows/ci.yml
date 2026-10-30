@@ -17,6 +17,26 @@ jobs:
           cache: maven
       - name: Backend tests
         run: cd backend && mvn clean verify
+      # LAC-56: OpenApiContractExportTest (run by `mvn verify` above) writes backend/target/openapi.json.
+      # The committed docs/api/openapi.json must match it byte for byte. A missing file means the test
+      # was skipped (no Docker) and also fails here on purpose. Breaking-change gate: api-contract.yml.
+      - name: OpenAPI contract up to date
+        run: |
+          if [ ! -f backend/target/openapi.json ]; then
+            echo "::error::backend/target/openapi.json was not generated (OpenApiContractExportTest skipped or failed)"
+            exit 1
+          fi
+          if ! diff -u docs/api/openapi.json backend/target/openapi.json; then
+            echo "::error file=docs/api/openapi.json::OpenAPI contract is out of date. Regenerate it: see docs/api/README.md"
+            exit 1
+          fi
+      - name: Upload generated OpenAPI contract
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: backend/target/openapi.json
+          if-no-files-found: ignore
 
   backoffice:
     runs-on: ubuntu-latest

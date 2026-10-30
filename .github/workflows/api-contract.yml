@@ -1,0 +1,71 @@
+name: API contract
+
+# LAC-56: fails a PR that introduces a breaking change to docs/api/openapi.json unless the PR carries
+# the `api-breaking` label. Freshness of that file (committed == generated) is enforced by the
+# backend job in ci.yml, so this workflow only needs the committed specs and no build.
+# Separate workflow (not a ci.yml job) because it must re-run on `labeled`/`unlabeled`, which
+# would otherwise re-run the whole CI. See docs/api/README.md.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-contract-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Pinned release (tag + multi-arch index digest). Bump both together.
+  OASDIFF_IMAGE: tufin/oasdiff:v1.11.7@sha256:d6f1e645251cc1da527311955347d8ce8bd2b7ed09bcce07176b2577b8daf19c
+  SPEC: docs/api/openapi.json
+
+jobs:
+  breaking-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract base spec
+        id: base
+        env:
+          # HEAD is the PR merge commit, built on top of this exact base commit, so the diff
+          # contains only the PR's own changes even when the base branch moved on.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git cat-file -e "$BASE_SHA:$SPEC" 2>/dev/null; then
+            git show "$BASE_SHA:$SPEC" > .oasdiff-base.json
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$SPEC does not exist on the base branch yet; skipping the breaking-change check."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Changelog (job summary)
+        if: steps.base.outputs.present == 'true'
+        run: |
+          {
+            echo "## API changes vs base"
+            docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "$OASDIFF_IMAGE" \
+              changelog .oasdiff-base.json "$SPEC" --format markdown
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: oasdiff breaking
+        if: steps.base.outputs.present == 'true'
+        env:
+          ALLOW_BREAKING: ${{ contains(github.event.pull_request.labels.*.name, 'api-breaking') }}
+        run: |
+          set +e
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "$OASDIFF_IMAGE" \
+            breaking .oasdiff-base.json "$SPEC" --fail-on ERR --format githubactions
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$ALLOW_BREAKING" = "true" ]; then
+            echo "::warning::Breaking API changes accepted via the 'api-breaking' label. Document them in docs/api/API-MIGRATION.md."
+            exit 0
+          fi
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Breaking API changes detected. Make the change additive, or add the 'api-breaking' label and document it in docs/api/API-MIGRATION.md."
+          fi
+          exit "$status"
