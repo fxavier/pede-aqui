@@ -13,6 +13,7 @@ Desktop.ini
 
 # Java / Maven
 backend/target/
+keycloak/extensions/*/target/
 *.class
 *.jar
 

@@ -24,12 +24,21 @@ services:
       retries: 5
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.1
+    # Keycloak 26.8.1 + provider SMS-OTP (LAC-18, ADR-0004), construído a partir de keycloak/Dockerfile.
+    # Depois de alterar keycloak/extensions/sms-otp: `docker compose build keycloak`.
+    build:
+      context: ./keycloak
+    image: pede-aqui-keycloak:26.8.1-local
     command: start-dev --import-realm
     environment:
       # Keycloak 26 substitui KEYCLOAK_ADMIN/_PASSWORD (deprecados) pelas variáveis de bootstrap.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Chave HMAC dos códigos OTP por SMS (só dev; em produção vem de um secret, >= 32 caracteres).
+      KC_SPI_AUTHENTICATOR__PEDE_AQUI_PHONE_OTP__HMAC_SECRET: dev-only-phone-otp-hmac-secret-change-me-0001
+      # O stub de SMS escreve no log o número mascarado e o texto com o código mascarado. Para testar o login
+      # por telemóvel localmente, pôr "true": o código passa a aparecer no log (só funciona em start-dev).
+      KC_SPI_SMS_SENDER__LOG__REVEAL_CODE_IN_DEV_MODE: "false"
     ports:
       - "8081:8080"
     volumes:

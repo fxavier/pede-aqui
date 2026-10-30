@@ -20,6 +20,8 @@ public class AppUserProfileMapper {
                 profile.getNif(),
                 profile.getDateOfBirth(),
                 profile.getAddress(),
-                profile.getAvatarStorageKey());
+                profile.getAvatarStorageKey(),
+                profile.getPhoneE164(),
+                profile.getPhoneVerifiedAt());
     }
 }

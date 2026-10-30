@@ -30,7 +30,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   <li>anyone else + X-Tenant-Id (anonymous included): the header is ignored (TenantContext never reads it for
  *       them) and, unless it merely repeats the caller's own tenant claim, logged at WARN (LAC-02);</li>
  *   <li>customer principal with a resolved tenant: the AppUserProfile is provisioned if missing, so cart,
- *       checkout and orders find it.</li>
+ *       checkout and orders find it, and a verified phone_number claim (Keycloak phone login, LAC-18) is
+ *       mirrored onto it.</li>
  * </ul>
  * Registered by {@link TenancyWebConfig}, not component-scanned, so MVC slice tests stay unaffected.
  */
@@ -38,6 +39,8 @@ public class TenantRequestFilter extends OncePerRequestFilter {
     public static final String IMPERSONATION_AUDIT_ACTION = "TENANT_IMPERSONATION";
     private static final Logger log = LoggerFactory.getLogger(TenantRequestFilter.class);
     private static final int BUSINESS_REFERENCE_MAX = 120;
+    static final String PHONE_CLAIM = "phone_number";
+    static final String PHONE_VERIFIED_CLAIM = "phone_number_verified";
 
     private final TenantContext tenantContext;
     private final TenantRepository tenantRepository;
@@ -75,8 +78,15 @@ public class TenantRequestFilter extends OncePerRequestFilter {
             }
         }
         if (tenantContext.isCustomerPrincipal()) {
-            tenantContext.currentTenantId().ifPresent(tenantId -> profileProvisioningService.ensureCustomerProfile(
-                    tenantId, jwt.getSubject(), jwt.getClaimAsString("email"), displayName(jwt)));
+            tenantContext.currentTenantId().ifPresent(tenantId -> {
+                profileProvisioningService.ensureCustomerProfile(
+                        tenantId, jwt.getSubject(), jwt.getClaimAsString("email"), displayName(jwt));
+                // LAC-18: phone login tokens carry the verified number; mirror it onto the profile.
+                if (jwt.hasClaim(PHONE_CLAIM)) {
+                    profileProvisioningService.syncVerifiedPhone(tenantId, jwt.getSubject(),
+                            jwt.getClaimAsString(PHONE_CLAIM), phoneVerified(jwt));
+                }
+            });
         }
         chain.doFilter(request, response);
     }
@@ -124,6 +134,15 @@ public class TenantRequestFilter extends OncePerRequestFilter {
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         objectMapper.writeValue(response.getOutputStream(), problem);
+    }
+
+    /** OIDC phone_number_verified is a JSON boolean; tolerate the string form some mappers emit. */
+    private static Boolean phoneVerified(Jwt jwt) {
+        Object value = jwt.getClaim(PHONE_VERIFIED_CLAIM);
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        return value != null && "true".equalsIgnoreCase(value.toString());
     }
 
     private static String displayName(Jwt jwt) {
