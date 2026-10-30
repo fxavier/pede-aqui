@@ -55,7 +55,7 @@ class PaymentConfirmationApiTest {
     static final String KEY = "checkout-key-1";
 
     @WebMvcTest(PaymentController.class)
-    @Import({SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class,
+    @Import({com.delivery.order.api.OrderStateMachine.class, SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class,
             com.delivery.order.service.OrderPaymentHooks.class})
     @EnableConfigurationProperties({PaymentMockConfirmationProperties.class, TenancyProperties.class})
     // Customers resolve their tenant from the OIDC client (ADR-0001), so map the test client to this tenant.
@@ -71,6 +71,9 @@ class PaymentConfirmationApiTest {
         @MockBean com.delivery.delivery.repository.DeliveryRepository deliveryRepository;
         @MockBean com.delivery.order.service.OrderStockService orderStockService;
         @MockBean com.delivery.delivery.api.DeliveryRetirementService deliveryRetirementService;
+        // W4-A: status history repositories (V058) behind the state machine and PaymentService
+        @MockBean com.delivery.order.repository.OrderStatusHistoryRepository orderStatusHistoryRepository;
+        @MockBean com.delivery.payment.repository.PaymentStatusHistoryRepository paymentStatusHistoryRepository;
 
         Payment payment;
         Order order;

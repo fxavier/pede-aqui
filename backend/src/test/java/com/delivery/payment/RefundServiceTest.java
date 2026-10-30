@@ -80,15 +80,15 @@ class RefundServiceTest {
                 new com.delivery.order.service.OrderPaymentHooks(orderRepository,
                         new DeliveryRetirementService(deliveryRepository,
                                 new com.delivery.dispatch.service.DispatchJobRetirement(dispatchJobRepository), deliveryEventRepository),
-                        orderStockService, auditLogService),
+                        orderStockService, auditLogService, com.delivery.order.OrderTestStatus.stateMachine()),
                 refundRepository, auditLogService,
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties());
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(), mock(com.delivery.payment.repository.PaymentStatusHistoryRepository.class));
 
         payment = new Payment(UUID.randomUUID(), tenantA, orderId, new BigDecimal("100.00"), "pay-key");
         payment.confirm();
         order = new Order(orderId, tenantA, "PA-1", UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("90.00"), BigDecimal.TEN,
                 BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("100.00"), "checkout-key", "hash", "000000");
-        order.markPaymentConfirmed();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.PAYMENT_CONFIRMED);
 
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantA));
         when(paymentRepository.findByTenantIdAndId(tenantA, payment.getId())).thenReturn(Optional.of(payment));
@@ -206,7 +206,7 @@ class RefundServiceTest {
 
     @Test
     void vendorRejectedOrderInRefundPendingBecomesRefundedOnFullApproval() {
-        order.markRefundPending();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.REFUND_PENDING);
         RefundResponse refund = request("100.00", "vendor-rejection-" + orderId);
         stubTenantLookup();
 
@@ -251,7 +251,7 @@ class RefundServiceTest {
 
     @Test
     void cancelledOrderStaysCancelledOnFullApproval() {
-        order.markCancelledBySellerRejection("Sem stock");
+        com.delivery.order.OrderTestStatus.forceSellerRejected(order, "Sem stock");
         RefundResponse refund = request("100.00", "k1");
         stubTenantLookup();
 
@@ -447,7 +447,7 @@ class RefundServiceTest {
 
     @Test
     void fullApprovalOfACancelledOrderStillAsksForTheIdempotentRelease() {
-        order.markCancelledBySellerRejection("Sem stock");
+        com.delivery.order.OrderTestStatus.forceSellerRejected(order, "Sem stock");
         RefundResponse refund = request("100.00", "k1");
         stubTenantLookup();
 

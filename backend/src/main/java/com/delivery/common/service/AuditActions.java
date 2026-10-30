@@ -41,6 +41,10 @@ public final class AuditActions {
     public static final String VENDOR_CLOSURE_CREATED = "VENDOR_CLOSURE_CREATED";
     public static final String VENDOR_CLOSURE_DELETED = "VENDOR_CLOSURE_DELETED";
 
+    // Order lifecycle timeouts (LAC-25, W4-A) — written by the timeout jobs (system actor)
+    public static final String ORDER_CANCELLED_PAYMENT_EXPIRED = "ORDER_CANCELLED_PAYMENT_EXPIRED";
+    public static final String ORDER_CANCELLED_VENDOR_TIMEOUT = "ORDER_CANCELLED_VENDOR_TIMEOUT";
+
     private AuditActions() {
     }
 }

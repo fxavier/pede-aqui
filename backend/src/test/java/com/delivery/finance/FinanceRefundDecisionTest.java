@@ -55,13 +55,13 @@ class FinanceRefundDecisionTest {
         payment.confirm();
         order = new Order(orderId, tenantId, "PA-9", UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("50.00"), BigDecimal.ZERO,
                 BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("50.00"), "checkout-key", "hash", "000000");
-        order.markRefundPending();
+        com.delivery.order.OrderTestStatus.force(order, com.delivery.order.entity.OrderStatus.REFUND_PENDING);
         when(paymentRepository.findByTenantIdAndIdForUpdate(tenantId, payment.getId())).thenReturn(Optional.of(payment));
         when(orderRepository.findByTenantIdAndId(tenantId, orderId)).thenReturn(Optional.of(order));
 
         AuditLogService paymentAudit = mock(AuditLogService.class);
-        PaymentService paymentService = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), paymentAudit), refundRepository, paymentAudit,
-                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties());
+        PaymentService paymentService = new PaymentService(paymentRepository, new com.delivery.order.service.OrderPaymentHooks(orderRepository, org.mockito.Mockito.mock(com.delivery.delivery.api.DeliveryRetirementService.class), org.mockito.Mockito.mock(com.delivery.order.service.OrderStockService.class), paymentAudit, com.delivery.order.OrderTestStatus.stateMachine()), refundRepository, paymentAudit,
+                new PaymentMapper(), tenantContext, mock(AppUserProfileRepository.class), new PaymentMockConfirmationProperties(), mock(com.delivery.payment.repository.PaymentStatusHistoryRepository.class));
         financeService = new FinanceService(paymentRepository, mock(CommissionRepository.class), mock(CashReconciliationRepository.class),
                 refundRepository, new FinanceMapper(), tenantContext, paymentService);
     }
