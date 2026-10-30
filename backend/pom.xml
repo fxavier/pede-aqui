@@ -25,7 +25,7 @@
         <shedlock.version>7.10.1</shedlock.version>
         <!-- LAC-11: Bucket4j 8.19 (jdk17 line). The Lettuce module declares lettuce-core as provided, so the
              Lettuce version managed by Spring Boot (spring-boot-starter-data-redis) is the one on the classpath. -->
-        <bucket4j.version>8.19.0</bucket4j.version>
+        <bucket4j.version>8.21.0</bucket4j.version>
     </properties>
 
     <dependencyManagement>
