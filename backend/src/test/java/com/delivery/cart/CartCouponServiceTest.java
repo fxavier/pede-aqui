@@ -74,12 +74,12 @@ class CartCouponServiceTest {
 
         CartPricingResponse pricing = service.applyCoupon(cartId, "SAVE10");
 
-        // subtotal 100.00 → delivery 5.00 + service 5.00 = fees 10.00, tax 8.00, discount 10.00
+        // subtotal 100.00 → delivery 5.00 + service 5.00 = fees 10.00, VAT included (W6-A: no tax line, was 8.00), discount 10.00
         assertThat(pricing.subtotal()).isEqualByComparingTo("100.00");
         assertThat(pricing.fees()).isEqualByComparingTo("10.00");
-        assertThat(pricing.taxes()).isEqualByComparingTo("8.00");
+        assertThat(pricing.taxes()).isEqualByComparingTo("0.00");
         assertThat(pricing.discountTotal()).isEqualByComparingTo("10.00");
-        assertThat(pricing.total()).isEqualByComparingTo("108.00");
+        assertThat(pricing.total()).isEqualByComparingTo("100.00"); // was 108.00
         assertThat(pricing.appliedPromotionId()).isEqualTo(promo.getId());
         assertThat(cart.getCouponCode()).isEqualTo("SAVE10");
     }
@@ -91,7 +91,7 @@ class CartCouponServiceTest {
         CartPricingResponse pricing = service.removeCoupon(cartId);
 
         assertThat(pricing.discountTotal()).isEqualByComparingTo("0");
-        assertThat(pricing.total()).isEqualByComparingTo("118.00");
+        assertThat(pricing.total()).isEqualByComparingTo("110.00"); // was 118.00 (8 % added before W6-A)
         assertThat(pricing.appliedPromotionId()).isNull();
         assertThat(cart.getCouponCode()).isNull();
     }

@@ -38,4 +38,25 @@ public class ServiceAreaService implements ServiceArea {
         }
         return zoneRepository.anyZoneCovers(tenantId, point.latitude(), point.longitude());
     }
+
+    /** Checkout coverage of a vendor zone (see {@link ServiceArea#coverage}); zones without a polygon are unrestricted. */
+    @Override
+    @Transactional(readOnly = true)
+    public Coverage coverage(UUID tenantId, UUID zoneId, GeoPoint point) {
+        Objects.requireNonNull(tenantId, "tenantId");
+        if (zoneId == null || point == null) {
+            return Coverage.UNRESTRICTED;
+        }
+        return zoneRepository.zoneCoverage(tenantId, zoneId, point.latitude(), point.longitude())
+                .map(row -> {
+                    if (!"ACTIVE".equals(row.getStatus())) {
+                        return Coverage.NOT_COVERED;
+                    }
+                    if (!Boolean.TRUE.equals(row.getHasArea())) {
+                        return Coverage.UNRESTRICTED;
+                    }
+                    return Boolean.TRUE.equals(row.getCovered()) ? Coverage.COVERED : Coverage.NOT_COVERED;
+                })
+                .orElse(Coverage.UNRESTRICTED);
+    }
 }
