@@ -15,13 +15,15 @@ class RemoteCourierDataSource implements CourierDataSource {
     final data = response.data!;
     return CourierProfile(
       id: data['id'] as String,
-      name: data['displayName'] as String? ?? data['name'] as String,
+      // CourierResponse carries fullName; displayName/name kept for older shapes.
+      name: data['fullName'] as String? ?? data['displayName'] as String? ?? data['name'] as String? ?? '',
       phone: data['phone'] as String? ?? '',
       city: data['city'] as String? ?? '',
-      vehicle: data['vehicle'] as String? ?? '',
+      vehicle: data['vehicleType'] as String? ?? data['vehicle'] as String? ?? '',
       rating: (data['rating'] as num?)?.toDouble() ?? 0,
       totalDeliveries: data['totalDeliveries'] as int? ?? 0,
       completedToday: data['completedToday'] as int? ?? 0,
+      status: data['status'] as String?,
     );
   }
 

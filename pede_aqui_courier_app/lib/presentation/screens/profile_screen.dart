@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../app.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/location/location_sender.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/profile/profile_state.dart';
@@ -14,10 +15,13 @@ import '../widgets/app_top_bar.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  /// Ends the Keycloak session (end-session + local token wipe), then returns to login.
+  /// Stops the GPS sender (and wipes its buffer), ends the Keycloak session (end-session + local token wipe), then
+  /// returns to login.
   Future<void> _logout(BuildContext context) async {
     final navigator = Navigator.of(context);
-    await GetIt.instance<AuthRepository>().logout();
+    final getIt = GetIt.instance;
+    if (getIt.isRegistered<LocationSender>()) await getIt<LocationSender>().reset();
+    await getIt<AuthRepository>().logout();
     navigator.pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
   }
 

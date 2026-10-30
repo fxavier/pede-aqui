@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../data/datasources/auth_data_source.dart';
 import '../../data/datasources/courier_data_source.dart';
+import '../../data/datasources/location_data_source.dart';
 import '../../data/datasources/mock_auth_data_source.dart';
 import '../../data/datasources/mock_courier_data_source.dart';
 import '../../data/datasources/remote_auth_data_source.dart';
@@ -11,6 +12,9 @@ import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/courier_repository.dart';
 import '../../presentation/cubits/auth/auth_cubit.dart';
 import '../auth/oidc_session.dart';
+import '../location/location_buffer_store.dart';
+import '../location/location_sender.dart';
+import '../location/location_source.dart';
 import '../network/api_client.dart';
 import '../storage/token_storage.dart';
 
@@ -48,6 +52,18 @@ void configureDependencies() {
   // Courier services
   getIt.registerLazySingleton<CourierDataSource>(() => _createCourierDataSource());
   getIt.registerLazySingleton<CourierRepository>(() => CourierRepositoryImpl(getIt<CourierDataSource>()));
+
+  // Courier GPS (LAC-40, W6-D): mock mode uses a simulated walk and keeps everything in memory.
+  getIt.registerLazySingleton<LocationDataSource>(
+    () => _useMock ? MockLocationDataSource() : RemoteLocationDataSource(getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<LocationSender>(
+    () => LocationSender(
+      source: _useMock ? SimulatedLocationSource() : GeolocatorLocationSource(),
+      api: getIt<LocationDataSource>(),
+      store: _useMock ? InMemoryLocationBufferStore() : SharedPrefsLocationBufferStore(),
+    ),
+  );
 
   if (!_useMock) {
     // 401 -> single-flight refresh (rotating refresh token) -> retry.

@@ -10,6 +10,7 @@ class CourierProfile extends Equatable {
     required this.rating,
     required this.totalDeliveries,
     required this.completedToday,
+    this.status,
   });
 
   final String id;
@@ -21,8 +22,11 @@ class CourierProfile extends Equatable {
   final int totalDeliveries;
   final int completedToday;
 
+  /// Operational status from `GET /couriers/me` (W5-B): OFFLINE, AVAILABLE, BUSY or SUSPENDED; null if unknown.
+  final String? status;
+
   @override
-  List<Object?> get props => [id, name, phone, city, vehicle, rating, totalDeliveries, completedToday];
+  List<Object?> get props => [id, name, phone, city, vehicle, rating, totalDeliveries, completedToday, status];
 }
 
 class NotificationItem extends Equatable {
