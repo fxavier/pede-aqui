@@ -346,3 +346,45 @@ indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …
 - Not in this change: `order_status_history` / `payment_status_history` (register LAC-15 first bullet)
   belong to the order/payment state machine (W4-A, LAC-25) and will be written there.
 - Clients: none affected (additive fields; no frontend renders the audit list yet).
+
+## W2-D — Store hours and closures, pharmacy gate, cart SKU check (LAC-27, LAC-64)
+
+### LAC-27 — Opening hours and closures are enforced (behaviour change)
+
+- A store is **open** when its weekly opening hours (`PUT /vendors/{id}/opening-hours`, evaluated in
+  `Africa/Maputo`, `APP_STORE_TIMEZONE`) allow the current local time **and** no exceptional closure covers
+  now. A vendor that never configured opening hours stays always open (no change for existing data); once
+  any hours exist, a weekday without a row is closed. `vendors.available` is **not** enforced unless
+  `APP_STORE_ENFORCE_AVAILABLE_FLAG=true` (the column defaults to `false` and has no UI yet).
+- `POST /api/v1/customers/{customerId}/cart/items` and `POST /api/v1/checkout` answer **422**
+  `store_closed` when the store is closed, with `details: { vendorId, nextOpeningAt }`. A checkout refused
+  this way creates no order and leaves the cart `ACTIVE` (no repricing).
+- New endpoints (OPS, ADMIN; VENDOR_ADMIN only for its own vendor → otherwise 403 `vendor_access_denied`),
+  audited as `VENDOR_CLOSURE_CREATED` / `VENDOR_CLOSURE_DELETED`:
+  - `GET /api/v1/vendors/{vendorId}/closures` — current and future closures, earliest first.
+  - `POST /api/v1/vendors/{vendorId}/closures` `{ startsAt, endsAt, reason }` → **201**
+    `{ id, vendorId, startsAt, endsAt, reason, createdAt }`; the closure covers `[startsAt, endsAt)`.
+    `endsAt` ≤ `startsAt` or already past → **400** `invalid_closure_period`.
+  - `DELETE /api/v1/vendors/{vendorId}/closures/{closureId}` → **204** (404 if not found).
+- `GET /api/v1/search/vendors` rows gain `open` (boolean) and `nextOpeningAt` (ISO-8601 or `null`)
+  (additive). Closed stores are listed **after** open ones (relevance/distance/rating order is kept
+  within each group); `totalCount` is unchanged. The open state is computed on every request *after* the
+  cached result set is read, so closures and opening times take effect immediately despite the 60 s
+  `vendorSearch` cache. `available` is unchanged.
+- Clients: the customer web app shows the Portuguese message for `store_closed` (with "Abre às …") in the
+  vendor page, the cart drawer and checkout, and the vendor cards use `open`/`nextOpeningAt` for the
+  "Aberto"/"Fechado · Abre …" badge (falling back to `available`). Backoffice: no closures UI yet (API only).
+  Flutter apps: not yet mapped (they show their generic error).
+
+### LAC-64 — Pharmacy vertical blocked by configuration
+
+- `app.verticals.pharmacy.enabled` (`APP_VERTICALS_PHARMACY_ENABLED`, default **false**) until a legal opinion.
+  While disabled, a product with `requires_prescription_metadata=true` or whose category's `vertical` is
+  `pharmacy` → **422** `pharmacy_not_available` in add-to-cart and checkout. With the vertical enabled,
+  prescription products still answer **422** `prescription_required` (no prescription flow exists).
+- Catalog browse/search are unchanged (pharmacy products remain visible; ordering is what is blocked).
+
+### Cart — SKU must belong to the request's vendor
+
+- `POST /api/v1/customers/{customerId}/cart/items` with a `skuId` sold by a vendor other than `vendorId`
+  → **422** `sku_vendor_mismatch` (previously the item was added to that vendor's cart).

@@ -7,6 +7,7 @@ import { VendorCard } from '@/components/VendorCard'
 import { vendorService, catalogService } from '@/lib/api/services'
 import { useDebounce } from '@/lib/useDebounce'
 import { groupByVertical, verticalMeta, VERTICAL_META } from '@/lib/verticals'
+import { isVendorOpen } from '@/lib/api/types'
 
 /* Cosmetic: promotional banners have no backend source. Static curated copy. */
 const PROMOS = [
@@ -63,7 +64,7 @@ export default function HomePage() {
     return list.filter((v) => v.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
   }, [data, debouncedSearch])
 
-  const openCount = vendors.filter((v) => v.available).length
+  const openCount = vendors.filter(isVendorOpen).length
   const popular = useMemo(
     () => [...vendors].sort((a, b) => b.rating - a.rating).slice(0, 3),
     [vendors],

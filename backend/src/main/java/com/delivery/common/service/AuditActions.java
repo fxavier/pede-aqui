@@ -37,6 +37,9 @@ public final class AuditActions {
     public static final String COURIER_REJECTED = "COURIER_REJECTED";
     public static final String VENDOR_VERIFICATION_APPROVED = "VENDOR_VERIFICATION_APPROVED";
     public static final String VENDOR_VERIFICATION_REJECTED = "VENDOR_VERIFICATION_REJECTED";
+    // Store closures (LAC-27)
+    public static final String VENDOR_CLOSURE_CREATED = "VENDOR_CLOSURE_CREATED";
+    public static final String VENDOR_CLOSURE_DELETED = "VENDOR_CLOSURE_DELETED";
 
     private AuditActions() {
     }

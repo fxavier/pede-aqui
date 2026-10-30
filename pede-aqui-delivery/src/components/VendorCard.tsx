@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import { Star, Clock, MapPin, Bike } from 'lucide-react'
-import type { VendorSearchResult } from '@/lib/api/types'
+import { isVendorOpen, type VendorSearchResult } from '@/lib/api/types'
+import { formatReopening } from '@/lib/cart-errors'
 import { formatMZN } from '@/lib/utils'
 import { vendorCover } from '@/lib/covers'
 
 export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
   const { emoji, from, to } = vendorCover(vendor.name)
   const fast = vendor.estimatedDeliveryMinutes != null && vendor.estimatedDeliveryMinutes <= 20
+  const open = isVendorOpen(vendor)
 
   return (
     <Link
@@ -20,18 +22,20 @@ export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.55), transparent 55%)' }} />
         <span className="relative drop-shadow-md transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">{emoji}</span>
 
-        {fast && vendor.available && (
+        {fast && open && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-brand-600 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg shadow-brand-500/20">
             Rápido 🔥
           </span>
         )}
-        {vendor.available ? (
+        {open ? (
           <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-sm backdrop-blur-sm">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Aberto
           </span>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[3px]">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200">Fechado</span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200">
+              Fechado{vendor.nextOpeningAt ? ` · Abre ${formatReopening(vendor.nextOpeningAt)}` : ''}
+            </span>
           </div>
         )}
       </div>

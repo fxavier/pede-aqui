@@ -109,6 +109,17 @@ app:
   # ambiente; o passo 6 do ADR remove depois o código do fallback.
   merchant-scope:
     single-vendor-fallback-enabled: ${APP_MERCHANT_SCOPE_SINGLE_VENDOR_FALLBACK_ENABLED:true}
+  # LAC-27: horários (vendor_opening_hours) e encerramentos (vendor_closures) avaliados neste fuso.
+  # enforce-available-flag: também exigir vendors.available=true para aceitar encomendas. Desligado porque a
+  # coluna nasce FALSE e ainda não há UI para a ligar — ligar só depois de rever esse valor em todas as lojas.
+  store-availability:
+    timezone: ${APP_STORE_TIMEZONE:Africa/Maputo}
+    enforce-available-flag: ${APP_STORE_ENFORCE_AVAILABLE_FLAG:false}
+  # LAC-64: vertical farmácia bloqueada até parecer jurídico/regulatório. Com false, produtos com receita ou da
+  # vertical "pharmacy" são recusados no carrinho e no checkout (422 pharmacy_not_available).
+  verticals:
+    pharmacy:
+      enabled: ${APP_VERTICALS_PHARMACY_ENABLED:false}
   provisioning:
     max-tenants-per-hour: ${PROVISIONING_MAX_TENANTS_PER_HOUR:50}
     max-per-email-domain-per-hour: ${PROVISIONING_MAX_PER_EMAIL_DOMAIN_PER_HOUR:10}

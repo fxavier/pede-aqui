@@ -11,6 +11,7 @@ import { clearCart, cartTotal, cartItemCount } from '@/store/cart-slice'
 import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { useIdempotencyKey } from '@/lib/idempotency'
+import { cartErrorMessage } from '@/lib/cart-errors'
 import {
   type AddressForm, type AddressFormErrors,
   emptyAddressForm, formatAddress, toAddressRequest, validateAddressForm,
@@ -110,8 +111,8 @@ export default function CheckoutPage() {
       localStorage.setItem('pede-aqui:orders', JSON.stringify(history.slice(0, 50)))
       dispatch(clearCart())
       navigate(`/orders/${order.id}/confirmation`, { replace: true })
-    } catch {
-      setSubmitError('Não foi possível finalizar o pedido. Tente novamente.')
+    } catch (err) {
+      setSubmitError(cartErrorMessage(err, 'Não foi possível finalizar o pedido. Tente novamente.'))
     } finally {
       setSubmitting(false)
     }

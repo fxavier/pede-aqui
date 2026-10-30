@@ -94,7 +94,6 @@ non-exposed: catalog -> com.delivery.inventory.entity.InventoryItem
 non-exposed: catalog -> com.delivery.inventory.repository.InventoryItemRepository
 non-exposed: catalog -> com.delivery.upload.service.StorageUrlService
 non-exposed: catalog -> com.delivery.upload.service.StoredUploadValidator
-non-exposed: catalog -> com.delivery.vendor.api.MerchantScopeGuard
 non-exposed: catalog -> com.delivery.vendor.entity.Vendor
 non-exposed: catalog -> com.delivery.vendor.repository.VendorRepository
 non-exposed: common -> com.delivery.auth.service.CustomerProfileProvisioningService
@@ -202,7 +201,6 @@ non-exposed: order -> com.delivery.payment.entity.Payment
 non-exposed: order -> com.delivery.payment.repository.PaymentRepository
 non-exposed: order -> com.delivery.payment.service.PaymentService
 non-exposed: order -> com.delivery.sales.service.SalesAccessGuard
-non-exposed: order -> com.delivery.vendor.api.MerchantScopeGuard
 non-exposed: order -> com.delivery.vendor.entity.Vendor
 non-exposed: order -> com.delivery.vendor.repository.VendorRepository
 non-exposed: payment -> com.delivery.auth.entity.AppUserProfile
@@ -215,7 +213,6 @@ non-exposed: payment -> com.delivery.order.entity.Order
 non-exposed: payment -> com.delivery.order.entity.OrderStatus
 non-exposed: payment -> com.delivery.order.repository.OrderRepository
 non-exposed: payment -> com.delivery.order.service.OrderStockService
-non-exposed: report -> com.delivery.vendor.api.MerchantScopeGuard
 non-exposed: sales -> com.delivery.auth.entity.AppUserProfile
 non-exposed: sales -> com.delivery.auth.repository.AppUserProfileRepository
 non-exposed: sales -> com.delivery.catalog.entity.Sku
@@ -235,7 +232,6 @@ non-exposed: sales -> com.delivery.payment.entity.Refund
 non-exposed: sales -> com.delivery.payment.entity.RefundStatus
 non-exposed: sales -> com.delivery.payment.repository.PaymentRepository
 non-exposed: sales -> com.delivery.payment.service.PaymentService
-non-exposed: sales -> com.delivery.vendor.api.MerchantScopeGuard
 non-exposed: sales -> com.delivery.vendor.entity.Vendor
 non-exposed: sales -> com.delivery.vendor.repository.VendorRepository
 non-exposed: tenant -> com.delivery.auth.dto.CreateUserProfileRequest
