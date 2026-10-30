@@ -4,6 +4,7 @@ import com.delivery.order.entity.CancellationRequestStatus;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.entity.OrderStatusHistory;
+import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.repository.CancellationRequestRepository;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.order.repository.OrderStatusHistoryRepository;
@@ -27,11 +28,21 @@ public class OrderSettlementFacts {
      * charged on the goods, {@code discountTotal} = promotion discount, {@code total} = what the customer was charged.
      * {@code deliveredAt} is the DELIVERED transition instant (null when never delivered); {@code retainedCancellationFee}
      * is the fee withheld by an approved customer cancellation (LAC-26), zero otherwise.
+     * <p>VAT of the applied checkout quote (W6-A, V064; immutable): {@code quoteTaxInclusive} is TRUE when prices and
+     * fees already contained VAT (then {@code taxes} is 0), {@code quoteGoodsVat} / {@code quoteFeesVat} the VAT
+     * contained in the goods / in delivery + service fees. All three are null for orders placed before W6-A.
      */
     public record OrderFinancials(UUID tenantId, UUID orderId, UUID vendorId, String status, String cancellationReason,
                                   BigDecimal subtotal, BigDecimal fees, BigDecimal taxes, BigDecimal discountTotal,
                                   BigDecimal total, Instant deliveredAt, Instant cancelledAt,
-                                  BigDecimal retainedCancellationFee) {}
+                                  BigDecimal retainedCancellationFee, Boolean quoteTaxInclusive,
+                                  BigDecimal quoteGoodsVat, BigDecimal quoteFeesVat) {
+
+        /** True when the order was priced VAT-inclusive and its quote recorded the VAT contained in the fees. */
+        public boolean feesVatRecorded() {
+            return Boolean.TRUE.equals(quoteTaxInclusive) && quoteFeesVat != null;
+        }
+    }
 
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository historyRepository;
@@ -55,10 +66,14 @@ public class OrderSettlementFacts {
                     .filter(request -> request.getStatus() == CancellationRequestStatus.APPROVED)
                     .map(request -> request.getFeeAmount() == null ? BigDecimal.ZERO : request.getFeeAmount())
                     .orElse(BigDecimal.ZERO);
+            PricingQuoteSnapshot quote = order.getPricingQuote();
             return new OrderFinancials(order.getTenantId(), order.getId(), order.getVendorId(), order.getStatus().name(),
                     order.getCancellationReason() == null ? null : order.getCancellationReason().name(),
                     order.getSubtotal(), order.getFees(), order.getTaxes(), order.getDiscountTotal(), order.getTotal(),
-                    deliveredAt, cancelledAt, fee);
+                    deliveredAt, cancelledAt, fee,
+                    quote == null ? null : quote.getTaxInclusive(),
+                    quote == null ? null : quote.getGoodsVat(),
+                    quote == null ? null : quote.getFeesVat());
         });
     }
 

@@ -38,12 +38,13 @@
 
 ### Modelo de lançamentos (a validar — LAC-38)
 
-Notação da encomenda: S = subtotal de bens, T = imposto cobrado sobre os bens (`orders.taxes`), F = taxas (entrega + serviço), D = desconto, P = total capturado (= S + F + T − D), r = taxa de comissão, C = r × S.
+Notação da encomenda: S = subtotal de bens, T = imposto cobrado sobre os bens (`orders.taxes`; 0 nas encomendas com IVA incluído da W6-A), F = taxas (entrega + serviço), D = desconto, P = total capturado (= S + F + T − D), r = taxa de comissão, C = r × S, V<sub>F</sub> = IVA contido nas taxas guardado na quote da encomenda (`orders.quote_fees_vat`, W6-A/V064; NULL nas encomendas anteriores).
 
 | Facto (evento) | Débito | Crédito |
 |---|---|---|
 | Pagamento capturado (`PaymentConfirmed`) | `PLATFORM_CASH_CLEARING` P | `CUSTOMER_FUNDS_HELD` P |
 | Encomenda entregue (`OrderStatusChanged` → DELIVERED) | `CUSTOMER_FUNDS_HELD` P; `PLATFORM_PROMOTION_EXPENSE` D (desconto da plataforma) | `PLATFORM_REVENUE_COMMISSION` C; `PLATFORM_REVENUE_FEES` F; `MERCHANT_PAYABLE[v]` S + T − C (− D se o desconto for do comerciante); `PLATFORM_VAT_PAYABLE` (se IVA > 0, extraído de C e F) |
+| Encomenda entregue com **IVA incluído** (W6-A: `orders.quote_tax_inclusive = TRUE` e `quote_fees_vat` não nulo) | igual à linha anterior | `PLATFORM_VAT_PAYABLE` V<sub>F</sub> (do snapshot da encomenda, não da configuração atual); `PLATFORM_REVENUE_FEES` F − V<sub>F</sub>; `PLATFORM_REVENUE_COMMISSION` C (repartida por `platform-vat-rate` como antes); `MERCHANT_PAYABLE[v]` S − C (− D se do comerciante) — o IVA dos bens fica dentro de S, no comerciante |
 | Reembolso aprovado **antes** da entrega (`RefundApproved`) | `CUSTOMER_FUNDS_HELD` R | `CUSTOMER_REFUNDS_PAYABLE` R |
 | Reembolso aprovado **depois** da entrega | estorno proporcional R/base de cada linha de receita/gasto e `MERCHANT_PAYABLE[v]` | `CUSTOMER_REFUNDS_PAYABLE` R (e `PLATFORM_PROMOTION_EXPENSE` proporcional) |
 | Cancelamento pelo cliente com taxa retida (W5-A, `OrderStatusChanged` → CANCELLED + `CUSTOMER_CANCELLED_WITH_FEE`) | `CUSTOMER_FUNDS_HELD` fee | `PLATFORM_REVENUE_COMMISSION` r × fee; `MERCHANT_PAYABLE[v]` fee − r × fee |
@@ -52,6 +53,7 @@ Regras de detalhe:
 
 - **Antes/depois da entrega** decide-se pelo instante: aprovação do reembolso (`refunds.updated_at`) vs. primeira transição para DELIVERED (`order_status_history`). Assim o resultado não depende da ordem em que os eventos são processados.
 - **Reembolsos parciais antes da entrega** reduzem a base da entrega: base = P − Σ reembolsos aprovados antes de DELIVERED; S, F e D são escalados por base/P antes de calcular C.
+- **IVA incluído (W6-A)**: com preços e taxas com IVA incluído, `orders.taxes = 0` e o IVA dos bens está dentro de S — continua no `MERCHANT_PAYABLE` (o comerciante é o vendedor e deve-o; a plataforma só cobra). O IVA das taxas da plataforma (V<sub>F</sub>, guardado na quote e escalado por base/P como F) vai para `PLATFORM_VAT_PAYABLE` em vez de `PLATFORM_REVENUE_FEES`, independentemente de `app.settlement.platform-vat-rate`. Encomendas sem IVA na quote (anteriores à W6-A, ou política `tax_inclusive = false`) mantêm a regra anterior (taxas repartidas por `platform-vat-rate`, 0 por defeito). Os estornos depois da entrega revertem a linha de IVA na mesma proporção.
 - **Estorno proporcional depois da entrega**: cada linha da entrega (exceto fundos retidos e comerciante) × R/base, arredondada HALF_UP a 2 casas; o comerciante absorve o resíduo, para a transação fechar exata. Um reembolso total anula exatamente a entrega; vários parciais podem desviar ±0,01 por componente (vai para o comerciante).
 - **Comissão em `commissions`** = bruta acumulada na entrega (ou sobre a taxa de cancelamento, `source = CANCELLATION_FEE`); os estornos por reembolso só existem no razão. Os leitores atuais (relatórios, dashboard, detalhe de venda) continuam a somar `commission_amount`.
 - Outros cancelamentos (rejeição do vendedor, timeouts, cancelamento gratuito, entrega falhada) não geram lançamento próprio: o dinheiro move-se pelos reembolsos. Uma entrega falhada sem reembolso deixa o valor em `CUSTOMER_FUNDS_HELD` (visível na conta).
@@ -60,8 +62,8 @@ Regras de detalhe:
 ### Itens a validar com o contabilista / parecer jurídico (LAC-38)
 
 1. Enquadramento de agente de cobrança (mandato) vs. comerciante de registo da plataforma vs. PSP com *split* — define se `CUSTOMER_FUNDS_HELD`/`MERCHANT_PAYABLE` são passivos de terceiros (como aqui) ou receita/custo.
-2. **IVA sobre bens** (`orders.taxes`): tratado como imposto do comerciante, cobrado por conta dele e incluído no `MERCHANT_PAYABLE`. A W6-A muda o IVA para preços com IVA incluído por produto — rever o lançamento quando chegar.
-3. **IVA sobre a receita da plataforma** (comissão e taxas, 16 %): desligado por defeito (`app.settlement.platform-vat-rate=0`); quando ligado, comissão e taxas são tratadas como **IVA incluído** e repartidas em receita líquida + `PLATFORM_VAT_PAYABLE`. Confirmar se a comissão é faturada ao comerciante com IVA acrescido (e quem o suporta).
+2. **IVA sobre bens**: tratado como imposto do comerciante, cobrado por conta dele e incluído no `MERCHANT_PAYABLE` — antes da W6-A como `orders.taxes` somado; desde a W6-A dentro do preço com IVA incluído (`quote_goods_vat` só informativo, não gera linha). Confirmar que a plataforma, como agente de cobrança, não liquida o IVA dos bens.
+3. **IVA sobre a receita da plataforma** (16 %): **taxas** de entrega/serviço das encomendas com IVA incluído (W6-A) → o IVA guardado na quote (`quote_fees_vat`) vai sempre para `PLATFORM_VAT_PAYABLE`; **comissão** (e taxas de encomendas antigas) só com `app.settlement.platform-vat-rate` > 0 (desligado por defeito), tratada como IVA incluído. Confirmar que as taxas são serviço próprio da plataforma sujeito a IVA à taxa normal, e se a comissão é faturada ao comerciante com IVA acrescido (e quem o suporta).
 4. **Base da comissão**: subtotal de bens sem imposto e antes do desconto. Confirmar se o desconto suportado pelo comerciante reduz a base.
 5. **Quem suporta os descontos** de promoção: por defeito a plataforma (`PLATFORM_PROMOTION_EXPENSE`); alternativa `app.settlement.discount-funded-by=MERCHANT`. As promoções não têm hoje atributo de financiador.
 6. **Taxa de entrega/serviço** inteiramente receita da plataforma até existir remuneração de estafetas (`COURIER_PAYABLE` + gasto, LAC-35).

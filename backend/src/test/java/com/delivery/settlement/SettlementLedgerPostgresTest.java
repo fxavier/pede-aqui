@@ -56,7 +56,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * LAC-33/34 on real Postgres: the V065 triggers (balanced at COMMIT, non-empty, append-only), idempotent postings
  * under duplicate/concurrent delivery, the end-to-end flow payment confirmed → delivered → refund through the event
  * registry with the resulting balances and endpoints, refunds before delivery + retained cancellation fee, the
- * per-vendor commission override and the reconciliation check.
+ * per-vendor commission override, the fee-VAT rule for VAT-inclusive orders (W6-A) and the reconciliation check.
  *
  * <p>Own context: ledger listeners on ({@code app.settlement.enabled=true}; off for the rest of the suite), mock
  * payment confirmation on, 3-connection pool (the shared container's max_connections; concurrent callers queue on the pool). Every test seeds a fresh tenant — ledger rows are immutable and never cleaned.
@@ -324,6 +324,29 @@ class SettlementLedgerPostgresTest extends PostgresApiE2ETestBase {
         assertThat(transactions(LedgerTransactionType.REFUND_BEFORE_DELIVERY)).isEqualTo(1);
         assertThat(balance(LedgerAccountType.CUSTOMER_FUNDS_HELD)).isEqualByComparingTo("0.00");
         assertThat(balance(LedgerAccountType.PLATFORM_REVENUE_COMMISSION)).isEqualByComparingTo("11.91");
+        assertTenantBalanced();
+    }
+
+    @Test
+    void aVatInclusiveOrderPostsItsStoredFeeVatAsVatPayableAndAnOlderOrderKeepsThePreviousRule() {
+        // W6-A order: 18.00 goods (VAT 2.48 inside) + 5.90 fees (VAT 0.81 inside), taxes 0, captured 23.90.
+        UUID inclusive = order("DELIVERED", "23.90", "18.00", "5.90", "0.00", "0.00", true);
+        jdbc.update("""
+                UPDATE orders SET quote_tax_inclusive = TRUE, quote_goods_vat = 2.48, quote_fees_vat = 0.81,
+                                  quote_vat_total = 3.29, quote_net_total = 20.61
+                 WHERE id = ?""", inclusive);
+        UUID older = order("DELIVERED", "126.00", "100.00", "10.00", "16.00", "0.00", true); // pre-W6-A: no quote VAT
+
+        postings.recordOrderDelivered(tenant, inclusive);
+        assertThat(balance(LedgerAccountType.PLATFORM_VAT_PAYABLE)).isEqualByComparingTo("0.81");
+        assertThat(balance(LedgerAccountType.PLATFORM_REVENUE_FEES)).isEqualByComparingTo("5.09");
+        assertThat(merchantBalance(vendor)).isEqualByComparingTo("15.30"); // goods VAT stays with the merchant
+
+        postings.recordOrderDelivered(tenant, older);
+        // app.settlement.platform-vat-rate = 0: the older order adds no VAT line, its fees are all revenue.
+        assertThat(balance(LedgerAccountType.PLATFORM_VAT_PAYABLE)).isEqualByComparingTo("0.81");
+        assertThat(balance(LedgerAccountType.PLATFORM_REVENUE_FEES)).isEqualByComparingTo("15.09");
+        assertThat(merchantBalance(vendor)).isEqualByComparingTo("116.30");
         assertTenantBalanced();
     }
 

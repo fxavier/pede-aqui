@@ -161,7 +161,8 @@ public class LedgerPostingService {
         ResolvedRate rate = rateAt(tenantId, order.vendorId(), deliveredAt);
         Recognition recognition = PostingRules.orderDelivered(new PostingRules.DeliveredInput(order.vendorId(), payment.amount(),
                 order.subtotal(), order.fees(), order.discountTotal(), refundedBefore, rate.rate(), properties.getPlatformVatRate(),
-                properties.getDiscountFundedBy() == SettlementProperties.DiscountFunding.PLATFORM));
+                properties.getDiscountFundedBy() == SettlementProperties.DiscountFunding.PLATFORM,
+                order.feesVatRecorded() ? order.quoteFeesVat() : null));
         if (recognition.lines().isEmpty()) {
             return skip(LedgerTransactionType.ORDER_DELIVERED, "order " + order.orderId() + " fully refunded before delivery");
         }

@@ -93,6 +93,53 @@ class PostingRulesTest {
     }
 
     @Test
+    void vatInclusiveOrderCreditsTheStoredFeeVatToVatPayableAndLeavesGoodsVatWithTheMerchant() {
+        // W6-A order (V064 example): goods 18.00 (VAT 2.48 inside), delivery 5.00 + service 0.90 (VAT 0.69 + 0.12 inside),
+        // taxes 0, captured 23.90. Fee VAT comes from the order's quote, not from app.settlement.platform-vat-rate (0).
+        Recognition r = PostingRules.orderDelivered(new DeliveredInput(VENDOR, m("23.90"), m("18.00"), m("5.90"), m("0.00"),
+                m("0.00"), RATE_15, BigDecimal.ZERO, true, m("0.81")));
+
+        assertThat(amounts(r.lines())).containsExactlyInAnyOrderEntriesOf(Map.of(
+                CUSTOMER_FUNDS_HELD, m("23.90"),
+                PLATFORM_REVENUE_COMMISSION, m("-2.70"),
+                PLATFORM_REVENUE_FEES, m("-5.09"),
+                PLATFORM_VAT_PAYABLE, m("-0.81"),
+                MERCHANT_PAYABLE, m("-15.30"))); // 18.00 gross goods (incl. 2.48 VAT, the merchant's) − 2.70 commission
+        assertThat(r.commissionBasis()).isEqualByComparingTo("18.00");
+    }
+
+    @Test
+    void storedFeeVatIsNotResplitByPlatformVatRateWhileCommissionStillIs() {
+        Recognition r = PostingRules.orderDelivered(new DeliveredInput(VENDOR, m("23.90"), m("18.00"), m("5.90"), m("0.00"),
+                m("0.00"), RATE_15, new BigDecimal("0.16"), true, m("0.81")));
+
+        // Commission 2.70 / 1.16 = 2.33 (+0.37 VAT); fees 5.90 − 0.81 stored VAT = 5.09.
+        assertThat(amounts(r.lines())).containsExactlyInAnyOrderEntriesOf(Map.of(
+                CUSTOMER_FUNDS_HELD, m("23.90"),
+                PLATFORM_REVENUE_COMMISSION, m("-2.33"),
+                PLATFORM_REVENUE_FEES, m("-5.09"),
+                PLATFORM_VAT_PAYABLE, m("-1.18"),
+                MERCHANT_PAYABLE, m("-15.30")));
+    }
+
+    @Test
+    void storedFeeVatIsScaledByRefundsBeforeDeliveryAndReversedByRefundsAfter() {
+        // 3.90 of 23.90 refunded before delivery: base 20.00, factor 20/23.90.
+        Recognition r = PostingRules.orderDelivered(new DeliveredInput(VENDOR, m("23.90"), m("18.00"), m("5.90"), m("0.00"),
+                m("3.90"), RATE_15, BigDecimal.ZERO, true, m("0.81")));
+
+        assertThat(amount(r.lines(), PLATFORM_VAT_PAYABLE)).isEqualByComparingTo("-0.68");   // 0.81 × 20/23.90
+        assertThat(amount(r.lines(), PLATFORM_REVENUE_FEES)).isEqualByComparingTo("-4.26");  // 4.94 − 0.68
+        assertThat(PostingRules.sum(r.lines())).isEqualByComparingTo("0");
+
+        List<Line> reversal = PostingRules.refundAfterDelivery(r.lines(), m("20.00"));
+        Map<LedgerAccountType, BigDecimal> net = amounts(r.lines());
+        amounts(reversal).forEach((account, value) -> net.merge(account, value, BigDecimal::add));
+        assertThat(net.get(PLATFORM_VAT_PAYABLE)).isEqualByComparingTo("0");
+        assertThat(net.get(PLATFORM_REVENUE_FEES)).isEqualByComparingTo("0");
+    }
+
+    @Test
     void refundsApprovedBeforeDeliveryScaleTheRecognition() {
         // 26 of 126 refunded before delivery: base 100, factor 100/126.
         Recognition r = PostingRules.orderDelivered(input("126.00", "100.00", "10.00", "0.00", "26.00", RATE_15, BigDecimal.ZERO, true));
@@ -165,14 +212,18 @@ class PostingRulesTest {
                 CUSTOMER_FUNDS_HELD, m("40.00"), CUSTOMER_REFUNDS_PAYABLE, m("-40.00")));
     }
 
-    /** Property: random orders, discounts, VAT and refund sequences always give balanced postings and never overdraw funds held. */
+    /** Property: random orders (pre-W6-A and VAT-inclusive), discounts, VAT and refund sequences always give balanced postings and never overdraw funds held. */
     @Test
     void randomSequencesAlwaysBalanceAndFundsHeldNeverGoesNegative() {
         Random random = new Random(42);
         for (int run = 0; run < 2_000; run++) {
             BigDecimal subtotal = cents(random, 1, 500_000);
             BigDecimal fees = cents(random, 0, 50_000);
-            BigDecimal tax = subtotal.multiply(new BigDecimal("0.16")).setScale(2, RoundingMode.HALF_UP);
+            // Half the orders are W6-A VAT-inclusive (taxes 0, fee VAT stored on the quote), half pre-W6-A (VAT added).
+            boolean vatInclusive = random.nextBoolean();
+            BigDecimal tax = vatInclusive ? BigDecimal.ZERO : subtotal.multiply(new BigDecimal("0.16")).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal feesVat = vatInclusive
+                    ? fees.multiply(new BigDecimal("0.16")).divide(new BigDecimal("1.16"), 2, RoundingMode.HALF_UP) : null;
             BigDecimal discount = cents(random, 0, subtotal.movePointRight(2).intValue());
             BigDecimal total = subtotal.add(fees).add(tax).subtract(discount);
             BigDecimal rate = new BigDecimal(random.nextInt(31)).movePointLeft(2);
@@ -184,8 +235,15 @@ class PostingRulesTest {
                 all.addAll(PostingRules.refundBeforeDelivery(before));
             }
             List<Line> delivery = PostingRules.orderDelivered(new DeliveredInput(VENDOR, total, subtotal, fees, discount, before, rate, vat,
-                    random.nextBoolean())).lines();
+                    random.nextBoolean(), feesVat)).lines();
             assertThat(PostingRules.sum(delivery)).isEqualByComparingTo("0");
+            if (vatInclusive && before.signum() == 0 && total.signum() > 0) {
+                // Fee revenue + VAT payable = fees; with platform VAT off the VAT line is exactly the stored fee VAT.
+                assertThat(amount(delivery, PLATFORM_REVENUE_FEES).negate()).isEqualByComparingTo(fees.subtract(feesVat));
+                if (vat.signum() == 0) {
+                    assertThat(amount(delivery, PLATFORM_VAT_PAYABLE).negate()).isEqualByComparingTo(feesVat);
+                }
+            }
             all.addAll(delivery);
             BigDecimal remaining = total.subtract(before);
             while (remaining.signum() > 0 && random.nextBoolean()) {

@@ -27,10 +27,23 @@ public final class PostingRules {
     /** Lines plus the commission figures recorded in {@code commissions} (gross commission and its basis). */
     public record Recognition(List<Line> lines, BigDecimal commissionBasis, BigDecimal commissionRate, BigDecimal commissionAmount) {}
 
-    /** Inputs of the delivery recognition; {@code total} is what was captured for the order. */
+    /**
+     * Inputs of the delivery recognition; {@code total} is what was captured for the order. {@code feesVat} is the VAT
+     * contained in the fees as stored on a VAT-inclusive order's quote (W6-A, {@code orders.quote_fees_vat}); null for
+     * orders without it (pre-W6-A or VAT added on top), which keep the previous rule (fees split by platformVatRate).
+     */
     public record DeliveredInput(UUID vendorId, BigDecimal total, BigDecimal subtotal, BigDecimal fees, BigDecimal discount,
                                  BigDecimal refundedBeforeDelivery, BigDecimal commissionRate, BigDecimal platformVatRate,
-                                 boolean discountFundedByPlatform) {}
+                                 boolean discountFundedByPlatform, BigDecimal feesVat) {
+
+        /** Previous-rule input (no VAT recorded on the order's quote). */
+        public DeliveredInput(UUID vendorId, BigDecimal total, BigDecimal subtotal, BigDecimal fees, BigDecimal discount,
+                              BigDecimal refundedBeforeDelivery, BigDecimal commissionRate, BigDecimal platformVatRate,
+                              boolean discountFundedByPlatform) {
+            this(vendorId, total, subtotal, fees, discount, refundedBeforeDelivery, commissionRate, platformVatRate,
+                    discountFundedByPlatform, null);
+        }
+    }
 
     /** Payment captured: Dr PLATFORM_CASH_CLEARING / Cr CUSTOMER_FUNDS_HELD. */
     public static List<Line> paymentCaptured(BigDecimal amount) {
@@ -56,9 +69,14 @@ public final class PostingRules {
      * Dr PLATFORM_PROMOTION_EXPENSE       discount            (platform-funded discount only)
      * Cr PLATFORM_REVENUE_COMMISSION      commission (net of VAT when platform-vat-rate > 0)
      * Cr PLATFORM_REVENUE_FEES            fees (net of VAT)
-     * Cr PLATFORM_VAT_PAYABLE             VAT on commission + fees (platform-vat-rate > 0 only)
+     * Cr PLATFORM_VAT_PAYABLE             VAT on commission (platform-vat-rate > 0) + VAT on fees (see below)
      * Cr MERCHANT_PAYABLE[vendor]         the rest = subtotal + taxes − commission (− discount when merchant-funded)
      * </pre>
+     * VAT on fees: a VAT-inclusive order (W6-A) carries {@code feesVat} from its stored quote — that amount (scaled like
+     * the fees) goes to PLATFORM_VAT_PAYABLE and only the rest is fee revenue, whatever platform-vat-rate says today.
+     * Without it (older orders) the fees are split by platform-vat-rate as before. Goods VAT is never split out: with
+     * VAT-inclusive pricing it sits inside the subtotal, so it stays in the merchant payable (the merchant is the seller
+     * and owes it; the platform only collects).
      * Returns no lines when nothing is left to recognise (base ≤ 0).
      */
     public static Recognition orderDelivered(DeliveredInput in) {
@@ -74,7 +92,13 @@ public final class PostingRules {
         BigDecimal discount = scaled ? scale(in.discount(), base, total) : money(in.discount());
         BigDecimal commission = money(subtotal.multiply(rate));
         BigDecimal[] commissionSplit = vatSplit(commission, in.platformVatRate());
-        BigDecimal[] feesSplit = vatSplit(fees, in.platformVatRate());
+        BigDecimal[] feesSplit;
+        if (in.feesVat() != null) {
+            BigDecimal feesVat = (scaled ? scale(in.feesVat(), base, total) : money(in.feesVat())).min(fees).max(BigDecimal.ZERO);
+            feesSplit = new BigDecimal[] {fees.subtract(feesVat), feesVat};
+        } else {
+            feesSplit = vatSplit(fees, in.platformVatRate());
+        }
 
         List<Line> lines = new ArrayList<>();
         lines.add(new Line(LedgerAccountType.CUSTOMER_FUNDS_HELD, null, base));
