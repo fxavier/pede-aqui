@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,10 +28,11 @@ public class VendorClosureController {
         this.closureService = closureService;
     }
 
+    /** Capped array (LAC-14): first 200 current/future closures, earliest first, {@code X-Truncated: true} when more exist. */
     @GetMapping
     @PreAuthorize("hasAnyRole('OPS','ADMIN','VENDOR_ADMIN')")
-    public List<VendorClosureResponse> list(@PathVariable UUID vendorId) {
-        return closureService.list(vendorId);
+    public ResponseEntity<List<VendorClosureResponse>> list(@PathVariable UUID vendorId) {
+        return closureService.list(vendorId).toResponse();
     }
 
     @PostMapping

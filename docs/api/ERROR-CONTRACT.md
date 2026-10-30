@@ -128,6 +128,9 @@ resolúvel, incluindo `GET /sales/orders`), `operator_tenant_missing` (500 — `
 do operador V045; falha de configuração). `tenant_slug_exists` deixa de ser emitido por `POST /register`
 (só pelo provisioning M2M).
 
+W3-D acrescenta (detalhe em `API-MIGRATION.md`, secção W3-D): `sku_code_conflict` (409 — `POST /catalog/skus`
+com um `skuCode` já usado pelo **mesmo** vendor; desde V056 o código é único por (tenant, vendor, sku_code)).
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),

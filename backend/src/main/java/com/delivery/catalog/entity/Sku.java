@@ -23,6 +23,9 @@ public class Sku {
     private UUID tenantId;
     @Column(name = "product_id", nullable = false)
     private UUID productId;
+    // Derived from products.vendor_id by a DB trigger (V056); read-only here so it can never disagree with the product.
+    @Column(name = "vendor_id", insertable = false, updatable = false)
+    private UUID vendorId;
     @Column(name = "sku_code", nullable = false)
     private String skuCode;
     @Column(nullable = false)
@@ -65,6 +68,8 @@ public class Sku {
     public UUID getTenantId() { return tenantId; }
     public UUID getProductId() { return productId; }
     public String getSkuCode() { return skuCode; }
+    /** Vendor of the SKU's product; null on an instance created in this persistence context until it is re-read. */
+    public UUID getVendorId() { return vendorId; }
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
     public boolean isActive() { return active; }

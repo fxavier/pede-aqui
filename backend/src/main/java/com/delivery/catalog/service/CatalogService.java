@@ -155,6 +155,10 @@ public class CatalogService {
         if (!product.getVendorId().equals(request.vendorId())) {
             throw new BusinessException("vendor_mismatch", "vendorId does not own the product", HttpStatus.BAD_REQUEST);
         }
+        // LAC-16: the code is unique per vendor, not per tenant (V056); the DB constraint still backs this up under races.
+        if (skuRepository.existsByTenantIdAndVendorIdAndSkuCode(tenantId, product.getVendorId(), request.skuCode())) {
+            throw new BusinessException("sku_code_conflict", "This store already has a SKU with that code", HttpStatus.CONFLICT);
+        }
         Sku sku = new Sku(UUID.randomUUID(), tenantId, request.productId(), request.skuCode(), request.name(), request.price());
         skuRepository.save(sku);
         InventoryItem inventory = new InventoryItem(UUID.randomUUID(), tenantId, request.vendorId(), sku.getId(), request.initialStock());
