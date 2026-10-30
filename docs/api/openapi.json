@@ -460,16 +460,42 @@
           "distanceKm": {
             "type": "number"
           },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "feesVat": {
+            "type": "number"
+          },
+          "goodsVat": {
+            "type": "number"
+          },
+          "netTotal": {
+            "type": "number"
+          },
+          "quoteId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "serviceFee": {
             "type": "number"
           },
           "subtotal": {
             "type": "number"
           },
+          "taxInclusive": {
+            "type": "boolean"
+          },
           "taxes": {
             "type": "number"
           },
           "total": {
+            "type": "number"
+          },
+          "vatIncluded": {
+            "type": "number"
+          },
+          "vatRate": {
             "type": "number"
           }
         },
@@ -487,6 +513,10 @@
           },
           "idempotencyKey": {
             "minLength": 1,
+            "type": "string"
+          },
+          "quoteId": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -1777,10 +1807,16 @@
           "subtotal": {
             "type": "number"
           },
+          "taxInclusive": {
+            "type": "boolean"
+          },
           "taxes": {
             "type": "number"
           },
           "total": {
+            "type": "number"
+          },
+          "vatIncluded": {
             "type": "number"
           },
           "vendorId": {
@@ -2078,11 +2114,17 @@
             "format": "uuid",
             "type": "string"
           },
+          "maxDeliveryDistanceKm": {
+            "type": "number"
+          },
           "serviceFee": {
             "type": "number"
           },
           "serviceFeeRate": {
             "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
           },
           "taxRate": {
             "type": "number"
@@ -3573,6 +3615,9 @@
           "gross": {
             "type": "number"
           },
+          "grossExVat": {
+            "type": "number"
+          },
           "net": {
             "type": "number"
           },
@@ -3581,6 +3626,9 @@
             "type": "integer"
           },
           "refunds": {
+            "type": "number"
+          },
+          "vatIncluded": {
             "type": "number"
           }
         },
@@ -3752,6 +3800,9 @@
           "gross": {
             "type": "number"
           },
+          "grossExVat": {
+            "type": "number"
+          },
           "net": {
             "type": "number"
           },
@@ -3765,6 +3816,9 @@
           "to": {
             "format": "date-time",
             "type": "string"
+          },
+          "vatIncluded": {
+            "type": "number"
           }
         },
         "type": "object"
@@ -4455,6 +4509,13 @@
             "minimum": 0.0,
             "type": "number"
           },
+          "maxDeliveryDistanceKm": {
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "maximum": 999999.99,
+            "minimum": 0.0,
+            "type": "number"
+          },
           "serviceFee": {
             "exclusiveMinimum": false,
             "minimum": 0.0,
@@ -4466,6 +4527,9 @@
             "maximum": 1.0,
             "minimum": 0.0,
             "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
           },
           "taxRate": {
             "exclusiveMaximum": false,

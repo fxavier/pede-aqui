@@ -794,3 +794,73 @@ Additive only; no client breaks.
 - Consumers that assumed `email` is always present in a customer token or in `MeResponse.email` semantics: for a
   phone-only customer `MeResponse.email` falls back to the Keycloak subject (column is NOT NULL), as it already did
   for any token without an email claim.
+
+## W6-A — Checkout v2: VAT included, quote with TTL, service area (LAC-22, LAC-20) — 2026-10-30
+
+> **Fiscal assumptions — "a validar com contabilista" (LAC-38).** VAT (IVA) 16 % in Mozambique; catalogue prices are
+> published **with VAT included** (B2C) and VAT is *extracted* (`gross × 0.16 / 1.16`, per line/fee, HALF_UP 2 dp),
+> never added; the platform is a collection agent (the merchant is the seller and owns the VAT on goods); platform
+> delivery/service fees are also treated as VAT-inclusive at 16 %; a discount reduces the goods VAT pro rata;
+> ZERO/EXEMPT product categories exist for future use.
+
+### Totals change (behaviour change, same shape)
+
+- **The `taxes` line is now 0** on the cart, `GET /cart/pricing` (`tax`), `GET /checkout/quote`, `POST /checkout`
+  and the order (`orders.taxes`), and **totals drop by the former 8 %**: `total = subtotal + fees − discount`.
+  Example (18.00 cart, seeded policy): was 18.00 + 5.00 + 0.90 + 1.44 = **25.34**, now **23.90** (IVA incluído 3.29).
+  The formula `total = subtotal + fees + taxes − discountTotal` still holds (taxes = 0), so client arithmetic does
+  not break.
+- Data change (V064): every `fee_policies.tax_rate = 0.08` row (the V048 seed / old default; seeded and
+  admin-set rows cannot be told apart) becomes **0.16** (version + 1) and every policy gets `tax_inclusive = true`;
+  rows with another rate keep it but are now read as VAT-inclusive. A tenant that must keep the old behaviour sets
+  `taxInclusive=false` (VAT added on top, pre-W6-A formula) through `PUT /admin/policy`. Orders record engine
+  `pricing-v2`.
+- Orders placed before W6-A keep their stored totals (taxes added at 8 %); nothing is recomputed.
+
+### `GET /api/v1/checkout/quote` (additive fields; now stores the quote)
+
+New fields: `quoteId`, `expiresAt` (now + `app.checkout.quote-ttl`, default 10 min), `taxInclusive`, `vatRate`,
+`vatIncluded` (VAT contained in `total`), `goodsVat`, `feesVat`, `netTotal` (= total − vatIncluded). Each call stores a
+row in `checkout_quotes` (purged daily by the `checkout-quote-cleanup` job, 1 day after expiry). With an `addressId` it
+can now answer **422 `out_of_service_area`** or **422 `address_too_far`** (below).
+
+### `POST /api/v1/checkout` (optional request field + new errors)
+
+- Optional **`quoteId`**. With it the order is charged exactly the quoted prices/fees, or the call fails with
+  **409 `quote_changed`**: `details.reason` = `expired` | `amounts_changed` (fee policy, distance band or subtotal
+  moved) | `prices_changed` (a SKU price moved; the cart is repriced as for `price_changed` and `details.items` lists
+  the SKUs); `details.quote` = a **fresh quote** (new `quoteId`) to show and resubmit. The discount is not compared
+  (promotions are re-resolved at checkout as before). A `quoteId` of another customer/tenant → 404; issued for
+  another cart or address → **422 `quote_mismatch`**.
+- **Without `quoteId` nothing changes** (backward compatible): price drift still answers 409 `price_changed`.
+- **Service area (LAC-20)**: with an `addressId`, the address point must be covered by the vendor's
+  `delivery_zone_id` polygon (`geo.api.ServiceArea.coverage`, `ST_Covers`), else **422 `out_of_service_area`**.
+  Allowed without check: vendor without zone, zone without polygon (`zones.area` NULL), address without
+  coordinates, legacy requests without `addressId`. A zone that is not `ACTIVE` serves nobody.
+- **Maximum distance**: straight-line distance vendor → address above `vendors.max_delivery_distance_km` (or, when
+  null, `fee_policies.max_delivery_distance_km`) → **422 `address_too_far`** with `details.distanceKm` /
+  `details.maxDistanceKm`. No limit configured (the default) or unknown distance → allowed.
+- The legacy no-address window (`app.checkout.legacy-without-address-enabled`, INC-12) is **unchanged** by W6-A.
+
+### Other additive fields
+
+- `GET /api/v1/me/orders/{id}`: `taxInclusive`, `vatIncluded` (null for pre-W6-A orders).
+- `GET/PUT /api/v1/admin/policy`: `taxInclusive` (bool) and `maxDeliveryDistanceKm` (km; `0` removes the limit),
+  both optional on PUT (omitted = keep). `taxRate` now means the standard VAT rate (16 %).
+- Sales reports `summary` / `timeseries`: `vatIncluded` (VAT contained in `gross`; pre-W6-A orders contribute their
+  added tax line) and `grossExVat`. CSV exports unchanged.
+- DB only: `orders.quote_id`, `quote_tax_inclusive`, `quote_goods_{standard,zero,exempt}_gross`, `quote_goods_vat`,
+  `quote_fees_vat`, `quote_vat_total`, `quote_net_total` (immutable, V048 trigger extended);
+  `order_items.tax_category/vat_rate/vat_amount`; `products.tax_category` (STANDARD default; no API yet);
+  `vendors.max_delivery_distance_km` (no API yet).
+
+### Clients / consumers to review
+
+- **Customer web** (`pede-aqui-delivery`): updated — shows "IVA incluído (x MT)" from the quote, hides the `IVA`
+  line when it is 0, sends `quoteId` when the quote was computed for the submitted address, swaps in
+  `details.quote` on `quote_changed`, and shows Portuguese messages for `out_of_service_area` / `address_too_far` /
+  `quote_changed` / `quote_mismatch` / `price_changed`.
+- **Customer Flutter app / backoffice**: totals change only (taxes 0, lower totals); no required change. The
+  backoffice fee-policy screen should label `taxRate` as "IVA (incluído)".
+- **Deploy**: run V064 with **no overlap** between old and new instances — an old instance reading the corrected
+  `tax_rate = 0.16` would *add* 16 % on top.
