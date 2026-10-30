@@ -30,4 +30,21 @@ public interface ZoneRepository extends JpaRepository<Zone, UUID> {
             """, nativeQuery = true)
     boolean anyZoneCovers(@Param("tenantId") UUID tenantId,
                           @Param("latitude") double latitude, @Param("longitude") double longitude);
+
+    /** Coverage facts of one tenant zone for a point (W6-A checkout): status, whether it has an area, whether it covers. */
+    interface ZoneCoverageRow {
+        String getStatus();
+        Boolean getHasArea();
+        Boolean getCovered();
+    }
+
+    /** Status, area presence and ST_Covers of one tenant zone over a WGS84 point; empty when the zone does not exist. */
+    @Query(value = """
+            SELECT z.status AS "status", (z.area IS NOT NULL) AS "hasArea",
+                   COALESCE(ST_Covers(z.area, CAST(ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326) AS geography)), FALSE) AS "covered"
+              FROM zones z
+             WHERE z.tenant_id = :tenantId AND z.id = :zoneId
+            """, nativeQuery = true)
+    Optional<ZoneCoverageRow> zoneCoverage(@Param("tenantId") UUID tenantId, @Param("zoneId") UUID zoneId,
+                                           @Param("latitude") double latitude, @Param("longitude") double longitude);
 }

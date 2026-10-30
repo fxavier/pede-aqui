@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AxiosError, AxiosHeaders } from 'axios'
-import { cartErrorMessage, formatReopening } from './cart-errors'
+import { cartErrorMessage, formatReopening, freshQuoteFrom } from './cart-errors'
 
 function apiError(status: number, data: unknown) {
   const headers = new AxiosHeaders()
@@ -35,6 +35,21 @@ describe('cartErrorMessage', () => {
     expect(cartErrorMessage(apiError(422, { code: 'pharmacy_not_available' }), FALLBACK)).toContain('farmácia')
     expect(cartErrorMessage(apiError(422, { code: 'prescription_required' }), FALLBACK)).toContain('receita')
     expect(cartErrorMessage(apiError(422, { code: 'sku_vendor_mismatch' }), FALLBACK)).toContain('não pertence a esta loja')
+  })
+
+  it('maps the checkout v2 delivery-area and quote codes (W6-A)', () => {
+    expect(cartErrorMessage(apiError(422, { code: 'out_of_service_area' }), FALLBACK)).toContain('não entrega nesta morada')
+    expect(cartErrorMessage(apiError(422, { code: 'address_too_far', details: { maxDistanceKm: 8, distanceKm: 12.3 } }), FALLBACK))
+      .toBe('Esta morada fica fora do raio de entrega da loja (máximo 8 km).')
+    expect(cartErrorMessage(apiError(409, { code: 'quote_changed' }), FALLBACK)).toContain('Reveja o novo total')
+    expect(cartErrorMessage(apiError(409, { code: 'price_changed' }), FALLBACK)).toContain('preços')
+  })
+
+  it('extracts the fresh quote of a quote_changed only', () => {
+    const quote = { quoteId: 'q2', total: 23.9 }
+    expect(freshQuoteFrom(apiError(409, { code: 'quote_changed', details: { reason: 'expired', quote } }))).toEqual(quote)
+    expect(freshQuoteFrom(apiError(422, { code: 'out_of_service_area' }))).toBeNull()
+    expect(freshQuoteFrom(new Error('network'))).toBeNull()
   })
 
   it('falls back for other errors', () => {

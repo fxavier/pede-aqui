@@ -13,3 +13,7 @@ app:
   courier-location:
     # LAC-40: no Redis in the suite; the GEO/presence writes are covered by CourierPresenceStoreRedisTest.
     redis-enabled: false
+  settlement:
+    # LAC-33: ledger listeners off in the suite (SQL-seeded orders have no payments and cleanups delete orders);
+    # the settlement Postgres tests switch it on in their own context.
+    enabled: false

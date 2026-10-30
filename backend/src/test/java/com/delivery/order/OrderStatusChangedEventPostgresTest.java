@@ -98,7 +98,7 @@ class OrderStatusChangedEventPostgresTest extends PostgresApiE2ETestBase {
 
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
             List<Map<String, Object>> rows = publications();
-            assertThat(rows).hasSize(3); // one per listener (metrics, notifications, test), written in the accept transaction
+            assertThat(rows).hasSize(4); // one per listener (metrics, settlement, notifications, flaky), written in the accept transaction
             assertThat(rows).allSatisfy(row -> assertThat(row.get("completion_date")).isNotNull());
         });
         assertThat(publications()).extracting(row -> row.get("event_type"))
@@ -131,7 +131,7 @@ class OrderStatusChangedEventPostgresTest extends PostgresApiE2ETestBase {
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
                 assertThat(publications()).allSatisfy(row -> assertThat(row.get("completion_date")).isNotNull()));
         assertThat(FlakyListener.attempts.get(orderId).get()).isEqualTo(2);
-        assertThat(publications()).hasSize(3); // redelivery reuses the row; the completed listeners are not re-run
+        assertThat(publications()).hasSize(4); // redelivery reuses the row; the completed listeners are not re-run
     }
 
     // --- helpers ---

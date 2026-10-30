@@ -59,7 +59,7 @@ class CheckoutOwnershipTest {
                 mock(CheckoutDiscountResolver.class), mock(com.delivery.delivery.service.DeliveryCodeHasher.class),
                 mock(com.delivery.order.service.OrderStockService.class),
                 mock(com.delivery.cart.service.CartService.class), mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine());
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine(), mock(com.delivery.order.service.DeliveryAreaPolicy.class), mock(com.delivery.order.service.CheckoutQuoteStore.class));
     }
 
     private void stubCaller() {

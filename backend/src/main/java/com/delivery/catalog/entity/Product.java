@@ -35,6 +35,10 @@ public class Product {
     private boolean manualValidationRequired;
     @Column(name = "prohibited_fuel", nullable = false)
     private boolean prohibitedFuel;
+    /** VAT category (V064, W6-A): STANDARD (default, standard rate) or ZERO/EXEMPT — fiscal choice, a validar com contabilista. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "tax_category", nullable = false, length = 20)
+    private com.delivery.common.pricing.TaxCategory taxCategory = com.delivery.common.pricing.TaxCategory.STANDARD;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "jsonb")
     private Map<String, Object> attributes = new HashMap<>();
@@ -86,6 +90,7 @@ public class Product {
     public String getPrimaryImageKey() { return primaryImageKey; }
     public java.util.List<String> getImageGallery() { return imageGallery; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public com.delivery.common.pricing.TaxCategory getTaxCategory() { return taxCategory; }
 
     public void setName(String name) {
         this.name = name;

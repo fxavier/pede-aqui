@@ -162,6 +162,23 @@ W5-B (estado e GPS do estafeta, LAC-42/LAC-40; detalhe em `API-MIGRATION.md`, se
   o limite configurado for menor que os 50 da validação). Pontos de baixa qualidade não são erro: são
   descartados e contados em `droppedByReason`.
 
+W6-A (checkout v2, LAC-22/LAC-20; detalhe em `API-MIGRATION.md`, secção W6-A) acrescenta:
+- `quote_changed` (409 — `POST /checkout` com `quoteId` expirado ou cujos preços/taxas mudaram). `details` =
+  `{ reason: "expired" | "amounts_changed" | "prices_changed", quote: <CheckoutQuoteResponse novo, com novo quoteId>,
+  items?: [{ skuId, previousUnitPrice, currentUnitPrice }] }` (`items` só em `prices_changed`; o carrinho é
+  repreçado como em `price_changed`). Sem `quoteId` continua a sair `price_changed`.
+- `quote_mismatch` (422 — `quoteId` emitido para outro carrinho ou outra morada). `quoteId` de outro cliente/tenant
+  → 404 `not_found`.
+- `out_of_service_area` (422 — `GET /checkout/quote` com `addressId` ou `POST /checkout`: o ponto da morada não está
+  coberto pelo polígono da zona de entrega do vendedor, ou a zona não está `ACTIVE`). Sem zona, zona sem polígono ou
+  morada sem coordenadas → permitido.
+- `address_too_far` (422 — mesmos endpoints: distância em linha reta acima de `vendors.max_delivery_distance_km` ou,
+  na falta, de `fee_policies.max_delivery_distance_km`). `details` = `{ distanceKm, maxDistanceKm }`.
+- Ordem no checkout: `idempotency` (replay) → `quoteId` (404 / `quote_mismatch` / `quote_changed` expirado) → morada
+  (`address_required`/404) → `invalid_cart` → `store_closed` → farmácia → `sku_inactive`/`product_not_available`/
+  `price_changed` (ou `quote_changed` com `quoteId`) → `out_of_service_area` → `address_too_far` → `quote_changed`
+  (`amounts_changed`) → stock/promoções.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),

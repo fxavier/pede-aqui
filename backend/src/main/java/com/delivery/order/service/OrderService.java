@@ -46,6 +46,10 @@ import com.delivery.common.pricing.PricingMath;
 import com.delivery.order.dto.CheckoutQuoteResponse;
 import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.dto.CheckoutResult;
+import com.delivery.order.entity.CheckoutQuote;
+import com.delivery.common.pricing.TaxCategory;
+import com.delivery.common.pricing.TaxableLine;
+import com.delivery.common.pricing.VatBreakdown;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
@@ -106,10 +110,14 @@ public class OrderService {
     private final DeliveryAddressResolver addressResolver;
     private final PricingService pricingService;
     private final DeliveryRetirementService deliveryRetirementService;
+    private final DeliveryAreaPolicy deliveryAreaPolicy;
+    private final CheckoutQuoteStore quoteStore;
     private final SecureRandom random = new SecureRandom();
 
-    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService, OrderStateMachine stateMachine) {
+    public OrderService(CartRepository cartRepository, OrderRepository orderRepository, PaymentRepository paymentRepository, DeliveryRepository deliveryRepository, InventoryService inventoryService, AppUserProfileRepository userProfileRepository, VendorRepository vendorRepository, NotificationService notificationService, PaymentService paymentService, AuditLogService auditLogService, OrderMapper mapper, TenantContext tenantContext, SkuRepository skuRepository, ProductRepository productRepository, CheckoutDiscountResolver discountResolver, DeliveryCodeHasher deliveryCodeHasher, OrderStockService orderStockService, CartService cartService, PlatformTransactionManager transactionManager, DeliveryAddressResolver addressResolver, PricingService pricingService, MerchantScopeGuard merchantScopeGuard, DeliveryRetirementService deliveryRetirementService, OrderStateMachine stateMachine, DeliveryAreaPolicy deliveryAreaPolicy, CheckoutQuoteStore quoteStore) {
         this.deliveryRetirementService = deliveryRetirementService;
+        this.deliveryAreaPolicy = deliveryAreaPolicy;
+        this.quoteStore = quoteStore;
         this.addressResolver = addressResolver;
         this.pricingService = pricingService;
         this.orderStockService = orderStockService;
@@ -212,10 +220,19 @@ public class OrderService {
      * snapshot. A null addressId is the legacy request shape, accepted only while the compatibility window is open.
      */
     public CheckoutResult checkout(UUID cartId, String idempotencyKey, UUID addressId) {
+        return checkout(cartId, idempotencyKey, addressId, null);
+    }
+
+    /**
+     * Checkout v2 (W6-A): with {@code quoteId} (from GET /checkout/quote) the order is charged exactly that quote, or
+     * 409 quote_changed carries a fresh quote when it expired or its prices/fees moved (a repriced SKU included, so
+     * price_changed never surfaces on this path). Without quoteId the pre-W6-A revalidation applies (409 price_changed).
+     */
+    public CheckoutResult checkout(UUID cartId, String idempotencyKey, UUID addressId, UUID quoteId) {
         UUID tenantId = tenantId();
         UUID customerId = getCurrentCustomerId();
         try {
-            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey, addressId));
+            return transactionTemplate.execute(status -> checkoutInTransaction(tenantId, customerId, cartId, idempotencyKey, addressId, quoteId));
         } catch (DataIntegrityViolationException race) {
             // Another request with this key committed first and our INSERT hit uq_orders_tenant_checkout_key.
             CheckoutResult replay = readOnlyTransactionTemplate.execute(status -> orderRepository
@@ -230,11 +247,22 @@ public class OrderService {
             // Never charge a stale price silently: refresh the cart so the customer can review and reconfirm (AS-22).
             cartService.repriceItems(tenantId, cartId, changed.getChanges().stream()
                     .collect(Collectors.toMap(PriceChangedException.PriceChange::skuId, PriceChangedException.PriceChange::currentUnitPrice, (first, second) -> first)));
+            if (quoteId != null) {
+                throw new QuoteChangedException(QuoteChangedException.Reason.PRICES_CHANGED)
+                        .withFreshQuote(freshQuote(tenantId, customerId, cartId, addressId), changed.getChanges());
+            }
             throw changed;
+        } catch (QuoteChangedException stale) {
+            // The checkout transaction rolled back; hand the customer a new quote to review (own transaction).
+            throw stale.withFreshQuote(freshQuote(tenantId, customerId, cartId, addressId), List.of());
         }
     }
 
-    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey, UUID addressId) {
+    private CheckoutQuoteResponse freshQuote(UUID tenantId, UUID customerId, UUID cartId, UUID addressId) {
+        return transactionTemplate.execute(status -> quoteInTransaction(tenantId, customerId, cartId, addressId));
+    }
+
+    private CheckoutResult checkoutInTransaction(UUID tenantId, UUID customerId, UUID cartId, String idempotencyKey, UUID addressId, UUID quoteId) {
         Optional<Order> existing = orderRepository.findByTenantIdAndCheckoutIdempotencyKey(tenantId, idempotencyKey);
         if (existing.isPresent()) {
             return replay(existing.get(), customerId, cartId, addressId);
@@ -249,8 +277,21 @@ public class OrderService {
         if (existing.isPresent()) {
             return replay(existing.get(), customerId, cartId, addressId);
         }
+        CheckoutQuote confirmedQuote = quoteId == null ? null : requireUsableQuote(tenantId, customerId, quoteId, cartId, addressId);
         Optional<DeliveryAddressSnapshot> deliveryAddress = addressResolver.resolve(tenantId, customerId, addressId);
-        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey, deliveryAddress)), false);
+        return new CheckoutResult(mapper.toResponse(createOrder(tenantId, customerId, cart, idempotencyKey, deliveryAddress, confirmedQuote)), false);
+    }
+
+    /** The caller's quote for this cart and address (404 / 422 quote_mismatch), not yet expired (409 quote_changed). */
+    private CheckoutQuote requireUsableQuote(UUID tenantId, UUID customerId, UUID quoteId, UUID cartId, UUID addressId) {
+        CheckoutQuote quote = quoteStore.requireOwn(tenantId, customerId, quoteId);
+        if (!quote.getCartId().equals(cartId) || !java.util.Objects.equals(quote.getAddressId(), addressId)) {
+            throw new BusinessException("quote_mismatch", "The checkout quote was issued for another cart or address", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (quote.isExpiredAt(java.time.Instant.now())) {
+            throw new QuoteChangedException(QuoteChangedException.Reason.EXPIRED);
+        }
+        return quote;
     }
 
     /** Returns the order already created for this key, but only to the same customer, cart and address (409 otherwise). */
@@ -287,7 +328,8 @@ public class OrderService {
         }
     }
 
-    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey, Optional<DeliveryAddressSnapshot> deliveryAddress) {
+    private Order createOrder(UUID tenantId, UUID currentCustomerId, Cart cart, String idempotencyKey, Optional<DeliveryAddressSnapshot> deliveryAddress,
+                              CheckoutQuote confirmedQuote) {
         if (!"ACTIVE".equals(cart.getStatus()) || cart.getItems().isEmpty()) {
             throw new BusinessException("invalid_cart", "Cart must be active and contain items", HttpStatus.BAD_REQUEST);
         }
@@ -295,9 +337,18 @@ public class OrderService {
         // pharmacy_not_available), checked before the price revalidation so a closed store never reprices the cart.
         cartService.requireCheckoutEligible(tenantId, cart);
         revalidateItems(tenantId, cart);
-        // Fees and tax are re-quoted here with the delivery address (INC-13): the cart's own fees were estimated
-        // without one. Discounts are applied below through the spec-002 seam, on top of this quote.
-        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destinationOf(deliveryAddress));
+        // Fees and VAT are re-quoted here with the delivery address (INC-13): the cart's own fees were estimated
+        // without one. Discounts are applied below through the spec-002 seam, on top of this quote. W6-A: the address
+        // must be inside the vendor's service area and within its maximum delivery distance (422 otherwise).
+        Map<UUID, Product> productBySkuId = resolveProductBySkuId(cart);
+        GeoPoint destination = destinationOf(deliveryAddress);
+        Vendor vendor = vendorRepository.findByTenantIdAndId(tenantId, cart.getVendorId()).orElse(null);
+        deliveryAreaPolicy.requireInServiceArea(tenantId, vendor, destination);
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), taxableLines(cart, productBySkuId), destination);
+        deliveryAreaPolicy.requireWithinMaxDistance(vendor, quote);
+        if (confirmedQuote != null && !confirmedQuote.samePricesAndFees(quote.subtotal(), quote.deliveryFee(), quote.serviceFee(), quote.taxes())) {
+            throw new QuoteChangedException(QuoteChangedException.Reason.AMOUNTS_CHANGED);
+        }
         // Fixed SKU order for the inventory row locks prevents deadlocks between carts sharing SKUs.
         List<CartItem> bySku = cart.getItems().stream().sorted(Comparator.comparing(CartItem::getSkuId)).toList();
         for (CartItem item : bySku) {
@@ -307,17 +358,23 @@ public class OrderService {
         String code = deliveryCodeHasher.generateCode();
         Order order = new Order(UUID.randomUUID(), tenantId, reference(), cart.getCustomerId(), cart.getVendorId(), cart.getSubtotal(), quote.fees(), quote.taxes(), cart.getDiscounts(), quote.total(), idempotencyKey, deliveryCodeHasher.hash(code), code);
         order.linkCart(cart.getId());
-        order.recordPricingQuote(PricingQuoteSnapshot.of(quote));
         deliveryAddress.ifPresent(order::recordDeliveryAddress);
-        Map<UUID, UUID> categoryBySkuId = resolveCategoryBySkuId(cart);
         for (CartItem item : cart.getItems()) {
-            order.addItem(new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(), item.getUnitPriceSnapshot(), item.getQuantity(), categoryBySkuId.get(item.getSkuId())));
+            Product product = productBySkuId.get(item.getSkuId());
+            OrderItem line = new OrderItem(UUID.randomUUID(), order, tenantId, item.getSkuId(), item.getProductNameSnapshot(), item.getSkuNameSnapshot(),
+                    item.getUnitPriceSnapshot(), item.getQuantity(), product == null ? null : product.getCategoryId());
+            TaxCategory category = taxCategoryOf(product);
+            BigDecimal vatRate = category.rate(quote.taxRate());
+            line.recordTax(category, vatRate, quote.taxInclusive() ? VatBreakdown.vatIn(line.getLineTotal(), vatRate) : null);
+            order.addItem(line);
         }
         // Discount seam (spec 002): the resolver defaults to zero, keeping legacy checkout totals untouched.
         CheckoutDiscount discount = discountResolver.resolve(cart, currentCustomerId);
         if (discount.discountTotal().signum() > 0) {
             order.applyDiscount(discount.appliedPromotionId(), discount.discountTotal());
         }
+        // W6-A: the quote snapshot carries the VAT contained in the charged total (after the discount).
+        order.recordPricingQuote(PricingQuoteSnapshot.of(quote, quote.vat(order.getDiscountTotal()), confirmedQuote == null ? null : confirmedQuote.getId()));
         Order saved = orderRepository.save(order);
         stateMachine.recordCreated(saved); // history row null -> PAYMENT_PENDING (V058)
         Payment payment = paymentRepository.save(new Payment(UUID.randomUUID(), tenantId, saved.getId(), saved.getTotal(), idempotencyKey));
@@ -330,12 +387,17 @@ public class OrderService {
     /**
      * Price quote for checking out the customer's cart to one of their addresses, from the same engine and inputs
      * as checkout (INC-13). Without addressId the base delivery fee applies (estimate). The discount shown is the
-     * cart's pending coupon/promotion; checkout re-validates it.
+     * cart's pending coupon/promotion; checkout re-validates it. W6-A: the quote is stored with a TTL and its
+     * quoteId/expiresAt returned (send quoteId on POST /checkout); the address must be inside the vendor's service
+     * area and maximum distance (422 out_of_service_area / address_too_far), and the response carries the VAT
+     * contained in the total ("IVA incluído").
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public CheckoutQuoteResponse quote(UUID cartId, UUID addressId) {
-        UUID tenantId = tenantId();
-        UUID customerId = getCurrentCustomerId();
+        return quoteInTransaction(tenantId(), getCurrentCustomerId(), cartId, addressId);
+    }
+
+    private CheckoutQuoteResponse quoteInTransaction(UUID tenantId, UUID customerId, UUID cartId, UUID addressId) {
         Cart cart = cartRepository.findByTenantIdAndId(tenantId, cartId).orElseThrow(() -> new NotFoundException("Cart was not found"));
         if (!cart.getCustomerId().equals(customerId)) {
             throw new BusinessException("cart_access_denied", "Access to this cart is not permitted", HttpStatus.FORBIDDEN);
@@ -344,11 +406,30 @@ public class OrderService {
         if (addressId != null) {
             destination = destinationOf(addressResolver.resolve(tenantId, customerId, addressId));
         }
-        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), cart.getSubtotal(), destination);
+        Vendor vendor = cart.getVendorId() == null ? null : vendorRepository.findByTenantIdAndId(tenantId, cart.getVendorId()).orElse(null);
+        deliveryAreaPolicy.requireInServiceArea(tenantId, vendor, destination);
+        PriceQuote quote = pricingService.quote(tenantId, cart.getVendorId(), taxableLines(cart, resolveProductBySkuId(cart)), destination);
+        deliveryAreaPolicy.requireWithinMaxDistance(vendor, quote);
         BigDecimal discountTotal = cart.getDiscountTotal();
         BigDecimal total = PricingMath.orderTotal(quote.subtotal(), quote.fees(), quote.taxes(), discountTotal);
+        VatBreakdown vat = quote.vat(discountTotal);
+        CheckoutQuote stored = quoteStore.save(tenantId, customerId, cart.getId(), addressId, cart.getVendorId(), new CheckoutQuote.Amounts(
+                quote.subtotal(), quote.deliveryFee(), quote.serviceFee(), quote.taxes(), discountTotal, total, vat.vatTotal(), quote.taxInclusive(), quote.engineVersion()));
         return new CheckoutQuoteResponse(cart.getId(), addressId, quote.subtotal(), quote.deliveryFee(), quote.serviceFee(), quote.taxes(),
-                discountTotal, total, quote.delivery().basis(), quote.delivery().distanceKm());
+                discountTotal, total, quote.delivery().basis(), quote.delivery().distanceKm(), stored.getId(), stored.getExpiresAt(),
+                quote.taxInclusive(), quote.taxRate(), vat.vatTotal(), vat.goodsVat(), vat.feesVat(), vat.netTotal());
+    }
+
+    /** Cart lines as VAT-taxable lines (gross = unit price snapshot × quantity) with each product's tax category. */
+    private static List<TaxableLine> taxableLines(Cart cart, Map<UUID, Product> productBySkuId) {
+        return cart.getItems().stream()
+                .map(item -> new TaxableLine(item.getUnitPriceSnapshot().multiply(BigDecimal.valueOf(item.getQuantity())),
+                        taxCategoryOf(productBySkuId.get(item.getSkuId()))))
+                .toList();
+    }
+
+    private static TaxCategory taxCategoryOf(Product product) {
+        return product == null || product.getTaxCategory() == null ? TaxCategory.STANDARD : product.getTaxCategory();
     }
 
     private static GeoPoint destinationOf(Optional<DeliveryAddressSnapshot> address) {
@@ -357,16 +438,27 @@ public class OrderService {
 
     private String reference() { return "PA-" + System.currentTimeMillis() + "-" + random.nextInt(10_000); }
 
-    /** Snapshots the current product category per cart SKU so category reports stay stable over recategorisation. */
-    private Map<UUID, UUID> resolveCategoryBySkuId(Cart cart) {
+    /**
+     * Current product per cart SKU, read once per checkout/quote: its category is snapshotted on the order line (so
+     * category reports stay stable over recategorisation) and its tax category drives the VAT extraction (W6-A).
+     */
+    private Map<UUID, Product> resolveProductBySkuId(Cart cart) {
         Set<UUID> skuIds = cart.getItems().stream().map(CartItem::getSkuId).collect(Collectors.toSet());
-        Map<UUID, UUID> productBySkuId = skuRepository.findAllById(skuIds).stream()
+        if (skuIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, UUID> productIdBySkuId = skuRepository.findAllById(skuIds).stream()
                 .collect(Collectors.toMap(Sku::getId, Sku::getProductId));
-        Map<UUID, UUID> categoryByProductId = productRepository.findAllById(Set.copyOf(productBySkuId.values())).stream()
-                .collect(Collectors.toMap(Product::getId, Product::getCategoryId));
-        return productBySkuId.entrySet().stream()
-                .filter(entry -> categoryByProductId.containsKey(entry.getValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> categoryByProductId.get(entry.getValue())));
+        Map<UUID, Product> productById = productRepository.findAllById(Set.copyOf(productIdBySkuId.values())).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+        Map<UUID, Product> result = new java.util.HashMap<>();
+        productIdBySkuId.forEach((skuId, productId) -> {
+            Product product = productById.get(productId);
+            if (product != null) {
+                result.put(skuId, product);
+            }
+        });
+        return result;
     }
 
     private UUID getCurrentCustomerId() {

@@ -460,16 +460,42 @@
           "distanceKm": {
             "type": "number"
           },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "feesVat": {
+            "type": "number"
+          },
+          "goodsVat": {
+            "type": "number"
+          },
+          "netTotal": {
+            "type": "number"
+          },
+          "quoteId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "serviceFee": {
             "type": "number"
           },
           "subtotal": {
             "type": "number"
           },
+          "taxInclusive": {
+            "type": "boolean"
+          },
           "taxes": {
             "type": "number"
           },
           "total": {
+            "type": "number"
+          },
+          "vatIncluded": {
+            "type": "number"
+          },
+          "vatRate": {
             "type": "number"
           }
         },
@@ -487,6 +513,10 @@
           },
           "idempotencyKey": {
             "minLength": 1,
+            "type": "string"
+          },
+          "quoteId": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -1490,6 +1520,20 @@
         },
         "type": "object"
       },
+      "CursorPageLedgerTransactionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerTransactionResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CursorPageNotificationResponse": {
         "properties": {
           "items": {
@@ -1777,10 +1821,16 @@
           "subtotal": {
             "type": "number"
           },
+          "taxInclusive": {
+            "type": "boolean"
+          },
           "taxes": {
             "type": "number"
           },
           "total": {
+            "type": "number"
+          },
+          "vatIncluded": {
             "type": "number"
           },
           "vendorId": {
@@ -2082,6 +2132,27 @@
         },
         "type": "object"
       },
+      "Entry": {
+        "properties": {
+          "accountType": {
+            "type": "string"
+          },
+          "credit": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "debit": {
+            "type": "number"
+          },
+          "ownerId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "FeePolicyResponse": {
         "properties": {
           "cancellationPolicy": {
@@ -2097,11 +2168,17 @@
             "format": "uuid",
             "type": "string"
           },
+          "maxDeliveryDistanceKm": {
+            "type": "number"
+          },
           "serviceFee": {
             "type": "number"
           },
           "serviceFeeRate": {
             "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
           },
           "taxRate": {
             "type": "number"
@@ -2209,6 +2286,56 @@
         },
         "type": "object"
       },
+      "LedgerTransactionResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "vendorId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "LocationConsentRequest": {
         "properties": {
           "version": {
@@ -2299,6 +2426,31 @@
             "uniqueItems": true
           },
           "tenantId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MerchantBalanceResponse": {
+        "properties": {
+          "balance": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "lastPostedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "totalCredits": {
+            "type": "number"
+          },
+          "totalDebits": {
+            "type": "number"
+          },
+          "vendorId": {
             "format": "uuid",
             "type": "string"
           }
@@ -3722,6 +3874,9 @@
           "gross": {
             "type": "number"
           },
+          "grossExVat": {
+            "type": "number"
+          },
           "net": {
             "type": "number"
           },
@@ -3730,6 +3885,9 @@
             "type": "integer"
           },
           "refunds": {
+            "type": "number"
+          },
+          "vatIncluded": {
             "type": "number"
           }
         },
@@ -3901,6 +4059,9 @@
           "gross": {
             "type": "number"
           },
+          "grossExVat": {
+            "type": "number"
+          },
           "net": {
             "type": "number"
           },
@@ -3914,6 +4075,9 @@
           "to": {
             "format": "date-time",
             "type": "string"
+          },
+          "vatIncluded": {
+            "type": "number"
           }
         },
         "type": "object"
@@ -4639,6 +4803,13 @@
             "minimum": 0.0,
             "type": "number"
           },
+          "maxDeliveryDistanceKm": {
+            "exclusiveMaximum": false,
+            "exclusiveMinimum": false,
+            "maximum": 999999.99,
+            "minimum": 0.0,
+            "type": "number"
+          },
           "serviceFee": {
             "exclusiveMinimum": false,
             "minimum": 0.0,
@@ -4650,6 +4821,9 @@
             "maximum": 1.0,
             "minimum": 0.0,
             "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
           },
           "taxRate": {
             "exclusiveMaximum": false,
@@ -8821,6 +8995,115 @@
         },
         "tags": [
           "finance-controller"
+        ]
+      }
+    },
+    "/api/v1/finance/ledger/transactions": {
+      "get": {
+        "operationId": "transactions_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vendorId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageLedgerTransactionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "settlement-controller"
+        ]
+      }
+    },
+    "/api/v1/finance/merchants/{vendorId}/balance": {
+      "get": {
+        "operationId": "merchantBalance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vendorId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerchantBalanceResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "settlement-controller"
         ]
       }
     },

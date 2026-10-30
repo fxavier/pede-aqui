@@ -41,6 +41,13 @@ public class PolicyService {
         if (request.serviceFeeRate() != null) {
             policy.changeServiceFeeRate(request.serviceFeeRate());
         }
+        if (request.taxInclusive() != null) {
+            policy.changeTaxInclusive(request.taxInclusive());
+        }
+        if (request.maxDeliveryDistanceKm() != null) {
+            // 0 removes the limit (the column only accepts NULL or a positive distance).
+            policy.changeMaxDeliveryDistanceKm(request.maxDeliveryDistanceKm().signum() == 0 ? null : request.maxDeliveryDistanceKm());
+        }
         // saveAndFlush so the response carries the bumped version that the next order quotes will record.
         FeePolicyResponse response = toResponse(feePolicyRepository.saveAndFlush(policy));
         // LAC-15: fee-policy changes are audited with the values now in force (no personal data).
@@ -50,6 +57,8 @@ public class PolicyService {
         details.put("serviceFee", response.serviceFee());
         details.put("serviceFeeRate", response.serviceFeeRate());
         details.put("taxRate", response.taxRate());
+        details.put("taxInclusive", response.taxInclusive());
+        details.put("maxDeliveryDistanceKm", response.maxDeliveryDistanceKm());
         details.put("commissionRate", response.commissionRate());
         details.put("cancellationPolicy", response.cancellationPolicy());
         auditLogService.log(AuditActions.FEE_POLICY_UPDATED, "fee_policy", response.id().toString(), "v" + response.version(), "SUCCESS", details);
@@ -66,7 +75,7 @@ public class PolicyService {
 
     private FeePolicyResponse toResponse(FeePolicy policy) {
         return new FeePolicyResponse(policy.getId(), policy.getDeliveryFee(), policy.getServiceFee(), policy.getTaxRate(), policy.getCommissionRate(), policy.getCancellationPolicy(),
-                policy.getServiceFeeRate(), policy.getVersion());
+                policy.getServiceFeeRate(), policy.getVersion(), policy.isTaxInclusive(), policy.getMaxDeliveryDistanceKm());
     }
 
     private UUID tenantId() {

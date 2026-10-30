@@ -38,6 +38,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
  * engine is visible and documented. Scenarios: cart totals, checkout with and without address, a spec-002
  * coupon on cart and checkout, the GET /cart/pricing preview, and the search delivery fee. Tests whose expected
  * values changed with the engine say so (old → new); the engine tests below cover rules and the recorded quote.
+ * W6-A (LAC-22): VAT 16 % is now INCLUDED in prices and fees (extracted, never added): every "taxes" line went from
+ * 8 % of the subtotal to 0 and the totals dropped by that amount (e.g. 25.34 → 23.90, IVA incluído 3.29).
  */
 class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     private static final double VENDOR_LAT = -25.9692;
@@ -85,14 +87,14 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     }
 
     @Test
-    void cartTotalsUseTheFlatDeliveryFeeServiceFeeAndTax() throws Exception {
+    void cartTotalsUseTheFlatDeliveryFeeServiceFeeAndVatIncluded() throws Exception {
         JsonNode cart = addToCart(customerToken());
 
-        // subtotal 18.00 + fees (5.00 delivery + 0.90 service) + taxes 1.44 = 25.34
+        // subtotal 18.00 + fees (5.00 delivery + 0.90 service), VAT included = 23.90 (W6-A; was + taxes 1.44 = 25.34)
         assertMoney(cart.get("subtotal"), "18.00");
         assertMoney(cart.get("fees"), "5.90");
-        assertMoney(cart.get("taxes"), "1.44");
-        assertMoney(cart.get("total"), "25.34");
+        assertMoney(cart.get("taxes"), "0.00");
+        assertMoney(cart.get("total"), "23.90");
     }
 
     @Test
@@ -104,7 +106,7 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
                         .content("{\"cartId\":\"" + cartId + "\",\"idempotencyKey\":\"char-legacy-" + cartId + "\"}"))
                 .andExpect(status().isCreated());
 
-        assertOrderTotals(cartId, "5.90", "1.44", "0", "25.34");
+        assertOrderTotals(cartId, "5.90", "0", "0", "23.90");
     }
 
     @Test
@@ -115,7 +117,7 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
 
         checkout(ana, cartId, addressId);
 
-        assertOrderTotals(cartId, "5.90", "1.44", "0", "25.34");
+        assertOrderTotals(cartId, "5.90", "0", "0", "23.90");
     }
 
     @Test
@@ -137,13 +139,13 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
                 .andReturn().getResponse().getContentAsString();
         JsonNode cartPricing = objectMapper.readTree(pricing);
         assertMoney(cartPricing.get("fees"), "5.90");
-        assertMoney(cartPricing.get("taxes"), "1.44");
+        assertMoney(cartPricing.get("taxes"), "0.00");
         assertMoney(cartPricing.get("discountTotal"), "1.80");
-        assertMoney(cartPricing.get("total"), "23.54");
+        assertMoney(cartPricing.get("total"), "22.10"); // was 23.54
 
         checkout(ana, cartId, addressId);
 
-        assertOrderTotals(cartId, "5.90", "1.44", "1.80", "23.54");
+        assertOrderTotals(cartId, "5.90", "0", "1.80", "22.10");
     }
 
     @Test
@@ -156,9 +158,9 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
         JsonNode preview = objectMapper.readTree(body);
         assertMoney(preview.get("deliveryFee"), "5.00");
         assertMoney(preview.get("serviceFee"), "5.00");
-        assertMoney(preview.get("tax"), "8.00");
+        assertMoney(preview.get("tax"), "0.00"); // W6-A: VAT included (was 8.00 added)
         assertMoney(preview.get("discount"), "0");
-        assertMoney(preview.get("total"), "118.00");
+        assertMoney(preview.get("total"), "110.00"); // was 118.00
     }
 
     @Test
@@ -169,7 +171,7 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
                         .param("subtotal", "100.00").param("couponCode", "mvp10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.discount").value(0))
-                .andExpect(jsonPath("$.total").value(118.0));
+                .andExpect(jsonPath("$.total").value(110.0));
     }
 
     @Test
@@ -184,12 +186,13 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
     // ---- INC-13 engine: rules, quote persistence, search == checkout ----------------------------------
 
     @Test
-    void v048SeedsTheOperatorTenantPolicyWithThePreviousConstants() {
-        Map<String, Object> policy = jdbc.queryForMap("SELECT delivery_fee, service_fee, service_fee_rate, tax_rate FROM fee_policies WHERE tenant_id = ?", tenant);
+    void v048SeedIsCorrectedByV064ToSixteenPercentVatIncluded() {
+        Map<String, Object> policy = jdbc.queryForMap("SELECT delivery_fee, service_fee, service_fee_rate, tax_rate, tax_inclusive FROM fee_policies WHERE tenant_id = ?", tenant);
         assertThat((BigDecimal) policy.get("delivery_fee")).isEqualByComparingTo("5.00");
         assertThat((BigDecimal) policy.get("service_fee")).isEqualByComparingTo("0.00");
         assertThat((BigDecimal) policy.get("service_fee_rate")).isEqualByComparingTo("0.05");
-        assertThat((BigDecimal) policy.get("tax_rate")).isEqualByComparingTo("0.08");
+        assertThat((BigDecimal) policy.get("tax_rate")).isEqualByComparingTo("0.16"); // V048 seeded 0.08; V064 → 0.16
+        assertThat(policy.get("tax_inclusive")).isEqualTo(true);
     }
 
     @Test
@@ -213,21 +216,22 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
         JsonNode quote = objectMapper.readTree(quoteBody);
         assertMoney(quote.get("deliveryFee"), "60.00");
         assertMoney(quote.get("serviceFee"), "0.90");
-        assertMoney(quote.get("taxes"), "1.44");
-        assertMoney(quote.get("total"), "80.34");
+        assertMoney(quote.get("taxes"), "0.00");
+        assertMoney(quote.get("total"), "78.90"); // was 80.34
+        assertMoney(quote.get("vatIncluded"), "10.88"); // 2.48 goods + 8.28 delivery + 0.12 service
         assertThat(quote.get("deliveryFeeBasis").asText()).isEqualTo("DISTANCE_RULE");
 
         checkout(ana, cartId, addressId);
 
         // Search fee == quoted fee == charged delivery fee (ADR-0003 validation criterion).
-        assertOrderTotals(cartId, "60.90", "1.44", "0", "80.34");
+        assertOrderTotals(cartId, "60.90", "0", "0", "78.90");
         Map<String, Object> recorded = jdbc.queryForMap("SELECT quote_engine_version, quote_delivery_fee, quote_service_fee, quote_tax_rate, "
                 + "quote_delivery_fee_basis, quote_distance_km, quote_fee_policy_id, quote_fee_policy_version, quote_delivery_fee_rule_id, "
                 + "quote_delivery_fee_rule_version, quoted_at FROM orders WHERE cart_id = ?", cartId);
-        assertThat(recorded.get("quote_engine_version")).isEqualTo("pricing-v1");
+        assertThat(recorded.get("quote_engine_version")).isEqualTo("pricing-v2");
         assertThat((BigDecimal) recorded.get("quote_delivery_fee")).isEqualByComparingTo(row.get("deliveryFee").decimalValue());
         assertThat((BigDecimal) recorded.get("quote_service_fee")).isEqualByComparingTo("0.90");
-        assertThat((BigDecimal) recorded.get("quote_tax_rate")).isEqualByComparingTo("0.08");
+        assertThat((BigDecimal) recorded.get("quote_tax_rate")).isEqualByComparingTo("0.16");
         assertThat(recorded.get("quote_delivery_fee_basis")).isEqualTo("DISTANCE_RULE");
         assertThat(((BigDecimal) recorded.get("quote_distance_km")).doubleValue()).isEqualTo(row.get("distanceKm").asDouble());
         assertThat(recorded.get("quote_fee_policy_id")).isEqualTo(jdbc.queryForObject("SELECT id FROM fee_policies WHERE tenant_id = ?", UUID.class, tenant));
@@ -244,7 +248,7 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
         UUID noPin = createAddress(ana, null, null);
         UUID cartId = UUID.fromString(addToCart(ana).get("id").asText());
         checkout(ana, cartId, noPin);
-        assertOrderTotals(cartId, "5.90", "1.44", "0", "25.34");
+        assertOrderTotals(cartId, "5.90", "0", "0", "23.90");
         assertThat(jdbc.queryForObject("SELECT quote_delivery_fee_basis FROM orders WHERE cart_id = ?", String.class, cartId)).isEqualTo("POLICY_BASE");
         assertThat(jdbc.queryForObject("SELECT quote_distance_km FROM orders WHERE cart_id = ?", BigDecimal.class, cartId)).isNull();
 
@@ -253,7 +257,7 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
         mockMvc.perform(withBearer(post("/api/v1/checkout"), bruno).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"cartId\":\"" + legacyCart + "\",\"idempotencyKey\":\"legacy-q-" + legacyCart + "\"}"))
                 .andExpect(status().isCreated());
-        assertOrderTotals(legacyCart, "5.90", "1.44", "0", "25.34");
+        assertOrderTotals(legacyCart, "5.90", "0", "0", "23.90");
         assertThat(jdbc.queryForObject("SELECT quote_delivery_fee_basis FROM orders WHERE cart_id = ?", String.class, legacyCart)).isEqualTo("POLICY_BASE");
     }
 
@@ -290,13 +294,13 @@ class PricingTotalsCharacterizationE2ETest extends PostgresApiE2ETestBase {
 
             String ana = customerToken();
             JsonNode cart = addToCart(ana);
-            // 18.00 + 7.00 delivery + (1.00 + 0.36) service + 2.88 tax = 29.24
+            // 18.00 + 7.00 delivery + (1.00 + 0.36) service, 16 % VAT included = 26.36 (W6-A; was + 2.88 tax = 29.24)
             assertMoney(cart.get("fees"), "8.36");
-            assertMoney(cart.get("taxes"), "2.88");
-            assertMoney(cart.get("total"), "29.24");
+            assertMoney(cart.get("taxes"), "0.00");
+            assertMoney(cart.get("total"), "26.36");
             UUID cartId = UUID.fromString(cart.get("id").asText());
             checkout(ana, cartId, createAddress(ana, CUSTOMER_LAT, CUSTOMER_LNG));
-            assertOrderTotals(cartId, "8.36", "2.88", "0", "29.24");
+            assertOrderTotals(cartId, "8.36", "0", "0", "26.36");
             assertThat(jdbc.queryForObject("SELECT quote_fee_policy_version FROM orders WHERE cart_id = ?", Long.class, cartId)).isEqualTo(version);
         } finally {
             jdbc.update("UPDATE fee_policies SET delivery_fee = ?, service_fee = ?, service_fee_rate = ?, tax_rate = ?, commission_rate = ?, "
