@@ -23,7 +23,7 @@
         <keycloak.version>26.8.1</keycloak.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.26.3</assertj.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
         <jsoup.version>1.18.3</jsoup.version>
     </properties>
 
@@ -103,6 +103,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.5.2</version>
+                <configuration>
+                    <!-- An IT run that executes nothing must fail the build, never report success. -->
+                    <failIfNoTests>true</failIfNoTests>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

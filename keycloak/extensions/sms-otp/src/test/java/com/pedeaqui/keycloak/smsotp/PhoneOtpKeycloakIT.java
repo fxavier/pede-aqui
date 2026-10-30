@@ -2,7 +2,6 @@ package com.pedeaqui.keycloak.smsotp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.CookieManager;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
@@ -55,30 +54,86 @@ class PhoneOtpKeycloakIT {
 
     @BeforeAll
     static void start() {
-        Assumptions.assumeTrue(DOCKER, "Docker is required for the Keycloak provider test");
+        // Deliberately FAIL (not skip) without Docker: a silently skipped IT reports BUILD SUCCESS with 0 tests.
+        // To build without Docker locally use `mvn verify -DskipITs` (explicit opt-out).
+        assertThat(DOCKER).as("Docker is required for PhoneOtpKeycloakIT (use -DskipITs to opt out explicitly)").isTrue();
         KEYCLOAK.withCopyFileToContainer(MountableFile.forHostPath(JAR), "/opt/keycloak/providers/pede-aqui-keycloak-sms-otp.jar")
                 .withCopyFileToContainer(MountableFile.forHostPath(REALM), "/opt/keycloak/data/import/delivery-realm.json");
         KEYCLOAK.start();
+    }
+
+    /** Keeps the Keycloak log for diagnosis (target/keycloak-it.log); the container is then stopped. */
+    @AfterAll
+    static void saveLog() throws Exception {
+        if (KEYCLOAK.isRunning()) {
+            java.nio.file.Files.writeString(Paths.get("target", "keycloak-it.log"), KEYCLOAK.getLogs());
+            KEYCLOAK.stop();
+        }
     }
 
     private static String base() {
         return "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080);
     }
 
-    /** One browser: own cookie jar, never follows redirects (we inspect them). */
+    /**
+     * One browser: own cookie jar, never follows redirects (we inspect them). Cookies are kept by hand because
+     * Keycloak marks its login cookies {@code Secure; SameSite=None}: real browsers send them to http://localhost
+     * (a secure context), but java.net.CookieManager drops Secure cookies on plain http, which made Keycloak answer
+     * {@code cookie_not_found} / 400 on every form post.
+     */
     private static final class Browser {
-        final HttpClient http = HttpClient.newBuilder().cookieHandler(new CookieManager())
-                .followRedirects(HttpClient.Redirect.NEVER).build();
+        final HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+        final Map<String, String> cookies = new LinkedHashMap<>();
         final String verifier = randomUrlSafe(48);
 
+        private HttpRequest.Builder request(String url) {
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url));
+            if (!cookies.isEmpty()) {
+                builder.header("Cookie", cookies.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining("; ")));
+            }
+            return builder;
+        }
+
+        private HttpResponse<String> keep(HttpResponse<String> response) {
+            for (String header : response.headers().allValues("Set-Cookie")) {
+                String pair = header.split(";", 2)[0];
+                int eq = pair.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                String name = pair.substring(0, eq).trim();
+                String value = pair.substring(eq + 1).trim();
+                boolean expired = header.toLowerCase().contains("max-age=0") || value.isEmpty();
+                if (expired) {
+                    cookies.remove(name);
+                } else {
+                    cookies.put(name, value);
+                }
+            }
+            return response;
+        }
+
         HttpResponse<String> get(String url) throws Exception {
-            return http.send(HttpRequest.newBuilder(URI.create(url)).GET().build(), HttpResponse.BodyHandlers.ofString());
+            return keep(http.send(request(url).GET().build(), HttpResponse.BodyHandlers.ofString()));
         }
 
         HttpResponse<String> post(String url, Map<String, String> form) throws Exception {
-            return http.send(HttpRequest.newBuilder(URI.create(url))
+            return keep(http.send(request(url)
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(encode(form))).build(), HttpResponse.BodyHandlers.ofString());
+                    .POST(HttpRequest.BodyPublishers.ofString(encode(form))).build(), HttpResponse.BodyHandlers.ofString()));
+        }
+
+        /** Follows redirects that stay inside Keycloak (required actions); stops at the redirect to the app. */
+        HttpResponse<String> followInternal(HttpResponse<String> response) throws Exception {
+            for (int i = 0; i < 5 && response.statusCode() == 302; i++) {
+                String location = response.headers().firstValue("Location").orElseThrow();
+                if (!location.startsWith(base())) {
+                    return response;
+                }
+                response = get(location);
+            }
+            return response;
         }
 
         HttpResponse<String> start(String clientId, String redirectUri, String loginHint) throws Exception {
@@ -189,12 +244,13 @@ class PhoneOtpKeycloakIT {
         assertThat(codePage.body()).contains("kc-phone-otp-code-form").contains("+25884*****67").doesNotContain("841234567");
 
         String code = codeFor("+25884*****67", 1);
-        HttpResponse<String> next = browser.submit(codePage, "#kc-phone-otp-code-form", "verify", Map.of("code", code));
-        if (next.statusCode() == 200) {
-            // First login of a phone-only customer: Keycloak asks for the required profile fields (name).
-            assertThat(next.body()).contains("firstName");
-            next = browser.submit(next, "#kc-update-profile-form", null, Map.of("firstName", "Ana", "lastName", "Mussa"));
-        }
+        HttpResponse<String> next = browser.followInternal(
+                browser.submit(codePage, "#kc-phone-otp-code-form", "verify", Map.of("code", code)));
+        // First login of a phone-only customer: Keycloak redirects to the VERIFY_PROFILE required action (name).
+        assertThat(next.statusCode()).as(next.body()).isEqualTo(200);
+        assertThat(next.body()).contains("kc-update-profile-form").contains("firstName");
+        next = browser.followInternal(
+                browser.submit(next, "#kc-update-profile-form", null, Map.of("firstName", "Ana", "lastName", "Mussa")));
         assertThat(next.statusCode()).as(next.body()).isEqualTo(302);
         String location = next.headers().firstValue("Location").orElseThrow();
         assertThat(location).startsWith(WEB_REDIRECT);
@@ -214,7 +270,8 @@ class PhoneOtpKeycloakIT {
         Thread.sleep(61_000); // resend cooldown of the first login
         HttpResponse<String> code2Page = again.submit(phone2, "#kc-phone-otp-phone-form", "send", Map.of());
         String code2 = codeFor("+25884*****67", 2);
-        HttpResponse<String> done = again.submit(code2Page, "#kc-phone-otp-code-form", "verify", Map.of("code", code2));
+        HttpResponse<String> done = again.followInternal(
+                again.submit(code2Page, "#kc-phone-otp-code-form", "verify", Map.of("code", code2)));
         assertThat(done.statusCode()).as(done.body()).isEqualTo(302);
         String sub1 = jsonString(payload, "sub");
         String sub2 = jsonString(again.exchange(done.headers().firstValue("Location").orElseThrow(), WEB_REDIRECT).get("payload"), "sub");

@@ -94,8 +94,10 @@ docker compose rm -sf keycloak && docker compose up -d --build keycloak   # afte
   production must set a ≥32-character secret shared by all Keycloak nodes, or Keycloak refuses to start.
   Behind a proxy/LB configure Keycloak `proxy-headers`, otherwise the per-IP limits see only the LB address.
 - Provider tests: `cd keycloak/extensions/sms-otp && mvn verify` (unit tests + `PhoneOtpKeycloakIT`, which
-  starts a real Keycloak 26.8.1 with the jar and the repository realm; needs Docker). `mvn package` runs only
-  the unit tests.
+  starts a real Keycloak 26.8.1 with the jar and the repository realm; needs Docker, Testcontainers 1.21.4 — 1.20.x
+  does not detect Docker Engine 29). Without Docker the IT **fails** on purpose (a skipped IT used to report
+  BUILD SUCCESS with 0 tests; failsafe also has `failIfNoTests`); opt out explicitly with `mvn verify -DskipITs`.
+  `mvn package` runs only the unit tests. The Keycloak container log is saved to `target/keycloak-it.log`.
 
 ### Customer web login (`pede-aqui-web`, PKCE only)
 
