@@ -77,6 +77,8 @@ npm run build
 
 If using pnpm: `pnpm-workspace.yaml` must keep `allowBuilds: { esbuild: true }` — pnpm 10+ blocks esbuild's postinstall otherwise and `pnpm dev` fails with `ERR_PNPM_IGNORED_BUILDS`. (The old `pnpm.onlyBuiltDependencies` package.json field is ignored.)
 
+**npm lockfiles must be generated with npm 10.** CI (`.github/workflows/ci.yml`) runs Node 20 / npm 10 and `npm ci`; a `package-lock.json` written by npm 11 can omit optional platform entries (e.g. `esbuild`, `@esbuild/*`) and npm 10 then fails with `EUSAGE … Missing: … from lock file`. Both `pede-aqui-delivery` and `pede-aqui-backoffice` declare `"packageManager": "npm@10.9.9"` and `engines.npm: ^10`. After any dependency change, regenerate with `npx -y npm@10 install --package-lock-only` and verify with `npx -y npm@10 ci`. Dependabot ignores semver-major updates (`.github/dependabot.yml`); framework majors (TypeScript 7, Tailwind 4, eslint-config-next 16 / React Compiler lint rules) are manual increments.
+
 `.env.local` (copy from the checked-in file):
 ```
 VITE_API_BASE_URL=http://localhost:8080/api/v1
