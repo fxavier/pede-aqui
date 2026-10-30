@@ -20,6 +20,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByTenantIdAndVendorId(UUID tenantId, UUID vendorId);
     Page<Order> findByTenantIdAndVendorId(UUID tenantId, UUID vendorId, Pageable pageable);
     Optional<Order> findByTenantIdAndId(UUID tenantId, UUID id);
+    /** Orders of one page of another list (e.g. the cancellation-request queue), tenant-scoped. */
+    List<Order> findByTenantIdAndIdIn(UUID tenantId, java.util.Collection<UUID> ids);
     Optional<Order> findByTenantIdAndCheckoutIdempotencyKey(UUID tenantId, String checkoutIdempotencyKey);
     List<Order> findByTenantIdAndStatus(UUID tenantId, OrderStatus status);
     long countByTenantIdAndStatus(UUID tenantId, OrderStatus status);

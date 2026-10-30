@@ -16,4 +16,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     List<Delivery> findByTenantIdAndCourierIdAndStatus(UUID tenantId, UUID courierId, DeliveryStatus status);
     /** True when the courier holds a delivery in one of the given statuses (used for dispatch exclusivity). */
     boolean existsByTenantIdAndCourierIdAndStatusIn(UUID tenantId, UUID courierId, Collection<DeliveryStatus> statuses);
+    /** The courier's delivery in one of the given statuses, if any (LAC-40: route history is tied to it). */
+    Optional<Delivery> findFirstByTenantIdAndCourierIdAndStatusIn(UUID tenantId, UUID courierId, Collection<DeliveryStatus> statuses);
 }

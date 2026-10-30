@@ -35,6 +35,12 @@ public final class AuditActions {
     // Onboarding approvals (LAC-15)
     public static final String COURIER_APPROVED = "COURIER_APPROVED";
     public static final String COURIER_REJECTED = "COURIER_REJECTED";
+    /** LAC-42: OPS/ADMIN suspended a courier (reason kept on the courier row, never in the audit text). */
+    public static final String COURIER_SUSPENDED = "COURIER_SUSPENDED";
+    public static final String COURIER_REINSTATED = "COURIER_REINSTATED";
+    /** LAC-40: the courier accepted / withdrew the GPS consent (business reference = consent text version). */
+    public static final String COURIER_LOCATION_CONSENT_ACCEPTED = "COURIER_LOCATION_CONSENT_ACCEPTED";
+    public static final String COURIER_LOCATION_CONSENT_WITHDRAWN = "COURIER_LOCATION_CONSENT_WITHDRAWN";
     public static final String VENDOR_VERIFICATION_APPROVED = "VENDOR_VERIFICATION_APPROVED";
     public static final String VENDOR_VERIFICATION_REJECTED = "VENDOR_VERIFICATION_REJECTED";
     // Store closures (LAC-27)
@@ -44,6 +50,18 @@ public final class AuditActions {
     // Order lifecycle timeouts (LAC-25, W4-A) — written by the timeout jobs (system actor)
     public static final String ORDER_CANCELLED_PAYMENT_EXPIRED = "ORDER_CANCELLED_PAYMENT_EXPIRED";
     public static final String ORDER_CANCELLED_VENDOR_TIMEOUT = "ORDER_CANCELLED_VENDOR_TIMEOUT";
+
+    // Customer cancellation (LAC-26, W5-A)
+    /** Free cancellation by the customer (before acceptance); business reference refund_remaining=<amount>. */
+    public static final String ORDER_CANCELLED_BY_CUSTOMER = "ORDER_CANCELLED_BY_CUSTOMER";
+    /** The customer requested a cancellation after acceptance (target = the request). */
+    public static final String ORDER_CANCELLATION_REQUESTED = "ORDER_CANCELLATION_REQUESTED";
+    /** OPS/ADMIN approved a request: order cancelled with the fee withheld (target = the order). */
+    public static final String ORDER_CANCELLATION_APPROVED = "ORDER_CANCELLATION_APPROVED";
+    /** OPS/ADMIN rejected a request (target = the request). */
+    public static final String ORDER_CANCELLATION_REJECTED = "ORDER_CANCELLATION_REJECTED";
+    /** A request was closed because the order moved on before a decision (target = the request). */
+    public static final String ORDER_CANCELLATION_REQUEST_CLOSED = "ORDER_CANCELLATION_REQUEST_CLOSED";
 
     private AuditActions() {
     }

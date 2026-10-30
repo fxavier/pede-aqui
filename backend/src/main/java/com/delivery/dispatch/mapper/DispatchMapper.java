@@ -13,7 +13,10 @@ import org.springframework.stereotype.Component;
 public class DispatchMapper {
     public CourierResponse toCourierResponse(Courier courier) {
         return new CourierResponse(courier.getId(), courier.getUserProfileId(), courier.getVerificationStatus(), courier.isAvailable(), courier.getOperatingZoneId(),
-                courier.getFullName(), courier.getPhone(), courier.getNif(), courier.getVehicleType(), courier.getVehiclePlate(), courier.getRating());
+                courier.getFullName(), courier.getPhone(), courier.getNif(),
+                courier.getVehicleType() == null ? null : courier.getVehicleType().name(), courier.getVehiclePlate(), courier.getRating(),
+                courier.getStatus(), courier.getStatusChangedAt(), courier.getSuspensionReason(), courier.getMaxActiveDeliveries(),
+                courier.getLocationConsentAcceptedAt(), courier.getLocationConsentVersion());
     }
 
     public DispatchJobResponse toDispatchJobResponse(DispatchJob job) {

@@ -35,12 +35,12 @@ import org.mockito.ArgumentCaptor;
 
 class CourierServiceTest {
     @Test
-    void returnsOnlyVerifiedOnlineCouriersInZone() {
+    void returnsOnlyVerifiedAvailableCouriersInZone() {
         UUID tenantId = UUID.randomUUID();
         UUID zoneA = UUID.randomUUID();
         CourierRepository courierRepository = mock(CourierRepository.class);
-        when(courierRepository.findByTenantIdAndVerificationStatusAndAvailableAndOperatingZoneId(
-                        tenantId, CourierVerificationStatus.APPROVED, true, zoneA))
+        when(courierRepository.findByTenantIdAndVerificationStatusAndStatusAndOperatingZoneId(
+                        tenantId, CourierVerificationStatus.APPROVED, com.delivery.dispatch.entity.CourierStatus.AVAILABLE, zoneA))
                 .thenReturn(List.of(new Courier(UUID.randomUUID(), tenantId, UUID.randomUUID(), zoneA)));
 
         TenantContext tenantContext = mock(TenantContext.class);
@@ -162,7 +162,8 @@ class CourierServiceTest {
         assertThat(savedCourier.getFullName()).isEqualTo("John Doe");
         assertThat(savedCourier.getPhone()).isEqualTo("123456789");
         assertThat(savedCourier.getNif()).isEqualTo("123456789");
-        assertThat(savedCourier.getVehicleType()).isEqualTo("Motorcycle");
+        // LAC-42: the free-text alias is normalised to the vehicle enum.
+        assertThat(savedCourier.getVehicleType()).isEqualTo(com.delivery.dispatch.entity.CourierVehicleType.MOTORBIKE);
         assertThat(savedCourier.getVehiclePlate()).isEqualTo("AB-12-34");
         assertThat(savedCourier.getDateOfBirth()).isEqualTo(dateOfBirth);
     }

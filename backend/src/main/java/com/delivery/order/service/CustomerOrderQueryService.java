@@ -13,6 +13,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.PricingQuoteSnapshot;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.CustomerOrderQueryRepository;
+import com.delivery.order.service.CustomerCancellationPolicy.Phase;
 import com.delivery.vendor.api.VendorNames;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +39,12 @@ public class CustomerOrderQueryService {
     private final VendorNames vendorNames;
     private final OrderMapper mapper;
     private final TenantContext tenantContext;
+    private final CustomerCancellationService cancellationService;
 
     public CustomerOrderQueryService(CustomerOrderQueryRepository repository, UserAccounts userAccounts,
-                                     VendorNames vendorNames, OrderMapper mapper, TenantContext tenantContext) {
+                                     VendorNames vendorNames, OrderMapper mapper, TenantContext tenantContext,
+                                     CustomerCancellationService cancellationService) {
+        this.cancellationService = cancellationService;
         this.repository = repository;
         this.userAccounts = userAccounts;
         this.vendorNames = vendorNames;
@@ -72,6 +76,7 @@ public class CustomerOrderQueryService {
                 .flatMap(customerId -> repository.findByTenantIdAndIdAndCustomerId(tenantId, orderId, customerId))
                 .orElseThrow(() -> new NotFoundException("Order was not found"));
         PricingQuoteSnapshot quote = order.getPricingQuote();
+        Phase phase = CustomerCancellationPolicy.phaseOf(order.getStatus());
         return new CustomerOrderDetailResponse(order.getId(), order.getReference(), order.getStatus(), order.getCancellationReason(),
                 order.getVendorId(), vendorNames(Set.of(order.getVendorId())).getOrDefault(order.getVendorId(), UNKNOWN_VENDOR),
                 order.getCreatedAt(), order.getItems().stream().map(mapper::toItemResponse).toList(),
@@ -81,7 +86,9 @@ public class CustomerOrderQueryService {
                 order.getSubtotal(), order.getFees(),
                 quote == null ? null : quote.getDeliveryFee(), quote == null ? null : quote.getServiceFee(),
                 order.getTaxes(), order.getDiscountTotal(), order.getTotal(),
-                quote == null ? null : quote.getDeliveryFeeBasis(), quote == null ? null : quote.getDistanceKm());
+                quote == null ? null : quote.getDeliveryFeeBasis(), quote == null ? null : quote.getDistanceKm(),
+                phase, phase == Phase.REQUEST ? CustomerCancellationPolicy.fee(order.getSubtotal(), cancellationService.feeRate()) : null,
+                cancellationService.latestFor(order));
     }
 
     private List<CustomerOrderSummaryResponse> toSummaries(List<Order> orders) {

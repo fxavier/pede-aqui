@@ -2,7 +2,8 @@
 export interface VendorSearchResult {
   vendorId: string
   name: string
-  distanceKm: number
+  /** LAC-39: PostGIS geodesic distance from the searched point; null when the search had no lat/lng. */
+  distanceKm: number | null
   distanceMeters: number | null
   available: boolean
   rating: number
@@ -227,6 +228,41 @@ export interface CustomerOrderDetail {
   total: number
   deliveryFeeBasis: string | null
   distanceKm: number | null
+  /** What the customer can do now (LAC-26): cancel at once, ask OPS, nothing. */
+  cancellationPhase: CancellationPhase
+  /** Fee withheld if a request is approved (REQUEST phase only). */
+  cancellationFeeEstimate: number | null
+  /** The order's most recent cancellation request, if any. */
+  cancellationRequest: CancellationRequest | null
+}
+
+export type CancellationPhase = 'FREE' | 'REQUEST' | 'ALREADY_CANCELLED' | 'NOT_CANCELLABLE'
+
+/** A customer cancellation request awaiting (or decided by) operations (LAC-26). */
+export interface CancellationRequest {
+  id: string
+  orderId: string
+  orderReference: string | null
+  orderStatus: string | null
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED'
+  /** Why a REJECTED request ended: OPS_REJECTED, ORDER_ADVANCED (order moved on), ORDER_CLOSED. */
+  closureReason: 'OPS_REJECTED' | 'ORDER_ADVANCED' | 'ORDER_CLOSED' | null
+  reason: string | null
+  feeRate: number
+  feeAmount: number
+  refundAmount: number | null
+  requestedAt: string
+  decidedAt: string | null
+}
+
+/** Result of POST /me/orders/{id}/cancel: 200 CANCELLED, 202 REQUESTED. */
+export interface CustomerCancellationResult {
+  orderId: string
+  orderStatus: string
+  cancellationReason: string | null
+  outcome: 'CANCELLED' | 'REQUESTED'
+  refundAmount: number | null
+  request: CancellationRequest | null
 }
 
 // Tracking (GET /api/v1/orders/{orderId}/tracking)

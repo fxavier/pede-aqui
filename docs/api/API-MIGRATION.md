@@ -619,6 +619,162 @@ No backend API change; this records a client change that the Keycloak ROPC shutd
   `http://localhost:8081/realms/delivery`, so on an Android emulator use `adb reverse` + `localhost` URLs rather
   than `10.0.2.2` (see CLAUDE.md, Courier/Customer mobile app).
 
+## W5-A — Customer cancellation with a per-phase policy (LAC-26) — 2026-10-29
+
+All additive; no existing endpoint changes shape.
+
+### `POST /api/v1/me/orders/{id}/cancel` (new, CUSTOMER)
+
+Optional body `{ "reason": "…" }` (≤ 500 chars, else 400 `validation_failed`; kept only on a cancellation
+request, never in history/audit). Another customer's or tenant's order → **404**. Policy
+(`order/service/CustomerCancellationPolicy`):
+
+| Order status | Result |
+|---|---|
+| `PAYMENT_PENDING` | **200**, `outcome=CANCELLED`, `cancellationReason=CUSTOMER_CANCELLED`; payment `PENDING_CONFIRMATION → CANCELLED`, no refund |
+| `PAYMENT_CONFIRMED` | **200**, `outcome=CANCELLED`, `CUSTOMER_CANCELLED`; refund of the eligible remainder created `REQUESTED` (key `customer-cancel-<orderId>`), `refundAmount` in the body |
+| `ACCEPTED_BY_VENDOR`, `PREPARING` | **202**, `outcome=REQUESTED`, `request` = the open cancellation request with the quoted `feeAmount` (`app.orders.cancellation.fee-rate` × subtotal, HALF_UP 2 dp; default 10 %); the order continues |
+| `CANCELLED` | **200**, current state (idempotent; `refundAmount` = the customer-cancel refund, if any) |
+| `READY_FOR_PICKUP` onwards, `REFUNDED`, legacy rows | **409 `order_not_cancellable`**, `details.orderStatus` |
+
+Free cancellations also retire the delivery/dispatch job, release the stock reservation, notify the customer
+(`order_cancelled_by_customer`) and audit `ORDER_CANCELLED_BY_CUSTOMER` (`refund_remaining=<amount>`).
+Repeats are idempotent (one refund, one history row, one audit); a repeat in the request phase returns the same
+open request. A vendor action racing the call (accept/preparing/ready) has exactly one winner: the loser gets
+409 `concurrent_modification` or `invalid_order_transition` with no effect. Rate-limit group `payments` (20/min).
+
+Response `CustomerCancellationResponse`: `{ orderId, orderStatus, cancellationReason, outcome, refundAmount, request }`.
+
+### OPS queue `/api/v1/ops/cancellation-requests` (new, OPS/ADMIN, tenant-scoped)
+
+- `GET ?status=REQUESTED|APPROVED|REJECTED&page=&size=` → `{ content, page, size, totalElements }` (default
+  `REQUESTED`, newest first, size ≤ 100). Items `CancellationRequestResponse` = `{ id, orderId, orderReference,
+  orderStatus, status, closureReason, reason, feeRate, feeAmount, refundAmount, requestedAt, decidedAt }`.
+- `POST /{id}/approve` → order `CANCELLED` / `CUSTOMER_CANCELLED_WITH_FEE`, delivery retired, stock released,
+  refund = `refundable − fee` where the fee is the quoted fee capped at what is still refundable (never negative;
+  no refund row when nothing remains), customer notified (`order_cancellation_approved`), audit
+  `ORDER_CANCELLATION_APPROVED` (`refund_remaining=…;fee=…`). Repeat on an APPROVED request → 200 same body;
+  on a REJECTED one → 409 `cancellation_request_closed`. If the order already moved on (READY_FOR_PICKUP onwards
+  or ended by another path) → **409 `order_not_cancellable`** and the request is closed (`REJECTED`,
+  `closureReason=ORDER_ADVANCED|ORDER_CLOSED`, committed with the 409).
+- `POST /{id}/reject` → `REJECTED` / `OPS_REJECTED`, the order continues, customer notified
+  (`order_cancellation_rejected`), audit `ORDER_CANCELLATION_REJECTED`. Repeat → 200; on an APPROVED request →
+  409 `cancellation_request_closed`. The customer may file a new request afterwards (one **open** request per
+  order, V059 partial unique index).
+- Another tenant's request → 404. Approve is in rate-limit group `payments`.
+
+### `GET /api/v1/me/orders/{id}` (additive fields)
+
+`cancellationPhase` (`FREE` | `REQUEST` | `ALREADY_CANCELLED` | `NOT_CANCELLABLE`), `cancellationFeeEstimate`
+(REQUEST phase only, else null), `cancellationRequest` (the order's latest request or null).
+
+### New `cancellationReason` values (clients that switch on it)
+
+`CUSTOMER_CANCELLED`, `CUSTOMER_CANCELLED_WITH_FEE` (on `OrderResponse`, `AdminOrderResponse`, the customer
+summary/detail). Unknown values must be treated as a generic cancellation. Backoffice: no OPS screen yet —
+use the API (follow-up). Customer web: `OrderCancellationCard` on the order detail.
+
+## W5-B — Courier status/capacity and courier GPS (LAC-42, LAC-40) — 2026-10-29
+
+### `CourierResponse` (additive)
+
+`GET /couriers/me`, `GET /couriers`, `/couriers/page`, `/couriers/{id}`, approve/reject and the new status
+endpoints now return, in addition to the existing fields: `status` (`OFFLINE` | `AVAILABLE` | `BUSY` |
+`SUSPENDED`), `statusChangedAt`, `suspensionReason` (OPS text, set only while `SUSPENDED`),
+`maxActiveDeliveries` (always 1 — V035 allows one active delivery per courier), `locationConsentAcceptedAt`,
+`locationConsentVersion`.
+
+- `available` is **deprecated** (still present): it equals `status` `AVAILABLE` or `BUSY`. Clients should read
+  `status`.
+- `vehicleType` stays a string but its values are now `MOTORBIKE`, `BICYCLE`, `CAR`, `ON_FOOT`, `OTHER` (or
+  null). V060 mapped existing free text by prefix (pt/en: "Mota"/"Motorcycle" → `MOTORBIKE`, "Bicicleta" →
+  `BICYCLE`, "Carro"/"Viatura" → `CAR`, "A pé" → `ON_FOOT`); anything else became `OTHER`.
+
+### `POST /api/v1/couriers` — vehicle validated (behaviour change)
+
+`vehicleType` accepts the enum names (case-insensitive) or the same pt/en aliases; any other text is now
+**400** `invalid_vehicle_type` (it was stored verbatim). No client currently sends it.
+
+### Courier status (LAC-42)
+
+- **New** `PUT /api/v1/couriers/me/status` `{ "status": "AVAILABLE" | "OFFLINE" }` (COURIER). Going online
+  while working an accepted delivery returns `BUSY`. Errors: 400 `invalid_courier_status` (`BUSY`/`SUSPENDED`
+  requested), 400 `validation_failed` (missing status), 409 `courier_suspended`, 409 `courier_not_verified`,
+  409 `courier_has_active_delivery` (going offline mid-delivery).
+- **Deprecated** `PATCH /api/v1/couriers/me/availability` `{ "available": bool }`: same rules (true =
+  `AVAILABLE`, false = `OFFLINE`). Behaviour change: going offline while working an accepted delivery is now
+  409 `courier_has_active_delivery` (it used to flip the flag). The courier Flutter app now uses the new
+  endpoint.
+- **New** `PATCH /api/v1/couriers/{id}/suspend` `{ "reason": "…" }` (1..500 chars) and
+  `PATCH /api/v1/couriers/{id}/reinstate` (OPS/ADMIN, tenant-scoped → 404, audited `COURIER_SUSPENDED` /
+  `COURIER_REINSTATED`). Suspend is idempotent; reinstate of a courier that is not suspended → 409
+  `courier_not_suspended`; a reinstated courier is `OFFLINE` (or `BUSY` mid-delivery).
+- Dispatch (`/ops/dispatch`, assignment) now offers only to `status = AVAILABLE` couriers. `BUSY` is set when
+  the courier accepts an offer (`POST /dispatch-jobs/{id}/accept`; a suspended courier gets 409
+  `courier_suspended`) and cleared when the delivery is completed, fails or is retired.
+- Presence sweeper job: `BUSY` without an accepted delivery → `AVAILABLE`. The "no location for 2 min →
+  `OFFLINE`" rule exists but is **off** (`APP_COURIER_PRESENCE_ENFORCE_TIMEOUT=false`) until the courier app
+  sends locations — turning it on before that would take every online courier offline after 2 minutes.
+
+### Courier GPS (LAC-40, all new, additive)
+
+- `GET /api/v1/couriers/me/location-consent` → `{ currentVersion, acceptedVersion, acceptedAt, valid }`.
+- `PUT /api/v1/couriers/me/location-consent` `{ "version": "<currentVersion>" }` → records the explicit consent
+  (timestamp + text version, audited). Another version → 409 `location_consent_outdated`. The current version
+  is `app.courier-location.consent-version` (env `APP_COURIER_LOCATION_CONSENT_VERSION`, default
+  `2026-10-v1`); bumping it requires every courier to consent again.
+- `DELETE /api/v1/couriers/me/location-consent` → withdraws it; the courier goes `OFFLINE` and their latest
+  position is deleted. 409 `courier_has_active_delivery` while working a delivery.
+- `POST /api/v1/couriers/me/locations` (COURIER, rate-limit group `courier-location`, 30/min per courier):
+  `{ "points": [ { "latitude", "longitude", "accuracyMeters", "speedMps"?, "headingDegrees"?, "recordedAt" } ] }`,
+  1..50 points. Out-of-range values → 400 `validation_failed`. 409 `location_consent_required` (no consent to
+  the current version), 409 `courier_off_duty` (not `AVAILABLE`/`BUSY` and no accepted delivery). Response
+  `{ accepted, dropped, droppedByReason }`; dropped reasons: `low_accuracy` (> 100 m), `too_old` (> 5 min),
+  `future_timestamp` (> 5 min ahead), `implausible_speed` (> 120 km/h from the previous point), `duplicate`.
+  The app should send a batch every ~10 s during a delivery and every 30–60 s when idle, buffering offline.
+- `GET /api/v1/ops/couriers/locations?zoneId=<uuid>` (OPS/ADMIN): latest positions of the zone's on-duty
+  couriers, most recently seen first, capped at 200 (`X-Truncated`). Items: `courierId`, `status`, `latitude`,
+  `longitude`, `accuracyMeters`, `speedMps`, `headingDegrees`, `recordedAt`, `receivedAt`, `stale` (nothing
+  received within 2 min).
+- Privacy: positions are only accepted on duty and with consent; the latest position is deleted when the
+  courier goes off duty; route history is kept only for deliveries and deleted after 30 days.
+
+### Clients / consumers to review
+
+- **Courier app**: online toggle migrated to `PUT /couriers/me/status`; handle 409 `courier_has_active_delivery`
+  and `courier_suspended`. Consent screen and GPS sender are a later package.
+- **Backoffice** (`/couriers`): may show `status` instead of `available`, and add suspend/reinstate actions and a
+  map from `/ops/couriers/locations`.
+
+## W5-C — Vendor search on PostGIS (LAC-39) — 2026-10-29
+
+### `GET /api/v1/search/vendors` (same parameters; behaviour and one nullability change)
+
+- **Radius filtering is real.** With `lat`/`lng` the result set is the vendors whose stored position lies
+  within `radius` metres (default 5000) of the point — `ST_DWithin` on `vendors.location` (geography, GiST
+  index), boundary inclusive — that sell at least one ACTIVE product in scope. `distanceKm` (2 decimals) and
+  `distanceMeters` are the geodesic (spheroid) distance the filter used, and `sort=DISTANCE` orders by it.
+- **Vendors without a usable position are excluded when `lat`/`lng` are sent** (coordinates missing, half-set,
+  `(0,0)` placeholder or out of range). Before, they appeared with a made-up "pseudo distance" derived from the
+  vendor id. OPS should fix those vendors (report query in V062's header).
+- **`distanceKm` is now nullable** (`number | null`, was always a number) and `distanceMeters` is null in the same
+  case: when the request has no usable `lat`/`lng` (missing, `(0,0)`, out of range). Then no radius is applied —
+  every vendor in scope is returned, as before, but without the fake distance. `RELEVANCE` scoring treats an
+  unknown distance as contributing 0; `DISTANCE` sorts unknown distances last.
+- `deliveryFee`/`deliveryFeeBasis` are unchanged (same pricing engine; its distance now reads `vendors.location`,
+  which yields the same value as the previous lat/lng computation).
+- Cache (`vendorSearch`, 60 s) and the request-time `open`/`nextOpeningAt` are unchanged; the key still rounds
+  the point to 3 decimals and the search runs on the rounded point.
+- `GET /api/v1/search/vendors/legacy` and `GET /api/v1/customers/me/favorites` (built on the same search)
+  inherit the same rules.
+
+### Clients / consumers to review
+
+- Customer web (`pede-aqui-delivery`): `VendorSearchResult.distanceKm` is typed `number | null` and `VendorCard`
+  hides the distance when it is null (it called `toFixed` on it). Updated in this package.
+- Customer Flutter app: already maps a missing/null `distanceKm` to 0 (`catalog_repository.dart`); no change.
+- Integrators sending `lat`/`lng`: expect fewer results if some stores have no position.
+
 ## W5-D — Customer phone + SMS login (LAC-18, ADR-0004 Proposed)
 
 Additive only; no client breaks.

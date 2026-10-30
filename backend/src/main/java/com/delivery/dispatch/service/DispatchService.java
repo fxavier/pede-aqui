@@ -12,6 +12,7 @@ import com.delivery.delivery.repository.DeliveryRepository;
 import com.delivery.dispatch.dto.DeliveryEventResponse;
 import com.delivery.dispatch.dto.DispatchJobResponse;
 import com.delivery.dispatch.entity.Courier;
+import com.delivery.dispatch.entity.CourierStatus;
 import com.delivery.dispatch.entity.DispatchJob;
 import com.delivery.dispatch.entity.DispatchJobStatus;
 import com.delivery.dispatch.mapper.DispatchMapper;
@@ -149,8 +150,12 @@ public class DispatchService {
     @Transactional
     public DispatchJobResponse accept(UUID jobId) {
         UUID tenantId = tenantId();
-        UUID courierId = courierService.requireMine().getId();
+        Courier courier = courierService.requireMine();
+        UUID courierId = courier.getId();
         ownJob(tenantId, jobId, courierId);
+        if (courier.getStatus() == CourierStatus.SUSPENDED) {
+            throw CourierStatusService.suspended(); // LAC-42: a suspended courier cannot take a pending offer
+        }
         Instant now = Instant.now();
         int updated = dispatchJobRepository.acceptOffer(jobId, tenantId, courierId, now, DispatchJobStatus.ASSIGNED, DispatchJobStatus.ACCEPTED);
         DispatchJob job = dispatchJobRepository.findByTenantIdAndId(tenantId, jobId).orElseThrow(() -> new NotFoundException("Dispatch job was not found"));
@@ -166,6 +171,9 @@ public class DispatchService {
         }
         Delivery delivery = deliveryRepository.findByTenantIdAndId(tenantId, job.getDeliveryId()).orElseThrow(() -> new NotFoundException("Delivery was not found"));
         delivery.updateStatus(DeliveryStatus.ACCEPTED);
+        // LAC-42: BUSY until the delivery ends (CourierStatusService frees it). Re-read: acceptOffer cleared the
+        // persistence context (clearAutomatically), so the courier loaded above is detached.
+        courierService.requireMine().changeStatus(CourierStatus.BUSY);
         return dispatchMapper.toDispatchJobResponse(job);
     }
 
