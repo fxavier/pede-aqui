@@ -10,14 +10,13 @@ top to bottom direction
 
 Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
   Component(DeliveryApplication.DeliveryApplication.Inventory, "Inventory", $techn="Module", $descr="", $tags="", $link="")
-  Component(DeliveryApplication.DeliveryApplication.Catalog, "Catalog", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Vendor, "Vendor", $techn="Module", $descr="", $tags="", $link="")
   Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
 }
 
-Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Inventory, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Catalog, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Vendor, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Catalog, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Inventory, DeliveryApplication.DeliveryApplication.Vendor, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 @enduml

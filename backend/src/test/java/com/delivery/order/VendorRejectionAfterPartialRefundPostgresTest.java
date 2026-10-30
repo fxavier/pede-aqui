@@ -86,12 +86,14 @@ import org.testcontainers.DockerClientFactory;
 @TestPropertySource(properties = {"spring.jpa.hibernate.ddl-auto=validate",
         "app.delivery.code-hmac-secret=test-only-delivery-code-hmac-secret"})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-@Import({com.delivery.delivery.service.DeliveryRetirementService.class, OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
+@Import({com.delivery.delivery.api.DeliveryRetirementService.class, OrderService.class, OrderStockService.class, InventoryService.class, InventoryMapper.class, CatalogAccessGuard.class,
         com.delivery.vendor.api.MerchantScopeGuard.class, com.delivery.vendor.config.MerchantScopeProperties.class,
         OrderMapper.class, ZeroCheckoutDiscountResolver.class, CartService.class, CartMapper.class, PricingService.class, com.delivery.vendor.api.StoreAvailabilityService.class, com.delivery.catalog.api.PharmacySalePolicy.class,
         PaymentService.class, PaymentMapper.class, PaymentMockConfirmationProperties.class,
         DeliveryCodeHasher.class, DeliveryCodeProperties.class, com.delivery.order.service.DeliveryAddressResolver.class,
-        SalesService.class, SalesAccessGuard.class, SalesStatusOverrideProperties.class})
+        SalesService.class, SalesAccessGuard.class, SalesStatusOverrideProperties.class,
+        // ADR-0002 W3-A: implementations of the delivery/payment API hooks
+        com.delivery.dispatch.service.DispatchJobRetirement.class, com.delivery.order.service.OrderPaymentHooks.class})
 class VendorRejectionAfterPartialRefundPostgresTest {
 
     private static final boolean DOCKER_AVAILABLE = DockerClientFactory.instance().isDockerAvailable();

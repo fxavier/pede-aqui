@@ -4,7 +4,7 @@ import com.delivery.delivery.dto.CompleteDeliveryRequest;
 import com.delivery.delivery.dto.DeliveryResponse;
 import com.delivery.delivery.dto.UpdateDeliveryStatusRequest;
 import com.delivery.delivery.service.DeliveryService;
-import com.delivery.order.dto.DeliveryAddressResponse;
+import com.delivery.delivery.api.DeliveryAddressResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;

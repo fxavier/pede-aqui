@@ -14,9 +14,9 @@ Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "Delivery
   Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
 }
 
+Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Finance, DeliveryApplication.DeliveryApplication.Payment, "uses", $techn="", $tags="", $link="")
 Rel(DeliveryApplication.DeliveryApplication.Finance, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
-Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 @enduml

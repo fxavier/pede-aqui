@@ -23,7 +23,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
 import com.delivery.order.repository.OrderRepository;
-import com.delivery.order.service.CheckoutDiscount;
+import com.delivery.marketing.api.CheckoutDiscount;
 import com.delivery.order.service.OrderService;
 import com.delivery.payment.repository.PaymentRepository;
 import com.delivery.vendor.repository.VendorRepository;
@@ -188,7 +188,7 @@ class VendorFulfillmentTest {
                 mock(com.delivery.cart.service.CartService.class),
                 mock(org.springframework.transaction.PlatformTransactionManager.class),
                 new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
+                com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext), mock(com.delivery.delivery.api.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private OrderRepository repositoryWith(UUID orderId, Order order) {

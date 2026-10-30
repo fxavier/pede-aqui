@@ -1,12 +1,11 @@
 package com.delivery.marketing.service;
 
-import com.delivery.cart.entity.Cart;
-import com.delivery.cart.entity.CartItem;
 import com.delivery.catalog.entity.Product;
 import com.delivery.catalog.entity.Sku;
 import com.delivery.catalog.repository.ProductRepository;
 import com.delivery.catalog.repository.SkuRepository;
 import com.delivery.common.exception.BusinessException;
+import com.delivery.marketing.api.PromotionBasket;
 import com.delivery.marketing.entity.Promotion;
 import com.delivery.marketing.entity.PromotionScope;
 import com.delivery.marketing.entity.PromotionStatus;
@@ -26,7 +25,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * Computes the single effective discount for a cart (no stacking): an explicit coupon wins over
+ * Computes the single effective discount for a cart (any {@link PromotionBasket}; marketing does not see the cart
+ * entity, ADR-0002 C3) (no stacking): an explicit coupon wins over
  * automatic promotions; eligibility covers status, validity window, vendor scope, min-order gate,
  * ORDER/CATEGORY/PRODUCT targeting, percentage cap, and usage-limit headroom (spec 002 US-7).
  */
@@ -51,7 +51,7 @@ public class PromotionResolver {
     public record ResolvedDiscount(Promotion promotion, BigDecimal amount) {}
 
     /** Resolves a coupon code against the cart; throws 422 when invalid, expired, or not eligible (AC-7.5). */
-    public ResolvedDiscount resolveCoupon(Cart cart, String rawCode) {
+    public ResolvedDiscount resolveCoupon(PromotionBasket cart, String rawCode) {
         String code = PromotionService.normalizeCode(rawCode);
         if (code == null) {
             throw ineligible("coupon_code_required", "A coupon code is required");
@@ -85,7 +85,7 @@ public class PromotionResolver {
     }
 
     /** Resolves the best-qualifying automatic (code-less) ACTIVE promotion for the cart, if any (AC-7.6). */
-    public Optional<ResolvedDiscount> resolveBestAutomatic(Cart cart) {
+    public Optional<ResolvedDiscount> resolveBestAutomatic(PromotionBasket cart) {
         Instant now = Instant.now();
         return promotionRepository.findByTenantIdAndStatusAndCodeIsNull(cart.getTenantId(), PromotionStatus.ACTIVE).stream()
                 .filter(p -> p.isWithinWindow(now))
@@ -99,11 +99,11 @@ public class PromotionResolver {
     }
 
     /** Vendor-scoped promotions only apply to that vendor's cart; tenant-wide apply to all. */
-    private boolean appliesToVendor(Promotion promotion, Cart cart) {
+    private boolean appliesToVendor(Promotion promotion, PromotionBasket cart) {
         return promotion.getVendorId() == null || promotion.getVendorId().equals(cart.getVendorId());
     }
 
-    private boolean meetsMinOrder(Promotion promotion, Cart cart) {
+    private boolean meetsMinOrder(Promotion promotion, PromotionBasket cart) {
         return promotion.getMinOrderTotal() == null || cart.getSubtotal().compareTo(promotion.getMinOrderTotal()) >= 0;
     }
 
@@ -113,7 +113,7 @@ public class PromotionResolver {
     }
 
     /** Computes the discount over the scope-eligible base, applying the percentage cap and clamping to the base. */
-    private BigDecimal discountAmount(Promotion promotion, Cart cart) {
+    private BigDecimal discountAmount(Promotion promotion, PromotionBasket cart) {
         BigDecimal base = eligibleBase(promotion, cart);
         if (base.signum() <= 0) {
             return BigDecimal.ZERO;
@@ -135,7 +135,7 @@ public class PromotionResolver {
     }
 
     /** The cart amount a promotion can discount: whole subtotal, or the targeted category/product line totals. */
-    private BigDecimal eligibleBase(Promotion promotion, Cart cart) {
+    private BigDecimal eligibleBase(Promotion promotion, PromotionBasket cart) {
         if (promotion.getScope() == PromotionScope.ORDER) {
             return cart.getSubtotal();
         }
@@ -148,20 +148,20 @@ public class PromotionResolver {
                 .equals(categoryByProductId.get(productBySkuId.get(item.getSkuId()))));
     }
 
-    private BigDecimal lineTotalsWhere(Cart cart, java.util.function.Predicate<CartItem> matches) {
+    private BigDecimal lineTotalsWhere(PromotionBasket cart, java.util.function.Predicate<PromotionBasket.Line> matches) {
         return cart.getItems().stream()
                 .filter(matches)
-                .map(CartItem::lineTotal)
+                .map(PromotionBasket.Line::lineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private Map<UUID, UUID> productBySkuId(Cart cart) {
-        Set<UUID> skuIds = cart.getItems().stream().map(CartItem::getSkuId).collect(Collectors.toSet());
+    private Map<UUID, UUID> productBySkuId(PromotionBasket cart) {
+        Set<UUID> skuIds = cart.getItems().stream().map(PromotionBasket.Line::getSkuId).collect(Collectors.toSet());
         return skuRepository.findAllById(skuIds).stream()
                 .collect(Collectors.toMap(Sku::getId, Sku::getProductId));
     }
 
-    private Map<UUID, UUID> categoryByProductId(Cart cart, Map<UUID, UUID> productBySkuId) {
+    private Map<UUID, UUID> categoryByProductId(PromotionBasket cart, Map<UUID, UUID> productBySkuId) {
         return productRepository.findAllById(Set.copyOf(productBySkuId.values())).stream()
                 .filter(product -> product.getCategoryId() != null)
                 .collect(Collectors.toMap(Product::getId, Product::getCategoryId));
