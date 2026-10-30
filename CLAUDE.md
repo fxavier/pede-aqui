@@ -14,7 +14,13 @@ Multi-tenant delivery marketplace MVP ("Pede Aqui") targeting Mozambique. Four d
 | `pede_aqui_delivery_app/` | Flutter + Dart | Customer mobile app |
 | `pede_aqui_courier_app/` | Flutter + Dart | Courier (estafeta) mobile app |
 
-(`web/` is an older prototype; active backoffice work is in `pede-aqui-backoffice/`.)
+Repo layout notes (cleaned up in LAC-57; the pre-cleanup tree is preserved in tag `archive/pre-cleanup`):
+
+- The old `web/` Next.js prototype (and its `backend/web/` copy) was removed — all backoffice work is in `pede-aqui-backoffice/`.
+- Spec/agent tooling lives only at the root (`specs/`, `openspec/`, `.specify/`, `.opencode/`); the stale copies under `backend/` were removed. `backend/scripts/` stays (live ADR-0001 SQL scripts).
+- Diagram/binary exports (`architecture.*`, `system-flow.*`) live in `docs/assets/`; root `*.pdf/*.png/*.svg/*.pptx/*.docx/*.tgz` are git-ignored, so put new binaries there.
+- Superseded root reports `AUDIT.md`, `PLAN.md`, `REPORT.md` (2026-07 audit round) live in `docs/history/`; current assessments are in `docs/assessment/`.
+- Local clones may still contain a nested `backend/.git` repo from the old layout. It is not tracked by the root repo — remove it manually (`rm -rf backend/.git`, after archiving a bundle if you care about its history).
 
 `infra/` and `admin/` hold two Terraform root modules for S3 upload storage (`infra/` = static CORS apply, `admin/` = privileged bootstrap) — see the Storage section.
 
@@ -187,7 +193,7 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 
 ### Database
 
-- Migrations live in `backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`. (`backend/backend/` is a stray build-artifact dir, not the module.)
+- Migrations live in `backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`. (A local `backend/backend/` is a stray, git-ignored build-artifact dir, not the module.)
 - `ddl-auto: validate` — Hibernate never mutates schema; always create a migration for schema changes.
 - PostGIS extension enabled (used for geo/zone features). `customer_addresses.location` is `geography(Point,4326)` (V046, INC-12 expand phase): the app still writes `latitude`/`longitude` and a DB trigger derives `location`; the contract step (drop lat/lng) is pending.
 
