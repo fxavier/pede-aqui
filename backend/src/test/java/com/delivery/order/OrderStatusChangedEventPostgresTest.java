@@ -98,13 +98,17 @@ class OrderStatusChangedEventPostgresTest extends PostgresApiE2ETestBase {
 
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
             List<Map<String, Object>> rows = publications();
-            assertThat(rows).hasSize(3); // one per listener (metrics, settlement, flaky), written in the accept transaction
+            assertThat(rows).hasSize(4); // one per listener (metrics, settlement, notifications, flaky), written in the accept transaction
             assertThat(rows).allSatisfy(row -> assertThat(row.get("completion_date")).isNotNull());
         });
         assertThat(publications()).extracting(row -> row.get("event_type"))
                 .containsOnly(OrderStatusChanged.class.getName());
         assertThat(transitions() - before).isEqualTo(1.0);
         assertThat(FlakyListener.attempts.get(orderId).get()).isEqualTo(1);
+        // LAC-48: OrderStatusNotificationListener queued the customer's "order accepted" push (outbox row).
+        assertThat(jdbc.queryForList("SELECT channel, status FROM notification_deliveries WHERE idempotency_key LIKE ?",
+                "order-status:" + orderId + ":ACCEPTED_BY_VENDOR:%"))
+                .singleElement().satisfies(row -> assertThat(row).containsEntry("channel", "PUSH").containsEntry("status", "QUEUED"));
     }
 
     @Test
@@ -127,7 +131,7 @@ class OrderStatusChangedEventPostgresTest extends PostgresApiE2ETestBase {
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
                 assertThat(publications()).allSatisfy(row -> assertThat(row.get("completion_date")).isNotNull()));
         assertThat(FlakyListener.attempts.get(orderId).get()).isEqualTo(2);
-        assertThat(publications()).hasSize(3); // redelivery reuses the row; the completed listeners are not re-run
+        assertThat(publications()).hasSize(4); // redelivery reuses the row; the completed listeners are not re-run
     }
 
     // --- helpers ---

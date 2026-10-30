@@ -37,6 +37,8 @@ public class BusinessMetrics {
     public static final String ORDERS_CREATED = "orders.created";
     /** {@code orders_cancelled_total{reason}}: reason = seller_rejected | payment_expired | vendor_timeout | other. */
     public static final String ORDERS_CANCELLED = "orders.cancelled";
+    /** {@code notification_deliveries_total{channel,result}}: result = sent | retry | failed | skipped (LAC-48 delivery job). */
+    public static final String NOTIFICATION_DELIVERIES = "notification.deliveries";
 
     public static final String SUCCESS = "success";
     public static final String REJECTED = "rejected";
