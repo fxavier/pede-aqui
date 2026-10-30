@@ -186,6 +186,13 @@ app:
         methods: [POST]
         capacity: 10
         period: 1m
+      # W6-A: GET /checkout/quote grava uma linha checkout_quotes por chamada (é uma escrita, apesar do GET).
+      # Bucket próprio por cliente: folga para recotar ao mudar morada/carrinho, mas trava loops que encham a tabela.
+      checkout-quote:
+        paths: [/api/v1/checkout/quote]
+        methods: [GET]
+        capacity: 30
+        period: 1m
       uploads:
         paths: [/api/v1/uploads/**]
         methods: [POST]

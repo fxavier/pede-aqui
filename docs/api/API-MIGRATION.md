@@ -822,7 +822,9 @@ Additive only; no client breaks.
 New fields: `quoteId`, `expiresAt` (now + `app.checkout.quote-ttl`, default 10 min), `taxInclusive`, `vatRate`,
 `vatIncluded` (VAT contained in `total`), `goodsVat`, `feesVat`, `netTotal` (= total − vatIncluded). Each call stores a
 row in `checkout_quotes` (purged daily by the `checkout-quote-cleanup` job, 1 day after expiry). With an `addressId` it
-can now answer **422 `out_of_service_area`** or **422 `address_too_far`** (below).
+can now answer **422 `out_of_service_area`** or **422 `address_too_far`** (below). Because every call writes a row,
+the quote is **rate-limited** in its own group `checkout-quote` (GET, 30/min per account): the 31st call within a
+minute answers **429 `rate_limited`** with `Retry-After`. Re-quote on address/cart change, not on a timer.
 
 ### `POST /api/v1/checkout` (optional request field + new errors)
 

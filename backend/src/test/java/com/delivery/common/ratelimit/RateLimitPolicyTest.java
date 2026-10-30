@@ -56,6 +56,9 @@ class RateLimitPolicyTest {
         assertThat(group(policy.resolve("POST", "/api/v1/deliveries/abc/complete"))).contains("delivery-code");
         assertThat(group(policy.resolve("PATCH", "/api/v1/deliveries/abc/status"))).contains("sensitive");
         assertThat(group(policy.resolve("POST", "/api/v1/checkout"))).contains("checkout");
+        // W6-A: the quote is a GET but persists a checkout_quotes row per call, so it has its own bucket.
+        assertThat(group(policy.resolve("GET", "/api/v1/checkout/quote"))).contains("checkout-quote");
+        assertThat(perMinute(properties.getGroups().get("checkout-quote"))).isBetween(10.0, 60.0);
         assertThat(group(policy.resolve("POST", "/api/v1/uploads/images/presigned-url"))).contains("uploads");
         assertThat(group(policy.resolve("POST", "/api/v1/uploads/documents/presigned-url"))).contains("uploads");
         assertThat(group(policy.resolve("POST", "/api/v1/payments/p1/refunds"))).contains("payments");

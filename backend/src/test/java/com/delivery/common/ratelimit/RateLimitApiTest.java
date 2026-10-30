@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
  * LAC-11 over HTTP with the shipped limits (application.yml, local backend in tests): anonymous registration is limited
  * per client IP (it was not limited before), the 429 is the rate_limited problem document with Retry-After, the
  * delivery-PIN bucket is per account and per route pattern (changing the id in the path does not reset it), and
- * rejections are counted in rate_limit_rejections_total{group}.
+ * rejections are counted in rate_limit_rejections_total{group}. GET /checkout/quote (W6-A) writes a quote row per call,
+ * so it is limited per customer too.
  */
 @WebMvcTest(controllers = RateLimitApiTest.StubController.class)
 @Import({SecurityConfig.class, RateLimitApiTest.StubController.class, RateLimitApiTest.Metrics.class})
@@ -106,6 +107,23 @@ class RateLimitApiTest {
     }
 
     @Test
+    void checkoutQuoteIsLimitedPerCustomerBecauseEachCallStoresAQuote() throws Exception {
+        for (int i = 0; i < 30; i++) {
+            mockMvc.perform(get("/api/v1/checkout/quote").with(customer("customer-q")))
+                    .andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/v1/checkout/quote").with(customer("customer-q")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", matchesPattern("[1-9][0-9]*")))
+                .andExpect(jsonPath("$.code").value("rate_limited"));
+
+        // Another customer has its own bucket, and checkout (POST) is a separate group.
+        mockMvc.perform(get("/api/v1/checkout/quote").with(customer("customer-r"))).andExpect(status().isOk());
+        assertThat(meterRegistry.get("rate.limit.rejections").tag("group", "checkout-quote").counter().count())
+                .isEqualTo(1.0);
+    }
+
+    @Test
     void routesOutsideEveryGroupAreNotLimited() throws Exception {
         for (int i = 0; i < 400; i++) {
             mockMvc.perform(get("/api/v1/unlimited").with(courier("courier-c"))).andExpect(status().isOk());
@@ -123,6 +141,10 @@ class RateLimitApiTest {
         return jwt().jwt(j -> j.subject(sub)).authorities(new SimpleGrantedAuthority("ROLE_COURIER"));
     }
 
+    private static RequestPostProcessor customer(String sub) {
+        return jwt().jwt(j -> j.subject(sub)).authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
+    }
+
     /** Stand-ins for the real controllers; only the mappings matter here. */
     @RestController
     static class StubController {
@@ -134,6 +156,11 @@ class RateLimitApiTest {
         @PostMapping("/api/v1/deliveries/{deliveryId}/complete")
         Map<String, String> complete(@PathVariable String deliveryId) {
             return Map.of("id", deliveryId);
+        }
+
+        @GetMapping("/api/v1/checkout/quote")
+        Map<String, String> quote() {
+            return Map.of("quoteId", "q");
         }
 
         @GetMapping("/api/v1/unlimited")
