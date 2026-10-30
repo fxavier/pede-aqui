@@ -219,6 +219,12 @@ app:
           - /api/v1/couriers/me/**
         capacity: 120
         period: 1m
+      # LAC-40: lotes de GPS do estafeta (1 lote a cada ~10 s em entrega; folga para reenvio de buffers).
+      courier-location:
+        paths: [/api/v1/couriers/me/locations]
+        methods: [POST]
+        capacity: 30
+        period: 1m
       # Navegação pública: generoso, só trava scraping.
       browse:
         paths: [/api/v1/catalog/**, /api/v1/search/**]
@@ -287,6 +293,16 @@ app:
       enabled: ${APP_JOBS_ACCEPTANCE_TIMEOUT_ENABLED:true}
       interval: PT1M
       initial-delay: PT1M
+    # W5-B (LAC-42): BUSY sem entrega -> AVAILABLE; com app.courier-presence.enforce-timeout, AVAILABLE sem sinal -> OFFLINE.
+    courier-presence-sweeper:
+      enabled: ${APP_JOBS_COURIER_PRESENCE_SWEEPER_ENABLED:true}
+      interval: PT1M
+      initial-delay: PT1M
+    # W5-B (LAC-40): apaga courier_location_history com mais de app.courier-location.history-retention (30 dias).
+    courier-location-retention:
+      enabled: ${APP_JOBS_COURIER_LOCATION_RETENTION_ENABLED:true}
+      cron: "0 15 4 * * *"
+      zone: Africa/Maputo
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -296,6 +312,26 @@ app:
       cron: "0 30 3 * * *"
       zone: Africa/Maputo
       retention: P7D
+  # W5-B (LAC-40): GPS do estafeta — consentimento, filtros de qualidade, presença Redis e retenção do histórico.
+  courier-location:
+    # Versão do texto de consentimento aceite no onboarding; mudar obriga a novo consentimento.
+    consent-version: ${APP_COURIER_LOCATION_CONSENT_VERSION:2026-10-v1}
+    max-batch-size: 50
+    max-accuracy-meters: 100
+    max-speed-kmh: 120
+    max-point-age: PT5M
+    max-clock-skew: PT5M
+    redis-enabled: ${APP_COURIER_LOCATION_REDIS_ENABLED:true}
+    presence-ttl: PT2M
+    history-retention: P30D
+    retention-batch-size: 5000
+    retention-max-batches: 200
+  # W5-B (LAC-42): presença do estafeta (job courier-presence-sweeper).
+  courier-presence:
+    offline-after: PT2M
+    # false até a app do estafeta enviar localizações (senão todos os estafetas online passam a OFFLINE após 2 min).
+    enforce-timeout: ${APP_COURIER_PRESENCE_ENFORCE_TIMEOUT:false}
+    batch-size: 200
   # W4-A (LAC-25): order lifecycle timeouts (ISO-8601), enforced by the payment-expiry / acceptance-timeout jobs.
   orders:
     # PAYMENT_PENDING longer than this after checkout -> CANCELLED (PAYMENT_EXPIRED), stock released, no refund.

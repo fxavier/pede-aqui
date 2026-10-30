@@ -35,6 +35,12 @@ public final class AuditActions {
     // Onboarding approvals (LAC-15)
     public static final String COURIER_APPROVED = "COURIER_APPROVED";
     public static final String COURIER_REJECTED = "COURIER_REJECTED";
+    /** LAC-42: OPS/ADMIN suspended a courier (reason kept on the courier row, never in the audit text). */
+    public static final String COURIER_SUSPENDED = "COURIER_SUSPENDED";
+    public static final String COURIER_REINSTATED = "COURIER_REINSTATED";
+    /** LAC-40: the courier accepted / withdrew the GPS consent (business reference = consent text version). */
+    public static final String COURIER_LOCATION_CONSENT_ACCEPTED = "COURIER_LOCATION_CONSENT_ACCEPTED";
+    public static final String COURIER_LOCATION_CONSENT_WITHDRAWN = "COURIER_LOCATION_CONSENT_WITHDRAWN";
     public static final String VENDOR_VERIFICATION_APPROVED = "VENDOR_VERIFICATION_APPROVED";
     public static final String VENDOR_VERIFICATION_REJECTED = "VENDOR_VERIFICATION_REJECTED";
     // Store closures (LAC-27)

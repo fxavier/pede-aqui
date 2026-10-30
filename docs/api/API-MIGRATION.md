@@ -673,3 +673,75 @@ Response `CustomerCancellationResponse`: `{ orderId, orderStatus, cancellationRe
 `CUSTOMER_CANCELLED`, `CUSTOMER_CANCELLED_WITH_FEE` (on `OrderResponse`, `AdminOrderResponse`, the customer
 summary/detail). Unknown values must be treated as a generic cancellation. Backoffice: no OPS screen yet —
 use the API (follow-up). Customer web: `OrderCancellationCard` on the order detail.
+
+## W5-B — Courier status/capacity and courier GPS (LAC-42, LAC-40) — 2026-10-29
+
+### `CourierResponse` (additive)
+
+`GET /couriers/me`, `GET /couriers`, `/couriers/page`, `/couriers/{id}`, approve/reject and the new status
+endpoints now return, in addition to the existing fields: `status` (`OFFLINE` | `AVAILABLE` | `BUSY` |
+`SUSPENDED`), `statusChangedAt`, `suspensionReason` (OPS text, set only while `SUSPENDED`),
+`maxActiveDeliveries` (always 1 — V035 allows one active delivery per courier), `locationConsentAcceptedAt`,
+`locationConsentVersion`.
+
+- `available` is **deprecated** (still present): it equals `status` `AVAILABLE` or `BUSY`. Clients should read
+  `status`.
+- `vehicleType` stays a string but its values are now `MOTORBIKE`, `BICYCLE`, `CAR`, `ON_FOOT`, `OTHER` (or
+  null). V060 mapped existing free text by prefix (pt/en: "Mota"/"Motorcycle" → `MOTORBIKE`, "Bicicleta" →
+  `BICYCLE`, "Carro"/"Viatura" → `CAR`, "A pé" → `ON_FOOT`); anything else became `OTHER`.
+
+### `POST /api/v1/couriers` — vehicle validated (behaviour change)
+
+`vehicleType` accepts the enum names (case-insensitive) or the same pt/en aliases; any other text is now
+**400** `invalid_vehicle_type` (it was stored verbatim). No client currently sends it.
+
+### Courier status (LAC-42)
+
+- **New** `PUT /api/v1/couriers/me/status` `{ "status": "AVAILABLE" | "OFFLINE" }` (COURIER). Going online
+  while working an accepted delivery returns `BUSY`. Errors: 400 `invalid_courier_status` (`BUSY`/`SUSPENDED`
+  requested), 400 `validation_failed` (missing status), 409 `courier_suspended`, 409 `courier_not_verified`,
+  409 `courier_has_active_delivery` (going offline mid-delivery).
+- **Deprecated** `PATCH /api/v1/couriers/me/availability` `{ "available": bool }`: same rules (true =
+  `AVAILABLE`, false = `OFFLINE`). Behaviour change: going offline while working an accepted delivery is now
+  409 `courier_has_active_delivery` (it used to flip the flag). The courier Flutter app now uses the new
+  endpoint.
+- **New** `PATCH /api/v1/couriers/{id}/suspend` `{ "reason": "…" }` (1..500 chars) and
+  `PATCH /api/v1/couriers/{id}/reinstate` (OPS/ADMIN, tenant-scoped → 404, audited `COURIER_SUSPENDED` /
+  `COURIER_REINSTATED`). Suspend is idempotent; reinstate of a courier that is not suspended → 409
+  `courier_not_suspended`; a reinstated courier is `OFFLINE` (or `BUSY` mid-delivery).
+- Dispatch (`/ops/dispatch`, assignment) now offers only to `status = AVAILABLE` couriers. `BUSY` is set when
+  the courier accepts an offer (`POST /dispatch-jobs/{id}/accept`; a suspended courier gets 409
+  `courier_suspended`) and cleared when the delivery is completed, fails or is retired.
+- Presence sweeper job: `BUSY` without an accepted delivery → `AVAILABLE`. The "no location for 2 min →
+  `OFFLINE`" rule exists but is **off** (`APP_COURIER_PRESENCE_ENFORCE_TIMEOUT=false`) until the courier app
+  sends locations — turning it on before that would take every online courier offline after 2 minutes.
+
+### Courier GPS (LAC-40, all new, additive)
+
+- `GET /api/v1/couriers/me/location-consent` → `{ currentVersion, acceptedVersion, acceptedAt, valid }`.
+- `PUT /api/v1/couriers/me/location-consent` `{ "version": "<currentVersion>" }` → records the explicit consent
+  (timestamp + text version, audited). Another version → 409 `location_consent_outdated`. The current version
+  is `app.courier-location.consent-version` (env `APP_COURIER_LOCATION_CONSENT_VERSION`, default
+  `2026-10-v1`); bumping it requires every courier to consent again.
+- `DELETE /api/v1/couriers/me/location-consent` → withdraws it; the courier goes `OFFLINE` and their latest
+  position is deleted. 409 `courier_has_active_delivery` while working a delivery.
+- `POST /api/v1/couriers/me/locations` (COURIER, rate-limit group `courier-location`, 30/min per courier):
+  `{ "points": [ { "latitude", "longitude", "accuracyMeters", "speedMps"?, "headingDegrees"?, "recordedAt" } ] }`,
+  1..50 points. Out-of-range values → 400 `validation_failed`. 409 `location_consent_required` (no consent to
+  the current version), 409 `courier_off_duty` (not `AVAILABLE`/`BUSY` and no accepted delivery). Response
+  `{ accepted, dropped, droppedByReason }`; dropped reasons: `low_accuracy` (> 100 m), `too_old` (> 5 min),
+  `future_timestamp` (> 5 min ahead), `implausible_speed` (> 120 km/h from the previous point), `duplicate`.
+  The app should send a batch every ~10 s during a delivery and every 30–60 s when idle, buffering offline.
+- `GET /api/v1/ops/couriers/locations?zoneId=<uuid>` (OPS/ADMIN): latest positions of the zone's on-duty
+  couriers, most recently seen first, capped at 200 (`X-Truncated`). Items: `courierId`, `status`, `latitude`,
+  `longitude`, `accuracyMeters`, `speedMps`, `headingDegrees`, `recordedAt`, `receivedAt`, `stale` (nothing
+  received within 2 min).
+- Privacy: positions are only accepted on duty and with consent; the latest position is deleted when the
+  courier goes off duty; route history is kept only for deliveries and deleted after 30 days.
+
+### Clients / consumers to review
+
+- **Courier app**: online toggle migrated to `PUT /couriers/me/status`; handle 409 `courier_has_active_delivery`
+  and `courier_suspended`. Consent screen and GPS sender are a later package.
+- **Backoffice** (`/couriers`): may show `status` instead of `available`, and add suspend/reinstate actions and a
+  map from `/ops/couriers/locations`.

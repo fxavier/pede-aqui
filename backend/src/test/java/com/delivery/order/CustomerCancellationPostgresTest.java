@@ -222,6 +222,33 @@ class CustomerCancellationPostgresTest extends PostgresApiE2ETestBase {
         assertThat(audits(seeded.orderId(), "ORDER_CANCELLATION_APPROVED")).isEqualTo(1);
     }
 
+    /**
+     * W5-A x W5-B: an approved cancellation retires the delivery before pickup, which cancels the accepted dispatch job
+     * and (through the dispatch module's DeliveryCourierListener hook) moves the BUSY courier back to AVAILABLE.
+     */
+    @Test
+    void approvedCancellationRetiresTheAcceptedJobAndFreesTheBusyCourier() throws Exception {
+        Seeded seeded = seedOrder("PREPARING", "CONFIRMED");
+        UUID courierProfile = UUID.randomUUID();
+        jdbc.update("INSERT INTO app_user_profiles (id, tenant_id, keycloak_user_id, email, display_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'Courier', 'ACTIVE', now(), now())",
+                courierProfile, tenantId, "kc-" + courierProfile, courierProfile + "@example.test");
+        UUID courierId = UUID.randomUUID();
+        jdbc.update("INSERT INTO couriers (id, tenant_id, user_profile_id, verification_status, status, available, created_at, updated_at) VALUES (?, ?, ?, 'APPROVED', 'BUSY', TRUE, now(), now())",
+                courierId, tenantId, courierProfile);
+        UUID deliveryId = jdbc.queryForObject("SELECT id FROM deliveries WHERE order_id = ?", UUID.class, seeded.orderId());
+        jdbc.update("UPDATE deliveries SET courier_id = ?, status = 'ACCEPTED' WHERE id = ?", courierId, deliveryId);
+        UUID jobId = UUID.randomUUID();
+        jdbc.update("INSERT INTO dispatch_jobs (id, tenant_id, order_id, delivery_id, courier_id, status, assigned_at, expires_at, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, 'ACCEPTED', now(), now() + interval '1 minute', now(), now(), 0)",
+                jobId, tenantId, seeded.orderId(), deliveryId, courierId);
+
+        String requestId = json(cancel(seeded, null).andExpect(status().isAccepted())).at("/request/id").asText();
+        approve(requestId, staffToken("OPS")).andExpect(status().isOk()).andExpect(jsonPath("$.orderStatus").value("CANCELLED"));
+
+        assertThat(deliveryStatus(seeded)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM dispatch_jobs WHERE id = ?", String.class, jobId)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM couriers WHERE id = ?", String.class, courierId)).isEqualTo("AVAILABLE");
+    }
+
     @Test
     void feeIsWithheldFromWhatRemainsAfterAnEarlierPartialRefund() throws Exception {
         Seeded seeded = seedOrder("PREPARING", "PARTIALLY_REFUNDED");

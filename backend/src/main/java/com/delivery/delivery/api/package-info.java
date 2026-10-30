@@ -3,7 +3,8 @@
  * ({@link com.delivery.delivery.api.DeliveryRetirementService}, {@link com.delivery.delivery.api.DeliveryAddressResponse})
  * and the hooks delivery calls inside its own transactions but does not implement:
  * {@link com.delivery.delivery.api.DeliveryOrderHooks} (implemented by order) and
- * {@link com.delivery.delivery.api.AssignedCourierResolver} / {@link com.delivery.delivery.api.DeliveryRetirementListener}
+ * {@link com.delivery.delivery.api.AssignedCourierResolver} / {@link com.delivery.delivery.api.DeliveryRetirementListener} /
+ * {@link com.delivery.delivery.api.DeliveryCourierListener} (LAC-42)
  * (implemented by dispatch). The hooks invert the dependency so delivery depends on neither order nor dispatch while
  * every cross-module write stays in the same transaction (see ADR-0002 implementation notes).
  */
