@@ -124,5 +124,8 @@ class SalesReportApiTest {
         assertThat(result.getResponse().getContentAsString())
                 .startsWith("key,label,gross,refunds,net,commission,sharePercent")
                 .contains("Vendor One");
+        // Security headers are written eagerly (before streaming starts) and must still be present exactly once.
+        assertThat(result.getResponse().getHeaders("X-Content-Type-Options")).containsExactly("nosniff");
+        assertThat(result.getResponse().getHeaders("X-Frame-Options")).containsExactly("DENY");
     }
 }
