@@ -3,8 +3,11 @@ package com.delivery.geo.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,6 +19,8 @@ import com.delivery.common.pricing.DeliveryFeeBasis;
 import com.delivery.common.pricing.DeliveryFeeQuote;
 import com.delivery.common.security.TenantContext;
 import com.delivery.geo.dto.SearchResponse;
+import com.delivery.geo.repository.VendorProximityRepository;
+import com.delivery.geo.repository.VendorProximityRepository.VendorProximity;
 import com.delivery.vendor.api.StoreAvailabilityService;
 import com.delivery.vendor.entity.Vendor;
 import com.delivery.vendor.repository.VendorRepository;
@@ -56,9 +61,10 @@ class SearchServiceCachingTest {
         @Bean PricingService pricingService() { return mock(PricingService.class); }
         @Bean VendorSearchCache vendorSearchCache() { return new VendorSearchCache(); }
         @Bean StoreAvailabilityService storeAvailabilityService() { return mock(StoreAvailabilityService.class); }
+        @Bean VendorProximityRepository vendorProximityRepository() { return mock(VendorProximityRepository.class); }
         @Bean SearchService searchService(TenantContext t, ProductRepository p, VendorRepository v, PricingService ps,
-                                          VendorSearchCache c, StoreAvailabilityService sa) {
-            return new SearchService(t, p, v, ps, c, sa);
+                                          VendorSearchCache c, StoreAvailabilityService sa, VendorProximityRepository vp) {
+            return new SearchService(t, p, v, ps, c, sa, vp);
         }
     }
 
@@ -68,15 +74,19 @@ class SearchServiceCachingTest {
     @Autowired VendorRepository vendorRepository;
     @Autowired PricingService pricingService;
     @Autowired CacheManager cacheManager;
+    @Autowired VendorProximityRepository proximityRepository;
 
     @BeforeEach
     void setUp() {
-        reset(tenantContext, productRepository, vendorRepository, pricingService);
+        reset(tenantContext, productRepository, vendorRepository, pricingService, proximityRepository);
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         Vendor vendor = new Vendor(VENDOR_ID, TENANT_A, "Loja Cache", null, null, null, "Dona", "123", "84", "Rua", "", null);
         when(tenantContext.browseTenantId()).thenReturn(Optional.of(TENANT_A));
         when(productRepository.findDistinctVendorIdsByTenantIdAndStatus(any(), anyString())).thenReturn(List.of(VENDOR_ID));
         when(vendorRepository.findAllById(any())).thenReturn(List.of(vendor));
+        // LAC-39: with a customer point the candidates come from the PostGIS radius query.
+        when(proximityRepository.findWithinRadius(any(), any(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(new VendorProximity(VENDOR_ID, 1.234)));
         when(pricingService.estimateDeliveryFees(anyCollection(), any())).thenAnswer(inv -> {
             Collection<Vendor> vendors = inv.getArgument(0);
             return vendors.stream().collect(Collectors.toMap(Vendor::getId, v -> new DeliveryFeeQuote(
@@ -134,13 +144,32 @@ class SearchServiceCachingTest {
     void differentBrowseTenantIsACacheMiss() {
         search(-25.96512, 32.58321, null, null, 0);
         when(tenantContext.browseTenantId()).thenReturn(Optional.of(TENANT_B));
-        when(productRepository.findDistinctVendorIdsByTenantIdAndStatus(TENANT_B, "ACTIVE")).thenReturn(List.of());
+        when(proximityRepository.findWithinRadius(eq(TENANT_B), any(), anyDouble(), anyDouble(), anyDouble())).thenReturn(List.of());
         when(vendorRepository.findAllById(List.of())).thenReturn(List.of());
 
         SearchResponse otherTenant = search(-25.96512, 32.58321, null, null, 0);
 
         assertThat(otherTenant.vendors()).isEmpty();
         verify(vendorRepository, times(2)).findAllById(any());
+    }
+
+    @Test
+    void radiusQueryRunsOnTheRoundedCachedPointAndCarriesTheTenantAndRadius() {
+        SearchResponse response = search(-25.96512, 32.58321, null, null, 0);
+
+        verify(proximityRepository).findWithinRadius(TENANT_A, null, -25.965, 32.583, 5_000_000);
+        assertThat(response.vendors().get(0).distanceKm()).isEqualTo(1.23);
+        assertThat(response.vendors().get(0).distanceMeters()).isEqualTo(1234);
+    }
+
+    @Test
+    void withoutACustomerPointNoRadiusIsAppliedAndTheDistanceIsUnknown() {
+        SearchResponse response = searchService.searchVendorsWithCount(null, null, 1000, null, null, null, "DISTANCE", 0);
+
+        assertThat(response.vendors()).hasSize(1);
+        assertThat(response.vendors().get(0).distanceKm()).isNull();
+        assertThat(response.vendors().get(0).distanceMeters()).isNull();
+        verify(proximityRepository, never()).findWithinRadius(any(), any(), anyDouble(), anyDouble(), anyDouble());
     }
 
     private SearchResponse search(double lat, double lng, Double minRating, Integer maxDeliveryMinutes, int page) {

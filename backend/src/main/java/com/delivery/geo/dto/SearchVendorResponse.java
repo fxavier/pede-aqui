@@ -11,11 +11,13 @@ import java.util.UUID;
  * <p>{@code open} and {@code nextOpeningAt} (LAC-27) are the store's state at request time: they are computed after the
  * cached result set is read (never cached), so the values stored in the "vendorSearch" cache for these two members
  * are meaningless placeholders.
+ * <p>{@code distanceKm}/{@code distanceMeters} are the PostGIS geodesic distance from the searched point (LAC-39); both
+ * are null when the request has no usable {@code lat}/{@code lng} (the radius filter then does not apply).
  */
 public record SearchVendorResponse(
     UUID vendorId,
     String name,
-    double distanceKm,
+    Double distanceKm,
     Integer distanceMeters,
     boolean available,
     double rating,

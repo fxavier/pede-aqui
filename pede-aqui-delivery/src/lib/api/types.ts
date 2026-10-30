@@ -2,7 +2,8 @@
 export interface VendorSearchResult {
   vendorId: string
   name: string
-  distanceKm: number
+  /** LAC-39: PostGIS geodesic distance from the searched point; null when the search had no lat/lng. */
+  distanceKm: number | null
   distanceMeters: number | null
   available: boolean
   rating: number
