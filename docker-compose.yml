@@ -64,7 +64,7 @@ services:
       mc mb --ignore-existing local/pede-aqui-uploads"
 
   prometheus:
-    image: prom/prometheus:v2.54.1
+    image: prom/prometheus:v3.15.1
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     volumes:
