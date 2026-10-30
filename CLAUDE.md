@@ -199,6 +199,13 @@ Domain packages: `auth`, `cart`, `catalog`, `customer`, `dashboard`, `delivery`,
 - Migrations live in `backend/src/main/resources/db/migration/` as Flyway `V<NNN>__<name>.sql`. (A local `backend/backend/` is a stray, git-ignored build-artifact dir, not the module.)
 - `ddl-auto: validate` — Hibernate never mutates schema; always create a migration for schema changes.
 - PostGIS extension enabled (used for geo/zone features). `customer_addresses.location` is `geography(Point,4326)` (V046, INC-12 expand phase): the app still writes `latitude`/`longitude` and a DB trigger derives `location`; the contract step (drop lat/lng) is pending.
+- Referential integrity (LAC-58, V050/V051): `customer_id` columns (orders, carts, customer_addresses, promotion_redemption) reference `app_user_profiles(id)` — the profile id, not the Keycloak subject — and every `vendor_id`, `courier_id`, `cart_id`, `category_id`, `operating_zone_id`, promotion target and `verticals.tenant_id` has a validated FK (`fk_<table>_<column>`, ON DELETE NO ACTION). Deliberately without FK: `orders.delivery_address_id` (address snapshot), `orders.quote_*_id` (historical quote ids), `customer_favorite_vendors.customer_id` (stores the Keycloak sub), `ratings.rater_user_id`, and the VARCHAR user ids in `audit_logs`/`support_tickets`. SQL-seeded tests must insert real parents (`common/TestParents` in tests) and delete children before parents. New FKs on existing tables: add `NOT VALID` in one migration (with an orphan report in its header) and `VALIDATE CONSTRAINT` in the next.
+
+### Caching
+
+- Spring Cache on Redis (`spring.cache.type: ${CACHE_TYPE:redis}`; JSON serialization and TTLs in `common/config/RedisConfig`). Only cache today: `vendorSearch` (LAC-51), TTL 60 s, so store/product changes surface in search within a minute.
+- `@Cacheable` only works across a Spring proxy: never put it on a private or self-invoked method. The search cache lives in its own bean, `geo/service/VendorSearchCache`; `SearchService` calls it with a `VendorSearchQuery` whose `cacheKey()` holds every filter, the browse tenant (`*` = cross-tenant) and coordinates rounded to 3 decimals (~100 m — the search itself runs on the rounded point). The full filtered list is cached once; pages and `totalCount` are cut from it. Add any new filter to `VendorSearchQuery` or results will leak between queries.
+- Cache errors are logged and ignored (`LoggingCacheErrorHandler`): with Redis down the search runs uncached. The test suite runs with `spring.cache.type=none` (`src/test/resources/config/application.yml`); `VendorSearchCacheRedisTest` covers the real Redis round-trip and TTL.
 
 ### Storage
 

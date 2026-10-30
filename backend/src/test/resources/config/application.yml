@@ -1,0 +1,5 @@
+# Test-only overrides, layered on top of the main application.yml (classpath:/config/ wins over classpath:/).
+spring:
+  cache:
+    # No Redis in the test suite; caching is covered by SearchServiceCachingTest and VendorSearchCacheRedisTest.
+    type: none
