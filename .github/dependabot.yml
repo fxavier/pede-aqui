@@ -1,6 +1,9 @@
-# Weekly dependency updates (LAC-52). Minor/patch bumps are grouped into one PR per ecosystem/directory;
-# majors arrive as individual PRs so each gets its own review and CI run. Major platform upgrades
-# (Spring Boot line, Keycloak) still go through a dedicated, isolated increment.
+# Weekly dependency updates (LAC-52). Minor/patch bumps are grouped into one PR per ecosystem/directory.
+# Semver-MAJOR updates are ignored for every ecosystem: majors are done as deliberate, manual
+# increments (with the code/config migration they need), never auto-raised. This was added after
+# Dependabot majors (TypeScript 7, Tailwind 4, eslint-config-next 16, React 19 types) turned main red.
+# npm lockfiles must stay npm 10-compatible (CI runs Node 20 / npm 10; package.json pins
+# "packageManager": "npm@10.x", which Dependabot honours).
 version: 2
 
 updates:
@@ -11,6 +14,9 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     labels: [dependencies, backend]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       maven-minor-patch:
         update-types: [minor, patch]
@@ -22,6 +28,9 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     labels: [dependencies, backoffice]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
@@ -33,6 +42,9 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     labels: [dependencies, web]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
@@ -46,6 +58,9 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     labels: [dependencies, mobile]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       pub-minor-patch:
         update-types: [minor, patch]
@@ -57,6 +72,9 @@ updates:
       day: monday
     open-pull-requests-limit: 3
     labels: [dependencies, ci]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       actions-minor-patch:
         update-types: [minor, patch]
@@ -69,6 +87,9 @@ updates:
       day: monday
     open-pull-requests-limit: 3
     labels: [dependencies, infra]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       compose-minor-patch:
         update-types: [minor, patch]
