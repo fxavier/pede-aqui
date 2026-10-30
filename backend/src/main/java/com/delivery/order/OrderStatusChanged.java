@@ -9,7 +9,7 @@ import java.util.UUID;
  * publication registry (at-least-once — listeners must be idempotent). Part of the order module's public API (base
  * package). Carries ids and status names only, never personal data. See docs/architecture/EVENT-CATALOG.md.
  *
- * <p>Currently published by the vendor fulfilment transitions only (accept, preparing, ready for pickup).
+ * <p>Published by {@code OrderStateMachine} for every status transition (W4-A).
  */
 public record OrderStatusChanged(UUID tenantId, UUID orderId, UUID vendorId, String previousStatus, String newStatus,
                                  Instant occurredAt) {

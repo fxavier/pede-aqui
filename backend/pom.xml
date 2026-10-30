@@ -102,6 +102,16 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- LAC-50: Micrometer Tracing over the OpenTelemetry SDK + OTLP exporter (versions from the Spring Boot BOM).
+             Exporting is off unless management.otlp.tracing.endpoint is set; traceId/spanId always reach the MDC. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>

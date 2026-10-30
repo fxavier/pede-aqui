@@ -1,6 +1,7 @@
 package com.delivery.upload.service;
 
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.observability.BusinessMetrics;
 import com.delivery.common.security.TenantContext;
 import com.delivery.upload.dto.CreateDocumentUploadUrlRequest;
 import com.delivery.upload.dto.CreateUploadUrlRequest;
@@ -10,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class UploadService {
     private final UploadLimits limits;
     private final String bucket;
     private final long expirationSeconds;
+    private BusinessMetrics metrics = BusinessMetrics.NOOP;
 
     public UploadService(
             S3Presigner s3Presigner,
@@ -45,6 +48,12 @@ public class UploadService {
         this.expirationSeconds = expirationSeconds;
     }
 
+    /** Optional: slice tests without a meter registry keep the no-op metrics. */
+    @Autowired(required = false)
+    public void setBusinessMetrics(BusinessMetrics metrics) {
+        this.metrics = metrics;
+    }
+
     /** Builds a presigned URL for uploading one image directly to S3. */
     public UploadUrlResponse createImageUploadUrl(CreateUploadUrlRequest request) {
         return presign(Kind.IMAGE, request.contentType(), request.contentLength(), request.purpose(), request.fileName());
@@ -56,6 +65,21 @@ public class UploadService {
     }
 
     private UploadUrlResponse presign(Kind kind, String contentType, Long contentLength, String purpose, String fileName) {
+        try {
+            return presignChecked(kind, contentType, contentLength, purpose, fileName);
+        } catch (BusinessException rejection) {
+            countRejection("presign", kind, rejection);
+            throw rejection;
+        }
+    }
+
+    /** LAC-50: uploads_rejected_total{stage,kind,reason} — no key, tenant or file name in the tags. */
+    private void countRejection(String stage, Kind kind, BusinessException rejection) {
+        metrics.increment(BusinessMetrics.UPLOAD_REJECTIONS, "stage", stage, "kind", kind.name().toLowerCase(Locale.ROOT),
+                "reason", BusinessMetrics.safeCode(rejection.getCode()));
+    }
+
+    private UploadUrlResponse presignChecked(Kind kind, String contentType, Long contentLength, String purpose, String fileName) {
         UUID tenantId = tenantContext.currentTenantId()
                 .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN));
         String userId = tenantContext.currentKeycloakUserId()

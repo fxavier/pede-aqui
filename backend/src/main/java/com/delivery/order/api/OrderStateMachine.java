@@ -1,6 +1,7 @@
 package com.delivery.order.api;
 
 import com.delivery.common.exception.BusinessException;
+import com.delivery.common.observability.BusinessMetrics;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.StatusChangeActor;
 import com.delivery.order.OrderStatusChanged;
@@ -15,6 +16,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -46,6 +48,7 @@ public class OrderStateMachine {
     private final OrderStatusHistoryRepository historyRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TenantContext tenantContext;
+    private BusinessMetrics metrics = BusinessMetrics.NOOP;
 
     public OrderStateMachine(OrderStatusHistoryRepository historyRepository, ApplicationEventPublisher eventPublisher,
                              TenantContext tenantContext) {
@@ -53,6 +56,10 @@ public class OrderStateMachine {
         this.eventPublisher = eventPublisher;
         this.tenantContext = tenantContext;
     }
+
+    /** Optional: unit/slice tests without a meter registry keep the no-op metrics (LAC-50). */
+    @Autowired(required = false)
+    public void setBusinessMetrics(BusinessMetrics metrics) { this.metrics = metrics; }
 
     private static Map<OrderStatus, Set<OrderStatus>> buildTable() {
         Map<OrderStatus, Set<OrderStatus>> table = new EnumMap<>(OrderStatus.class);
@@ -97,6 +104,7 @@ public class OrderStateMachine {
     /** Records the creation of a new order (history row {@code null -> PAYMENT_PENDING}); call after it is persisted. */
     public void recordCreated(Order order) {
         writeHistory(order, null, order.getStatus(), "CHECKOUT");
+        metrics.incrementAfterCommit(BusinessMetrics.ORDERS_CREATED);
     }
 
     /** Moves the order to {@code target}; 409 invalid_order_transition (no side effect) when not in the table. */
@@ -125,6 +133,11 @@ public class OrderStateMachine {
         writeHistory(order, from, change.target(), reason);
         eventPublisher.publishEvent(new OrderStatusChanged(order.getTenantId(), order.getId(), order.getVendorId(),
                 from.name(), change.target().name(), Instant.now()));
+        if (change.target() == OrderStatus.CANCELLED) {
+            // reason = the CancellationReason enum (bounded), "other" for cancels that do not record one (sales, failed delivery).
+            CancellationReason why = change.cancellationReason();
+            metrics.incrementAfterCommit(BusinessMetrics.ORDERS_CANCELLED, "reason", why == null ? "other" : why.name().toLowerCase());
+        }
     }
 
     private void writeHistory(Order order, OrderStatus from, OrderStatus to, String reason) {
