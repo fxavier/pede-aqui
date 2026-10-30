@@ -4,6 +4,7 @@ import com.delivery.common.pricing.DeliveryFeeBasis;
 import com.delivery.delivery.api.DeliveryAddressResponse;
 import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.OrderStatus;
+import com.delivery.order.service.CustomerCancellationPolicy;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -15,6 +16,10 @@ import java.util.UUID;
  * once the order is delivered, cancelled or refunded. {@code deliveryFee}, {@code serviceFee},
  * {@code deliveryFeeBasis} and {@code distanceKm} are null for orders placed before the pricing quote (INC-13);
  * {@code deliveryAddress} is null for orders placed without an address (pre-INC-12).
+ *
+ * <p>Cancellation (LAC-26): {@code cancellationPhase} = FREE (cancel now), REQUEST (ask OPS; {@code
+ * cancellationFeeEstimate} is the fee that would be withheld), ALREADY_CANCELLED or NOT_CANCELLABLE;
+ * {@code cancellationRequest} is the order's most recent request (null when none).
  */
 public record CustomerOrderDetailResponse(
         UUID id,
@@ -35,4 +40,7 @@ public record CustomerOrderDetailResponse(
         BigDecimal discountTotal,
         BigDecimal total,
         DeliveryFeeBasis deliveryFeeBasis,
-        BigDecimal distanceKm) {}
+        BigDecimal distanceKm,
+        CustomerCancellationPolicy.Phase cancellationPhase,
+        BigDecimal cancellationFeeEstimate,
+        CancellationRequestResponse cancellationRequest) {}

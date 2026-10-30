@@ -140,6 +140,15 @@ de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transitio
 *override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
 perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
 
+W5-A (cancelamento pelo cliente, LAC-26; detalhe em `API-MIGRATION.md`, secção W5-A) acrescenta:
+- `order_not_cancellable` (409 — `POST /me/orders/{id}/cancel` com a encomenda em `READY_FOR_PICKUP` ou depois,
+  `REFUNDED` ou estado legado; também `POST /ops/cancellation-requests/{id}/approve` quando a encomenda já avançou
+  ou terminou por outra via — nesse caso o pedido é fechado e esse fecho fica gravado apesar do 409).
+  `details` = `{ orderStatus }`.
+- `cancellation_request_closed` (409 — aprovar um pedido já `REJECTED`, ou rejeitar um já `APPROVED`).
+- Corrida com uma ação do comerciante na mesma encomenda (aceitar/preparar/pronto): o perdedor recebe 409
+  `concurrent_modification` (`@Version`) ou `invalid_order_transition`, sem qualquer efeito.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
