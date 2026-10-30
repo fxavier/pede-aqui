@@ -62,6 +62,8 @@ public class Refund {
     public String getReason() { return reason; }
     public RefundStatus getStatus() { return status; }
     public String getIdempotencyKey() { return idempotencyKey; }
+    /** Last status change; for a REFUNDED refund this is the approval instant (approve/reject are the only writers). */
+    public Instant getUpdatedAt() { return updatedAt; }
 
     public void approve() { this.status = RefundStatus.REFUNDED; this.updatedAt = Instant.now(); }
     public void reject() { this.status = RefundStatus.REJECTED; this.updatedAt = Instant.now(); }
