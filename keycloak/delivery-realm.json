@@ -65,19 +65,23 @@
     {
       "clientId": "delivery-app",
       "name": "Delivery App",
+      "description": "Backoffice (Next.js BFF via Auth.js): Authorization Code + PKCE S256 only, no ROPC (LAC-10).",
       "enabled": true,
       "publicClient": true,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/login*##http://localhost:3001/login*"
       },
       "redirectUris": [
-        "http://localhost:3000/*",
-        "http://localhost:3001/*"
+        "http://localhost:3000/api/auth/callback/keycloak",
+        "http://localhost:3001/api/auth/callback/keycloak"
       ],
       "webOrigins": [
-        "+"
+        "http://localhost:3000",
+        "http://localhost:3001"
       ],
       "protocolMappers": [
         {

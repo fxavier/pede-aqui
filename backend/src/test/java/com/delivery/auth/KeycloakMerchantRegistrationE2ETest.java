@@ -10,6 +10,8 @@ import com.delivery.common.PostgresTestContainerConfig;
 import com.delivery.common.security.TenancyProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -38,8 +41,10 @@ import org.testcontainers.utility.MountableFile;
 /**
  * ADR-0001 step 4 against a REAL Keycloak (Testcontainers, random ports, auto-removed): imports
  * {@code keycloak/delivery-realm.json} (so a broken realm — e.g. the new optional vendor_id mapper — fails here),
- * registers a merchant through the real {@code KeycloakAdminService}, obtains a password-grant token from the
- * {@code delivery-app} client and calls a merchant-scoped endpoint with it through the real JwtDecoder.
+ * registers a merchant through the real {@code KeycloakAdminService}, checks the backoffice {@code delivery-app}
+ * client refuses the password grant (LAC-10: PKCE only), obtains a token through a test-only password-grant
+ * client mirroring {@code delivery-app}'s mappers and calls a merchant-scoped endpoint with it through the real
+ * JwtDecoder.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,7 +62,8 @@ class KeycloakMerchantRegistrationE2ETest {
             .withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
             .withCopyFileToContainer(MountableFile.forHostPath(REALM), "/opt/keycloak/data/import/delivery-realm.json")
             .withExposedPorts(8080)
-            .waitingFor(Wait.forHttp("/realms/delivery").forPort(8080).withStartupTimeout(Duration.ofMinutes(4)));
+            // start-dev + realm import alone takes ~2.5-3 min on a loaded dev machine; 4 min timed out in a full verify.
+            .waitingFor(Wait.forHttp("/realms/delivery").forPort(8080).withStartupTimeout(Duration.ofMinutes(8)));
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbc;
@@ -92,6 +98,51 @@ class KeycloakMerchantRegistrationE2ETest {
         return "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080);
     }
 
+    private static MultiValueMap<String, String> passwordGrant(String clientId, String username, String password) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("client_id", clientId);
+        form.add("username", username);
+        form.add("password", password);
+        return form;
+    }
+
+    /**
+     * Creates (once per container) a public password-grant client whose protocol mappers are copied from
+     * the realm's delivery-app client, via the master-realm bootstrap admin of this Testcontainers Keycloak.
+     */
+    private String createTestRopcClientMirroringDeliveryApp() {
+        String clientId = "e2e-test-ropc";
+        MultiValueMap<String, String> adminForm = passwordGrant("admin-cli", "admin", "admin");
+        String adminToken = RestClient.create().post()
+                .uri(keycloakUrl() + "/realms/master/protocol/openid-connect/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(adminForm)
+                .retrieve()
+                .body(JsonNode.class)
+                .get("access_token").asText();
+        RestClient admin = RestClient.builder()
+                .baseUrl(keycloakUrl() + "/admin/realms/delivery")
+                .defaultHeader("Authorization", "Bearer " + adminToken)
+                .build();
+        JsonNode existing = admin.get().uri("/clients?clientId={id}", clientId).retrieve().body(JsonNode.class);
+        if (existing != null && existing.size() > 0) {
+            return clientId;
+        }
+        JsonNode deliveryApp = admin.get().uri("/clients?clientId=delivery-app").retrieve().body(JsonNode.class).get(0);
+        ArrayNode mappers = objectMapper.createArrayNode();
+        deliveryApp.path("protocolMappers").forEach(mapper -> mappers.add(((ObjectNode) mapper.deepCopy()).without("id")));
+        ObjectNode client = objectMapper.createObjectNode()
+                .put("clientId", clientId)
+                .put("enabled", true)
+                .put("publicClient", true)
+                .put("directAccessGrantsEnabled", true)
+                .put("standardFlowEnabled", false);
+        client.set("protocolMappers", mappers);
+        admin.post().uri("/clients").contentType(MediaType.APPLICATION_JSON).body(client).retrieve().toBodilessEntity();
+        return clientId;
+    }
+
     @Test
     void realKeycloakRegistrationThenPasswordGrantTokenResolvesTheNewVendorScope() throws Exception {
         UUID operatorTenant = tenancyProperties.getOperatorTenantId();
@@ -114,16 +165,21 @@ class KeycloakMerchantRegistrationE2ETest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenants", Long.class)).isEqualTo(tenantsBefore);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM merchant_users WHERE vendor_id = ? AND role = 'OWNER'", Long.class, vendorId)).isEqualTo(1);
 
-        // 2. Login (ROPC on the backoffice client, exactly what the /login page does).
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "password");
-        form.add("client_id", "delivery-app");
-        form.add("username", email);
-        form.add("password", password);
+        // 2a. The backoffice client is Authorization Code + PKCE only (LAC-10): ROPC must be refused.
+        HttpStatusCode ropcOnBackoffice = RestClient.create().post()
+                .uri(keycloakUrl() + "/realms/delivery/protocol/openid-connect/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(passwordGrant("delivery-app", email, password))
+                .exchange((request, response) -> response.getStatusCode());
+        assertThat(ropcOnBackoffice.is4xxClientError()).as("delivery-app must not accept the password grant").isTrue();
+
+        // 2b. Token for the same user through a TEST-ONLY password-grant client that carries delivery-app's
+        //     protocol mappers (created in this throwaway container only), so the claims match the BFF's token.
+        String testClientId = createTestRopcClientMirroringDeliveryApp();
         JsonNode tokenResponse = RestClient.create().post()
                 .uri(keycloakUrl() + "/realms/delivery/protocol/openid-connect/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
+                .body(passwordGrant(testClientId, email, password))
                 .retrieve()
                 .body(JsonNode.class);
         String accessToken = tokenResponse.get("access_token").asText();

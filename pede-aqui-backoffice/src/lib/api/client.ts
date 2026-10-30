@@ -1,64 +1,38 @@
 import { httpClient } from "../http-client";
 
-// Exported so callers that need a raw fetch (e.g. blob/CSV downloads) can reuse the same
-// auth/tenant resolution as the JSON client instead of duplicating sessionStorage lookups.
-export function getAuthToken(): string | undefined {
-  if (typeof window !== "undefined") {
-    const token = sessionStorage.getItem("auth_token");
-    return token ?? undefined;
-  }
-  return undefined;
-}
-
-export function getTenantId(): string | undefined {
-  if (typeof window !== "undefined") {
-    const id = sessionStorage.getItem("tenant_id");
-    return id ?? undefined;
-  }
-  return undefined;
-}
-
+/**
+ * JSON API client used by every service in services.ts. Calls go to the same-origin BFF (see http-client.ts);
+ * no token or tenant id is read or sent from the browser — the BFF adds both server-side.
+ */
 class ApiClient {
-  private basePath = "";
-
   async get<T>(path: string): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, { authToken: getAuthToken(), tenantId: getTenantId() });
+    return httpClient<T>(path);
   }
 
   async post<T>(path: string, data?: unknown, headers?: Record<string, string>): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, {
+    return httpClient<T>(path, {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
-      authToken: getAuthToken(),
-      tenantId: getTenantId(),
       headers,
     });
   }
 
   async patch<T>(path: string, data?: unknown): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, {
+    return httpClient<T>(path, {
       method: "PATCH",
       body: data ? JSON.stringify(data) : undefined,
-      authToken: getAuthToken(),
-      tenantId: getTenantId(),
     });
   }
 
   async put<T>(path: string, data?: unknown): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, {
+    return httpClient<T>(path, {
       method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
-      authToken: getAuthToken(),
-      tenantId: getTenantId(),
     });
   }
 
   async delete<T>(path: string): Promise<T> {
-    return httpClient<T>(`${this.basePath}${path}`, {
-      method: "DELETE",
-      authToken: getAuthToken(),
-      tenantId: getTenantId(),
-    });
+    return httpClient<T>(path, { method: "DELETE" });
   }
 }
 

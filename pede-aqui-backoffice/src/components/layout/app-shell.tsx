@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSearchQuery, toggleSidebar } from "@/store/slices/ui-slice";
-import { logout as logoutAction, exitTenant } from "@/store/slices/auth-slice";
+import { logout, useTenantSwitch } from "@/lib/auth/client";
+import { canAccess } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Bell, Boxes, Building2, CreditCard,
@@ -16,21 +17,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+// The /screens prototype viewer is hidden in production builds (the middleware 404s it) unless enabled.
+const screensEnabled = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_SCREENS === "true";
+
+// Labels/icons only — who may open each route is decided by ROUTE_RULES in lib/auth/roles.ts.
 const navigation = [
-  { href: "/", label: "Painel Principal", icon: LayoutDashboard, roles: [] as string[] },
-  { href: "/empresa", label: "A Minha Empresa", icon: Building2, roles: ["VENDOR_ADMIN", "ADMIN"] },
-  { href: "/admin", label: "Admin Central", icon: ShieldCheck, roles: ["ADMIN"] },
-  { href: "/catalogo", label: "Catálogo", icon: LayoutGrid, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
-  { href: "/vendors", label: "Vendedores", icon: Building2, roles: ["ADMIN", "VENDOR_ADMIN", "OPS"] },
-  { href: "/users", label: "Utilizadores", icon: Users, roles: ["ADMIN"] },
-  { href: "/orders", label: "Encomendas", icon: Package, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "SUPPORT"] },
-  { href: "/sales", label: "Vendas", icon: TrendingUp, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "FINANCE", "SUPPORT"] },
-  { href: "/reports", label: "Relatórios", icon: PieChart, roles: ["ADMIN", "VENDOR_ADMIN", "OPS", "FINANCE"] },
-  { href: "/couriers", label: "Estafetas", icon: Truck, roles: ["ADMIN", "OPS"] },
-  { href: "/finance", label: "Finanças", icon: CreditCard, roles: ["ADMIN", "FINANCE"] },
-  { href: "/support", label: "Apoio", icon: Headphones, roles: ["ADMIN", "SUPPORT"] },
-  { href: "/marketing", label: "Marketing", icon: BarChart3, roles: ["ADMIN", "OPS", "VENDOR_ADMIN"] },
-  { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes, roles: [] as string[] },
+  { href: "/", label: "Painel Principal", icon: LayoutDashboard },
+  { href: "/empresa", label: "A Minha Empresa", icon: Building2 },
+  { href: "/admin", label: "Admin Central", icon: ShieldCheck },
+  { href: "/catalogo", label: "Catálogo", icon: LayoutGrid },
+  { href: "/vendors", label: "Vendedores", icon: Building2 },
+  { href: "/users", label: "Utilizadores", icon: Users },
+  { href: "/orders", label: "Encomendas", icon: Package },
+  { href: "/sales", label: "Vendas", icon: TrendingUp },
+  { href: "/reports", label: "Relatórios", icon: PieChart },
+  { href: "/couriers", label: "Estafetas", icon: Truck },
+  { href: "/finance", label: "Finanças", icon: CreditCard },
+  { href: "/support", label: "Apoio", icon: Headphones },
+  { href: "/marketing", label: "Marketing", icon: BarChart3 },
+  { href: "/screens", label: "Ecrãs (Stitch)", icon: Boxes },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -42,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isLoading = useAppSelector((state) => state.auth.isLoading);
-
+  const tenantSwitch = useTenantSwitch();
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -55,32 +60,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('auth_token');
-    sessionStorage.removeItem('tenant_id');
-    document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Strict';
-    dispatch(logoutAction());
-    router.push('/login');
+    logout();
   };
 
-  const handleExitTenant = () => {
-    dispatch(exitTenant());
+  const handleExitTenant = async () => {
+    await tenantSwitch.exit();
     router.push('/platform');
   };
 
   const isImpersonating = !user?.tenantId && !!user?.activeTenantId;
 
   const userRole = user?.role ?? "";
+  const userRoles = user?.roles ?? [];
+  // Same route table as the middleware (server-side guard); all of the user's roles count.
   const visibleNav = navigation.filter(
-    (item) => item.roles.length === 0 || item.roles.includes(userRole),
+    (item) => (item.href !== "/screens" || screensEnabled) && canAccess(item.href, userRoles, user?.tenantId),
   );
 
-  // Route guard: hiding the nav link isn't enough — direct URL navigation would
-  // still render an off-limits page and fire API calls that 403. Enforce the same
-  // role rules on the current route (longest matching nav prefix wins).
-  const activeNav = navigation
-    .filter((item) => item.href !== "/" && (pathname === item.href || pathname.startsWith(item.href + "/")))
-    .sort((a, b) => b.href.length - a.href.length)[0];
-  const forbidden = !!activeNav && activeNav.roles.length > 0 && !activeNav.roles.includes(userRole);
+  // Defence in depth: the middleware already answers 403 for these routes; this only covers
+  // client-side transitions rendered before the next server round-trip.
+  const forbidden = !canAccess(pathname, userRoles, user?.tenantId);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffdad2_0,transparent_32%),linear-gradient(135deg,#fff8f6_0%,#fff1ed_45%,#fff8f6_100%)] text-on-surface">

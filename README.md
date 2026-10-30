@@ -129,7 +129,7 @@ Notas:
 - `AWS_ACCESS_KEY_ID`: AWS access key for local backend runtime.
 - `AWS_SECRET_ACCESS_KEY`: AWS secret key for local backend runtime.
 - `AWS_SESSION_TOKEN`: optional session token for temporary AWS credentials.
-- `NEXT_PUBLIC_API_BASE_URL`: web base URL for backend API, default `http://localhost:8080/api/v1`.
+- `NEXT_PUBLIC_API_BASE_URL`: customer web base URL for backend API, default `http://localhost:8080/api/v1` (the backoffice uses server-side `API_BASE_URL` behind its BFF).
 - `NEXT_PUBLIC_APP_TOKEN`: local development token for web pages.
 - `API_BASE_URL` (Flutter): backend API URL used by mobile apps.
 - `APP_TOKEN` (Flutter courier): local bearer token for courier app.
