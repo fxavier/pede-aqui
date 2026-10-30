@@ -742,7 +742,7 @@ endpoints now return, in addition to the existing fields: `status` (`OFFLINE` | 
 ### Clients / consumers to review
 
 - **Courier app**: online toggle migrated to `PUT /couriers/me/status`; handle 409 `courier_has_active_delivery`
-  and `courier_suspended`. Consent screen and GPS sender are a later package.
+  and `courier_suspended`. Consent screen and GPS sender shipped in W6-D (see the W6-D section).
 - **Backoffice** (`/couriers`): may show `status` instead of `available`, and add suspend/reinstate actions and a
   map from `/ops/couriers/locations`.
 
@@ -952,3 +952,12 @@ Additive only; no existing contract changes. The in-app inbox (`/api/v1/notifica
 - Customer Flutter app / courier app / web: register the push token after login and on token refresh; call
   `DELETE /me/devices` before logout. Not implemented in the clients by this package (no FCM project yet).
 - Backoffice: template editor and delivery-log screens are not built (LAC-60).
+
+## W6-D — Courier app consumes the GPS endpoints (LAC-40, LAC-62; client only, no API change) — 2026-10-30
+
+- The courier Flutter app now calls `GET/PUT/DELETE /couriers/me/location-consent` (consent at onboarding and in
+  settings) and `POST /couriers/me/locations` (batches of ≤ 50 every 15 s or at 20 points, only on duty with
+  consent, offline buffer pruned below the 5-minute `too_old` limit, `Retry-After` honoured on 429). It reads
+  `status` from `GET /couriers/me`.
+- Ops: `APP_COURIER_PRESENCE_ENFORCE_TIMEOUT=true` (no location for 2 min → `OFFLINE`) may be turned on once couriers
+  run a build with W6-D; with an older build every online courier would be taken offline after 2 minutes.

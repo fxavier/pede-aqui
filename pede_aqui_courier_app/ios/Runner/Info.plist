@@ -56,5 +56,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>A Pede Aqui usa a sua localização apenas enquanto está em serviço, para lhe propor entregas próximas e acompanhar a entrega em curso.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 </dict>
 </plist>

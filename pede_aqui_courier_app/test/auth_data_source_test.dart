@@ -40,6 +40,17 @@ class CourierApiAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+/// Waits until the three parallel requests got their 401 and joined the in-flight refresh. Counts event-loop turns
+/// instead of wall-clock time: a fixed 20 ms sleep was flaky when the suite runs under load.
+Future<void> allJoinedRefresh(Harness h) async {
+  while (h.adapter.requests.length < 3 || h.appAuth.tokenRequests.isEmpty) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  for (var i = 0; i < 200; i++) {
+    await Future<void>.delayed(Duration.zero);
+  }
+}
+
 class Harness {
   Harness({String validToken = 'acc-1', int status = 200})
       : adapter = CourierApiAdapter(validToken, status: status) {
@@ -110,7 +121,7 @@ void main() {
       final pending = [
         for (var i = 0; i < 3; i++) h.apiClient.get<Map<String, dynamic>>('/couriers/me'),
       ];
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await allJoinedRefresh(h);
       gate.complete();
       final responses = await Future.wait(pending);
 
@@ -137,7 +148,7 @@ void main() {
         for (var i = 0; i < 3; i++)
           h.apiClient.get<Map<String, dynamic>>('/couriers/me').then((_) => 'ok', onError: (Object _) => 'failed'),
       ]);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await allJoinedRefresh(h);
       gate.complete();
       final results = await pending;
 

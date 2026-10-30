@@ -5,11 +5,12 @@ import '../models/earnings_models.dart';
 
 class MockCourierDataSource implements CourierDataSource {
   static const _networkDelay = Duration(milliseconds: 250);
+  bool _available = true;
 
   @override
   Future<CourierProfile> getProfile() async {
     await Future<void>.delayed(_networkDelay);
-    return const CourierProfile(
+    return CourierProfile(
       id: 'courier-001',
       name: 'Félix Mabunda',
       phone: '+258 84 123 4567',
@@ -18,6 +19,7 @@ class MockCourierDataSource implements CourierDataSource {
       rating: 4.92,
       totalDeliveries: 1248,
       completedToday: 6,
+      status: _available ? 'AVAILABLE' : 'OFFLINE',
     );
   }
 
@@ -137,7 +139,10 @@ class MockCourierDataSource implements CourierDataSource {
   Future<void> rejectJob(String jobId) async => Future<void>.delayed(_networkDelay);
 
   @override
-  Future<void> updateAvailability(bool isAvailable) async => Future<void>.delayed(_networkDelay);
+  Future<void> updateAvailability(bool isAvailable) async {
+    await Future<void>.delayed(_networkDelay);
+    _available = isAvailable;
+  }
 
   @override
   Future<void> confirmDelivery({required String deliveryId, required String otpCode, required bool hasProofPhoto}) async {

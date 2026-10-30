@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../cubits/dashboard/dashboard_cubit.dart';
 import '../cubits/delivery/delivery_cubit.dart';
 import '../cubits/delivery/delivery_state.dart';
 import '../widgets/app_card.dart';
@@ -14,10 +15,23 @@ class DeliveryConfirmationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<DeliveryCubit, DeliveryState>(
+      listenWhen: (previous, current) =>
+          previous.isConfirmed != current.isConfirmed || previous.isNotDeliverable != current.isNotDeliverable,
       listener: (context, state) {
         if (state.isConfirmed) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Entrega confirmada com sucesso.')),
+          );
+          context.read<DashboardCubit>().loadDashboard();
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else if (state.isNotDeliverable) {
+          // 409 order_not_deliverable: cancelled/refunded meanwhile — drop it from the courier's list.
+          final deliveryId = state.delivery?.id;
+          if (deliveryId != null) {
+            context.read<DashboardCubit>().removeDelivery(deliveryId, message: DashboardCubit.notDeliverableMessage);
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(DashboardCubit.notDeliverableMessage)),
           );
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
@@ -81,6 +95,15 @@ class DeliveryConfirmationScreen extends StatelessWidget {
                             ),
                             child: const Text('Confirmar entrega'),
                           ),
+                          if (state.errorMessage != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              state.errorMessage!,
+                              key: const Key('delivery-error'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w700),
+                            ),
+                          ],
                         ],
                       ),
                     ),
