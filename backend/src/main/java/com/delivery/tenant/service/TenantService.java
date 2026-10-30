@@ -2,12 +2,19 @@ package com.delivery.tenant.service;
 
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
+import com.delivery.common.service.AuditActions;
+import com.delivery.common.service.AuditLogService;
 import com.delivery.tenant.dto.CreateTenantRequest;
 import com.delivery.tenant.dto.TenantResponse;
 import com.delivery.tenant.mapper.TenantMapper;
 import com.delivery.tenant.entity.Tenant;
 import com.delivery.tenant.repository.TenantRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,26 +25,37 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantService {
     private final TenantRepository repository;
     private final TenantMapper mapper;
+    private final AuditLogService auditLogService;
 
-    public TenantService(TenantRepository repository, TenantMapper mapper) {
+    public TenantService(TenantRepository repository, TenantMapper mapper, AuditLogService auditLogService) {
         this.repository = repository;
         this.mapper = mapper;
+        this.auditLogService = auditLogService;
     }
 
-    /** Creates a new active tenant with a unique slug. */
+    /** Creates a new active tenant with a unique slug (audited against the new tenant, LAC-15). */
     @Transactional
     public TenantResponse createTenant(CreateTenantRequest request) {
         if (repository.existsBySlug(request.slug())) {
             throw new BusinessException("tenant_slug_exists", "Tenant slug already exists", HttpStatus.CONFLICT);
         }
         Tenant tenant = new Tenant(UUID.randomUUID(), request.name(), request.slug(), request.defaultCurrency());
-        return mapper.toResponse(repository.save(tenant));
+        // saveAndFlush: the audit row references the tenant through a foreign key.
+        Tenant saved = repository.saveAndFlush(tenant);
+        auditLogService.logForTenant(saved.getId(), AuditActions.TENANT_CREATED, "tenant", saved.getId().toString(), saved.getSlug(), "SUCCESS", null);
+        return mapper.toResponse(saved);
     }
 
-    /** Lists tenants for platform administrators. */
+    /** Lists the newest tenants for platform administrators, capped at 200 (legacy array, LAC-14). */
     @Transactional(readOnly = true)
-    public List<TenantResponse> listTenants() {
-        return repository.findAll().stream().map(mapper::toResponse).toList();
+    public CappedList<TenantResponse> listTenants() {
+        return CappedList.of(repository.findAll(PageLimits.legacyCap()), mapper::toResponse);
+    }
+
+    /** Lists one offset page of tenants, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<TenantResponse> listTenantsPage(int page, int size) {
+        return PageResponse.of(repository.findAll(PageLimits.page(page, size)), mapper::toResponse);
     }
 
     /** Gets a tenant by ID or returns a not-found error. */
@@ -50,7 +68,12 @@ public class TenantService {
     @Transactional
     public TenantResponse updateStatus(UUID id, String status) {
         Tenant tenant = findTenant(id);
+        String previous = tenant.getStatus();
         tenant.updateStatus(status);
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("from", previous);
+        details.put("to", status);
+        auditLogService.logForTenant(id, AuditActions.TENANT_STATUS_CHANGED, "tenant", id.toString(), tenant.getSlug(), "SUCCESS", details);
         return mapper.toResponse(tenant);
     }
 

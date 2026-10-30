@@ -3,7 +3,12 @@ package com.delivery.vendor.service;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.security.TenantContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.delivery.upload.service.StoredUploadValidator;
 import com.delivery.vendor.dto.CreateVendorRequest;
 import com.delivery.vendor.dto.CreateVendorDocumentRequest;
@@ -68,20 +73,30 @@ public class VendorService {
         return vendorMapper.toResponse(vendorRepository.save(vendor));
     }
 
-    /** Lists vendors. Platform admins (no tenant scope) see all; tenant users see their own. */
+    /**
+     * Lists the newest vendors, capped at 200 (legacy array, LAC-14). Platform admins (no tenant scope) see all
+     * tenants (the {@code available} filter is ignored for them, as before); tenant users see their own.
+     */
     @Transactional(readOnly = true)
-    public List<VendorResponse> list(Boolean available) {
+    public CappedList<VendorResponse> list(Boolean available) {
+        return CappedList.of(vendors(available, PageLimits.legacyCap()), vendorMapper::toResponse);
+    }
+
+    /** Lists one offset page of vendors with the same scoping as {@link #list(Boolean)} (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<VendorResponse> listPage(Boolean available, int page, int size) {
+        return PageResponse.of(vendors(available, PageLimits.page(page, size)), vendorMapper::toResponse);
+    }
+
+    private Page<Vendor> vendors(Boolean available, Pageable pageable) {
         if (tenantContext.isPlatformAdmin()) {
-            return vendorRepository.findAll().stream().map(vendorMapper::toResponse).toList();
+            return vendorRepository.findAll(pageable);
         }
-        
         // Get tenant ID with fallback to user profile lookup
         UUID tenantId = resolveTenantId();
-        
-        List<Vendor> vendors = available == null
-                ? vendorRepository.findByTenantId(tenantId)
-                : vendorRepository.findByTenantIdAndAvailable(tenantId, available);
-        return vendors.stream().map(vendorMapper::toResponse).toList();
+        return available == null
+                ? vendorRepository.findByTenantId(tenantId, pageable)
+                : vendorRepository.findByTenantIdAndAvailable(tenantId, available, pageable);
     }
 
     /** Updates vendor availability and estimated delivery time. */

@@ -1,13 +1,17 @@
 package com.delivery.order.controller;
 
+import com.delivery.common.pagination.CursorPage;
+import com.delivery.common.pagination.PageLimits;
 import com.delivery.order.dto.AdminOrderPageResponse;
 import com.delivery.order.dto.AdminOrderResponse;
 import com.delivery.order.dto.OrderResponse;
 import com.delivery.order.dto.TrackingResponse;
+import com.delivery.order.service.OrderListingService;
 import com.delivery.order.service.OrderService;
 import com.delivery.order.service.OrderTrackingService;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,16 +25,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
     private final OrderTrackingService trackingService;
     private final OrderService orderService;
+    private final OrderListingService listingService;
 
-    public OrderController(OrderTrackingService trackingService, OrderService orderService) {
+    public OrderController(OrderTrackingService trackingService, OrderService orderService, OrderListingService listingService) {
         this.trackingService = trackingService;
         this.orderService = orderService;
+        this.listingService = listingService;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
-    public List<AdminOrderResponse> list() {
-        return orderService.listForCurrentContext();
+    public ResponseEntity<List<AdminOrderResponse>> list() {
+        return orderService.listForCurrentContext().toResponse(); // LAC-14: newest 200, X-Truncated when capped
+    }
+
+    /** Keyset variant of {@link #list()} (LAC-14): {@code { items, nextCursor }}, limit 1..200 (default 50); same scoping. */
+    @GetMapping("/cursor")
+    @PreAuthorize("hasAnyRole('ADMIN','OPS','VENDOR_ADMIN','VENDOR_STAFF')")
+    public CursorPage<AdminOrderResponse> listCursor(
+            @RequestParam(defaultValue = "" + PageLimits.DEFAULT_CURSOR_LIMIT) int limit,
+            @RequestParam(required = false) String cursor) {
+        return listingService.listCursorForCurrentContext(limit, cursor);
     }
 
     /** Paginated variant of {@link #list()} (newest first, size capped at 100); same role and vendor scoping. */

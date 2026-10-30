@@ -59,6 +59,9 @@ class AdminUserCreationAuthorizationTest {
     /** Preserved behaviour: SUPPORT still lists users. */
     @Test
     void supportStillListsUsers() throws Exception {
+        // LAC-14: the list is a capped array (CappedList); the mock must return one instead of null.
+        org.mockito.Mockito.when(appUserProfileService.listUserProfiles())
+                .thenReturn(new com.delivery.common.pagination.CappedList<>(java.util.List.of(), false));
         mockMvc.perform(get("/api/v1/admin/users").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SUPPORT"))))
                 .andExpect(status().isOk());
     }

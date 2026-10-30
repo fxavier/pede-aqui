@@ -7,6 +7,9 @@ import com.delivery.auth.mapper.AppUserProfileMapper;
 import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
+import com.delivery.common.pagination.CappedList;
+import com.delivery.common.pagination.PageLimits;
+import com.delivery.common.pagination.PageResponse;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditActions;
@@ -171,16 +174,21 @@ public class AppUserProfileService {
         return assignable;
     }
 
-    /** Lists all user profiles in the current tenant (admin only). */
+    /** Lists the newest user profiles of the current tenant, capped at 200 (legacy array, LAC-14; admin only). */
     @Transactional(readOnly = true)
-    public List<MeResponse> listUserProfiles() {
-        UUID tenantId = tenantContext.currentTenantId()
-                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
+    public CappedList<MeResponse> listUserProfiles() {
+        return CappedList.of(repository.findByTenantId(requireTenantId(), PageLimits.legacyCap()), mapper::toMeResponse);
+    }
 
-        return repository.findByTenantId(tenantId)
-                .stream()
-                .map(mapper::toMeResponse)
-                .toList();
+    /** Lists one offset page of user profiles of the current tenant, newest first (size capped at 100). */
+    @Transactional(readOnly = true)
+    public PageResponse<MeResponse> listUserProfilesPage(int page, int size) {
+        return PageResponse.of(repository.findByTenantId(requireTenantId(), PageLimits.page(page, size)), mapper::toMeResponse);
+    }
+
+    private UUID requireTenantId() {
+        return tenantContext.currentTenantId()
+                .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
     }
 
     /** Gets a user profile by ID (admin only). */

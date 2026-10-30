@@ -24,7 +24,7 @@ class TenantAccessTest {
         TenantRepository repository = mock(TenantRepository.class);
         when(repository.findById(tenantId)).thenReturn(Optional.of(tenant));
 
-        TenantService service = new TenantService(repository, new TenantMapper());
+        TenantService service = new TenantService(repository, new TenantMapper(), org.mockito.Mockito.mock(com.delivery.common.service.AuditLogService.class));
 
         assertThatThrownBy(() -> service.validateActiveTenant(tenantId))
                 .isInstanceOf(BusinessException.class)
