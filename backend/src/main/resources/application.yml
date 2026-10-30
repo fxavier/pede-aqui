@@ -186,6 +186,13 @@ app:
         methods: [POST]
         capacity: 10
         period: 1m
+      # W6-A: GET /checkout/quote grava uma linha checkout_quotes por chamada (é uma escrita, apesar do GET).
+      # Bucket próprio por cliente: folga para recotar ao mudar morada/carrinho, mas trava loops que encham a tabela.
+      checkout-quote:
+        paths: [/api/v1/checkout/quote]
+        methods: [GET]
+        capacity: 30
+        period: 1m
       uploads:
         paths: [/api/v1/uploads/**]
         methods: [POST]
@@ -270,6 +277,8 @@ app:
     # snapshot, response carries "Deprecation: true"). Set to false to close the window once every
     # client sends addressId — see docs/api/API-MIGRATION.md.
     legacy-without-address-enabled: ${APP_CHECKOUT_LEGACY_WITHOUT_ADDRESS_ENABLED:true}
+    # W6-A: validity of GET /checkout/quote (quoteId + expiresAt); POST /checkout with an expired quoteId → 409 quote_changed.
+    quote-ttl: ${APP_CHECKOUT_QUOTE_TTL:PT10M}
   payments:
     mock-confirmation:
       enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
@@ -303,6 +312,12 @@ app:
       enabled: ${APP_JOBS_COURIER_LOCATION_RETENTION_ENABLED:true}
       cron: "0 15 4 * * *"
       zone: Africa/Maputo
+    # W6-A: deletes checkout_quotes expired more than `grace` ago.
+    checkout-quote-cleanup:
+      enabled: ${APP_JOBS_CHECKOUT_QUOTE_CLEANUP_ENABLED:true}
+      cron: "0 45 3 * * *"
+      zone: Africa/Maputo
+      grace: P1D
     event-publication-retry:
       enabled: true
       interval: PT1M

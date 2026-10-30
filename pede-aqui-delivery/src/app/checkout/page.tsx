@@ -12,7 +12,7 @@ import type { RootState, AppDispatch } from '@/store'
 import { formatMZN } from '@/lib/utils'
 import { useIdempotencyKey } from '@/lib/idempotency'
 import { myOrdersQueryKey } from '@/lib/orderHistory'
-import { cartErrorMessage } from '@/lib/cart-errors'
+import { cartErrorMessage, freshQuoteFrom } from '@/lib/cart-errors'
 import {
   type AddressForm, type AddressFormErrors,
   emptyAddressForm, formatAddress, toAddressRequest, validateAddressForm,
@@ -57,11 +57,15 @@ export default function CheckoutPage() {
   // Server quote for the chosen saved address (same engine as checkout); a new, unsaved address is quoted
   // without coordinates (base delivery fee) until it is saved at confirmation.
   const quotedAddressId = selected && selected !== NEW_ADDRESS ? selected : undefined
+  const quoteKey = ['checkout-quote', cart.cartId, quotedAddressId, subtotal]
   const quote = useQuery({
-    queryKey: ['checkout-quote', cart.cartId, quotedAddressId, subtotal],
+    queryKey: quoteKey,
     queryFn: () => checkoutService.quote(cart.cartId as string, quotedAddressId),
     enabled: !!cart.cartId && cart.items.length > 0,
+    retry: false,
   })
+  // 422 out_of_service_area / address_too_far on the quote: the chosen address cannot be served (W6-A).
+  const quoteError = quote.isError ? cartErrorMessage(quote.error, 'Não foi possível calcular o total.') : null
 
   // Redirect away from an empty-cart checkout in an effect (never during render).
   const isEmpty = cart.items.length === 0
@@ -105,13 +109,18 @@ export default function CheckoutPage() {
     try {
       const addressId = await resolveAddressId()
       if (!addressId) return
-      // Payment method is still cosmetic (no PSP yet); the address goes as a saved-address reference.
-      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey, addressId })
+      // Payment method is still cosmetic (no PSP yet); the address goes as a saved-address reference. The quote the
+      // customer is looking at is confirmed by id when it was computed for this very address (W6-A).
+      const quoteId = quote.data && quote.data.addressId === addressId ? quote.data.quoteId : undefined
+      const order = await checkoutService.checkout({ cartId: cart.cartId, idempotencyKey, addressId, quoteId })
       // Order history comes from GET /me/orders: refresh it instead of caching the order locally (LAC-59).
       void queryClient.invalidateQueries({ queryKey: myOrdersQueryKey })
       dispatch(clearCart())
       navigate(`/orders/${order.id}/confirmation`, { replace: true })
     } catch (err) {
+      // quote_changed carries the new quote: show it at once so the customer reviews the new total.
+      const fresh = freshQuoteFrom(err)
+      if (fresh) queryClient.setQueryData(quoteKey, fresh)
       setSubmitError(cartErrorMessage(err, 'Não foi possível finalizar o pedido. Tente novamente.'))
     } finally {
       setSubmitting(false)
@@ -253,7 +262,9 @@ export default function CheckoutPage() {
                     <span className="text-slate-800 font-bold">{formatMZN(quote.data.deliveryFee)}</span>
                   </div>
                   <div className="flex justify-between"><span>Taxa de serviço</span><span className="text-slate-800 font-bold">{formatMZN(quote.data.serviceFee)}</span></div>
-                  <div className="flex justify-between"><span>IVA</span><span className="text-slate-800 font-bold">{formatMZN(quote.data.taxes)}</span></div>
+                  {quote.data.taxes > 0 && (
+                    <div className="flex justify-between"><span>IVA</span><span className="text-slate-800 font-bold">{formatMZN(quote.data.taxes)}</span></div>
+                  )}
                   {quote.data.discountTotal > 0 && (
                     <div className="flex justify-between"><span>Desconto</span><span className="text-emerald-600 font-bold">−{formatMZN(quote.data.discountTotal)}</span></div>
                   )}
@@ -264,6 +275,12 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-base text-slate-800 font-extrabold pt-3 border-t border-slate-100">
                 <span>Total</span><span className="text-brand-600 text-lg">{formatMZN(quote.data ? quote.data.total : subtotal)}</span>
               </div>
+              {quote.data?.taxInclusive && (
+                <p className="text-[11px] text-slate-400 font-medium text-right" data-testid="vat-included">
+                  IVA incluído ({formatMZN(quote.data.vatIncluded)})
+                </p>
+              )}
+              {quoteError && <p className="text-xs text-destructive font-medium">{quoteError}</p>}
             </div>
 
             <div className="p-3 bg-slate-50 rounded-2xl flex items-center gap-2 border border-slate-100 text-slate-500">
@@ -275,7 +292,7 @@ export default function CheckoutPage() {
 
             <button
               onClick={handleConfirm}
-              disabled={submitting || selected === null}
+              disabled={submitting || selected === null || !!quoteError}
               className={`w-full bg-brand-600 hover:bg-brand-500 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'}`}
             >
               {submitting ? (

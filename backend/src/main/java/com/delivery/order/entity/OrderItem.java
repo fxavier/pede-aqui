@@ -38,6 +38,14 @@ public class OrderItem {
     private UUID categoryIdSnapshot;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+    /** VAT category, rate and VAT contained in line_total before discounts (V064, W6-A); null on older lines. */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "tax_category", length = 20)
+    private com.delivery.common.pricing.TaxCategory taxCategory;
+    @Column(name = "vat_rate")
+    private BigDecimal vatRate;
+    @Column(name = "vat_amount")
+    private BigDecimal vatAmount;
 
     protected OrderItem() {}
 
@@ -49,6 +57,16 @@ public class OrderItem {
     public int getQuantity() { return quantity; }
     public BigDecimal getLineTotal() { return lineTotal; }
     public UUID getCategoryIdSnapshot() { return categoryIdSnapshot; }
+    public com.delivery.common.pricing.TaxCategory getTaxCategory() { return taxCategory; }
+    public BigDecimal getVatRate() { return vatRate; }
+    public BigDecimal getVatAmount() { return vatAmount; }
+
+    /** Records the line's VAT category, rate and the VAT contained in line_total (extracted, HALF_UP 2 dp). */
+    public void recordTax(com.delivery.common.pricing.TaxCategory taxCategory, BigDecimal vatRate, BigDecimal vatAmount) {
+        this.taxCategory = taxCategory;
+        this.vatRate = vatRate;
+        this.vatAmount = vatAmount;
+    }
 
     public OrderItem(UUID id, Order order, UUID tenantId, UUID skuId, String productNameSnapshot, String skuNameSnapshot, BigDecimal unitPriceSnapshot, int quantity, UUID categoryIdSnapshot) {
         this(id, order, tenantId, skuId, productNameSnapshot, skuNameSnapshot, unitPriceSnapshot, quantity);

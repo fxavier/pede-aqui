@@ -85,7 +85,7 @@ class CheckoutDiscountRegressionTest {
             testCodeHasher(),
             mock(com.delivery.order.service.OrderStockService.class), mock(com.delivery.cart.service.CartService.class),
             mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-            com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine());
+            com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.api.DeliveryRetirementService.class), com.delivery.order.OrderTestStatus.stateMachine(), mock(com.delivery.order.service.DeliveryAreaPolicy.class), mock(com.delivery.order.service.CheckoutQuoteStore.class));
 
     private static DeliveryCodeHasher testCodeHasher() {
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
@@ -139,12 +139,12 @@ class CheckoutDiscountRegressionTest {
         Order order = orderCaptor.getValue();
         assertThat(order.getDiscountTotal()).isEqualByComparingTo("0");
         assertThat(order.getAppliedPromotionId()).isNull();
-        assertThat(order.getTotal()).isEqualByComparingTo("118.00");
+        assertThat(order.getTotal()).isEqualByComparingTo("110.00"); // W6-A: VAT included in prices (was 118.00, 8 % added)
         assertThat(cart.getStatus()).isEqualTo("CHECKED_OUT");
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
-        assertThat(paymentCaptor.getValue().getAmount()).isEqualByComparingTo("118.00");
+        assertThat(paymentCaptor.getValue().getAmount()).isEqualByComparingTo("110.00");
     }
 
     @Test
@@ -160,8 +160,8 @@ class CheckoutDiscountRegressionTest {
         Order order = orderCaptor.getValue();
         assertThat(order.getAppliedPromotionId()).isEqualTo(promotionId);
         assertThat(order.getDiscountTotal()).isEqualByComparingTo("10.00");
-        // total = subtotal + fees + taxes − discount = 100 + 10 + 8 − 10
-        assertThat(order.getTotal()).isEqualByComparingTo("108.00");
+        // total = subtotal + fees + taxes − discount = 100 + 10 + 0 − 10 (W6-A: taxes line 0, VAT included; was 108.00)
+        assertThat(order.getTotal()).isEqualByComparingTo("100.00");
         assertThat(order.getSubtotal().add(order.getFees()).add(order.getTaxes()).subtract(order.getDiscountTotal()))
                 .isEqualByComparingTo(order.getTotal());
         // The category snapshot (A7) is populated at order creation for CATEGORY-scoped reporting.
@@ -169,7 +169,7 @@ class CheckoutDiscountRegressionTest {
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
-        assertThat(paymentCaptor.getValue().getAmount()).isEqualByComparingTo("108.00");
+        assertThat(paymentCaptor.getValue().getAmount()).isEqualByComparingTo("100.00");
     }
 
     @Test

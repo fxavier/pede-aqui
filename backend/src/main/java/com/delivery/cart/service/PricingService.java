@@ -7,6 +7,8 @@ import com.delivery.common.pricing.DeliveryFeeQuote;
 import com.delivery.common.pricing.GeoPoint;
 import com.delivery.common.pricing.PriceQuote;
 import com.delivery.common.pricing.PricingMath;
+import com.delivery.common.pricing.TaxCategory;
+import com.delivery.common.pricing.TaxableLine;
 import com.delivery.geo.api.DeliveryFeeEstimator;
 import com.delivery.geo.entity.DeliveryFeeRule;
 import com.delivery.geo.repository.DeliveryFeeRuleRepository;
@@ -38,16 +40,22 @@ import org.springframework.stereotype.Service;
  * <p>Delivery fee, in order: empty cart → 0 (EMPTY_CART); distance known and vendor has active rules → the band
  * fee (DISTANCE_RULE); otherwise the tenant base {@code fee_policies.delivery_fee} (POLICY_BASE), or the platform
  * defaults when the tenant has no policy (PLATFORM_DEFAULT). It is never silently zero for a non-empty cart.
+ *
+ * <p>VAT (W6-A, LAC-22, engine {@code pricing-v2}): catalogue prices and platform fees are VAT-inclusive (B2C) when the
+ * policy is {@code tax_inclusive} (default; platform default rate 16 %): nothing is added on top ({@code taxes} = 0,
+ * total = subtotal + fees − discount) and the contained VAT is extracted per line/fee ({@link PriceQuote#vat}). An
+ * exclusive policy keeps the pre-W6-A formula (taxes = subtotal × tax_rate added on top). Fiscal treatment
+ * "a validar com contabilista" (LAC-38).
  */
 @Service
 public class PricingService implements DeliveryFeeEstimator {
-    /** Recorded on every order quote; bump when the formula changes. */
-    public static final String ENGINE_VERSION = "pricing-v1";
-    // Platform defaults = the pre-INC-13 constants, identical to the V048 seed, so tenants without a policy keep today's totals.
+    /** Recorded on every order quote; bump when the formula changes (pricing-v1 = 8 % added on top, before W6-A). */
+    public static final String ENGINE_VERSION = "pricing-v2";
+    // Platform defaults for tenants without a policy: delivery 5.00, service 5 %, VAT 16 % included in prices (W6-A).
     static final BigDecimal DEFAULT_DELIVERY_FEE = new BigDecimal("5.00");
     static final BigDecimal DEFAULT_SERVICE_FEE = new BigDecimal("0.00");
     static final BigDecimal DEFAULT_SERVICE_FEE_RATE = new BigDecimal("0.0500");
-    static final BigDecimal DEFAULT_TAX_RATE = new BigDecimal("0.0800");
+    static final BigDecimal DEFAULT_TAX_RATE = new BigDecimal("0.1600");
     private static final BigDecimal ZERO_MONEY = new BigDecimal("0.00");
     private static final Comparator<DeliveryFeeRule> BAND_ORDER =
             Comparator.comparing(DeliveryFeeRule::getMinKm).thenComparing(DeliveryFeeRule::getId);
@@ -65,16 +73,28 @@ public class PricingService implements DeliveryFeeEstimator {
 
     /**
      * Full quote for a vendor cart subtotal delivered to {@code destination} (null = unknown, e.g. the cart before
-     * an address is chosen or the legacy checkout without addressId: the tenant base fee applies).
+     * an address is chosen or the legacy checkout without addressId: the tenant base fee applies). The whole subtotal
+     * is treated as one STANDARD-rated line (cart estimates); checkout uses {@link #quote(UUID, UUID, List, GeoPoint)}.
      */
     public PriceQuote quote(UUID tenantId, UUID vendorId, BigDecimal subtotal, GeoPoint destination) {
+        return quote(tenantId, vendorId, List.of(new TaxableLine(subtotal, TaxCategory.STANDARD)), subtotal, destination);
+    }
+
+    /** Full quote for priced lines (gross = unit price × quantity, with each product's VAT category, W6-A). */
+    public PriceQuote quote(UUID tenantId, UUID vendorId, List<TaxableLine> lines, GeoPoint destination) {
+        BigDecimal subtotal = lines.stream().map(TaxableLine::gross).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return quote(tenantId, vendorId, lines, subtotal, destination);
+    }
+
+    private PriceQuote quote(UUID tenantId, UUID vendorId, List<TaxableLine> lines, BigDecimal subtotal, GeoPoint destination) {
         Optional<FeePolicy> policy = policyOf(tenantId);
         Rates rates = rates(policy);
+        BigDecimal maxDistanceKm = policy.map(FeePolicy::getMaxDeliveryDistanceKm).orElse(null);
         if (subtotal.signum() == 0) {
             DeliveryFeeQuote none = new DeliveryFeeQuote(ZERO_MONEY, DeliveryFeeBasis.EMPTY_CART, null,
                     policy.map(FeePolicy::getId).orElse(null), policy.map(FeePolicy::getVersion).orElse(null), null, null);
             return new PriceQuote(subtotal, ZERO_MONEY, ZERO_MONEY, ZERO_MONEY, PricingMath.orderTotal(subtotal, ZERO_MONEY, ZERO_MONEY, ZERO_MONEY),
-                    rates.serviceFeeRate(), rates.taxRate(), none, ENGINE_VERSION);
+                    rates.serviceFeeRate(), rates.taxRate(), none, ENGINE_VERSION, rates.taxInclusive(), lines, maxDistanceKm);
         }
         BigDecimal distanceKm = destination == null || vendorId == null ? null
                 : distancesKm(List.of(vendorId), destination).get(vendorId);
@@ -82,9 +102,11 @@ public class PricingService implements DeliveryFeeEstimator {
                 : deliveryFeeRuleRepository.findByTenantIdAndVendorIdAndActive(tenantId, vendorId, true);
         DeliveryFeeQuote delivery = deliveryFee(policy, rules, distanceKm);
         BigDecimal serviceFee = rates.serviceFee().add(subtotal.multiply(rates.serviceFeeRate())).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal taxes = subtotal.multiply(rates.taxRate()).setScale(2, RoundingMode.HALF_UP);
+        // Inclusive (W6-A default): VAT is already inside prices and fees, nothing is added. Exclusive: pre-W6-A formula.
+        BigDecimal taxes = rates.taxInclusive() ? ZERO_MONEY : subtotal.multiply(rates.taxRate()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = PricingMath.orderTotal(subtotal, delivery.amount().add(serviceFee), taxes, BigDecimal.ZERO);
-        return new PriceQuote(subtotal, delivery.amount(), serviceFee, taxes, total, rates.serviceFeeRate(), rates.taxRate(), delivery, ENGINE_VERSION);
+        return new PriceQuote(subtotal, delivery.amount(), serviceFee, taxes, total, rates.serviceFeeRate(), rates.taxRate(), delivery,
+                ENGINE_VERSION, rates.taxInclusive(), lines, maxDistanceKm);
     }
 
     /**
@@ -116,7 +138,8 @@ public class PricingService implements DeliveryFeeEstimator {
     }
 
     /**
-     * GET /cart/pricing preview for a bare subtotal: tenant policy base fee, service fee and tax, no discount.
+     * GET /cart/pricing preview for a bare subtotal: tenant policy base fee, service fee and tax line (0 when VAT is
+     * included in prices), no discount.
      * The former magic coupon "MVP10" is gone; real coupons go through POST /cart/{cartId}/coupon (spec-002).
      */
     public PricingResponse preview(UUID tenantId, BigDecimal subtotal) {
@@ -179,7 +202,7 @@ public class PricingService implements DeliveryFeeEstimator {
     /** Service fee and tax inputs; rates above 100 % are a misconfiguration and are refused rather than charged. */
     private static Rates rates(Optional<FeePolicy> policy) {
         if (policy.isEmpty()) {
-            return new Rates(DEFAULT_SERVICE_FEE, DEFAULT_SERVICE_FEE_RATE, DEFAULT_TAX_RATE);
+            return new Rates(DEFAULT_SERVICE_FEE, DEFAULT_SERVICE_FEE_RATE, DEFAULT_TAX_RATE, true);
         }
         FeePolicy p = policy.get();
         BigDecimal serviceFeeRate = p.getServiceFeeRate() == null ? BigDecimal.ZERO : p.getServiceFeeRate();
@@ -187,8 +210,8 @@ public class PricingService implements DeliveryFeeEstimator {
                 || p.getTaxRate().signum() < 0 || serviceFeeRate.signum() < 0 || p.getServiceFee().signum() < 0 || p.getDeliveryFee().signum() < 0) {
             throw new BusinessException("pricing_policy_invalid", "The tenant fee policy is misconfigured; pricing is unavailable", HttpStatus.CONFLICT);
         }
-        return new Rates(p.getServiceFee(), serviceFeeRate, p.getTaxRate());
+        return new Rates(p.getServiceFee(), serviceFeeRate, p.getTaxRate(), p.isTaxInclusive());
     }
 
-    private record Rates(BigDecimal serviceFee, BigDecimal serviceFeeRate, BigDecimal taxRate) {}
+    private record Rates(BigDecimal serviceFee, BigDecimal serviceFeeRate, BigDecimal taxRate, boolean taxInclusive) {}
 }

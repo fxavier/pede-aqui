@@ -112,6 +112,17 @@ export interface CheckoutQuote {
   deliveryFeeBasis: DeliveryFeeBasis
   /** Straight-line distance used for the fee; null when vendor or address has no coordinates. */
   distanceKm: number | null
+  /** W6-A: send it on POST /checkout to be charged exactly this quote (409 quote_changed otherwise). */
+  quoteId: string
+  expiresAt: string
+  /** True when prices and fees already include VAT (the default): `taxes` is then 0 and `vatIncluded` is shown. */
+  taxInclusive: boolean
+  vatRate: number
+  /** VAT contained in `total` ("IVA incluído"). */
+  vatIncluded: number
+  goodsVat: number
+  feesVat: number
+  netTotal: number
 }
 
 // Checkout (POST /api/v1/checkout)
@@ -120,6 +131,8 @@ export interface CheckoutRequest {
   idempotencyKey: string
   /** One of the customer's saved addresses (required by the current API version, INC-12). */
   addressId: string
+  /** Quote the customer confirmed (W6-A); omit for the pre-W6-A revalidation behaviour. */
+  quoteId?: string
 }
 
 // Customer addresses (/api/v1/customers/me/addresses)
@@ -234,6 +247,9 @@ export interface CustomerOrderDetail {
   cancellationFeeEstimate: number | null
   /** The order's most recent cancellation request, if any. */
   cancellationRequest: CancellationRequest | null
+  /** W6-A: null for older orders (their VAT is the `taxes` line). */
+  taxInclusive: boolean | null
+  vatIncluded: number | null
 }
 
 export type CancellationPhase = 'FREE' | 'REQUEST' | 'ALREADY_CANCELLED' | 'NOT_CANCELLABLE'

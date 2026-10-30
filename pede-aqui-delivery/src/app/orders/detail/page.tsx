@@ -122,6 +122,9 @@ export default function OrderDetailPage() {
             <div className="border-t border-slate-100 pt-2 flex justify-between font-extrabold text-slate-800">
               <span>Total</span><span className="text-brand-600">{formatMZN(order.total)}</span>
             </div>
+            {order.vatIncluded != null && (
+              <p className="text-[11px] text-slate-400 font-medium text-right">IVA incluído ({formatMZN(order.vatIncluded)})</p>
+            )}
           </div>
         </div>
 

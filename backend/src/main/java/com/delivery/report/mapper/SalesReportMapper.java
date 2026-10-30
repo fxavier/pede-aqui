@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 /**
  * Converts raw report aggregates into response DTOs, applying the money rules of AC-8.8:
  * MZN with 2 decimals, non-negative refunds/commission, net = gross − refunds,
- * AOV = gross / orderCount.
+ * AOV = gross / orderCount, grossExVat = gross − vatIncluded (W6-A).
  */
 @Component
 public class SalesReportMapper {
@@ -34,7 +34,9 @@ public class SalesReportMapper {
                 nonNegative(money(row.commission())),
                 averageOrderValue(gross, row.orderCount()),
                 row.deliveredCount(),
-                row.cancelledCount());
+                row.cancelledCount(),
+                money(row.vatIncluded()),
+                gross.subtract(money(row.vatIncluded())));
     }
 
     public SalesBucketResponse toBucket(BucketRow row) {
@@ -50,7 +52,9 @@ public class SalesReportMapper {
                 nonNegative(money(row.commission())),
                 averageOrderValue(gross, row.orderCount()),
                 row.deliveredCount(),
-                row.cancelledCount());
+                row.cancelledCount(),
+                money(row.vatIncluded()),
+                gross.subtract(money(row.vatIncluded())));
     }
 
     public DimensionRowResponse toDimension(DimensionAggregateRow row, BigDecimal totalGross) {

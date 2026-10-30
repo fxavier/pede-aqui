@@ -143,6 +143,12 @@ class VendorGeoSearchPostgresE2ETest extends PostgresApiE2ETestBase {
             try (Statement st = connection.createStatement()) {
                 if (forceIndex) {
                     st.execute("SET LOCAL enable_seqscan = off");
+                    // W6-A: with the rows of the whole suite in the shared container, the planner may reach vendors
+                    // through a full vendors_pkey index scan (or a pkey probe in a nested loop), which never shows the
+                    // GiST index. Allowing only bitmap scans and no nested loops leaves the GiST index as the only
+                    // non-seqscan access path that has a condition on vendors, independent of row statistics.
+                    st.execute("SET LOCAL enable_nestloop = off");
+                    st.execute("SET LOCAL enable_indexscan = off");
                 }
                 StringBuilder plan = new StringBuilder();
                 try (ResultSet rs = st.executeQuery(explainSql)) {
