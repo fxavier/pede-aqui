@@ -392,3 +392,28 @@ indexes (plus `(tenant_id, vendor_id, …)`, `(tenant_id, recipient_user_id, …
 
 - `POST /api/v1/customers/{customerId}/cart/items` with a `skuId` sold by a vendor other than `vendorId`
   → **422** `sku_vendor_mismatch` (previously the item was added to that vendor's cart).
+
+## W3-B — Distributed rate limiting (LAC-11)
+
+No change to request/response shapes and no OpenAPI change (429 is not documented per operation, as
+before). What clients can observe:
+
+- **429 `rate_limited` now carries `Retry-After`** (whole seconds, ≥ 1) and
+  `details.retryAfterSeconds` (same value). Body otherwise unchanged (problem document, legacy
+  `message` = `Too many requests for sensitive endpoint`). Clients should wait at least `Retry-After`
+  before retrying and must not retry 429 in a tight loop.
+- **Newly limited:** `POST /api/v1/register` and `POST /api/v1/customers/register` — 5 requests per
+  15 minutes per client IP. A registration form that retries on validation errors can hit this;
+  surface the 429 as "too many attempts, try again later".
+- **Limits are now per logical endpoint (route pattern) and account, shared by all backend instances**
+  (Redis). Previously each instance counted 20 requests/minute per user *and exact URI*, so
+  `/deliveries/A/complete` and `/deliveries/B/complete` had separate counters. Defaults per group:
+  delivery PIN completion 10 / 5 min per courier; checkout 10 / min; presigned uploads 30 / min;
+  payments/refunds/sales cancel-refund 20 / min; provisioning 20 / min; deliveries, dispatch, ops,
+  support tickets, admin and `/me` endpoints 120 / min; public catalog/search `GET` 300 / min.
+  Buckets refill continuously (token bucket), so a client that pauses briefly regains capacity.
+- Routes outside these groups are no longer limited (the old substring matcher also limited any
+  path containing `/me`, `/admin`, `/auth`, `/login`, …).
+- Anonymous callers are keyed by the connecting IP; `X-Forwarded-For` is ignored unless the
+  deployment configures `app.rate-limit.trusted-proxies`, so clients cannot obtain fresh buckets by
+  sending that header.
