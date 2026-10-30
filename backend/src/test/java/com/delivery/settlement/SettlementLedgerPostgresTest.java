@@ -59,10 +59,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * per-vendor commission override and the reconciliation check.
  *
  * <p>Own context: ledger listeners on ({@code app.settlement.enabled=true}; off for the rest of the suite), mock
- * payment confirmation on, small pool. Every test seeds a fresh tenant — ledger rows are immutable and never cleaned.
+ * payment confirmation on, 3-connection pool (the shared container's max_connections; concurrent callers queue on the pool). Every test seeds a fresh tenant — ledger rows are immutable and never cleaned.
  */
 @TestPropertySource(properties = {
-        "spring.datasource.hikari.maximum-pool-size=8",
+        "spring.datasource.hikari.maximum-pool-size=3",
         "app.settlement.enabled=true",
         "app.payments.mock-confirmation.enabled=true"})
 class SettlementLedgerPostgresTest extends PostgresApiE2ETestBase {
