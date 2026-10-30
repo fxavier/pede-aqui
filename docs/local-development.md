@@ -46,6 +46,44 @@ Keycloak only imports a realm that does not exist yet. After changing either fil
 docker compose rm -sf keycloak && docker compose up -d keycloak
 ```
 
+### Customer web login (`pede-aqui-web`, PKCE only)
+
+The customer web app (`pede-aqui-delivery`, `http://localhost:5173`) logs in **only** with Authorization
+Code + PKCE (S256) through the Keycloak login page; the password grant is disabled on `pede-aqui-web`
+(`directAccessGrantsEnabled=false`, a ROPC request answers `400 unauthorized_client`). Realm settings for the
+client: redirect URIs `http://localhost:5173/*` and `http://localhost:4173/*` (vite preview), web origins for
+both, post-logout redirect `http://localhost:5173/` and `http://localhost:4173/`. An existing Keycloak
+container keeps the old client (ROPC on) until it is recreated (see above).
+
+- Tokens are held only in memory (oidc-client-ts `InMemoryWebStorage`). A page reload restores the session
+  through the Keycloak SSO cookie with a hidden `prompt=none` iframe (`/auth/silent-callback`); a new tab or a
+  browser that blocks the iframe's cookies (see below) shows the user as logged out until "Entrar", which then
+  completes without a password while the SSO session is alive (30 min idle).
+- Self-registration stays in the app (`/register` → `POST /api/v1/customers/register`); afterwards the app
+  starts the PKCE login with `login_hint=<email>`, so the user types the password once more on Keycloak.
+- To test as a customer, register through `/register` (the dev seed has no customer user).
+
+### Customer web security headers
+
+`vite` and `vite preview` send the headers built by `pede-aqui-delivery/src/lib/security/headers.ts` (the dev
+CSP additionally allows the react-refresh inline preamble, the HMR websocket and MinIO images on
+`localhost:9000`). Production serves the static bundle from a CDN, so the same headers must be configured
+there (CloudFront *response headers policy* or ALB/nginx), with the real API and Keycloak origins:
+
+```text
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://<api-host> https://<keycloak-host>; frame-src 'self' https://<keycloak-host>; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=()
+```
+
+`frame-ancestors 'self'` / `SAMEORIGIN` (not `none`/`DENY`) is required: the silent-renew callback is the app
+loaded in an iframe by itself. HSTS (and `preload`) is a deployment decision — only enable it once every
+subdomain is HTTPS. Keep Keycloak on the same registrable domain as the app (e.g. `auth.<domain>` and
+`app.<domain>`) so the SSO cookie is first-party for the silent iframe.
+
 For local Swagger or curl testing, authenticated requests may also pass `X-Tenant-Id`
 with an active tenant UUID.
 

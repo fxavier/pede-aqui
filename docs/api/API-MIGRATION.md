@@ -538,3 +538,27 @@ before). What clients can observe:
 - **Backoffice**: vendor action buttons should handle 409 (they treated any non-2xx as an error, so no
   breakage); a "history" timeline can use the new endpoint.
 - **Customer web / Flutter**: `cancellationReason` values above; `PICKED_UP`/`DELIVERING` statuses.
+
+## W4-C — Customer web on Authorization Code + PKCE; ROPC removed for `pede-aqui-web` (LAC-10, web part)
+
+No REST endpoint changed. The change is in the identity contract of the Keycloak client `pede-aqui-web`.
+
+### Keycloak client `pede-aqui-web` (breaking for password-grant callers)
+
+- `directAccessGrantsEnabled=false`: `POST /realms/delivery/protocol/openid-connect/token` with
+  `grant_type=password&client_id=pede-aqui-web` now answers **400 `unauthorized_client`**. Any script, test
+  or tool that obtained customer tokens this way must use the code flow (or another client).
+- Code flow requires PKCE S256 (unchanged); implicit flow explicitly off. Post-logout redirect URIs added
+  (`http://localhost:5173/`, `http://localhost:4173/`), so `end_session` with `post_logout_redirect_uri` works.
+- Tokens are still issued to `azp=pede-aqui-web`, so the backend's tenant derivation for customers (ADR-0001)
+  and `POST /api/v1/customers/register` are unchanged.
+- Existing Keycloak containers keep the old client until recreated (`docker compose rm -sf keycloak && docker compose up -d keycloak`).
+
+### Customer web app (`pede-aqui-delivery`)
+
+- Login redirects to the Keycloak login page; `/login` is a landing with "Entrar"/"Criar conta". Registration
+  still posts to `/customers/register` and then starts the PKCE login with `login_hint`.
+- Tokens are in memory only; `sessionStorage.auth_token` is no longer written (a leftover copy is deleted on
+  startup). 401 → one single-flight renewal + replay, then redirect to login.
+- Other clients are unaffected: `delivery-app` (backoffice, W4-D), `pede-aqui-mobile` and
+  `pede-aqui-courier-mobile` keep their current settings.
