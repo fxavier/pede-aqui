@@ -7,6 +7,8 @@ import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.common.service.StatusChangeActor;
+import com.delivery.payment.PaymentConfirmed;
+import com.delivery.payment.RefundApproved;
 import com.delivery.payment.api.PaymentOrderHooks;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
 import com.delivery.payment.dto.PaymentResponse;
@@ -25,6 +27,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -49,6 +53,9 @@ public class PaymentService {
     private final AppUserProfileRepository userProfileRepository;
     private final PaymentMockConfirmationProperties mockConfirmationProperties;
     private final PaymentStatusHistoryRepository historyRepository;
+    /** Payments and refunds carry no currency column yet: one currency per tenant (ADR-0003), MZN today. */
+    static final String CURRENCY = "MZN";
+    private ApplicationEventPublisher eventPublisher = event -> { };
 
     public PaymentService(
             PaymentRepository paymentRepository,
@@ -69,6 +76,15 @@ public class PaymentService {
         this.tenantContext = tenantContext;
         this.userProfileRepository = userProfileRepository;
         this.mockConfirmationProperties = mockConfirmationProperties;
+    }
+
+    /**
+     * Optional (LAC-33): publishes {@link PaymentConfirmed}/{@link RefundApproved} into the transactional event registry.
+     * Unit tests that build the service by hand keep the no-op publisher.
+     */
+    @Autowired(required = false)
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -109,6 +125,8 @@ public class PaymentService {
         payment.confirm();
         recordStatusChange(payment, previous, "MOCK_CONFIRMATION");
         orderHooks.markPaymentConfirmed(tenantId, payment.getOrderId());
+        eventPublisher.publishEvent(new PaymentConfirmed(tenantId, payment.getId(), payment.getOrderId(), payment.getAmount(),
+                CURRENCY, payment.getConfirmedAt()));
         auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(), "SUCCESS");
         return mapper.toResponse(payment);
     }
@@ -209,6 +227,8 @@ public class PaymentService {
             Payment payment = paymentRepository.findByTenantIdAndIdForUpdate(tenantId, refund.getPaymentId())
                     .orElseThrow(() -> new NotFoundException("Payment was not found"));
             refund.approve();
+            eventPublisher.publishEvent(new RefundApproved(tenantId, refund.getId(), refund.getPaymentId(), refund.getOrderId(),
+                    refund.getAmount(), CURRENCY, refund.getUpdatedAt()));
             auditLogService.log("REFUND_APPROVED", "refund", refund.getId().toString(), refund.getOrderId().toString(), "SUCCESS");
             PaymentStatus previous = payment.getStatus();
             if (approvedRefunds(tenantId, payment.getId(), refund).compareTo(payment.getAmount()) >= 0) {

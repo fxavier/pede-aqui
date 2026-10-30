@@ -866,3 +866,37 @@ minute answers **429 `rate_limited`** with `Retry-After`. Re-quote on address/ca
   backoffice fee-policy screen should label `taxRate` as "IVA (incluído)".
 - **Deploy**: run V064 with **no overlap** between old and new instances — an old instance reading the corrected
   `tax_rate = 0.16` would *add* 16 % on top.
+
+## W6-B — Settlement ledger and commissions (LAC-33, LAC-34, ADR-0005 Proposed) — 2026-10-30
+
+Additive only; no existing request/response shape changes.
+
+### `GET /api/v1/finance/merchants/{vendorId}/balance` (new)
+
+- Roles: FINANCE/ADMIN (any vendor of the tenant), VENDOR_ADMIN (own vendor only — another vendor → 403
+  `vendor_access_denied`, unresolved scope → 403 `vendor_scope_unresolved`). Other roles → 403. Unknown vendor in the
+  tenant → 404. No tenant → 403 `tenant_required`.
+- Response `MerchantBalanceResponse`: `{ vendorId, currency: "MZN", balance, totalCredits, totalDebits, lastPostedAt }`
+  — `balance` = what the platform owes the merchant (MERCHANT_PAYABLE credits − debits); 0 and `lastPostedAt: null`
+  when nothing was posted yet. Money is a JSON number with 2 decimals (ADR-0003).
+
+### `GET /api/v1/finance/ledger/transactions?limit=&cursor=&orderId=&vendorId=` (new, FINANCE/ADMIN)
+
+- Keyset page `{ items, nextCursor }`, newest first (`createdAt DESC, id DESC`), `limit` 1..200 (default 50),
+  malformed cursor → 400 `invalid_cursor`. Optional filters `orderId`, `vendorId`.
+- Item: `{ id, type (PAYMENT_CAPTURED | ORDER_DELIVERED | REFUND_BEFORE_DELIVERY | REFUND_AFTER_DELIVERY |
+  CANCELLATION_FEE_RETAINED), idempotencyKey, sourceType, sourceId, orderId, vendorId, currency, occurredAt,
+  createdAt, description, entries: [{ accountType, ownerId, debit, credit, currency }] }`. Clients must tolerate new
+  `type`/`accountType` values (courier pay and payouts will add some).
+
+### Behaviour notes for existing endpoints
+
+- `commissions` now gets rows (one per delivered order, or per order cancelled with a retained fee), so the
+  `commission` figures of `GET /api/v1/reports/*`, the finance dashboard and the sale detail stop being 0 for orders
+  delivered after the deploy. They show the **gross** accrued commission; refund reversals are only in the ledger.
+- `GET /api/v1/finance/commissions` (FinanceController) lists those rows; shape unchanged.
+- No backfill: orders delivered before the deploy have no ledger postings or commission rows.
+
+### Clients / consumers to review
+
+- Backoffice `/finance` and `/reports`: may add a merchant balance card and a ledger journal view (no screen yet).
