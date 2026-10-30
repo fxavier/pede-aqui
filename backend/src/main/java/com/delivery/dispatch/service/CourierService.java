@@ -4,6 +4,7 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.TenantContext;
+import com.delivery.upload.service.StoredUploadValidator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.delivery.dispatch.dto.CourierResponse;
@@ -37,8 +38,10 @@ public class CourierService {
     private final DispatchMapper dispatchMapper;
     private final TenantContext tenantContext;
     private final DashboardService dashboardService;
+    private final StoredUploadValidator uploadValidator;
 
-    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext, DashboardService dashboardService) {
+    public CourierService(CourierRepository courierRepository, CourierDocumentRepository courierDocumentRepository, AppUserProfileRepository userProfileRepository, DeliveryRepository deliveryRepository, DispatchMapper dispatchMapper, TenantContext tenantContext, DashboardService dashboardService, StoredUploadValidator uploadValidator) {
+        this.uploadValidator = uploadValidator;
         this.courierRepository = courierRepository;
         this.courierDocumentRepository = courierDocumentRepository;
         this.userProfileRepository = userProfileRepository;
@@ -155,6 +158,7 @@ public class CourierService {
         Courier courier = courierRepository.findByTenantIdAndId(tenantId, courierId)
                 .orElseThrow(() -> new NotFoundException("Courier not found"));
         
+        uploadValidator.requireDocument(tenantId, request.storageKey()); // LAC-12
         CourierDocument document = new CourierDocument(
             UUID.randomUUID(),
             tenantId,

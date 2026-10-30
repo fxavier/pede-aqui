@@ -9,7 +9,10 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.common.security.MarketplaceRole;
 import com.delivery.common.security.TenantContext;
+import com.delivery.common.service.AuditActions;
+import com.delivery.common.service.AuditLogService;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +30,26 @@ import org.springframework.transaction.annotation.Transactional;
 /** Contains profile lookup logic for authenticated users. */
 @Service
 public class AppUserProfileService {
+    /**
+     * LAC-13 allow-list: roles each caller role may assign. Only ADMIN assigns; ADMIN itself is added on top for
+     * the platform admin only (see {@link #assignableRoles()}), because a realm ADMIN without tenant_id is a platform admin.
+     */
+    private static final Map<String, Set<MarketplaceRole>> ASSIGNABLE_BY_CALLER_ROLE = Map.of(
+            "ROLE_ADMIN", EnumSet.complementOf(EnumSet.of(MarketplaceRole.ADMIN)));
+
     private final AppUserProfileRepository repository;
     private final AppUserProfileMapper mapper;
     private final TenantContext tenantContext;
+    private final KeycloakAdminService keycloakAdminService;
+    private final AuditLogService auditLogService;
 
-    public AppUserProfileService(AppUserProfileRepository repository, AppUserProfileMapper mapper, TenantContext tenantContext) {
+    public AppUserProfileService(AppUserProfileRepository repository, AppUserProfileMapper mapper, TenantContext tenantContext,
+                                 KeycloakAdminService keycloakAdminService, AuditLogService auditLogService) {
         this.repository = repository;
         this.mapper = mapper;
         this.tenantContext = tenantContext;
+        this.keycloakAdminService = keycloakAdminService;
+        this.auditLogService = auditLogService;
     }
 
     /** Returns the current user's profile. Falls back to JWT claims for platform admins without a tenant. */
@@ -92,11 +107,22 @@ public class AppUserProfileService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
     }
 
-    /** Creates a new user profile (admin only). */
+    /**
+     * Creates a new user profile (admin only) with roles from the caller's allow-list (LAC-13), mirrors the roles to
+     * the Keycloak user so profile and token agree, and audits the assignment. A Keycloak failure rolls back the profile.
+     */
     @Transactional
     public MeResponse createUserProfile(CreateUserProfileRequest request) {
         UUID tenantId = tenantContext.currentTenantId()
                 .orElseThrow(() -> new BusinessException("tenant_required", "Tenant context required", org.springframework.http.HttpStatus.FORBIDDEN));
+        if (request.roles() == null || request.roles().isEmpty()) {
+            throw new BusinessException("roles_required", "At least one role is required", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+        Set<MarketplaceRole> assignable = assignableRoles();
+        if (!assignable.containsAll(request.roles())) {
+            throw new BusinessException("role_assignment_forbidden", "You are not allowed to assign one or more of these roles",
+                    org.springframework.http.HttpStatus.FORBIDDEN);
+        }
 
         try {
             AppUserProfile profile = new AppUserProfile(
@@ -116,7 +142,12 @@ public class AppUserProfileService {
                     null
             );
 
-            AppUserProfile saved = repository.save(profile);
+            // Flush first so a duplicate (e.g. NIF) fails before Keycloak is touched.
+            AppUserProfile saved = repository.saveAndFlush(profile);
+            List<String> roleNames = saved.getRoles().stream().map(Enum::name).sorted().toList();
+            keycloakAdminService.assignRealmRoles(saved.getKeycloakUserId(), roleNames);
+            auditLogService.log(AuditActions.USER_ROLES_ASSIGNED, "user_profile", saved.getId().toString(),
+                    "roles=" + String.join(",", roleNames), "SUCCESS");
             return mapper.toMeResponse(saved);
         } catch (DataIntegrityViolationException ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("nif")) {
@@ -124,6 +155,20 @@ public class AppUserProfileService {
             }
             throw new BusinessException("user_creation_failed", "Failed to create user profile", org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /** Union of the allow-lists of the caller's roles; the platform admin may additionally assign ADMIN. */
+    private Set<MarketplaceRole> assignableRoles() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return Set.of();
+        }
+        Set<MarketplaceRole> assignable = EnumSet.noneOf(MarketplaceRole.class);
+        auth.getAuthorities().forEach(a -> assignable.addAll(ASSIGNABLE_BY_CALLER_ROLE.getOrDefault(a.getAuthority(), Set.of())));
+        if (!assignable.isEmpty() && tenantContext.isPlatformAdmin()) {
+            assignable.add(MarketplaceRole.ADMIN);
+        }
+        return assignable;
     }
 
     /** Lists all user profiles in the current tenant (admin only). */

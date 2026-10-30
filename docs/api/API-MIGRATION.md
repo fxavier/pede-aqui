@@ -220,3 +220,61 @@ The Keycloak realm now enforces `length(10) and digits(1) and upperCase(1) and l
 - Breaking for clients that accepted 8–9 character passwords. Updated: backoffice `/register` and customer
   web `/register` (client-side rule + hint, both 400 codes displayed). **Not updated:** the Flutter customer app
   register screen still checks only 8 characters, so it will get the 400 from the API.
+
+## W1-A — Security leftovers (LAC-02, LAC-06, LAC-12, LAC-13)
+
+### LAC-02 — Anonymous writes are always 401
+
+- `SecurityConfig` public rules are now pinned to **`GET`**: `/api/v1/catalog/categories`,
+  `/api/v1/catalog/vendors/*`, `/api/v1/catalog/vendors/*/products`, `/api/v1/search/vendors` (plus
+  health/probes/OpenAPI). Public `GET` responses are unchanged.
+- Any `POST`/`PUT`/`PATCH`/`DELETE` without a token now answers **401** `unauthorized` (problem document)
+  before reaching the controller. Previously e.g. an anonymous `POST /api/v1/catalog/categories` reached
+  the controller and answered 400/403. The only anonymous writes are `POST /api/v1/register` and
+  `POST /api/v1/customers/register` (unchanged).
+- `X-Tenant-Id` from an anonymous caller, or from a non-admin naming a tenant other than its own claim,
+  is ignored (as before) and now logged as a `SECURITY` WARN. No response change.
+- Clients: none affected; every frontend already sends a bearer token on writes.
+
+### LAC-06 — Category writes are OPS/ADMIN only
+
+- `POST /api/v1/catalog/categories`, `PUT /api/v1/catalog/categories/{id}` and
+  `DELETE /api/v1/catalog/categories/{id}` now answer **403** `forbidden` to `VENDOR_ADMIN` (previously
+  allowed). Categories are tenant-wide and, with tenant = operator, shared by every merchant. Reads are
+  unchanged. Vertical writes were already OPS/ADMIN.
+- Backoffice: `/catalogo/categorias` and `/catalogo/verticais` hide create/edit/delete for roles other
+  than OPS/ADMIN. A merchant that needs a new category asks OPS.
+
+### LAC-12 — Upload presign: role gate, required size, signed limits (breaking for upload clients)
+
+- `POST /api/v1/uploads/images/presigned-url` now requires `ADMIN`, `OPS`, `VENDOR_ADMIN`, `VENDOR_STAFF` or
+  `COURIER` (same as documents); any other role → **403**.
+- Both presign requests now **require** `contentLength` (file size in bytes, `> 0`): missing → **400**
+  validation error. Above the limit (images 5 MB, documents 10 MB; `APP_UPLOAD_MAX_IMAGE_BYTES` /
+  `APP_UPLOAD_MAX_DOCUMENT_BYTES`) → **400** `upload_too_large`. Wrong type → 400 `invalid_content_type`.
+- Response gains `maxBytes` (additive): `{ uploadUrl, storageKey, expiresInSeconds, maxBytes }`.
+- The presigned PUT signs `Content-Type` and `Content-Length`: the client must PUT exactly the declared
+  file with the declared `Content-Type` (browsers set `Content-Length` from the body). Any mismatch is a
+  **403** from S3/MinIO (`SignatureDoesNotMatch`).
+- Linking a `storageKey` (`POST /catalog/products` `primaryImageKey`/`imageGallery`,
+  `PUT /catalog/products/{id}/image`, vendor create/update `logoStorageKey`, `POST /vendors/{id}/documents`,
+  `POST /couriers/{id}/documents`, `PATCH /deliveries/{id}/status` `proofPhotoStorageKey`) now checks the
+  key namespace (`tenants/{tenant}/uploads/` images, `tenants/{tenant}/documents/` documents) and the stored
+  object via HeadObject: **400** `invalid_storage_key` (other tenant / wrong kind), `upload_not_found`,
+  `upload_too_large`, `invalid_content_type`; **503** `storage_unavailable` if storage cannot be reached.
+  Vendor/courier documents must now come from the documents presign endpoint.
+- Clients: the backoffice now sends `contentLength: file.size` (all six upload call sites). The customer
+  web app and the Flutter apps do not call these endpoints today; when the courier app starts uploading
+  proof photos it must send `contentLength` and PUT the exact bytes.
+
+### LAC-13 — `POST /api/v1/admin/users` is ADMIN-only, roles allow-listed and synced to Keycloak
+
+- `SUPPORT` now gets **403** on `POST /api/v1/admin/users` (was 201). `GET /admin/users` and
+  `GET /admin/users/{id}` stay open to `ADMIN` and `SUPPORT`.
+- `roles` must be non-empty (**400** `roles_required`). An `ADMIN` may assign every role except `ADMIN`;
+  only the platform admin (ADMIN without `tenant_id`) may also assign `ADMIN`. Otherwise **403**
+  `role_assignment_forbidden`.
+- The roles are added as realm roles to the existing Keycloak user `keycloakUserId`, so the next token
+  carries them. Unknown Keycloak user/role → **404** `keycloak_user_not_found`; other Keycloak failure →
+  **500** `keycloak_error`; in both cases no profile is created. Audited as `USER_ROLES_ASSIGNED`.
+- Clients: the backoffice `/users` page is ADMIN-only already; no request-shape change.

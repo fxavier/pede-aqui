@@ -85,7 +85,7 @@ class CheckoutDiscountRegressionTest {
             testCodeHasher(),
             mock(com.delivery.order.service.OrderStockService.class), mock(com.delivery.cart.service.CartService.class),
             mock(org.springframework.transaction.PlatformTransactionManager.class), new com.delivery.order.service.DeliveryAddressResolver(mock(com.delivery.customer.repository.CustomerAddressRepository.class), true), com.delivery.cart.PricingFixtures.platformDefaults(),
-            com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class));
+            com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository), mock(com.delivery.delivery.service.DeliveryRetirementService.class), mock(org.springframework.context.ApplicationEventPublisher.class));
 
     private static DeliveryCodeHasher testCodeHasher() {
         DeliveryCodeProperties properties = new DeliveryCodeProperties();

@@ -14,6 +14,7 @@ import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditActions;
 import com.delivery.common.service.AuditLogService;
 import com.delivery.upload.service.StorageUrlService;
+import com.delivery.upload.service.StoredUploadValidator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -40,8 +41,9 @@ public class ProductService {
     private final AuditLogService auditLogService;
     private final StorageUrlService storageUrlService;
     private final CatalogPriceReviewProperties priceReviewProperties;
+    private final StoredUploadValidator uploadValidator;
 
-    public ProductService(ProductRepository productRepository, SkuRepository skuRepository, CategoryRepository categoryRepository, TenantContext tenantContext, CatalogAccessGuard accessGuard, AuditLogService auditLogService, StorageUrlService storageUrlService, CatalogPriceReviewProperties priceReviewProperties) {
+    public ProductService(ProductRepository productRepository, SkuRepository skuRepository, CategoryRepository categoryRepository, TenantContext tenantContext, CatalogAccessGuard accessGuard, AuditLogService auditLogService, StorageUrlService storageUrlService, CatalogPriceReviewProperties priceReviewProperties, StoredUploadValidator uploadValidator) {
         this.productRepository = productRepository;
         this.skuRepository = skuRepository;
         this.categoryRepository = categoryRepository;
@@ -50,6 +52,7 @@ public class ProductService {
         this.auditLogService = auditLogService;
         this.storageUrlService = storageUrlService;
         this.priceReviewProperties = priceReviewProperties;
+        this.uploadValidator = uploadValidator;
     }
 
     /** Applies a partial attribute update; ACTIVE products stay ACTIVE and visible. */
@@ -132,11 +135,9 @@ public class ProductService {
         Product product = findProduct(tenantId, productId);
         accessGuard.ensureCanManageVendor(product.getVendorId());
 
-        // The key must come from this tenant's image upload namespace (AC-3.2).
-        String expectedPrefix = "tenants/" + tenantId + "/uploads/";
-        if (!storageKey.startsWith(expectedPrefix) || storageKey.contains("..")) {
-            throw new BusinessException("invalid_storage_key", "storageKey does not belong to this tenant's image namespace", HttpStatus.BAD_REQUEST);
-        }
+        // The key must come from this tenant's image upload namespace (AC-3.2) and the object must exist
+        // with an allowed type and size (LAC-12).
+        uploadValidator.requireImage(tenantId, storageKey);
 
         product.setPrimaryImageKey(storageKey);
         productRepository.save(product);

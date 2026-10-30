@@ -40,6 +40,8 @@ class CatalogAuthorizationMatrixApiTest {
             "ADMIN", "OPS", "VENDOR_ADMIN", "VENDOR_STAFF", "COURIER", "CUSTOMER", "FINANCE", "SUPPORT");
     private static final Set<String> MODERATORS = Set.of("ADMIN", "OPS");
     private static final Set<String> CATALOG_EDITORS = Set.of("ADMIN", "OPS", "VENDOR_ADMIN");
+    /** LAC-06: categories are tenant-wide (shared by every merchant of the operator), so only OPS/ADMIN edit them. */
+    private static final Set<String> CATEGORY_EDITORS = Set.of("ADMIN", "OPS");
     private static final Set<String> STOCK_EDITORS = Set.of("ADMIN", "OPS", "VENDOR_ADMIN", "VENDOR_STAFF");
 
     private static final UUID ID = UUID.randomUUID();
@@ -86,9 +88,9 @@ class CatalogAuthorizationMatrixApiTest {
                 new Endpoint("createSku", "POST", "/api/v1/catalog/skus", skuBody, CATALOG_EDITORS),
                 new Endpoint("approveProduct", "POST", "/api/v1/catalog/products/" + ID + "/approve", null, MODERATORS),
                 new Endpoint("rejectProduct", "POST", "/api/v1/catalog/products/" + ID + "/reject", null, MODERATORS),
-                new Endpoint("createCategory", "POST", "/api/v1/catalog/categories", categoryBody, CATALOG_EDITORS),
-                new Endpoint("updateCategory", "PUT", "/api/v1/catalog/categories/" + ID, categoryUpdateBody, CATALOG_EDITORS),
-                new Endpoint("deleteCategory", "DELETE", "/api/v1/catalog/categories/" + ID, null, CATALOG_EDITORS),
+                new Endpoint("createCategory", "POST", "/api/v1/catalog/categories", categoryBody, CATEGORY_EDITORS),
+                new Endpoint("updateCategory", "PUT", "/api/v1/catalog/categories/" + ID, categoryUpdateBody, CATEGORY_EDITORS),
+                new Endpoint("deleteCategory", "DELETE", "/api/v1/catalog/categories/" + ID, null, CATEGORY_EDITORS),
                 new Endpoint("createVariationGroup", "POST", "/api/v1/catalog/product-variation-groups", groupBody, CATALOG_EDITORS),
                 new Endpoint("updateVariationGroup", "PUT", "/api/v1/catalog/product-variation-groups/" + ID, groupUpdateBody, CATALOG_EDITORS),
                 new Endpoint("deleteVariationGroup", "DELETE", "/api/v1/catalog/product-variation-groups/" + ID, null, CATALOG_EDITORS),

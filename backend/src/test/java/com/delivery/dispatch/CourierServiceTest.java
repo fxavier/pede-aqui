@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.delivery.upload.service.StoredUploadValidator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -45,7 +46,7 @@ class CourierServiceTest {
         TenantContext tenantContext = mock(TenantContext.class);
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
 
-        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class));
+        CourierService service = new CourierService(courierRepository, mock(CourierDocumentRepository.class), mock(AppUserProfileRepository.class), mock(DeliveryRepository.class), new DispatchMapper(), tenantContext, mock(DashboardService.class), mock(StoredUploadValidator.class));
 
         var eligible = service.eligibleInZone(zoneA);
 
@@ -86,7 +87,8 @@ class CourierServiceTest {
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
                 tenantContext,
-                mock(DashboardService.class)
+                mock(DashboardService.class),
+                mock(StoredUploadValidator.class)
         );
 
         CreateCourierRequest request = new CreateCourierRequest(differentProfileId, UUID.randomUUID(), null, null, null, null, null, null);
@@ -129,7 +131,8 @@ class CourierServiceTest {
                 mock(DeliveryRepository.class),
                 new DispatchMapper(),
                 tenantContext,
-                mock(DashboardService.class)
+                mock(DashboardService.class),
+                mock(StoredUploadValidator.class)
         );
 
         // Create request with profile fields

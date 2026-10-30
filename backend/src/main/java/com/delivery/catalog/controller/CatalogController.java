@@ -60,7 +60,7 @@ public class CatalogController {
     public List<CategoryResponse> listCategoriesHierarchical() { return service.listCategoriesHierarchical(); }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
+    @PreAuthorize("hasAnyRole('OPS','ADMIN')") // LAC-06: categories are tenant-wide, every merchant shares them
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponse createCategory(@Valid @RequestBody CreateCategoryRequest request) {
         return service.createCategory(request);
@@ -82,13 +82,13 @@ public class CatalogController {
     }
 
     @PutMapping("/categories/{categoryId}")
-    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
+    @PreAuthorize("hasAnyRole('OPS','ADMIN')")
     public CategoryResponse updateCategory(@PathVariable UUID categoryId, @Valid @RequestBody UpdateCategoryRequest request) {
         return service.updateCategory(categoryId, request);
     }
 
     @DeleteMapping("/categories/{categoryId}")
-    @PreAuthorize("hasAnyRole('VENDOR_ADMIN','OPS','ADMIN')")
+    @PreAuthorize("hasAnyRole('OPS','ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable UUID categoryId) {
         service.deleteCategory(categoryId);

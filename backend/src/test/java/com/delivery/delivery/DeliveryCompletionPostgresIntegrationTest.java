@@ -1,5 +1,7 @@
 package com.delivery.delivery;
 
+import com.delivery.upload.service.StoredUploadValidator;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -97,6 +99,8 @@ class DeliveryCompletionPostgresIntegrationTest {
         registry.add("spring.datasource.password", PostgresTestContainerConfig.POSTGRES::getPassword);
     }
 
+    /** LAC-12: storage HeadObject is out of scope for these database tests. */
+    @MockitoBean private StoredUploadValidator storedUploadValidator;
     @Autowired
     private DeliveryService service;
     @Autowired

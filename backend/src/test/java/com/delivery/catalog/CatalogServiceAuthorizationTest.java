@@ -1,5 +1,6 @@
 package com.delivery.catalog;
 
+import com.delivery.upload.service.StoredUploadValidator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,7 +79,8 @@ class CatalogServiceAuthorizationTest {
         service = new CatalogService(mock(CategoryRepository.class), productRepository, skuRepository, inventoryRepository,
                 groupRepository, optionRepository, new CatalogMapper(mock(StorageUrlService.class)), tenantContext,
                 vendorRepository, mock(StorageUrlService.class),
-                new CatalogAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), auditLogService);
+                new CatalogAccessGuard(com.delivery.vendor.MerchantScopeFixtures.legacyFallback(tenantContext, vendorRepository)), auditLogService,
+                mock(StoredUploadValidator.class));
         authenticate("ROLE_VENDOR_ADMIN", Map.of("vendor_id", ownVendorId.toString()));
     }
 

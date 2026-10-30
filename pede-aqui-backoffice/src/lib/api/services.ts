@@ -450,15 +450,19 @@ export const userService = {
 
 // Upload
 export const uploadService = {
+  // LAC-12: contentLength (= file.size) is signed into the URL together with contentType; the PUT in
+  // uploadToS3 must send that same file, and files above the server limit (images 5 MB, documents 10 MB) are refused.
   getPresignedUrl: (data: {
     purpose: string;
     fileName: string;
     contentType: string;
+    contentLength: number;
   }) => apiClient.post<UploadUrlResponse>("/uploads/images/presigned-url", data),
   getDocumentPresignedUrl: (data: {
     purpose: string;
     fileName: string;
     contentType: string;
+    contentLength: number;
   }) => apiClient.post<UploadUrlResponse>("/uploads/documents/presigned-url", data),
   uploadToS3: async (uploadUrl: string, file: File): Promise<void> => {
     const response = await fetch(uploadUrl, {

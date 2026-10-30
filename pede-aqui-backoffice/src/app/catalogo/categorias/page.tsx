@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { categoryService, verticalService } from '@/lib/api/services';
 import type { Category, Vertical } from '@/lib/api/types';
 import { AppShell } from '@/components/layout/app-shell';
+import { useAppSelector } from '@/store/hooks';
 
 type FormData = { name: string; vertical: string; parentId: string; active: boolean };
 
@@ -125,6 +126,9 @@ function CategoryForm({
 }
 
 export default function CategoriesPage() {
+  // LAC-06: categories are tenant-wide (shared by every merchant), so only OPS/ADMIN may create/edit/delete.
+  const role = useAppSelector((state) => state.auth.user?.role) ?? '';
+  const canManage = role === 'OPS' || role === 'ADMIN';
   const [categories, setCategories] = useState<Category[]>([]);
   const [verticals, setVerticals] = useState<Vertical[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,6 +245,7 @@ export default function CategoriesPage() {
                   </CardDescription>
                 </div>
               </div>
+              {canManage && (
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm" onClick={() => openEditDialog(category)}>
                   <Edit className="h-4 w-4" />
@@ -256,6 +261,7 @@ export default function CategoriesPage() {
                   Eliminar
                 </Button>
               </div>
+              )}
             </div>
           </CardHeader>
         </Card>
@@ -297,6 +303,7 @@ export default function CategoriesPage() {
                 Gerir Verticais
               </Link>
             </Button>
+            {canManage && (
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -322,6 +329,7 @@ export default function CategoriesPage() {
                 />
               </DialogContent>
             </Dialog>
+            )}
           </div>
         </div>
 
@@ -331,11 +339,15 @@ export default function CategoriesPage() {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Tag className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">Nenhuma categoria encontrada</h3>
-                <p className="text-muted-foreground mb-4">Comece por criar a primeira categoria</p>
-                <Button onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Primeira Categoria
-                </Button>
+                {canManage && (
+                  <>
+                    <p className="text-muted-foreground mb-4">Comece por criar a primeira categoria</p>
+                    <Button onClick={() => setCreateDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeira Categoria
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           ) : (

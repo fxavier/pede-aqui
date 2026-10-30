@@ -1,0 +1,34 @@
+@startuml
+set separator none
+title Payment
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("DeliveryApplication.DeliveryApplication_boundary", "DeliveryApplication", $tags="") {
+  Component(DeliveryApplication.DeliveryApplication.Order, "Order", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Payment, "Payment", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Auth, "Auth", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+  Component(DeliveryApplication.DeliveryApplication.Delivery, "Delivery", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(DeliveryApplication.DeliveryApplication.Common, DeliveryApplication.DeliveryApplication.Auth, "depends on", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Delivery, DeliveryApplication.DeliveryApplication.Order, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Auth, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Payment, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Order, DeliveryApplication.DeliveryApplication.Delivery, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Order, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Common, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Auth, "uses", $techn="", $tags="", $link="")
+Rel(DeliveryApplication.DeliveryApplication.Payment, DeliveryApplication.DeliveryApplication.Delivery, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

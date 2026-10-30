@@ -27,7 +27,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <ul>
  *   <li>platform admin + X-Tenant-Id: the tenant must exist (404 otherwise, 400 if malformed) and every such
  *       request is written to audit_logs as TENANT_IMPERSONATION;</li>
- *   <li>anyone else + X-Tenant-Id: the header is ignored (TenantContext never reads it for them);</li>
+ *   <li>anyone else + X-Tenant-Id (anonymous included): the header is ignored (TenantContext never reads it for
+ *       them) and, unless it merely repeats the caller's own tenant claim, logged at WARN (LAC-02);</li>
  *   <li>customer principal with a resolved tenant: the AppUserProfile is provisioned if missing, so cart,
  *       checkout and orders find it.</li>
  * </ul>
@@ -57,18 +58,20 @@ public class TenantRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Optional<String> header = tenantContext.requestedTenantHeader();
         if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            header.ifPresent(ignored -> warnIgnoredHeader(request, "anonymous"));
             chain.doFilter(request, response);
             return;
         }
-        Optional<String> header = tenantContext.requestedTenantHeader();
         if (header.isPresent()) {
             if (tenantContext.isPlatformAdmin()) {
                 if (!authoriseImpersonation(header.get(), request, response)) {
                     return;
                 }
-            } else {
-                log.debug("Ignoring {} header for a principal that is not a platform admin", TenantContext.TENANT_ID_HEADER);
+            } else if (!header.get().equalsIgnoreCase(String.valueOf(jwt.getClaimAsString(TenantContext.TENANT_ID_CLAIM)))) {
+                // The backoffice echoes the caller's own tenant on every call; only a different tenant is suspicious.
+                warnIgnoredHeader(request, "non-admin");
             }
         }
         if (tenantContext.isCustomerPrincipal()) {
@@ -76,6 +79,15 @@ public class TenantRequestFilter extends OncePerRequestFilter {
                     tenantId, jwt.getSubject(), jwt.getClaimAsString("email"), displayName(jwt)));
         }
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Security log (LAC-02): a tenant header from anyone but the platform admin is never honoured. Logs only the
+     * caller category and the request line, never subject, email, token or header value (no PII).
+     */
+    private static void warnIgnoredHeader(HttpServletRequest request, String callerCategory) {
+        log.warn("SECURITY ignored {} header from {} caller on {} {}", TenantContext.TENANT_ID_HEADER, callerCategory,
+                request.getMethod(), request.getRequestURI());
     }
 
     /** Validates the impersonated tenant and audits the use; false when an error response was written. */

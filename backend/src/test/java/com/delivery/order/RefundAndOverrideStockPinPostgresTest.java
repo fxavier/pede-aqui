@@ -1,5 +1,6 @@
 package com.delivery.order;
 
+import com.delivery.upload.service.StoredUploadValidator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -111,6 +112,8 @@ class RefundAndOverrideStockPinPostgresTest {
     @Autowired private OrderService orderService;
     @Autowired private DeliveryService deliveryService;
     @Autowired private JdbcTemplate jdbc;
+    /** LAC-12: storage HeadObject is out of scope for these database tests. */
+    @MockitoBean private StoredUploadValidator storedUploadValidator;
     @MockitoBean private TenantContext tenantContext;
     @MockitoBean private NotificationService notificationService;
     @MockitoBean private AuditLogService auditLogService;

@@ -1,5 +1,11 @@
 package com.delivery.catalog;
 
+import com.delivery.upload.service.StoredUploadValidator;
+import com.delivery.upload.service.UploadLimits;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,6 +52,7 @@ class ProductServiceTest {
     private AuditLogService auditLogService;
     private StorageUrlService storageUrlService;
     private CatalogPriceReviewProperties properties;
+    private S3Client s3Client;
     private ProductService service;
 
     private Product product;
@@ -61,7 +68,12 @@ class ProductServiceTest {
         auditLogService = mock(AuditLogService.class);
         storageUrlService = mock(StorageUrlService.class);
         properties = new CatalogPriceReviewProperties();
-        service = new ProductService(productRepository, skuRepository, categoryRepository, tenantContext, accessGuard, auditLogService, storageUrlService, properties);
+        s3Client = mock(S3Client.class);
+        // 5 MB images / 10 MB documents, as the defaults.
+        StoredUploadValidator uploadValidator = new StoredUploadValidator(s3Client, new UploadLimits(5_242_880, 10_485_760), "bucket");
+        when(s3Client.headObject(any(HeadObjectRequest.class)))
+                .thenReturn(HeadObjectResponse.builder().contentLength(1024L).contentType("image/jpeg").build());
+        service = new ProductService(productRepository, skuRepository, categoryRepository, tenantContext, accessGuard, auditLogService, storageUrlService, properties, uploadValidator);
 
         when(tenantContext.currentTenantId()).thenReturn(Optional.of(tenantId));
         when(tenantContext.currentKeycloakUserId()).thenReturn(Optional.of("vendor-user-1"));
@@ -276,6 +288,43 @@ class ProductServiceTest {
         assertThatThrownBy(() -> service.setImage(productId, "tenants/" + tenantId + "/uploads/../../../etc/passwd"))
                 .isInstanceOfSatisfying(BusinessException.class, e ->
                         assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    /** LAC-12: the object behind the key must exist; a key that was never uploaded is rejected before linking. */
+    @Test
+    void rejectsStorageKeyWithoutUploadedObject() {
+        String key = "tenants/" + tenantId + "/uploads/product/user/123-foto.jpg";
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(NoSuchKeyException.builder().message("missing").build());
+
+        assertThatThrownBy(() -> service.setImage(productId, key))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(e.getCode()).isEqualTo("upload_not_found");
+                });
+        assertThat(product.getPrimaryImageKey()).isNull();
+    }
+
+    /** LAC-12: an object above the image limit (e.g. uploaded by an older client without signed length) is not linked. */
+    @Test
+    void rejectsOversizedUploadedImage() {
+        String key = "tenants/" + tenantId + "/uploads/product/user/123-foto.jpg";
+        when(s3Client.headObject(any(HeadObjectRequest.class)))
+                .thenReturn(HeadObjectResponse.builder().contentLength(5_242_881L).contentType("image/jpeg").build());
+
+        assertThatThrownBy(() -> service.setImage(productId, key))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getCode()).isEqualTo("upload_too_large"));
+        assertThat(product.getPrimaryImageKey()).isNull();
+    }
+
+    /** LAC-12: a stored object whose type is not an allowed image is not linked as a product photo. */
+    @Test
+    void rejectsUploadedObjectWithDisallowedType() {
+        String key = "tenants/" + tenantId + "/uploads/product/user/123-foto.jpg";
+        when(s3Client.headObject(any(HeadObjectRequest.class)))
+                .thenReturn(HeadObjectResponse.builder().contentLength(10L).contentType("text/html").build());
+
+        assertThatThrownBy(() -> service.setImage(productId, key))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getCode()).isEqualTo("invalid_content_type"));
     }
 
     @Test
