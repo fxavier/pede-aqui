@@ -51,6 +51,9 @@ public class Vendor {
     private String logoStorageKey;
     @Column(name = "delivery_zone_id")
     private UUID deliveryZoneId;
+    /** Maximum straight-line delivery distance in km (V064, W6-A); null = the tenant fee policy limit (or none). */
+    @Column(name = "max_delivery_distance_km")
+    private java.math.BigDecimal maxDeliveryDistanceKm;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -121,4 +124,5 @@ public class Vendor {
     public String getDescription() { return description; }
     public String getLogoStorageKey() { return logoStorageKey; }
     public UUID getDeliveryZoneId() { return deliveryZoneId; }
+    public java.math.BigDecimal getMaxDeliveryDistanceKm() { return maxDeliveryDistanceKm; }
 }

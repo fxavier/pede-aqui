@@ -63,6 +63,10 @@ public final class AuditActions {
     /** A request was closed because the order moved on before a decision (target = the request). */
     public static final String ORDER_CANCELLATION_REQUEST_CLOSED = "ORDER_CANCELLATION_REQUEST_CLOSED";
 
+    // Notifications (LAC-48, W6-C)
+    /** OPS/ADMIN created or changed the tenant override of a notification template (details: key, channel, version). */
+    public static final String NOTIFICATION_TEMPLATE_UPDATED = "NOTIFICATION_TEMPLATE_UPDATED";
+
     private AuditActions() {
     }
 }

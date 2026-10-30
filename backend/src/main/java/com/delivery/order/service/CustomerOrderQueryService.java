@@ -88,7 +88,8 @@ public class CustomerOrderQueryService {
                 order.getTaxes(), order.getDiscountTotal(), order.getTotal(),
                 quote == null ? null : quote.getDeliveryFeeBasis(), quote == null ? null : quote.getDistanceKm(),
                 phase, phase == Phase.REQUEST ? CustomerCancellationPolicy.fee(order.getSubtotal(), cancellationService.feeRate()) : null,
-                cancellationService.latestFor(order));
+                cancellationService.latestFor(order),
+                quote == null ? null : quote.getTaxInclusive(), quote == null ? null : quote.getVatTotal());
     }
 
     private List<CustomerOrderSummaryResponse> toSummaries(List<Order> orders) {

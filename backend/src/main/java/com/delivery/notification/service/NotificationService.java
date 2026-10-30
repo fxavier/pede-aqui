@@ -8,13 +8,18 @@ import com.delivery.common.pagination.CursorPage;
 import com.delivery.common.pagination.KeysetCursor;
 import com.delivery.common.pagination.PageLimits;
 import com.delivery.common.security.TenantContext;
+import com.delivery.notification.api.NotificationDispatcher;
+import com.delivery.notification.api.NotificationRequest;
 import com.delivery.notification.dto.NotificationResponse;
 import com.delivery.notification.entity.Notification;
 import com.delivery.notification.repository.NotificationRepository;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +32,18 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final AppUserProfileRepository userProfileRepository;
     private final TenantContext tenantContext;
+    private NotificationDispatcher dispatcher;
 
     public NotificationService(NotificationRepository notificationRepository, AppUserProfileRepository userProfileRepository, TenantContext tenantContext) {
         this.notificationRepository = notificationRepository;
         this.userProfileRepository = userProfileRepository;
         this.tenantContext = tenantContext;
+    }
+
+    /** Optional (LAC-48): without it (slice tests) only the in-app row is written. */
+    @Autowired(required = false)
+    public void setDispatcher(NotificationDispatcher dispatcher) {
+        this.dispatcher = dispatcher;
     }
 
     /** Creates a persisted notification record for a specific recipient. */
@@ -46,6 +58,7 @@ public class NotificationService {
         Notification notification = new Notification(UUID.randomUUID(), tenantId, recipientUserId, recipientRole, type, title, message, businessReference);
         Notification saved = notificationRepository.save(notification);
         LOGGER.info("notification.created type={} recipientRole={} businessReference={}", type, recipientRole, businessReference);
+        fanOut(saved);
         return toResponse(saved);
     }
 
@@ -80,6 +93,25 @@ public class NotificationService {
                 .orElseThrow(() -> new NotFoundException("Notification was not found"));
         notification.markRead();
         return toResponse(notification);
+    }
+
+    /**
+     * LAC-48: the same fact on the external channels, in this transaction (outbox rows only). Only types with an active
+     * PUSH/SMS/EMAIL template go out — the in-app {@code message} (which may hold a free-text reason or, for
+     * {@code order_delivery_code}, the PIN) is never reused; templates get only {@code orderReference}. Keyed by the
+     * in-app row id: one fan-out per in-app notification.
+     */
+    private void fanOut(Notification notification) {
+        if (dispatcher == null) {
+            return;
+        }
+        Map<String, String> params = new HashMap<>();
+        if (notification.getBusinessReference() != null) {
+            params.put("orderReference", notification.getBusinessReference());
+        }
+        dispatcher.dispatch(new NotificationRequest(notification.getTenantId(), notification.getRecipientUserId(),
+                notification.getRecipientRole(), notification.getType(), notification.getBusinessReference(), params,
+                NotificationDispatcher.EXTERNAL_CHANNELS, "inapp:" + notification.getId()));
     }
 
     private UUID currentProfileId(UUID tenantId) {

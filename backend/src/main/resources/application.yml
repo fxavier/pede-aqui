@@ -186,6 +186,13 @@ app:
         methods: [POST]
         capacity: 10
         period: 1m
+      # W6-A: GET /checkout/quote grava uma linha checkout_quotes por chamada (é uma escrita, apesar do GET).
+      # Bucket próprio por cliente: folga para recotar ao mudar morada/carrinho, mas trava loops que encham a tabela.
+      checkout-quote:
+        paths: [/api/v1/checkout/quote]
+        methods: [GET]
+        capacity: 30
+        period: 1m
       uploads:
         paths: [/api/v1/uploads/**]
         methods: [POST]
@@ -212,6 +219,7 @@ app:
           - /api/v1/dispatch-jobs/**
           - /api/v1/ops/**
           - /api/v1/support/tickets/**
+          - /api/v1/support/notification-deliveries
           - /api/v1/admin/**
           - /api/v1/me
           - /api/v1/me/**
@@ -270,6 +278,8 @@ app:
     # snapshot, response carries "Deprecation: true"). Set to false to close the window once every
     # client sends addressId — see docs/api/API-MIGRATION.md.
     legacy-without-address-enabled: ${APP_CHECKOUT_LEGACY_WITHOUT_ADDRESS_ENABLED:true}
+    # W6-A: validity of GET /checkout/quote (quoteId + expiresAt); POST /checkout with an expired quoteId → 409 quote_changed.
+    quote-ttl: ${APP_CHECKOUT_QUOTE_TTL:PT10M}
   payments:
     mock-confirmation:
       enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
@@ -303,6 +313,22 @@ app:
       enabled: ${APP_JOBS_COURIER_LOCATION_RETENTION_ENABLED:true}
       cron: "0 15 4 * * *"
       zone: Africa/Maputo
+    # W6-A: deletes checkout_quotes expired more than `grace` ago.
+    checkout-quote-cleanup:
+      enabled: ${APP_JOBS_CHECKOUT_QUOTE_CLEANUP_ENABLED:true}
+      cron: "0 45 3 * * *"
+      zone: Africa/Maputo
+      grace: P1D
+    # W6-B (LAC-33): verificação diária do razão (Σ débitos = Σ créditos por tenant/transação) — só métricas e log.
+    ledger-reconciliation:
+      enabled: ${APP_JOBS_LEDGER_RECONCILIATION_ENABLED:true}
+      cron: "0 45 4 * * *"
+      zone: Africa/Maputo
+    # W6-C (LAC-48): envia notification_deliveries QUEUED (PUSH/SMS/EMAIL) com retry/backoff — ver app.notifications.
+    notification-delivery:
+      enabled: ${APP_JOBS_NOTIFICATION_DELIVERY_ENABLED:true}
+      interval: PT15S
+      initial-delay: PT30S
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -312,6 +338,31 @@ app:
       cron: "0 30 3 * * *"
       zone: Africa/Maputo
       retention: P7D
+  # W6-B (LAC-33/34, ADR-0005 Proposed): razão de partidas dobradas — modelo de lançamentos "a validar" (LAC-38).
+  settlement:
+    enabled: ${APP_SETTLEMENT_ENABLED:true}
+    # Taxa de comissão quando o tenant não tem plano por defeito em vigor (V066 semeia 15% por tenant).
+    default-commission-rate: ${APP_SETTLEMENT_DEFAULT_COMMISSION_RATE:0.15}
+    # IVA embutido na receita própria da plataforma (comissão + taxas); 0 = sem linhas de IVA até o contabilista validar.
+    platform-vat-rate: ${APP_SETTLEMENT_PLATFORM_VAT_RATE:0}
+    # PLATFORM = desconto de promoção é despesa da plataforma; MERCHANT = reduz o valor devido ao comerciante.
+    discount-funded-by: ${APP_SETTLEMENT_DISCOUNT_FUNDED_BY:PLATFORM}
+  # W6-C (LAC-48): notificações multi-canal. Fornecedores reais (FCM, gateway SMS, SES) são beans novos com o seu id;
+  # só existe o stub "log" (regista destinatário mascarado, nunca o texto).
+  notifications:
+    locale: pt-PT
+    batch-size: 100
+    max-attempts: ${APP_NOTIFICATIONS_MAX_ATTEMPTS:5}
+    base-backoff: PT30S
+    max-backoff: PT1H
+    lease: PT2M
+    max-devices-per-user: 10
+    push:
+      provider: ${APP_NOTIFICATIONS_PUSH_PROVIDER:log}
+    sms:
+      provider: ${APP_NOTIFICATIONS_SMS_PROVIDER:log}
+    email:
+      provider: ${APP_NOTIFICATIONS_EMAIL_PROVIDER:log}
   # W5-B (LAC-40): GPS do estafeta — consentimento, filtros de qualidade, presença Redis e retenção do histórico.
   courier-location:
     # Versão do texto de consentimento aceite no onboarding; mudar obriga a novo consentimento.

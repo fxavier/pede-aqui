@@ -39,16 +39,19 @@ class PricingServiceTest {
     private final VendorRepository vendors = mock(VendorRepository.class);
     private final PricingService service = new PricingService(policies, rules, vendors);
 
-    // ---- Platform defaults reproduce the pre-INC-13 constants (characterized before the change) ----
+    // ---- Platform defaults: 5.00 / 5 % / VAT 16 % included (W6-A; was 8 % added: taxes 1.44, total 25.34) ----
 
     @Test
-    void tenantWithoutPolicyKeepsThePreviousTotals() {
+    void tenantWithoutPolicyUsesThePlatformDefaultsWithVatIncluded() {
         PriceQuote quote = service.quote(tenantId, vendorId, new BigDecimal("18.00"), null);
 
         assertThat(quote.deliveryFee()).isEqualByComparingTo("5.00");
         assertThat(quote.serviceFee()).isEqualByComparingTo("0.90");
-        assertThat(quote.taxes()).isEqualByComparingTo("1.44");
-        assertThat(quote.total()).isEqualByComparingTo("25.34");
+        assertThat(quote.taxes()).isEqualByComparingTo("0.00");
+        assertThat(quote.total()).isEqualByComparingTo("23.90");
+        assertThat(quote.taxInclusive()).isTrue();
+        assertThat(quote.taxRate()).isEqualByComparingTo("0.16");
+        assertThat(quote.vat(BigDecimal.ZERO).vatTotal()).isEqualByComparingTo("3.29");
         assertThat(quote.delivery().basis()).isEqualTo(DeliveryFeeBasis.PLATFORM_DEFAULT);
         assertThat(quote.engineVersion()).isEqualTo(PricingService.ENGINE_VERSION);
     }
@@ -58,8 +61,9 @@ class PricingServiceTest {
         PriceQuote quote = service.quote(tenantId, vendorId, new BigDecimal("10.05"), null);
 
         assertThat(quote.serviceFee()).isEqualByComparingTo("0.50");
-        assertThat(quote.taxes()).isEqualByComparingTo("0.80");
-        assertThat(quote.total()).isEqualByComparingTo("16.35");
+        assertThat(quote.taxes()).isEqualByComparingTo("0.00");
+        assertThat(quote.total()).isEqualByComparingTo("15.55");
+        assertThat(quote.vat(BigDecimal.ZERO).goodsVat()).isEqualByComparingTo("1.39");
     }
 
     @Test
@@ -78,7 +82,8 @@ class PricingServiceTest {
         var preview = service.preview(tenantId, new BigDecimal("100.00"));
 
         assertThat(preview.discount()).isEqualByComparingTo("0");
-        assertThat(preview.total()).isEqualByComparingTo("118.00");
+        assertThat(preview.tax()).isEqualByComparingTo("0.00"); // W6-A: VAT included, nothing added (was 8.00)
+        assertThat(preview.total()).isEqualByComparingTo("110.00"); // was 118.00
     }
 
     // ---- fee_policies are applied ----
@@ -92,12 +97,49 @@ class PricingServiceTest {
 
         assertThat(quote.deliveryFee()).isEqualByComparingTo("7.00");
         assertThat(quote.serviceFee()).isEqualByComparingTo("3.00"); // 1.00 flat + 2 % of 100
-        assertThat(quote.taxes()).isEqualByComparingTo("16.00");
-        assertThat(quote.total()).isEqualByComparingTo("126.00");
+        assertThat(quote.taxes()).isEqualByComparingTo("0.00"); // VAT-inclusive (W6-A; was 16.00 added)
+        assertThat(quote.total()).isEqualByComparingTo("110.00"); // was 126.00
+        // 100 → 13.79, 7.00 → 0.97, 3.00 → 0.41
+        assertThat(quote.vat(BigDecimal.ZERO).vatTotal()).isEqualByComparingTo("15.17");
         assertThat(quote.delivery().basis()).isEqualTo(DeliveryFeeBasis.POLICY_BASE);
         assertThat(quote.delivery().feePolicyId()).isEqualTo(policy.getId());
         assertThat(quote.delivery().feePolicyVersion()).isZero();
         assertThat(quote.delivery().distanceKm()).isNull();
+    }
+
+    @Test
+    void exclusivePolicyKeepsThePreW6aFormulaWithTaxAddedOnTop() {
+        FeePolicy policy = policy("5.00", "0.00", "0.0500", "0.0800");
+        policy.changeTaxInclusive(false);
+        when(policies.findByTenantId(tenantId)).thenReturn(Optional.of(policy));
+
+        PriceQuote quote = service.quote(tenantId, vendorId, new BigDecimal("18.00"), null);
+
+        assertThat(quote.taxes()).isEqualByComparingTo("1.44");
+        assertThat(quote.total()).isEqualByComparingTo("25.34");
+        assertThat(quote.vat(BigDecimal.ZERO).vatTotal()).isEqualByComparingTo("1.44");
+    }
+
+    @Test
+    void linesWithZeroRatedOrExemptProductsOnlyExtractVatFromStandardLines() {
+        when(policies.findByTenantId(tenantId)).thenReturn(Optional.empty());
+
+        PriceQuote quote = service.quote(tenantId, vendorId, List.of(
+                new com.delivery.common.pricing.TaxableLine(new BigDecimal("11.60"), com.delivery.common.pricing.TaxCategory.STANDARD),
+                new com.delivery.common.pricing.TaxableLine(new BigDecimal("8.40"), com.delivery.common.pricing.TaxCategory.EXEMPT)), null);
+
+        assertThat(quote.subtotal()).isEqualByComparingTo("20.00");
+        assertThat(quote.vat(BigDecimal.ZERO).goodsVat()).isEqualByComparingTo("1.60");
+        assertThat(quote.vat(BigDecimal.ZERO).goodsExemptGross()).isEqualByComparingTo("8.40");
+    }
+
+    @Test
+    void tenantMaximumDeliveryDistanceIsExposedOnTheQuote() {
+        FeePolicy policy = policy("5.00", "0.00", "0.0500", "0.1600");
+        policy.changeMaxDeliveryDistanceKm(new BigDecimal("8.00"));
+        when(policies.findByTenantId(tenantId)).thenReturn(Optional.of(policy));
+
+        assertThat(service.quote(tenantId, vendorId, new BigDecimal("10.00"), null).policyMaxDeliveryDistanceKm()).isEqualByComparingTo("8.00");
     }
 
     @Test
@@ -126,7 +168,7 @@ class PricingServiceTest {
         assertThat(quote.delivery().distanceKm()).isEqualByComparingTo("3.66");
         assertThat(quote.delivery().deliveryFeeRuleId()).isEqualTo(far.getId());
         assertThat(quote.delivery().deliveryFeeRuleVersion()).isZero();
-        assertThat(quote.total()).isEqualByComparingTo("80.34"); // 18 + 60 + 0.90 + 1.44
+        assertThat(quote.total()).isEqualByComparingTo("78.90"); // 18 + 60 + 0.90, VAT included (was 80.34 with 1.44 added)
     }
 
     @Test

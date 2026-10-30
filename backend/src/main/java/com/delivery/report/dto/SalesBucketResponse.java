@@ -3,7 +3,7 @@ package com.delivery.report.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** One time-series bucket of sales KPIs (contract: SalesBucket). */
+/** One time-series bucket of sales KPIs (contract: SalesBucket); vatIncluded/grossExVat as in {@link SalesSummaryResponse}. */
 public record SalesBucketResponse(
         Instant bucket,
         long orderCount,
@@ -14,5 +14,7 @@ public record SalesBucketResponse(
         BigDecimal commission,
         BigDecimal averageOrderValue,
         long deliveredCount,
-        long cancelledCount) {
+        long cancelledCount,
+        BigDecimal vatIncluded,
+        BigDecimal grossExVat) {
 }

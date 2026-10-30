@@ -5,4 +5,4 @@ import java.util.UUID;
 
 /** Fee and policy configuration response for tenant operations (version = rule version recorded on order quotes). */
 public record FeePolicyResponse(UUID id, BigDecimal deliveryFee, BigDecimal serviceFee, BigDecimal taxRate, BigDecimal commissionRate, String cancellationPolicy,
-                                BigDecimal serviceFeeRate, long version) {}
+                                BigDecimal serviceFeeRate, long version, boolean taxInclusive, BigDecimal maxDeliveryDistanceKm) {}

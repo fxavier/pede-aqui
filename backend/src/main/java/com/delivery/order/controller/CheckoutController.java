@@ -37,12 +37,14 @@ public class CheckoutController {
     /**
      * 201 when the order is created; 200 with the same order when the idempotency key is replayed.
      * The legacy request shape without addressId gets a Deprecation header while the INC-12 window is open.
+     * W6-A: optional quoteId → 409 quote_changed (expired / prices or fees moved, details.quote = fresh quote);
+     * 422 out_of_service_area / address_too_far when the address is outside the vendor's area or distance.
      */
     @PostMapping
     public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
         // LAC-50: orders_checkout_total{result=created|replayed|rejected|error, reason} — counted after the commit.
         CheckoutResult result = metrics.recordOutcome(BusinessMetrics.CHECKOUT,
-                () -> service.checkout(request.cartId(), request.idempotencyKey(), request.addressId()),
+                () -> service.checkout(request.cartId(), request.idempotencyKey(), request.addressId(), request.quoteId()),
                 checkout -> checkout.replayed() ? "replayed" : "created");
         ResponseEntity.BodyBuilder response = ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED);
         if (request.addressId() == null) {
@@ -53,7 +55,10 @@ public class CheckoutController {
         return response.body(result.order());
     }
 
-    /** Fees, taxes and total that checkout will charge for the cart and (optional) address — same pricing engine (INC-13). */
+    /**
+     * Fees, VAT and total that checkout will charge for the cart and (optional) address — same pricing engine (INC-13).
+     * W6-A: stores the quote with a TTL (app.checkout.quote-ttl, default 10 min) and returns quoteId + expiresAt.
+     */
     @GetMapping("/quote")
     public CheckoutQuoteResponse quote(@RequestParam UUID cartId, @RequestParam(required = false) UUID addressId) {
         return service.quote(cartId, addressId);
