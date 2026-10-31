@@ -17,6 +17,7 @@ import com.delivery.common.service.AuditLogService;
 import com.delivery.customer.api.CustomerPersonalData;
 import com.delivery.notification.api.NotificationPreferences;
 import com.delivery.order.api.CustomerOrderPrivacy;
+import com.delivery.rating.api.CustomerRatingPrivacy;
 import com.delivery.privacy.config.PrivacyProperties;
 import com.delivery.privacy.entity.AccountDeletionRequest;
 import com.delivery.privacy.entity.AccountDeletionStatus;
@@ -55,6 +56,7 @@ class AccountErasureServiceTest {
     private CustomerPersonalData customerData;
     private NotificationPreferences notifications;
     private CustomerOrderPrivacy orders;
+    private CustomerRatingPrivacy ratings;
     private AuditLogService audit;
     private AccountErasureService service;
     private AccountDeletionRequest request;
@@ -66,8 +68,9 @@ class AccountErasureServiceTest {
         customerData = mock(CustomerPersonalData.class);
         notifications = mock(NotificationPreferences.class);
         orders = mock(CustomerOrderPrivacy.class);
+        ratings = mock(CustomerRatingPrivacy.class);
         audit = mock(AuditLogService.class);
-        service = new AccountErasureService(repository, userAccounts, customerData, notifications, orders, audit,
+        service = new AccountErasureService(repository, userAccounts, customerData, notifications, orders, ratings, audit,
                 mock(RetentionRunLog.class), new PrivacyProperties(), new TransactionTemplate(mock(PlatformTransactionManager.class)),
                 new SimpleMeterRegistry());
         service.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
@@ -77,6 +80,7 @@ class AccountErasureServiceTest {
         when(customerData.erase(tenant, profile, sub)).thenReturn(new CustomerPersonalData.Erasure(2, 1));
         when(notifications.erase(tenant, profile)).thenReturn(new NotificationPreferences.Erasure(1, 3, 1));
         when(orders.pseudonymiseCustomerOrders(tenant, profile)).thenReturn(4);
+        when(ratings.pseudonymiseCustomerComments(tenant, profile)).thenReturn(2);
         when(userAccounts.pseudonymise(tenant, profile)).thenReturn(true);
     }
 
@@ -84,11 +88,12 @@ class AccountErasureServiceTest {
     void disablesThenErasesEveryModuleThenAuditsThenDeletesTheKeycloakUser() {
         assertThat(service.process(request.getId())).isEqualTo(Outcome.COMPLETED);
 
-        InOrder order = inOrder(userAccounts, customerData, notifications, orders, audit);
+        InOrder order = inOrder(userAccounts, customerData, notifications, orders, ratings, audit);
         order.verify(userAccounts).disableKeycloakUser(sub);
         order.verify(customerData).erase(tenant, profile, sub);
         order.verify(notifications).erase(tenant, profile);
         order.verify(orders).pseudonymiseCustomerOrders(tenant, profile);
+        order.verify(ratings).pseudonymiseCustomerComments(tenant, profile);
         order.verify(userAccounts).pseudonymise(tenant, profile);
         order.verify(audit).logForTenant(eq(tenant), eq(AuditActions.ACCOUNT_PSEUDONYMISED), eq("user_profile"), eq(profile.toString()),
                 eq("deletion_request=" + request.getId()), eq("SUCCESS"), any());

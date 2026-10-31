@@ -1,5 +1,6 @@
 /**
- * Public API of the dispatch module (ADR-0002): courier earnings for the dashboard. Other modules use these instead
+ * Public API of the dispatch module (ADR-0002): courier earnings for the dashboard and the courier rating-aggregate
+ * write port ({@code CourierRatingAggregates}, LAC-28). Other modules use these instead
  * of the dispatch repositories/entities.
  */
 @NamedInterface("api")

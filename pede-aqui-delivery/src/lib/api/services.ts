@@ -13,10 +13,13 @@ import type {
   CursorPage,
   DeletionRequest,
   MeResponse,
+  OrderRating,
+  OrderRatingStatus,
   OrderResponse,
   Product,
   ProfileSettings,
   ProfileUpdateRequest,
+  SubmitRatingRequest,
   TrackingResponse,
   VendorPublicInfo,
   VendorSearchResponse,
@@ -117,4 +120,19 @@ export const privacyService = {
 
   /** The customer's personal data as a JSON document (429 rate_limited when asked too often). */
   exportData: () => apiClient.get<unknown>('/me/data-export').then((r) => r.data),
+}
+
+/** LAC-28: the signed-in customer's rating of one of their orders. */
+export const ratingService = {
+  /** Whether the order can be rated now (and until when) plus the existing rating, if any. */
+  getMine: (orderId: string) =>
+    apiClient.get<OrderRatingStatus>(`/me/orders/${orderId}/rating`).then((r) => r.data),
+
+  /** Rates a delivered order once (409 when not delivered, past the 7-day window or already rated). */
+  submit: (orderId: string, req: SubmitRatingRequest) =>
+    apiClient.post<OrderRating>(`/me/orders/${orderId}/rating`, req).then((r) => r.data),
+
+  /** Replaces stars and comment within 24 h of submitting (409 rating_edit_window_closed after). */
+  edit: (orderId: string, req: SubmitRatingRequest) =>
+    apiClient.put<OrderRating>(`/me/orders/${orderId}/rating`, req).then((r) => r.data),
 }

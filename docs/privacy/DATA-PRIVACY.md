@@ -122,7 +122,10 @@ de dado, nunca valores) e `ACCOUNT_DELETION_COMPLETED`.
 | `payments`, `refunds`, `ledger_*`, `commissions` | mantidos (sem PII direta) | idem |
 | `cancellation_requests.reason` (texto do cliente) | → NULL | texto livre pode conter PII |
 | `audit_logs.actor_user_id`, `ip`, `user_agent`; `order_status_history.actor_id` | mantidos (append-only) até à purga por retenção (24 meses / 10 anos) | o subject Keycloak deixa de identificar alguém quando o utilizador Keycloak é apagado ⚖ |
-| `ratings.comment`, `support_tickets` | **não tratados nesta versão** | trabalho futuro (⚖ decidir anonimização/remoção) |
+| `ratings.comment` (texto do cliente, W7-D) | → NULL (`rating.api.CustomerRatingPrivacy`) | texto livre pode conter PII |
+| `ratings` (linha, `stars`, `courier_stars`, `rater_user_id`, `order_id`, datas) | **mantidos** | as estrelas continuam nas médias de loja/estafeta; `rater_user_id` aponta para o perfil pseudonimizado (que nunca é apagado — FK `fk_ratings_rater_user_id`, V072) |
+| `ratings.vendor_reply`, `comment_hidden*` | mantidos | resposta da loja e moderação: não são dados do cliente |
+| `support_tickets` | **não tratados nesta versão** | trabalho futuro (⚖ decidir anonimização/remoção) |
 | Keycloak: utilizador | desativado → apagado | |
 
 ## 7. Consentimentos
@@ -145,7 +148,7 @@ documentos de infraestrutura.
 
 - Validação jurídica de todas as marcas ⚖ e revisão quando a lei for aprovada.
 - Consentimentos no registo (web/apps) e ecrã de gestão de consentimentos.
-- Retenção de tickets de suporte e avaliações; anonimização de `ratings.comment`.
+- Retenção de tickets de suporte e avaliações (o comentário da avaliação já é apagado na eliminação de conta, §6).
 - Encerramento de contas de staff/estafeta/comerciante (procedimento de backoffice).
 - Hash do MSISDN em repouso (LAC-63 §3) — hoje o telefone verificado é guardado em claro para envio de SMS.
 - Auditoria de consultas de dados sensíveis no backoffice.

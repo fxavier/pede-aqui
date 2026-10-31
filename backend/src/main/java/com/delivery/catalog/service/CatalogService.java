@@ -88,6 +88,7 @@ public class CatalogService {
                 vendor.getDescription(),
                 vendor.getAddress(),
                 vendor.getRating(),
+                vendor.getRatingCount(),
                 vendor.isAvailable(),
                 vendor.getEstimatedDeliveryMinutes(),
                 storageUrlService.presignGet(vendor.getLogoStorageKey()));

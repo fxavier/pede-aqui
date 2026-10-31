@@ -209,7 +209,20 @@ class PrivacyApiE2ETest extends PostgresApiE2ETestBase {
                     fee_rate, fee_amount, refund_amount, requested_at, decided_at, updated_at)
                 VALUES (?, ?, ?, 'REJECTED', NULL, 'Mudei de ideias, liguem para 841234567', ?, 'ops', 0.10, 1.00, NULL, now(), now(), now())""",
                 UUID.randomUUID(), tenant, delivered, profile);
-        UUID otherCustomerOrder = order(profile(UUID.randomUUID().toString()), "DELIVERED");
+        UUID otherCustomer = profile(UUID.randomUUID().toString());
+        UUID otherCustomerOrder = order(otherCustomer, "DELIVERED");
+        // W7-D ratings: the customer's comment is personal data; the vendor reply is not the customer's.
+        UUID myRating = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO ratings (id, tenant_id, order_id, rater_user_id, rated_vendor_id, stars, comment, vendor_reply,
+                                     vendor_replied_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 4, 'Sou a Ana, liguem para 841234567', 'Obrigado pela preferência', now(), now(), now())""",
+                myRating, tenant, delivered, profile, vendor);
+        UUID otherRating = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO ratings (id, tenant_id, order_id, rater_user_id, rated_vendor_id, stars, comment, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 5, 'Excelente', now(), now())""",
+                otherRating, tenant, otherCustomerOrder, otherCustomer, vendor);
         seedPersonalData();
         jdbc.update("UPDATE app_user_profiles SET phone = '840000001', full_name = 'Ana Maria Machava', nif = ?, "
                 + "phone_e164 = ?, phone_verified_at = now() WHERE id = ?", "1" + profile.toString().substring(0, 8), "+25884" + digits(7), profile);
@@ -246,6 +259,13 @@ class PrivacyApiE2ETest extends PostgresApiE2ETestBase {
         assertThat(o.get("total").toString()).isEqualTo("100.00");
         assertThat(o.get("reference").toString()).startsWith("PRIV-");
         assertThat(jdbc.queryForObject("SELECT reason FROM cancellation_requests WHERE order_id = ?", String.class, delivered)).isNull();
+        // Rating kept (stars still count, FK to the pseudonymised profile intact), only the customer's comment cleared.
+        Map<String, Object> r = jdbc.queryForMap("SELECT * FROM ratings WHERE id = ?", myRating);
+        assertThat(r.get("comment")).isNull();
+        assertThat(r).containsEntry("rater_user_id", profile).containsEntry("stars", 4)
+                .containsEntry("vendor_reply", "Obrigado pela preferência");
+        assertThat(jdbc.queryForObject("SELECT comment FROM ratings WHERE id = ?", String.class, otherRating)).isEqualTo("Excelente");
+        assertThat(count("SELECT count(*) FROM app_user_profiles WHERE id = ?", profile)).isEqualTo(1);
         // Another customer's order is untouched, and the snapshot stays immutable outside the erasure flag.
         assertThat(jdbc.queryForObject("SELECT delivery_line1 FROM orders WHERE id = ?", String.class, otherCustomerOrder)).isNotNull();
         assertThatThrownBy(() -> jdbc.update("UPDATE orders SET delivery_line1 = 'x' WHERE id = ?", otherCustomerOrder))
@@ -254,6 +274,8 @@ class PrivacyApiE2ETest extends PostgresApiE2ETestBase {
         assertThat(jdbc.queryForObject("SELECT status FROM account_deletion_requests WHERE id = ?", String.class, requestId)).isEqualTo("COMPLETED");
         assertThat(count("SELECT count(*) FROM audit_logs WHERE action = 'ACCOUNT_PSEUDONYMISED' AND target_id = ?", profile.toString())).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT details->>'addressesDeleted' FROM audit_logs WHERE action = 'ACCOUNT_PSEUDONYMISED' AND target_id = ?",
+                String.class, profile.toString())).isEqualTo("1");
+        assertThat(jdbc.queryForObject("SELECT details->>'ratingCommentsCleared' FROM audit_logs WHERE action = 'ACCOUNT_PSEUDONYMISED' AND target_id = ?",
                 String.class, profile.toString())).isEqualTo("1");
         assertThat(count("SELECT count(*) FROM audit_logs WHERE action = 'ACCOUNT_DELETION_COMPLETED' AND target_id = ?", requestId.toString())).isEqualTo(1);
 

@@ -13,7 +13,8 @@ import java.util.UUID;
 /**
  * Spec-002 promotion (table {@code promotion}): coupon (has code) or automatic (no code) discount,
  * vendor-scoped or tenant-wide, with a validity window and usage limits.
- * Distinct from the legacy V013 {@code promotions} table, which is no longer mapped.
+ * The only promotion model (LAC-29): the legacy V013 {@code coupons}/{@code promotions} tables are no longer mapped,
+ * their rows were migrated here by V073 and {@code /marketing/coupons} is a façade over this entity.
  */
 @Entity
 @Table(name = "promotion")

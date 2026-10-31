@@ -218,6 +218,21 @@ secção W7-C) acrescenta:
 - `keycloak_error` (500) passa também a sair de `PATCH /me` quando a sincronização do nome/idioma com o Keycloak
   falha (nada é gravado).
 
+W7-D acrescenta (detalhe em `API-MIGRATION.md`, secção W7-D):
+- LAC-28 (avaliações): `order_not_delivered` (409 — avaliar uma encomenda que não está `DELIVERED`),
+  `rating_window_closed` (409 — mais de `app.rating.window-days`, 7, depois da entrega), `rating_already_submitted`
+  (409 — segunda avaliação da mesma encomenda, incluindo a perdedora de duas submissões concorrentes),
+  `rating_edit_window_closed` (409 — `PUT` depois de `app.rating.edit-window-hours`, 24), `courier_not_rateable` (400 —
+  `courierStars` numa encomenda sem estafeta), `rating_reply_exists` (409 — segunda resposta da loja),
+  `rating_comment_absent` (409 — ocultar uma avaliação sem comentário). Encomenda/avaliação de outro cliente, outro
+  vendedor ou outro tenant → 404 `not_found`. Ordem em `POST /me/orders/{id}/rating`: validação do corpo (400) → posse
+  (404) → `courier_not_rateable` → `order_not_delivered` → `rating_window_closed` → `rating_already_submitted`.
+- LAC-29 (`POST /marketing/coupons`, agora fachada sobre `promotion`): novos 400 `invalid_discount_type` (tipo fora de
+  PERCENTAGE/FIXED_AMOUNT e aliases), `invalid_coupon_code` (código > 40 caracteres), `invalid_percentage_value`
+  (> 100), `invalid_validity_window` (`validFrom` ≥ `validUntil`), `invalid_min_order_total` (negativo),
+  `vendor_not_found` (`vendorId` fora do tenant; antes 409 `conflict` pela FK). Mantêm-se `duplicate_coupon_code`
+  (409 — agora também quando o código já existe numa promoção spec-002), `already_inactive` (409) e 404 `not_found`.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),

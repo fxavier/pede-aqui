@@ -12,6 +12,7 @@ import com.delivery.privacy.entity.AccountDeletionRequest;
 import com.delivery.privacy.entity.AccountDeletionStatus;
 import com.delivery.privacy.repository.AccountDeletionRequestRepository;
 import com.delivery.privacy.repository.RetentionRunLog;
+import com.delivery.rating.api.CustomerRatingPrivacy;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.time.Instant;
@@ -34,7 +35,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li>PENDING and due: still an order in progress → postponed ({@code last_error=active_orders_present}, retried next
  *       run). Otherwise the Keycloak user is <b>disabled</b> (no new login/refresh), then in the same transaction the
  *       profile is pseudonymised, addresses/favourites, push devices, inbox and preferences deleted, order snapshots
- *       stripped of identifying fields ({@link CustomerOrderPrivacy}), an {@code ACCOUNT_PSEUDONYMISED} audit row
+ *       stripped of identifying fields ({@link CustomerOrderPrivacy}), rating comments cleared ({@link CustomerRatingPrivacy};
+ *       the rating rows, their stars and the pseudonymised profile they reference are kept), an {@code ACCOUNT_PSEUDONYMISED} audit row
  *       written and the request moved to ERASED. Any failure rolls the transaction back and records the attempt.</li>
  *   <li>ERASED: the Keycloak user is <b>deleted</b> (404 = already gone) and the request becomes COMPLETED
  *       ({@code ACCOUNT_DELETION_COMPLETED}); a Keycloak failure leaves it ERASED for the next run.</li>
@@ -55,6 +57,7 @@ public class AccountErasureService {
     private final CustomerPersonalData customerData;
     private final NotificationPreferences notificationPreferences;
     private final CustomerOrderPrivacy orderPrivacy;
+    private final CustomerRatingPrivacy ratingPrivacy;
     private final AuditLogService auditLogService;
     private final RetentionRunLog runLog;
     private final PrivacyProperties properties;
@@ -64,13 +67,15 @@ public class AccountErasureService {
 
     public AccountErasureService(AccountDeletionRequestRepository repository, UserAccounts userAccounts,
                                  CustomerPersonalData customerData, NotificationPreferences notificationPreferences,
-                                 CustomerOrderPrivacy orderPrivacy, AuditLogService auditLogService, RetentionRunLog runLog,
+                                 CustomerOrderPrivacy orderPrivacy, CustomerRatingPrivacy ratingPrivacy,
+                                 AuditLogService auditLogService, RetentionRunLog runLog,
                                  PrivacyProperties properties, TransactionTemplate tx, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.userAccounts = userAccounts;
         this.customerData = customerData;
         this.notificationPreferences = notificationPreferences;
         this.orderPrivacy = orderPrivacy;
+        this.ratingPrivacy = ratingPrivacy;
         this.auditLogService = auditLogService;
         this.runLog = runLog;
         this.properties = properties;
@@ -164,6 +169,7 @@ public class AccountErasureService {
         CustomerPersonalData.Erasure customer = customerData.erase(tenantId, profileId, request.getKeycloakUserId());
         NotificationPreferences.Erasure notifications = notificationPreferences.erase(tenantId, profileId);
         int orders = orderPrivacy.pseudonymiseCustomerOrders(tenantId, profileId);
+        int ratingComments = ratingPrivacy.pseudonymiseCustomerComments(tenantId, profileId);
         boolean profile = userAccounts.pseudonymise(tenantId, profileId);
         request.markErased(now);
         repository.save(request);
@@ -175,6 +181,7 @@ public class AccountErasureService {
         details.put("devicesDeleted", notifications.devices());
         details.put("inboxDeleted", notifications.inboxNotifications());
         details.put("ordersPseudonymised", orders);
+        details.put("ratingCommentsCleared", ratingComments);
         auditLogService.logForTenant(tenantId, AuditActions.ACCOUNT_PSEUDONYMISED, "user_profile", profileId.toString(),
                 "deletion_request=" + requestId, "SUCCESS", details);
         return Step.ERASED;

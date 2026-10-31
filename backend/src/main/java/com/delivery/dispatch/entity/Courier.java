@@ -43,8 +43,11 @@ public class Courier {
     private short maxActiveDeliveries;
     @Column(name = "operating_zone_id")
     private UUID operatingZoneId;
-    @Column(nullable = false)
+    /** Average stars, maintained by the rating module (LAC-28) through the api port; read-only here. */
+    @Column(nullable = false, insertable = false, updatable = false)
     private double rating;
+    @Column(name = "rating_count", nullable = false, insertable = false, updatable = false)
+    private int ratingCount;
     @Column(name = "full_name")
     private String fullName;
     @Column
@@ -163,6 +166,7 @@ public class Courier {
     public int getMaxActiveDeliveries() { return maxActiveDeliveries; }
     public UUID getOperatingZoneId() { return operatingZoneId; }
     public double getRating() { return rating; }
+    public int getRatingCount() { return ratingCount; }
     public String getFullName() { return fullName; }
     public String getPhone() { return phone; }
     public String getNif() { return nif; }

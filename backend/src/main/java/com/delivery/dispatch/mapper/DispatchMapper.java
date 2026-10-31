@@ -16,7 +16,7 @@ public class DispatchMapper {
                 courier.getFullName(), courier.getPhone(), courier.getNif(),
                 courier.getVehicleType() == null ? null : courier.getVehicleType().name(), courier.getVehiclePlate(), courier.getRating(),
                 courier.getStatus(), courier.getStatusChangedAt(), courier.getSuspensionReason(), courier.getMaxActiveDeliveries(),
-                courier.getLocationConsentAcceptedAt(), courier.getLocationConsentVersion());
+                courier.getLocationConsentAcceptedAt(), courier.getLocationConsentVersion(), courier.getRatingCount());
     }
 
     public DispatchJobResponse toDispatchJobResponse(DispatchJob job) {

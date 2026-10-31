@@ -61,6 +61,16 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 | Garantia | At-least-once; chave natural `incidentId` (ledger: `delivery-incident:<incidentId>`, UNIQUE por tenant). |
 | Testes | `DeliveryIncidentPostgresTest` (por motivo: lançamento e saldos; concorrência de dois OPS → um lançamento), `PostingRulesTest` (`incident*`) |
 
+### `com.delivery.rating.RatingSubmitted`
+
+| Campo | Valor |
+|---|---|
+| Produtor | módulo `rating` — `RatingService.submit` (`edited = false`) e `RatingService.edit` (`edited = true`) (W7-D, LAC-28), na transação que grava a avaliação **depois** de recalcular os agregados `vendors.rating/rating_count` e `couriers.rating/rating_count` (os agregados são síncronos: não dependem deste evento). Uma avaliação recusada (409/400/404) não publica. Respostas da loja e moderação de comentários não publicam (são auditadas). |
+| Payload | `tenantId`, `ratingId`, `orderId`, `vendorId`, `courierId` (UUID; `courierId` nulo sem estafeta), `vendorStars` (int 1–5), `courierStars` (Integer 1–5 ou nulo), `edited` (boolean), `occurredAt` (Instant). **Nunca** o comentário nem dados pessoais. |
+| Consumidores | Nenhum por agora (sem linha em `event_publication` enquanto não houver *listener*). Previstos: notificação à loja de nova avaliação (LAC-48), métricas de satisfação. |
+| Garantia | At-least-once quando houver consumidores; chave natural `ratingId` + `occurredAt` (uma edição gera um evento novo com `edited = true`). Um consumidor que precise do estado atual deve reler a avaliação/agregado (recontagem idempotente), não somar estrelas. |
+| Testes | `RatingApiE2ETest` (`@RecordApplicationEvents`: um evento `edited=false` na submissão, `false, true` após uma edição; nenhum em recusas) |
+
 ## Outbox de notificações (não é um evento Modulith)
 
 Desde W6-C (LAC-48) as notificações externas (PUSH/SMS/EMAIL) usam a sua própria tabela *outbox*, `notification_deliveries` (V067), e não `event_publication`: a linha é escrita na transação de negócio (ou no *listener* acima) por `NotificationDispatcher` e enviada pelo job `notification-delivery` (claim `FOR UPDATE SKIP LOCKED` + *lease*, *backoff* exponencial, estado por canal `QUEUED/SENT/FAILED/SKIPPED`). Motivo: precisa de estado por canal, tentativas e registo consultável pelo SUPPORT, que o registo de publicações não guarda. As notificações *in-app* criadas por `NotificationService.create*` fazem *fan-out* para os canais externos na mesma transação (chave `inapp:<notificationId>:<canal>`), só para tipos com modelo ativo.

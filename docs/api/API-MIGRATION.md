@@ -1175,3 +1175,94 @@ deletion reflection period are configurable defaults "a validar com jurista" —
 
 - Customer web: `/profile` now edits name/locale/notification preferences, exports the data and requests/cancels the
   account deletion (W7-C). Flutter customer app and backoffice: not changed by this package.
+
+## W7-D — Ratings API (LAC-28) — 2026-10-31
+
+### `GET /api/v1/me/orders/{orderId}/rating` (new, CUSTOMER)
+
+- Own order only (another customer's / tenant's / unknown → 404). Response
+  `{ orderId, rateable, notRateableReason, rateableUntil, courierRateable, editable, editableUntil, rating }`;
+  `notRateableReason` ∈ `order_not_delivered | rating_window_closed | rating_already_submitted` (null when rateable);
+  `rating` is the `RatingResponse` below or null.
+
+### `POST /api/v1/me/orders/{orderId}/rating` (new, CUSTOMER) → 201
+
+- Body `{ vendorStars: 1..5 (required), courierStars?: 1..5, comment?: string ≤ 500 }` (comment trimmed; blank → null).
+- Only `DELIVERED` orders, within **7 days** of the DELIVERED transition (`app.rating.window-days`), once per order.
+  Errors: 409 `order_not_delivered`, `rating_window_closed`, `rating_already_submitted`; 400 `courier_not_rateable`
+  (courier stars for an order no courier delivered), 400 `validation_failed` (stars out of range, comment > 500).
+- `RatingResponse`: `{ id, orderId, vendorId, courierId, vendorStars, courierStars, comment, commentHidden,
+  commentHiddenReason, vendorReply, vendorRepliedAt, createdAt, updatedAt }`.
+
+### `PUT /api/v1/me/orders/{orderId}/rating` (new, CUSTOMER)
+
+- Same body; replaces stars and comment within **24 h** of submission (`app.rating.edit-window-hours`), else 409
+  `rating_edit_window_closed`; 404 when the order has no rating. A comment hidden by moderation stays hidden after an
+  edit.
+
+### Merchant and moderation (new)
+
+- `GET /api/v1/vendor/ratings?limit&cursor` (VENDOR_ADMIN, VENDOR_STAFF): own vendor's ratings (vendor from
+  `merchant_users`), keyset `{ items, nextCursor }`, newest first; a hidden comment comes back as `comment: null`
+  with `commentHidden: true`.
+- `POST /api/v1/vendor/ratings/{ratingId}/reply` `{ reply ≤ 500 }` (VENDOR_ADMIN): once — 409 `rating_reply_exists`;
+  another vendor's rating → 404. Audited `RATING_VENDOR_REPLIED`.
+- `GET /api/v1/ops/ratings?vendorId&hidden&limit&cursor`, `POST /api/v1/ops/ratings/{id}/hide` `{ reason ≤ 200 }`,
+  `POST /api/v1/ops/ratings/{id}/unhide` (OPS, ADMIN, SUPPORT; tenant-scoped; idempotent; audited
+  `RATING_COMMENT_HIDDEN` / `RATING_COMMENT_UNHIDDEN` on an effective change; 409 `rating_comment_absent`). Hiding
+  never changes the stars or the averages.
+
+### Real rating aggregates (additive fields, behaviour change in values)
+
+- `vendors.rating` / `couriers.rating` are now the real average of the ratings (2 decimals, 0 without ratings),
+  recomputed in the rating transaction; V072 recomputed them from existing data, so **seeded/demo values are reset**
+  (to 0 where there are no ratings). New `ratingCount` (int) in `GET /search/vendors` rows, `GET /catalog/vendors/{id}`
+  (`VendorPublicResponse`), `VendorResponse` and `CourierResponse` (last member).
+- `GET /search/vendors` results are cached for 60 s (`vendorSearch`): a new rating can take up to the cache TTL to
+  appear there (and in `minRating`/`sort=RATING`); `GET /catalog/vendors/{id}` is uncached.
+
+### Clients / consumers to review
+
+- Customer web: `OrderRatingCard` on `/orders/:orderId` once DELIVERED; vendor cards/store page show
+  `formatRating(rating, ratingCount)` ("4.3 (12)", "Novo" without ratings). Older clients ignore `ratingCount`.
+- Flutter customer app and backoffice (vendor reply / moderation screens): not built by W7-D.
+
+## W7-D — One promotion model; `/marketing/coupons` becomes a façade (LAC-29) — 2026-10-31
+
+### `/api/v1/marketing/coupons` (same paths, roles and JSON shape; behaviour change)
+
+- `POST` now creates a spec-002 `promotion` (ACTIVE, ORDER scope, name `Cupão <CODE>`) instead of a `coupons` row, so
+  the coupon is **redeemable** through `POST /cart/{id}/coupon` and checkout (legacy coupons never were). Response
+  shape unchanged (`id, code, discountType, discountValue, minOrderAmount, maxUses, usesCount, vendorId, validFrom,
+  validUntil, active, createdAt`); `discountType` is always returned as `PERCENTAGE` or `FIXED_AMOUNT`.
+- Stricter validation (400): `invalid_discount_type`, `invalid_coupon_code` (> 40 chars; was 50),
+  `invalid_percentage_value`, `invalid_validity_window`, `invalid_min_order_total`, `vendor_not_found`.
+  `duplicate_coupon_code` (409) also fires when a spec-002 promotion already uses the code.
+- `GET` lists every promotion **with a code** of the tenant (also those created through `/marketing/promotions`),
+  newest first, at most 200. `active` = promotion status ACTIVE.
+- `PATCH /{id}/deactivate` pauses the promotion (visible as PAUSED in `/marketing/promotions`, where it can be
+  re-activated); 409 `already_inactive` unless ACTIVE; 404 for an automatic (code-less) promotion id.
+- Backoffice /marketing: no contract change (it already sends PERCENTAGE/FIXED_AMOUNT); the code input is now limited
+  to 40 characters. Customer web/Flutter apps never called this endpoint.
+
+### Data (V073, expand + migrate)
+
+- Every legacy `coupons` row was migrated into `promotion` keeping its id (ids already shown by the backoffice stay
+  valid); **always PAUSED** (reason `paused_for_review` in the report for the ones that were `active`) — legacy
+  coupons never discounted, so nothing changes for customers until OPS/ADMIN reviews each one and activates it with
+  `POST /marketing/promotions/{id}/activate` (it then shows `active: true` in `/marketing/coupons`); open-ended →
+  `2099-12-31T23:59:59Z`. Legacy automatic `promotions`
+  rows (`applies_to = ALL_ORDERS`) became code-less promotions, always **PAUSED** for review. Rows that do not map
+  (unknown type, invalid value/window/min order/usage limit, code > 40 or already used, other `applies_to`) are
+  reported `SKIPPED` with a reason in `legacy_promotion_migration`. Legacy rows are kept and marked
+  (`migrated_to_promotion_id`, `migrated_at`).
+- Re-run after a rolling deploy (old instances may still write `coupons`):
+  `SELECT * FROM marketing_migrate_legacy_promotions();` — idempotent, returns that run's report.
+
+### Contract step (later release, not done here)
+
+1. Re-run the function and confirm `SELECT count(*) FROM coupons WHERE migrated_at IS NULL` (and `promotions`) only
+   lists rows accepted as SKIPPED.
+2. New migration: `DROP FUNCTION marketing_migrate_legacy_promotions(); DROP TABLE legacy_promotion_migration;
+   DROP TABLE coupons; DROP TABLE promotions;`.
+3. Optionally deprecate `/marketing/coupons` once the backoffice manages coupons through `/marketing/promotions`.

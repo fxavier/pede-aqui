@@ -25,6 +25,11 @@ public final class AuditActions {
     public static final String PROMOTION_ACTIVATED = "PROMOTION_ACTIVATED";
     public static final String PROMOTION_PAUSED = "PROMOTION_PAUSED";
     public static final String PROMOTION_DELETED = "PROMOTION_DELETED";
+    // Ratings (LAC-28)
+    /** OPS/ADMIN/SUPPORT hid a rating comment (the reason stays on the rating, never in the audit text). */
+    public static final String RATING_COMMENT_HIDDEN = "RATING_COMMENT_HIDDEN";
+    public static final String RATING_COMMENT_UNHIDDEN = "RATING_COMMENT_UNHIDDEN";
+    public static final String RATING_VENDOR_REPLIED = "RATING_VENDOR_REPLIED";
     // Users (LAC-13)
     public static final String USER_ROLES_ASSIGNED = "USER_ROLES_ASSIGNED";
     // Platform and tenant configuration (LAC-15)

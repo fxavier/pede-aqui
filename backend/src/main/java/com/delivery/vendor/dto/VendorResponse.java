@@ -11,6 +11,7 @@ public record VendorResponse(
         String status,
         VendorVerificationStatus verificationStatus,
         double rating,
+        int ratingCount,
         int estimatedDeliveryMinutes,
         boolean available,
         Double latitude,

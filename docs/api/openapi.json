@@ -986,6 +986,10 @@
             "format": "double",
             "type": "number"
           },
+          "ratingCount": {
+            "format": "int32",
+            "type": "integer"
+          },
           "status": {
             "enum": [
               "OFFLINE",
@@ -1654,6 +1658,20 @@
         },
         "type": "object"
       },
+      "CursorPageRatingResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RatingResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CustomerAddressRequest": {
         "properties": {
           "city": {
@@ -2020,6 +2038,38 @@
           },
           "vendorName": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CustomerRatingStatusResponse": {
+        "properties": {
+          "courierRateable": {
+            "type": "boolean"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "editableUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "notRateableReason": {
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rateable": {
+            "type": "boolean"
+          },
+          "rateableUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/RatingResponse"
           }
         },
         "type": "object"
@@ -2531,6 +2581,19 @@
         },
         "required": [
           "version"
+        ],
+        "type": "object"
+      },
+      "HideCommentRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -4176,6 +4239,59 @@
         ],
         "type": "object"
       },
+      "RatingResponse": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "commentHidden": {
+            "type": "boolean"
+          },
+          "commentHiddenReason": {
+            "type": "string"
+          },
+          "courierId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "courierStars": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "vendorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "vendorRepliedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "vendorReply": {
+            "type": "string"
+          },
+          "vendorStars": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "ReassignDispatchRequest": {
         "properties": {
           "operatingZoneId": {
@@ -4896,6 +5012,10 @@
             "format": "double",
             "type": "number"
           },
+          "ratingCount": {
+            "format": "int32",
+            "type": "integer"
+          },
           "vendorId": {
             "format": "uuid",
             "type": "string"
@@ -4967,6 +5087,31 @@
         "type": "object"
       },
       "StreamingResponseBody": {
+        "type": "object"
+      },
+      "SubmitRatingRequest": {
+        "properties": {
+          "comment": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "courierStars": {
+            "format": "int32",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "vendorStars": {
+            "format": "int32",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "vendorStars"
+        ],
         "type": "object"
       },
       "SupportTicketResponse": {
@@ -5773,11 +5918,28 @@
             "format": "double",
             "type": "number"
           },
+          "ratingCount": {
+            "format": "int32",
+            "type": "integer"
+          },
           "vendorId": {
             "format": "uuid",
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "VendorReplyRequest": {
+        "properties": {
+          "reply": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
+        ],
         "type": "object"
       },
       "VendorResponse": {
@@ -5829,6 +5991,10 @@
           "rating": {
             "format": "double",
             "type": "number"
+          },
+          "ratingCount": {
+            "format": "int32",
+            "type": "integer"
           },
           "status": {
             "type": "string"
@@ -9440,7 +9606,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_10",
+        "operationId": "list_12",
         "parameters": [
           {
             "in": "query",
@@ -10956,7 +11122,7 @@
     },
     "/api/v1/me/orders": {
       "get": {
-        "operationId": "list_9",
+        "operationId": "list_11",
         "parameters": [
           {
             "in": "query",
@@ -11137,6 +11303,145 @@
         ]
       }
     },
+    "/api/v1/me/orders/{orderId}/rating": {
+      "get": {
+        "operationId": "status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerRatingStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "customer-rating-controller"
+        ]
+      },
+      "post": {
+        "operationId": "submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRatingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "tags": [
+          "customer-rating-controller"
+        ]
+      },
+      "put": {
+        "operationId": "edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRatingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "customer-rating-controller"
+        ]
+      }
+    },
     "/api/v1/me/profile": {
       "get": {
         "operationId": "getMyProfileSettings",
@@ -11298,7 +11603,7 @@
     },
     "/api/v1/ops/cancellation-requests": {
       "get": {
-        "operationId": "list_8",
+        "operationId": "list_10",
         "parameters": [
           {
             "in": "query",
@@ -11835,7 +12140,7 @@
     },
     "/api/v1/ops/notification-templates": {
       "get": {
-        "operationId": "list_7",
+        "operationId": "list_9",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -11932,9 +12237,168 @@
         ]
       }
     },
+    "/api/v1/ops/ratings": {
+      "get": {
+        "operationId": "list_8",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vendorId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hidden",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageRatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rating-moderation-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/ratings/{ratingId}/hide": {
+      "post": {
+        "operationId": "hide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ratingId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HideCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rating-moderation-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/ratings/{ratingId}/unhide": {
+      "post": {
+        "operationId": "unhide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ratingId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rating-moderation-controller"
+        ]
+      }
+    },
     "/api/v1/orders": {
       "get": {
-        "operationId": "list_6",
+        "operationId": "list_7",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -12153,7 +12617,7 @@
     },
     "/api/v1/payments/reconciliation-cases": {
       "get": {
-        "operationId": "list_5",
+        "operationId": "list_6",
         "parameters": [
           {
             "in": "query",
@@ -14556,6 +15020,107 @@
         },
         "tags": [
           "vendor-order-controller"
+        ]
+      }
+    },
+    "/api/v1/vendor/ratings": {
+      "get": {
+        "operationId": "list_5",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageRatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "vendor-rating-controller"
+        ]
+      }
+    },
+    "/api/v1/vendor/ratings/{ratingId}/reply": {
+      "post": {
+        "operationId": "reply",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ratingId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VendorReplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "vendor-rating-controller"
         ]
       }
     },

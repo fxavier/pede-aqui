@@ -4,6 +4,7 @@ import { isVendorOpen, type VendorSearchResult } from '@/lib/api/types'
 import { formatReopening } from '@/lib/cart-errors'
 import { formatMZN } from '@/lib/utils'
 import { vendorCover } from '@/lib/covers'
+import { formatRating } from '@/lib/ratings'
 
 export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
   const { emoji, from, to } = vendorCover(vendor.name)
@@ -50,7 +51,7 @@ export function VendorCard({ vendor }: { vendor: VendorSearchResult }) {
       <div className="flex items-center justify-between border-t border-slate-50 bg-slate-50/70 px-5 py-4 text-xs font-semibold text-slate-500">
         <div className="flex items-center gap-1.5 rounded-md border border-slate-100 bg-white px-2 py-1 shadow-sm">
           <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-          <span className="font-bold text-slate-800">{vendor.rating > 0 ? vendor.rating.toFixed(1) : 'Novo'}</span>
+          <span className="font-bold text-slate-800">{formatRating(vendor.rating, vendor.ratingCount)}</span>
         </div>
 
         <div className="flex items-center gap-3">

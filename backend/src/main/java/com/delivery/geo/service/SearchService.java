@@ -163,6 +163,7 @@ public class SearchService {
                 distanceMeters,
                 vendor.isAvailable(),
                 vendor.getRating(),
+                vendor.getRatingCount(),
                 estimatedDeliveryMinutes,
                 fee.amount(),
                 fee.basis().name(),
