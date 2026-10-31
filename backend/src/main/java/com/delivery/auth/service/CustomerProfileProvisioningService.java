@@ -81,7 +81,7 @@ public class CustomerProfileProvisioningService {
             return PhoneSync.INVALID;
         }
         List<String> current = jdbc.queryForList(
-                "SELECT phone_e164 FROM app_user_profiles WHERE tenant_id = ? AND keycloak_user_id = ?",
+                "SELECT phone_e164 FROM app_user_profiles WHERE tenant_id = ? AND keycloak_user_id = ? AND status <> 'DELETED'",
                 String.class, tenantId, keycloakUserId);
         if (current.isEmpty()) {
             return PhoneSync.NO_PROFILE;
@@ -95,6 +95,7 @@ public class CustomerProfileProvisioningService {
                     UPDATE app_user_profiles p
                        SET phone_e164 = ?, phone_verified_at = ?, updated_at = ?
                      WHERE p.tenant_id = ? AND p.keycloak_user_id = ?
+                       AND p.status <> 'DELETED'
                        AND p.phone_e164 IS DISTINCT FROM ?
                        AND NOT EXISTS (SELECT 1 FROM app_user_profiles o
                                         WHERE o.tenant_id = p.tenant_id AND o.phone_e164 = ? AND o.id <> p.id)""",

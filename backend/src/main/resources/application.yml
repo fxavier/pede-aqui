@@ -126,6 +126,8 @@ logging:
         "[logger_name]": logger
       add:
         app: ${spring.application.name}
+      # W7-C (LAC-63): mascara e-mails, telefones e tokens em todos os campos de texto da linha JSON (rede de segurança).
+      customizer: com.delivery.common.observability.PiiMaskingJsonMembersCustomizer
 
 app:
   api-base-path: /api/v1
@@ -233,6 +235,18 @@ app:
           - /api/v1/couriers/me/**
         capacity: 120
         period: 1m
+      # W7-C (LAC-63): exportação de dados pessoais — documento completo por pedido; poucas por hora por conta.
+      data-export:
+        paths: [/api/v1/me/data-export]
+        methods: [GET]
+        capacity: ${APP_RATE_LIMIT_DATA_EXPORT_CAPACITY:3}
+        period: 1h
+      # W7-C (LAC-19): pedido/cancelamento de eliminação de conta.
+      account-deletion:
+        paths: [/api/v1/me/deletion-request]
+        methods: [POST, DELETE]
+        capacity: 10
+        period: 1h
       # LAC-40: lotes de GPS do estafeta (1 lote a cada ~10 s em entrega; folga para reenvio de buffers).
       courier-location:
         paths: [/api/v1/couriers/me/locations]
@@ -393,6 +407,16 @@ app:
       enabled: ${APP_JOBS_IDEMPOTENCY_CLEANUP_ENABLED:true}
       cron: "0 15 3 * * *"
       zone: Africa/Maputo
+    # W7-C (LAC-19): pseudonimiza as contas cujo período de reflexão terminou (ver app.privacy.deletion).
+    account-deletion:
+      enabled: ${APP_JOBS_ACCOUNT_DELETION_ENABLED:true}
+      cron: "0 20 * * * *"
+      zone: Africa/Maputo
+    # W7-C (LAC-63): política de retenção por classe de dados (ver app.privacy.retention).
+    retention-cleaner:
+      enabled: ${APP_JOBS_RETENTION_CLEANER_ENABLED:true}
+      cron: "0 15 5 * * *"
+      zone: Africa/Maputo
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -411,6 +435,37 @@ app:
     platform-vat-rate: ${APP_SETTLEMENT_PLATFORM_VAT_RATE:0}
     # PLATFORM = desconto de promoção é despesa da plataforma; MERCHANT = reduz o valor devido ao comerciante.
     discount-funded-by: ${APP_SETTLEMENT_DISCOUNT_FUNDED_BY:PLATFORM}
+  # W7-C (LAC-19/LAC-63): direitos do titular e retenção. TODOS os prazos são valores por defeito do registo de
+  # lacunas, configuráveis por ambiente — "a validar com jurista" (a lei moçambicana de proteção de dados é proposta).
+  privacy:
+    deletion:
+      # Período de reflexão entre o pedido de eliminação e a pseudonimização (cancelável durante este período).
+      reflection-period: ${APP_PRIVACY_DELETION_REFLECTION_PERIOD:P30D}
+      batch-size: 50
+    supported-locales: [pt-PT, pt-MZ, en]
+    # Versão atual de cada texto; aceitar outra versão → 409 consent_version_outdated.
+    consent-versions:
+      TERMS_OF_SERVICE: ${APP_PRIVACY_TERMS_VERSION:2026-10}
+      PRIVACY_POLICY: ${APP_PRIVACY_POLICY_VERSION:2026-10}
+      MARKETING: ${APP_PRIVACY_MARKETING_VERSION:2026-10}
+    retention:
+      batch-size: 5000
+      max-batches-per-class: 200
+      classes:
+        audit-logs:
+          retention: ${APP_PRIVACY_RETENTION_AUDIT_LOGS:P730D}
+        notification-deliveries:
+          retention: ${APP_PRIVACY_RETENTION_NOTIFICATION_DELIVERIES:P180D}
+        notifications:
+          retention: ${APP_PRIVACY_RETENTION_NOTIFICATIONS:P180D}
+        order-status-history:
+          retention: ${APP_PRIVACY_RETENTION_ORDER_STATUS_HISTORY:P3650D}
+        payment-status-history:
+          retention: ${APP_PRIVACY_RETENTION_PAYMENT_STATUS_HISTORY:P3650D}
+        provisioning-requests:
+          retention: ${APP_PRIVACY_RETENTION_PROVISIONING_REQUESTS:P1D}
+        data-retention-runs:
+          retention: ${APP_PRIVACY_RETENTION_DATA_RETENTION_RUNS:P365D}
   # W6-C (LAC-48): notificações multi-canal. Fornecedores reais (FCM, gateway SMS, SES) são beans novos com o seu id;
   # só existe o stub "log" (regista destinatário mascarado, nunca o texto).
   notifications:

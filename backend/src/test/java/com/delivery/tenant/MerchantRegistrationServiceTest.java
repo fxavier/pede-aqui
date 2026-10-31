@@ -56,7 +56,7 @@ class MerchantRegistrationServiceTest {
         when(appUserProfileRepository.existsByEmail(anyString())).thenReturn(false);
         when(keycloakAdminService.createUser(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(KEYCLOAK_USER);
         service = new MerchantRegistrationService(tenantRepository,
-                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService),
+                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService, null),
                 new com.delivery.vendor.api.MerchantOnboarding(vendorRepository, merchantUserRepository), tenancy);
     }
 

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Thin client of the Keycloak admin REST API: user creation, role mapping, profile sync, disable and deletion. */
 @Service
 public class KeycloakAdminService {
     private static final Logger logger = LoggerFactory.getLogger(KeycloakAdminService.class);
@@ -55,7 +56,7 @@ public class KeycloakAdminService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Failed to create Keycloak user for email: {}", email, e);
+            logger.error("Failed to create Keycloak user", e);
             throw new BusinessException("keycloak_error", "Failed to create Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -70,7 +71,7 @@ public class KeycloakAdminService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Failed to create Keycloak customer for email: {}", email, e);
+            logger.error("Failed to create Keycloak customer", e);
             throw new BusinessException("keycloak_error", "Failed to create Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -150,18 +151,18 @@ public class KeycloakAdminService {
             return location.substring(location.lastIndexOf('/') + 1);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
-                logger.warn("User creation failed due to conflict (user already exists): {}", email);
+                logger.warn("User creation failed due to conflict (user already exists)");
                 throw new BusinessException("email_exists", "User with this email already exists", HttpStatus.CONFLICT);
             }
             if (isPasswordPolicyRejection(e)) {
                 // Realm passwordPolicy rejected the credential (e.g. policy changed before the DTO rules were synced).
-                logger.warn("Keycloak rejected the password of {} by the realm password policy", email);
+                logger.warn("Keycloak rejected a new user's password by the realm password policy");
                 throw new BusinessException("password_policy_violation",
                         "Password does not meet the password policy: at least 10 characters, one digit, one upper-case "
                                 + "and one lower-case letter, and not equal to the e-mail",
                         HttpStatus.BAD_REQUEST);
             }
-            logger.error("Keycloak user creation failed with status {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            logger.error("Keycloak user creation failed with status {}", e.getStatusCode());
             throw new BusinessException("keycloak_error", "Failed to create Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -235,6 +236,106 @@ public class KeycloakAdminService {
         }
     }
 
+    /**
+     * Mirrors self-service profile changes (W7-C) onto the Keycloak user: first/last name and the {@code locale}
+     * attribute. Reads the full representation first and writes it back merged, because a PUT with a partial
+     * {@code attributes} map would drop the others (tenant_id, phone_e164, ...). Null arguments leave the field as is.
+     */
+    public void updateUserProfile(String userId, String firstName, String lastName, String locale) {
+        try {
+            String adminToken = getAdminToken();
+            Map<String, Object> user = getUserRepresentation(adminToken, userId);
+            if (firstName != null) {
+                user.put("firstName", firstName);
+            }
+            if (lastName != null) {
+                user.put("lastName", lastName);
+            }
+            if (locale != null) {
+                user.put("attributes", withAttribute(user.get("attributes"), "locale", locale));
+            }
+            putUserRepresentation(adminToken, userId, user);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new BusinessException("keycloak_user_not_found", "Keycloak user was not found", HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            logger.error("Failed to update the Keycloak profile of user {}: {}", userId, e.getClass().getSimpleName());
+            throw new BusinessException("keycloak_error", "Failed to update the profile in Keycloak", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Disables the Keycloak user (account deletion, W7-C) so no new login or token refresh succeeds. Returns false when
+     * the user no longer exists (already deleted); any other failure throws {@code keycloak_error}.
+     */
+    public boolean disableUser(String userId) {
+        try {
+            String adminToken = getAdminToken();
+            Map<String, Object> user = getUserRepresentation(adminToken, userId);
+            user.put("enabled", false);
+            putUserRepresentation(adminToken, userId, user);
+            return true;
+        } catch (HttpClientErrorException.NotFound e) {
+            return false;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Failed to disable Keycloak user {}: {}", userId, e.getClass().getSimpleName());
+            throw new BusinessException("keycloak_error", "Failed to disable the Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Deletes the Keycloak user and reports failures (account deletion, W7-C), unlike the best-effort
+     * {@link #deleteUser}. A user that is already gone (404) counts as deleted.
+     */
+    public void deleteUserStrict(String userId) {
+        try {
+            String adminToken = getAdminToken();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(adminToken);
+            restTemplate.exchange(userUrl(userId), HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+        } catch (HttpClientErrorException.NotFound alreadyGone) {
+            // idempotent
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Failed to delete Keycloak user {}: {}", userId, e.getClass().getSimpleName());
+            throw new BusinessException("keycloak_error", "Failed to delete the Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String userUrl(String userId) {
+        return serverUrl + "/admin/realms/" + realm + "/users/" + userId;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getUserRepresentation(String adminToken, String userId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+        ResponseEntity<Map> response = restTemplate.exchange(userUrl(userId), HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new BusinessException("keycloak_error", "Failed to read the Keycloak user", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new HashMap<>((Map<String, Object>) response.getBody());
+    }
+
+    private void putUserRepresentation(String adminToken, String userId, Map<String, Object> user) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+        restTemplate.exchange(userUrl(userId), HttpMethod.PUT, new HttpEntity<>(user, headers), Void.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> withAttribute(Object attributes, String name, String value) {
+        Map<String, Object> merged = attributes instanceof Map<?, ?> existing
+                ? new HashMap<>((Map<String, Object>) existing) : new HashMap<>();
+        merged.put(name, List.of(value));
+        return merged;
+    }
+
     public void deleteUser(String userId) {
         try {
             String adminToken = getAdminToken();
@@ -246,7 +347,7 @@ public class KeycloakAdminService {
             HttpEntity<Void> request = new HttpEntity<>(headers);
             restTemplate.exchange(url, HttpMethod.DELETE, request, Void.class);
         } catch (Exception e) {
-            logger.error("Failed to delete user with ID: {}", userId, e);
+            logger.error("Failed to delete user with ID: {}: {}", userId, e.getClass().getSimpleName());
         }
     }
 

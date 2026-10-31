@@ -297,3 +297,42 @@ export interface MeResponse {
   displayName: string | null
   roles: string[]
 }
+
+// Profile settings (GET /api/v1/me/profile, PATCH /api/v1/me)
+export type PreferredLocale = 'pt-PT' | 'pt-MZ' | 'en'
+
+export interface NotificationPreferences {
+  push: boolean
+  sms: boolean
+  email: boolean
+}
+
+export interface ProfileSettings {
+  id: string
+  /** Read-only here: changed through the Keycloak account console. */
+  email: string
+  displayName: string
+  /** Read-only here: changed through the SMS login. */
+  phoneE164: string | null
+  phoneVerifiedAt: string | null
+  preferredLocale: string
+  notificationPreferences: NotificationPreferences
+}
+
+/** PATCH /me body: only the fields that changed. */
+export interface ProfileUpdateRequest {
+  displayName?: string
+  preferredLocale?: PreferredLocale
+  notificationPreferences?: Partial<NotificationPreferences>
+}
+
+// Account deletion (GET/POST/DELETE /api/v1/me/deletion-request)
+export interface DeletionRequest {
+  id: string
+  status: 'PENDING' | 'CANCELLED' | 'COMPLETED'
+  requestedAt: string
+  /** End of the 30-day reflection period, when the account is pseudonymised. */
+  scheduledFor: string
+  cancelledAt: string | null
+  completedAt: string | null
+}

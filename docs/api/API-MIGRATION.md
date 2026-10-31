@@ -1106,3 +1106,72 @@ Additive in the OpenAPI contract (new optional request fields, new endpoints, on
 - Courier app: does not send `FAILED_DELIVERY` today; when a "failed delivery" action is added it must send
   `failureReason` (not done in this package).
 - Backoffice: an incidents queue screen is not built (LAC-60); the API is ready.
+
+## W7-C — Profile management, account deletion, data export and consents (LAC-19, LAC-63) — 2026-10-31
+
+Additive only; no existing request/response changes (`GET /api/v1/me` keeps its shape). Retention periods and the
+deletion reflection period are configurable defaults "a validar com jurista" — see `docs/privacy/DATA-PRIVACY.md`.
+
+### `GET /api/v1/me/profile` (new, any authenticated user with a profile in the tenant)
+
+- → **200** `{ id, email, displayName, phoneE164, phoneVerifiedAt, preferredLocale, notificationPreferences: { push, sms,
+  email } }`. No profile in the resolved tenant (or a pseudonymised one) → 404 `not_found`; no tenant → 403
+  `tenant_required`.
+
+### `PATCH /api/v1/me` (new)
+
+- Body (all optional, null = unchanged) `{ displayName? (1..120, not blank, trimmed), preferredLocale? ("pt-PT" | "pt-MZ"
+  | "en", `app.privacy.supported-locales`), notificationPreferences?: { push?, sms?, email? } }` → **200** with the
+  `GET /me/profile` shape. 400 `validation_failed` (blank/too long name), 400 `unsupported_locale`.
+- Display name and locale are mirrored to the Keycloak user (first name = first word, last name = the rest; attribute
+  `locale`) in the same transaction: a Keycloak failure → 500 `keycloak_error` and nothing is saved. Notification
+  preferences write `user_notification_preferences` (this is the endpoint W6-C lacked). Audited `PROFILE_UPDATED`
+  (changed field names only).
+- **E-mail and phone are not editable here.** E-mail changes go through the Keycloak account console (with
+  verification); the verified phone comes from the phone + SMS login (LAC-18, synced on each request). Unknown fields
+  in the body are ignored.
+
+### `POST /api/v1/me/deletion-request` · `DELETE …` · `GET …` (new, CUSTOMER only)
+
+- `POST` → **202** `{ id, status: "PENDING", requestedAt, scheduledFor, cancelledAt: null, completedAt: null }`
+  (`scheduledFor` = `requestedAt` + `app.privacy.deletion.reflection-period`, default P30D); **200** with the same
+  body when a request is already open (idempotent). **409 `active_orders_present`** while the customer has an order in
+  progress (any status except `DELIVERED`, `CANCELLED`, `REFUNDED` and the never-written legacy values). A principal
+  that is not customer-only (e.g. CUSTOMER + COURIER) → 403 `account_deletion_not_supported`; staff → 403.
+  Rate-limit group `account-deletion` (10/h). Audited `ACCOUNT_DELETION_REQUESTED`.
+- `DELETE` → **200** with `status: "CANCELLED"`; 404 `deletion_request_not_found` when nothing is pending; 409
+  `deletion_already_processed` once the job has pseudonymised the account. Audited `ACCOUNT_DELETION_CANCELLED`.
+- `GET` → **200** latest request (any status) or 404 `deletion_request_not_found`.
+- After `scheduledFor`, job `account-deletion` (hourly) pseudonymises the account (field map in
+  `docs/privacy/DATA-PRIVACY.md` §6): profile name/e-mail/phones/NIF/… replaced or cleared, addresses, favourites,
+  push devices, inbox and preferences deleted, order delivery snapshots stripped of identifying fields (amounts,
+  items, reference, city kept), Keycloak user disabled then deleted. Still an order in progress at that time → the
+  request stays `PENDING` and is retried on the next run.
+
+### `GET /api/v1/me/data-export` (new, any authenticated user with a profile)
+
+- → **200** `application/json` with `Content-Disposition: attachment; filename="pede-aqui-dados-YYYY-MM-DD.json"` and
+  `Cache-Control: no-store`: `{ formatVersion: 1, generatedAt, profile, notificationPreferences, registeredPushDevices,
+  addresses[], favouriteVendorIds[], orders[] (summaries), consents[], deletionRequests[] }`. Push tokens are never
+  exported. Rate-limit group `data-export` (3/h per account, `APP_RATE_LIMIT_DATA_EXPORT_CAPACITY`) → 429
+  `rate_limited`. Audited `PERSONAL_DATA_EXPORTED`.
+
+### `GET /api/v1/me/consents` · `PUT /api/v1/me/consents/{purpose}` · `DELETE /api/v1/me/consents/{purpose}` (new)
+
+- `purpose` ∈ `TERMS_OF_SERVICE | PRIVACY_POLICY | MARKETING` (else 400 `invalid_consent_purpose`).
+- `GET` → `[{ purpose, currentVersion, version, grantedAt, withdrawnAt, active }]` (one entry per purpose).
+- `PUT` body `{ version }` must equal `app.privacy.consent-versions.<PURPOSE>` (else 409 `consent_version_outdated`) →
+  200; same version again is idempotent, a newer version closes the previous grant. Audited `CONSENT_GRANTED`.
+- `DELETE` → 204; 404 `consent_not_found` when none is active. Audited `CONSENT_WITHDRAWN`.
+
+### Behaviour (no request/response change)
+
+- New jobs `account-deletion` (hourly at :20) and `retention-cleaner` (daily 05:15 Africa/Maputo) — see CLAUDE.md
+  "Scheduled jobs". Retention deletes `audit_logs` > 24 months, `notification_deliveries` (not QUEUED) and in-app
+  `notifications` > 180 days, order/payment status history > 10 years, finished `provisioning_requests` > 24 h.
+- Structured (JSON) logs mask e-mails, phone numbers and tokens in every string field.
+
+### Clients / consumers to review
+
+- Customer web: `/profile` now edits name/locale/notification preferences, exports the data and requests/cancels the
+  account deletion (W7-C). Flutter customer app and backoffice: not changed by this package.

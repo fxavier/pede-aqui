@@ -207,6 +207,17 @@ W7-B (entregas falhadas e incidentes, LAC-44; detalhe em `API-MIGRATION.md`, sec
   decisão devolve 200 com o estado atual).
 - Incidente de outro tenant ou inexistente → 404 `not_found`; qualquer papel além de OPS/ADMIN (listar, ver ou resolver) → 403.
 
+W7-C (perfil, eliminação de conta, exportação, consentimentos — LAC-19/LAC-63; detalhe em `API-MIGRATION.md`,
+secção W7-C) acrescenta:
+- `unsupported_locale` (400 — `PATCH /me` com `preferredLocale` fora de `app.privacy.supported-locales`).
+- `active_orders_present` (409 — `POST /me/deletion-request` com uma encomenda em curso).
+- `deletion_request_not_found` (404 — `DELETE`/`GET /me/deletion-request` sem pedido pendente / sem pedido nenhum).
+- `deletion_already_processed` (409 — cancelar depois de o job já ter pseudonimizado a conta).
+- `account_deletion_not_supported` (403 — quem não é cliente puro, ex.: CUSTOMER + COURIER, não se auto-elimina).
+- `consent_version_outdated` (409), `invalid_consent_purpose` (400), `consent_not_found` (404) — `/me/consents`.
+- `keycloak_error` (500) passa também a sair de `PATCH /me` quando a sincronização do nome/idioma com o Keycloak
+  falha (nada é gravado).
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
