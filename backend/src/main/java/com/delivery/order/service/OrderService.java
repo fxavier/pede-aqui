@@ -471,10 +471,14 @@ public class OrderService {
 
     private UUID tenantId() { return tenantContext.currentTenantId().orElseThrow(() -> new BusinessException("tenant_required", "Tenant context is required", HttpStatus.FORBIDDEN)); }
 
-    /** Marks an order as accepted by the vendor; only from PAYMENT_CONFIRMED (409 invalid_order_transition otherwise). */
+    /**
+     * Marks an order as accepted by the vendor; only from PAYMENT_CONFIRMED (409 invalid_order_transition otherwise).
+     * Lock order rule: the payment row first (see {@link #findOrderAfterPaymentLock}), so a racing acceptance-timeout
+     * job, seller rejection or customer cancellation serializes with it instead of deadlocking on the order row.
+     */
     @Transactional
     public OrderResponse acceptByVendor(UUID orderId) {
-        Order order = findOrder(orderId);
+        Order order = findOrderAfterPaymentLock(orderId);
         stateMachine.transition(order, OrderStatus.ACCEPTED_BY_VENDOR, "VENDOR_ACCEPTED"); // only from PAYMENT_CONFIRMED (409 otherwise)
         auditLogService.log("ORDER_ACCEPTED", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
@@ -536,22 +540,36 @@ public class OrderService {
                 order.getReference());
     }
 
-    /** Marks an accepted order as preparing (409 invalid_order_transition from any other status). */
+    /** Marks an accepted order as preparing (409 invalid_order_transition from any other status); payment row locked first (lock order rule). */
     @Transactional
     public OrderResponse markPreparing(UUID orderId) {
-        Order order = findOrder(orderId);
+        Order order = findOrderAfterPaymentLock(orderId);
         stateMachine.transition(order, OrderStatus.PREPARING, "VENDOR_PREPARING"); // only from ACCEPTED_BY_VENDOR (409 otherwise)
         auditLogService.log("ORDER_PREPARING", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
     }
 
-    /** Marks a preparing order as ready for pickup (409 invalid_order_transition from any other status). */
+    /** Marks a preparing order as ready for pickup (409 invalid_order_transition from any other status); payment row locked first (lock order rule). */
     @Transactional
     public OrderResponse markReadyForPickup(UUID orderId) {
-        Order order = findOrder(orderId);
+        Order order = findOrderAfterPaymentLock(orderId);
         stateMachine.transition(order, OrderStatus.READY_FOR_PICKUP, "VENDOR_READY"); // only from PREPARING (409 otherwise)
         auditLogService.log("ORDER_READY_FOR_PICKUP", "order", orderId.toString(), order.getReference(), "SUCCESS");
         return mapper.toResponse(order);
+    }
+
+    /**
+     * Vendor fulfilment transitions follow the lock order rule (CLAUDE.md): the order's payment row is locked
+     * {@code FOR UPDATE} <b>before</b> the order is read. Without it, a vendor accept updated the order row while the
+     * acceptance-timeout job (payment lock → order → delivery → inventory → refund) was updating the same row and
+     * taking FK share locks on it from its history/refund inserts; the two transactions could each wait on the other
+     * (Postgres deadlock → HTTP 500). With the payment lock they serialize: the job skips a payment held by the
+     * request (SKIP LOCKED), and a request that waited for the job re-reads the committed order and answers 409
+     * invalid_order_transition. Orders without a payment (pre-checkout) have nothing to lock.
+     */
+    private Order findOrderAfterPaymentLock(UUID orderId) {
+        paymentRepository.findByTenantIdAndOrderIdForUpdate(tenantId(), orderId);
+        return findOrder(orderId);
     }
 
     /**
