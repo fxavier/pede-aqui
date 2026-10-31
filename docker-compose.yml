@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgis/postgis:16-3.4
+    image: postgis/postgis:16-3.6
     environment:
       POSTGRES_DB: delivery
       POSTGRES_USER: delivery
@@ -51,7 +51,7 @@ services:
   # removido do Docker Hub e `quay.io/minio/*` exige login. O entrypoint Bitnami arranca `minio server`
   # sozinho (API 9000, consola 9001, dados em /bitnami/minio/data) — não passar `command`.
   minio:
-    image: bitnamilegacy/minio:2024.10.13-debian-12-r1
+    image: bitnamilegacy/minio:2024.12.18-debian-12-r1
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -66,7 +66,7 @@ services:
 
   # Cria o bucket usado pelo perfil dev do backend (application-dev.yml). Idempotente.
   minio-init:
-    image: bitnamilegacy/minio-client:2024.10.8-debian-12-r1
+    image: bitnamilegacy/minio-client:2024.11.21-debian-12-r1
     depends_on:
       minio:
         condition: service_healthy
@@ -75,7 +75,7 @@ services:
       mc mb --ignore-existing local/pede-aqui-uploads"
 
   prometheus:
-    image: prom/prometheus:v2.54.1
+    image: prom/prometheus:v2.55.1
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     volumes:
@@ -91,7 +91,7 @@ services:
   # MANAGEMENT_OTLP_TRACING_ENDPOINT está definido (ver docs/local-development.md, secção Observabilidade).
   otel-collector:
     profiles: ["observability"]
-    image: otel/opentelemetry-collector:0.111.0
+    image: otel/opentelemetry-collector:0.164.0
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
@@ -103,7 +103,7 @@ services:
 
   jaeger:
     profiles: ["observability"]
-    image: jaegertracing/all-in-one:1.62.0
+    image: jaegertracing/all-in-one:1.76.0
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
@@ -111,7 +111,7 @@ services:
 
   grafana:
     profiles: ["observability"]
-    image: grafana/grafana:11.3.0
+    image: grafana/grafana:11.6.16
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
@@ -126,7 +126,7 @@ services:
       - jaeger
 
   backend:
-    image: maven:3.9-eclipse-temurin-21
+    image: maven:3.9-eclipse-temurin-26
     working_dir: /workspace/backend
     command: mvn spring-boot:run
     env_file:
