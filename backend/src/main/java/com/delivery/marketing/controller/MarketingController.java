@@ -17,7 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Exposes coupon and promotion management endpoints for marketing operations. */
+/**
+ * Legacy coupon endpoints kept for the backoffice /marketing page (LAC-29): a façade over the spec-002 promotion
+ * model (see MarketingService); new clients should use /marketing/promotions.
+ */
 @RestController
 @RequestMapping("/api/v1/marketing")
 @PreAuthorize("hasAnyRole('ADMIN','OPS')")

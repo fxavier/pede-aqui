@@ -1012,3 +1012,40 @@ Additive only; no existing contract changes. The in-app inbox (`/api/v1/notifica
 - Customer web: `OrderRatingCard` on `/orders/:orderId` once DELIVERED; vendor cards/store page show
   `formatRating(rating, ratingCount)` ("4.3 (12)", "Novo" without ratings). Older clients ignore `ratingCount`.
 - Flutter customer app and backoffice (vendor reply / moderation screens): not built by W7-D.
+
+## W7-D — One promotion model; `/marketing/coupons` becomes a façade (LAC-29) — 2026-10-31
+
+### `/api/v1/marketing/coupons` (same paths, roles and JSON shape; behaviour change)
+
+- `POST` now creates a spec-002 `promotion` (ACTIVE, ORDER scope, name `Cupão <CODE>`) instead of a `coupons` row, so
+  the coupon is **redeemable** through `POST /cart/{id}/coupon` and checkout (legacy coupons never were). Response
+  shape unchanged (`id, code, discountType, discountValue, minOrderAmount, maxUses, usesCount, vendorId, validFrom,
+  validUntil, active, createdAt`); `discountType` is always returned as `PERCENTAGE` or `FIXED_AMOUNT`.
+- Stricter validation (400): `invalid_discount_type`, `invalid_coupon_code` (> 40 chars; was 50),
+  `invalid_percentage_value`, `invalid_validity_window`, `invalid_min_order_total`, `vendor_not_found`.
+  `duplicate_coupon_code` (409) also fires when a spec-002 promotion already uses the code.
+- `GET` lists every promotion **with a code** of the tenant (also those created through `/marketing/promotions`),
+  newest first, at most 200. `active` = promotion status ACTIVE.
+- `PATCH /{id}/deactivate` pauses the promotion (visible as PAUSED in `/marketing/promotions`, where it can be
+  re-activated); 409 `already_inactive` unless ACTIVE; 404 for an automatic (code-less) promotion id.
+- Backoffice /marketing: no contract change (it already sends PERCENTAGE/FIXED_AMOUNT); the code input is now limited
+  to 40 characters. Customer web/Flutter apps never called this endpoint.
+
+### Data (V073, expand + migrate)
+
+- Every legacy `coupons` row was migrated into `promotion` keeping its id (ids already shown by the backoffice stay
+  valid); `active` → ACTIVE, inactive → PAUSED; open-ended → `2099-12-31T23:59:59Z`. Legacy automatic `promotions`
+  rows (`applies_to = ALL_ORDERS`) became code-less promotions, always **PAUSED** for review. Rows that do not map
+  (unknown type, invalid value/window/min order/usage limit, code > 40 or already used, other `applies_to`) are
+  reported `SKIPPED` with a reason in `legacy_promotion_migration`. Legacy rows are kept and marked
+  (`migrated_to_promotion_id`, `migrated_at`).
+- Re-run after a rolling deploy (old instances may still write `coupons`):
+  `SELECT * FROM marketing_migrate_legacy_promotions();` — idempotent, returns that run's report.
+
+### Contract step (later release, not done here)
+
+1. Re-run the function and confirm `SELECT count(*) FROM coupons WHERE migrated_at IS NULL` (and `promotions`) only
+   lists rows accepted as SKIPPED.
+2. New migration: `DROP FUNCTION marketing_migrate_legacy_promotions(); DROP TABLE legacy_promotion_migration;
+   DROP TABLE coupons; DROP TABLE promotions;`.
+3. Optionally deprecate `/marketing/coupons` once the backoffice manages coupons through `/marketing/promotions`.

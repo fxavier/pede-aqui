@@ -53,7 +53,7 @@ export default function MarketingPage() {
 
   const [tab, setTab] = useState<Tab>("cupoes");
 
-  // ─── Coupons (legacy marketingService — untouched by Spec 002) ───
+  // ─── Coupons (/marketing/coupons — since LAC-29 a façade over spec-002 promotions; same shape) ───
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +303,7 @@ export default function MarketingPage() {
                       placeholder="Código (ex. BOAS10) *"
                       value={couponForm.code}
                       onChange={(e) => setCouponForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
+                      maxLength={40}
                       required
                     />
                     <select

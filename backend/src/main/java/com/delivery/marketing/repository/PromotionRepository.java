@@ -18,6 +18,9 @@ public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
     boolean existsByTenantIdAndCode(UUID tenantId, String code);
     List<Promotion> findByTenantIdAndStatusAndCodeIsNull(UUID tenantId, PromotionStatus status);
 
+    /** Coupon promotions (with a code) of the tenant, newest first, at most 200 — the legacy /marketing/coupons list (LAC-29). */
+    List<Promotion> findTop200ByTenantIdAndCodeIsNotNullOrderByCreatedAtDescIdDesc(UUID tenantId);
+
     /**
      * Atomically consumes one global usage slot; returns 0 when the usage limit is already
      * reached, which must abort checkout without consuming usage (spec 002 AC-7.6).
