@@ -89,7 +89,8 @@
               "PAYMENT_EXPIRED",
               "VENDOR_TIMEOUT",
               "CUSTOMER_CANCELLED",
-              "CUSTOMER_CANCELLED_WITH_FEE"
+              "CUSTOMER_CANCELLED_WITH_FEE",
+              "DELIVERY_FAILED"
             ],
             "type": "string"
           },
@@ -1680,7 +1681,8 @@
               "PAYMENT_EXPIRED",
               "VENDOR_TIMEOUT",
               "CUSTOMER_CANCELLED",
-              "CUSTOMER_CANCELLED_WITH_FEE"
+              "CUSTOMER_CANCELLED_WITH_FEE",
+              "DELIVERY_FAILED"
             ],
             "type": "string"
           },
@@ -1744,7 +1746,8 @@
               "PAYMENT_EXPIRED",
               "VENDOR_TIMEOUT",
               "CUSTOMER_CANCELLED",
-              "CUSTOMER_CANCELLED_WITH_FEE"
+              "CUSTOMER_CANCELLED_WITH_FEE",
+              "DELIVERY_FAILED"
             ],
             "type": "string"
           },
@@ -1851,7 +1854,8 @@
               "PAYMENT_EXPIRED",
               "VENDOR_TIMEOUT",
               "CUSTOMER_CANCELLED",
-              "CUSTOMER_CANCELLED_WITH_FEE"
+              "CUSTOMER_CANCELLED_WITH_FEE",
+              "DELIVERY_FAILED"
             ],
             "type": "string"
           },
@@ -1957,6 +1961,33 @@
         },
         "type": "object"
       },
+      "Decision": {
+        "properties": {
+          "costBearer": {
+            "enum": [
+              "CUSTOMER",
+              "MERCHANT",
+              "PLATFORM"
+            ],
+            "type": "string"
+          },
+          "goodsDisposition": {
+            "enum": [
+              "RETURN_TO_STORE",
+              "DISCARDED"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "REFUND_FULL",
+              "REFUND_MINUS_DELIVERY_FEE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "DeliveryAddressResponse": {
         "properties": {
           "city": {
@@ -2012,6 +2043,85 @@
             "type": "string"
           },
           "notes": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DeliveryIncidentResponse": {
+        "properties": {
+          "courierId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "defaultDecision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "deliveryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/Evidence"
+          },
+          "failedFromStatus": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderReference": {
+            "type": "string"
+          },
+          "orderStatus": {
+            "enum": [
+              "PENDING",
+              "PAYMENT_PENDING",
+              "PAYMENT_CONFIRMED",
+              "ACCEPTED_BY_VENDOR",
+              "REJECTED_BY_VENDOR",
+              "PREPARING",
+              "READY_FOR_PICKUP",
+              "DISPATCH_PENDING",
+              "ASSIGNED_TO_COURIER",
+              "PICKED_UP",
+              "DELIVERING",
+              "DELIVERED",
+              "CANCELLED",
+              "REFUND_PENDING",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "proofPhotoStorageKey": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reportedByRole": {
+            "type": "string"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/Resolution"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "RESOLVED"
+            ],
             "type": "string"
           }
         },
@@ -2148,6 +2258,31 @@
           },
           "ownerId": {
             "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Evidence": {
+        "properties": {
+          "accuracyMeters": {
+            "format": "double",
+            "type": "number"
+          },
+          "distanceMeters": {
+            "format": "double",
+            "type": "number"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "recordedAt": {
+            "format": "date-time",
             "type": "string"
           }
         },
@@ -2762,7 +2897,8 @@
               "PAYMENT_EXPIRED",
               "VENDOR_TIMEOUT",
               "CUSTOMER_CANCELLED",
-              "CUSTOMER_CANCELLED_WITH_FEE"
+              "CUSTOMER_CANCELLED_WITH_FEE",
+              "DELIVERY_FAILED"
             ],
             "type": "string"
           },
@@ -2876,6 +3012,29 @@
           "content": {
             "items": {
               "$ref": "#/components/schemas/CourierResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseDeliveryIncidentResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveryIncidentResponse"
             },
             "type": "array"
           },
@@ -3703,6 +3862,71 @@
         ],
         "type": "object"
       },
+      "Resolution": {
+        "properties": {
+          "decidedBy": {
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "merchantChargeAmount": {
+            "type": "number"
+          },
+          "overridden": {
+            "type": "boolean"
+          },
+          "overrideReason": {
+            "type": "string"
+          },
+          "platformCompensationAmount": {
+            "type": "number"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "retainedFeeAmount": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "ResolveDeliveryIncidentRequest": {
+        "properties": {
+          "costBearer": {
+            "enum": [
+              "CUSTOMER",
+              "MERCHANT",
+              "PLATFORM"
+            ],
+            "type": "string"
+          },
+          "goodsDisposition": {
+            "enum": [
+              "RETURN_TO_STORE",
+              "DISCARDED"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "REFUND_FULL",
+              "REFUND_MINUS_DELIVERY_FEE"
+            ],
+            "type": "string"
+          },
+          "overrideReason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "SaleDetailResponse": {
         "properties": {
           "appliedPromotionId": {
@@ -4496,6 +4720,23 @@
         "properties": {
           "cashCollectedAmount": {
             "type": "number"
+          },
+          "failureNote": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "failureReason": {
+            "enum": [
+              "CUSTOMER_ABSENT",
+              "WRONG_ADDRESS",
+              "CUSTOMER_REFUSED",
+              "STORE_FAULT",
+              "DAMAGED_IN_TRANSIT",
+              "ACCIDENT",
+              "OTHER"
+            ],
+            "type": "string"
           },
           "proofPhotoStorageKey": {
             "type": "string"
@@ -10357,6 +10598,161 @@
         },
         "tags": [
           "operations-delivery-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/delivery-incidents": {
+      "get": {
+        "operationId": "listDeliveryIncidents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "OPEN",
+                "RESOLVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseDeliveryIncidentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-delivery-incident-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/delivery-incidents/{incidentId}": {
+      "get": {
+        "operationId": "getDeliveryIncident",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incidentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryIncidentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-delivery-incident-controller"
+        ]
+      }
+    },
+    "/api/v1/ops/delivery-incidents/{incidentId}/resolve": {
+      "post": {
+        "operationId": "resolveDeliveryIncident",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "incidentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveDeliveryIncidentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryIncidentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "operations-delivery-incident-controller"
         ]
       }
     },

@@ -258,6 +258,53 @@ class PostingRulesTest {
         }
     }
 
+    // --- delivery incidents (LAC-44, W7-B) ---
+
+    @Test
+    void incidentCustomerFaultRetainsTheDeliveryFeeAsFeeRevenue() {
+        List<Line> lines = PostingRules.incidentSettled(new PostingRules.IncidentInput(VENDOR, m("7.00"), m("0"), m("0"),
+                m("10.00"), null, BigDecimal.ZERO));
+
+        assertThat(amounts(lines)).containsExactlyInAnyOrderEntriesOf(Map.of(
+                CUSTOMER_FUNDS_HELD, m("7.00"), PLATFORM_REVENUE_FEES, m("-7.00")));
+    }
+
+    @Test
+    void incidentMerchantFaultDebitsTheMerchantPayable() {
+        List<Line> lines = PostingRules.incidentSettled(new PostingRules.IncidentInput(VENDOR, m("0"), m("10.00"), m("0"),
+                m("10.00"), null, BigDecimal.ZERO));
+
+        assertThat(amounts(lines)).containsExactlyInAnyOrderEntriesOf(Map.of(
+                MERCHANT_PAYABLE, m("10.00"), PLATFORM_REVENUE_FEES, m("-10.00")));
+        assertThat(merchantLine(lines).ownerId()).isEqualTo(VENDOR);
+    }
+
+    @Test
+    void incidentPlatformFaultBooksAnExpenseCreditedToTheMerchant() {
+        List<Line> lines = PostingRules.incidentSettled(new PostingRules.IncidentInput(VENDOR, m("0"), m("0"), m("100.00"),
+                m("10.00"), null, BigDecimal.ZERO));
+
+        assertThat(amounts(lines)).containsExactlyInAnyOrderEntriesOf(Map.of(
+                LedgerAccountType.PLATFORM_INCIDENT_EXPENSE, m("100.00"), MERCHANT_PAYABLE, m("-100.00")));
+    }
+
+    @Test
+    void incidentFeeRevenueCarriesTheStoredFeeVatProRata() {
+        // Fees 10.00 containing 1.38 VAT (16 % inclusive); 7.00 retained → VAT 0.97, net 6.03.
+        List<Line> lines = PostingRules.incidentSettled(new PostingRules.IncidentInput(VENDOR, m("7.00"), m("0"), m("0"),
+                m("10.00"), m("1.38"), BigDecimal.ZERO));
+
+        assertThat(amounts(lines)).containsExactlyInAnyOrderEntriesOf(Map.of(
+                CUSTOMER_FUNDS_HELD, m("7.00"), PLATFORM_REVENUE_FEES, m("-6.03"), PLATFORM_VAT_PAYABLE, m("-0.97")));
+        assertThat(PostingRules.sum(lines)).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void incidentWithNothingToRecordHasNoLines() {
+        assertThat(PostingRules.incidentSettled(new PostingRules.IncidentInput(VENDOR, m("0"), m("0"), m("0"), m("10.00"), null,
+                BigDecimal.ZERO))).isEmpty();
+    }
+
     // --- helpers ---
 
     private static DeliveredInput input(String total, String subtotal, String fees, String discount, String refundedBefore,

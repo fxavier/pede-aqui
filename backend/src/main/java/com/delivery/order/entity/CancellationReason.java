@@ -11,5 +11,10 @@ public enum CancellationReason {
     /** LAC-26 (W5-A): the customer cancelled before the vendor accepted (free); a captured payment is refunded in full. */
     CUSTOMER_CANCELLED,
     /** LAC-26 (W5-A): OPS approved the customer's cancellation request after acceptance; refund = remainder − fee. */
-    CUSTOMER_CANCELLED_WITH_FEE
+    CUSTOMER_CANCELLED_WITH_FEE,
+    /**
+     * LAC-44 (W7-B): the courier reported FAILED_DELIVERY; a delivery incident is opened and OPS decide the refund and
+     * who bears the cost. Rows cancelled by a failed delivery before W7-B have no reason (null).
+     */
+    DELIVERY_FAILED
 }

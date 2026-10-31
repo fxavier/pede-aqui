@@ -14,8 +14,11 @@ import com.delivery.delivery.exception.InvalidDeliveryCodeException;
 import com.delivery.delivery.mapper.DeliveryMapper;
 import com.delivery.delivery.repository.DeliveryEventRepository;
 import com.delivery.delivery.repository.DeliveryRepository;
+import com.delivery.delivery.api.CourierPosition;
 import com.delivery.delivery.api.DeliveryAddressResponse;
 import com.delivery.delivery.api.DeliveryCourierListener;
+import com.delivery.delivery.api.DeliveryFailure;
+import com.delivery.delivery.api.DeliveryFailureReason;
 import com.delivery.delivery.api.DeliveryOrderHooks;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +38,8 @@ public class DeliveryService {
     private static final String AUDIT_CODE_LOCKED = "DELIVERY_CODE_LOCKED";
     private static final String AUDIT_CODE_UNLOCKED = "DELIVERY_CODE_UNLOCKED";
     private static final String AUDIT_STATUS_UPDATED = "DELIVERY_STATUS_UPDATED";
+    /** Maximum length of the reporter's free-text note on a failed delivery (LAC-44; the DTO validates it too). */
+    private static final int MAX_FAILURE_NOTE = 500;
     /**
      * States from which the assigned courier may complete with the PIN. ARRIVED_AT_CUSTOMER is the
      * lifecycle target; ACCEPTED is kept because the courier app posts /complete right after accepting
@@ -138,12 +143,23 @@ public class DeliveryService {
                 .orElseThrow(() -> new NotFoundException("Delivery address was not recorded for this order"));
     }
 
+    /** {@link #updateStatus(UUID, DeliveryStatus, String, java.math.BigDecimal, DeliveryFailureReason, String)} without a failure reason. */
+    @Transactional
+    public DeliveryResponse updateStatus(UUID deliveryId, DeliveryStatus status, String proofPhotoStorageKey, java.math.BigDecimal cashCollectedAmount) {
+        return updateStatus(deliveryId, status, proofPhotoStorageKey, cashCollectedAmount, null, null);
+    }
+
     /**
      * Moves delivery through courier lifecycle statuses and records metadata when provided. Only the
      * assigned courier, or OPS/ADMIN (audited), may do so. DELIVERED is reachable only via complete().
+     * FAILED_DELIVERY (LAC-44) requires a coded {@code failureReason} (400 {@code failure_reason_required}); it is
+     * accepted after pickup (PICKED_UP, ON_ROUTE_TO_CUSTOMER, ARRIVED_AT_CUSTOMER) and, with STORE_FAULT only, at the
+     * store (ARRIVED_AT_VENDOR: store closed / items missing at pickup). The order side cancels the order and opens a
+     * delivery incident with the reason, the optional note/proof photo and the courier's last position as evidence.
      */
     @Transactional
-    public DeliveryResponse updateStatus(UUID deliveryId, DeliveryStatus status, String proofPhotoStorageKey, java.math.BigDecimal cashCollectedAmount) {
+    public DeliveryResponse updateStatus(UUID deliveryId, DeliveryStatus status, String proofPhotoStorageKey, java.math.BigDecimal cashCollectedAmount,
+                                         DeliveryFailureReason failureReason, String failureNote) {
         UUID tenantId = tenantId();
         Delivery delivery = findDelivery(tenantId, deliveryId);
         boolean operatorOverride = accessGuard.isOperator();
@@ -151,7 +167,13 @@ public class DeliveryService {
             accessGuard.ensureAssignedCourier(tenantId, delivery);
         }
         DeliveryStatus previous = delivery.getStatus();
-        validateTransition(previous, status);
+        if (status == DeliveryStatus.FAILED_DELIVERY && failureReason == null) {
+            throw new BusinessException("failure_reason_required", "A failure reason is required to report a failed delivery", HttpStatus.BAD_REQUEST);
+        }
+        if (status != DeliveryStatus.FAILED_DELIVERY && failureReason != null) {
+            throw new BusinessException("failure_reason_not_applicable", "A failure reason is only accepted with FAILED_DELIVERY", HttpStatus.BAD_REQUEST);
+        }
+        validateTransition(previous, status, failureReason);
         orderHooks.requireDeliverable(tenantId, delivery.getOrderId());
         if (proofPhotoStorageKey != null && !proofPhotoStorageKey.isBlank()) {
             uploadValidator.requireImage(tenantId, proofPhotoStorageKey); // LAC-12
@@ -166,7 +188,9 @@ public class DeliveryService {
             orderHooks.onOutForDelivery(tenantId, delivery.getOrderId()); // W4-A: order DELIVERING
         }
         if (status == DeliveryStatus.FAILED_DELIVERY) {
-            orderHooks.onDeliveryFailed(tenantId, delivery.getOrderId()); // order CANCELLED + release (no-op once committed)
+            // LAC-44: order CANCELLED (DELIVERY_FAILED) + release (no-op once committed) + OPEN incident with evidence.
+            orderHooks.onDeliveryFailed(tenantId, delivery.getOrderId(), failureOf(tenantId, delivery, previous, failureReason,
+                    failureNote, operatorOverride));
             if (delivery.getCourierId() != null) courierListener.onCourierFreed(tenantId, delivery.getCourierId()); // LAC-42
         }
         eventRepository.save(new DeliveryEvent(UUID.randomUUID(), tenantId, delivery.getId(), EVENT_STATUS_UPDATE, "Delivery moved to " + status));
@@ -191,12 +215,29 @@ public class DeliveryService {
         return mapper.toResponse(delivery);
     }
 
-    private void validateTransition(DeliveryStatus current, DeliveryStatus next) {
+    /** The failure facts handed to the order module: reporter, coded reason, proof and the courier's last position. */
+    private DeliveryFailure failureOf(UUID tenantId, Delivery delivery, DeliveryStatus from, DeliveryFailureReason reason, String note,
+                                      boolean operator) {
+        String reporter = tenantContext.currentKeycloakUserId().orElse("unknown");
+        String role = operator ? (accessGuard.isAdmin() ? "ADMIN" : "OPS") : "COURIER";
+        CourierPosition evidence = delivery.getCourierId() == null ? null
+                : accessGuard.lastKnownPosition(tenantId, delivery.getCourierId()).orElse(null);
+        String trimmed = note == null || note.isBlank() ? null : note.strip();
+        if (trimmed != null && trimmed.length() > MAX_FAILURE_NOTE) {
+            trimmed = trimmed.substring(0, MAX_FAILURE_NOTE);
+        }
+        return new DeliveryFailure(delivery.getId(), delivery.getCourierId(), from.name(), reason, trimmed,
+                delivery.getProofPhotoStorageKey(), reporter, role, evidence);
+    }
+
+    private void validateTransition(DeliveryStatus current, DeliveryStatus next, DeliveryFailureReason failureReason) {
         boolean valid = switch (current) {
             case ACCEPTED -> next == DeliveryStatus.ARRIVED_AT_VENDOR;
-            case ARRIVED_AT_VENDOR -> next == DeliveryStatus.PICKED_UP;
-            case PICKED_UP -> next == DeliveryStatus.ON_ROUTE_TO_CUSTOMER;
-            case ON_ROUTE_TO_CUSTOMER -> next == DeliveryStatus.ARRIVED_AT_CUSTOMER;
+            // LAC-44: at the store only a store fault (closed, items missing) can end the delivery; goods never left.
+            case ARRIVED_AT_VENDOR -> next == DeliveryStatus.PICKED_UP
+                    || (next == DeliveryStatus.FAILED_DELIVERY && failureReason == DeliveryFailureReason.STORE_FAULT);
+            case PICKED_UP -> next == DeliveryStatus.ON_ROUTE_TO_CUSTOMER || next == DeliveryStatus.FAILED_DELIVERY;
+            case ON_ROUTE_TO_CUSTOMER -> next == DeliveryStatus.ARRIVED_AT_CUSTOMER || next == DeliveryStatus.FAILED_DELIVERY;
             // DELIVERED requires the customer PIN and is only reachable through complete().
             case ARRIVED_AT_CUSTOMER -> next == DeliveryStatus.FAILED_DELIVERY;
             default -> false;

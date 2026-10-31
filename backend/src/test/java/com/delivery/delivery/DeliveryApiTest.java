@@ -38,15 +38,15 @@ class DeliveryApiTest {
     @Test
     void supportsLifecycleStatusUpdatesAndCompletion() throws Exception {
         UUID deliveryId = UUID.randomUUID();
-        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ARRIVED_AT_VENDOR), any(), any()))
+        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ARRIVED_AT_VENDOR), any(), any(), any(), any()))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.ARRIVED_AT_VENDOR, 0));
-        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.PICKED_UP), any(), any()))
+        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.PICKED_UP), any(), any(), any(), any()))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.PICKED_UP, 0));
-        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ON_ROUTE_TO_CUSTOMER), any(), any()))
+        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ON_ROUTE_TO_CUSTOMER), any(), any(), any(), any()))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.ON_ROUTE_TO_CUSTOMER, 0));
-        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ARRIVED_AT_CUSTOMER), any(), any()))
+        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.ARRIVED_AT_CUSTOMER), any(), any(), any(), any()))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.ARRIVED_AT_CUSTOMER, 0));
-        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.FAILED_DELIVERY), any(), any()))
+        when(deliveryService.updateStatus(eq(deliveryId), eq(DeliveryStatus.FAILED_DELIVERY), any(), any(), any(), any()))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.FAILED_DELIVERY, 0));
         when(deliveryService.complete(deliveryId, "123456"))
                 .thenReturn(new DeliveryResponse(deliveryId, UUID.randomUUID(), DeliveryStatus.DELIVERED, 0));
@@ -79,7 +79,7 @@ class DeliveryApiTest {
         mockMvc.perform(patch("/api/v1/deliveries/{deliveryId}/status", deliveryId)
                         .with(jwt().authorities(() -> "ROLE_COURIER"))
                         .contentType("application/json")
-                        .content("{\"status\":\"FAILED_DELIVERY\",\"proofPhotoStorageKey\":\"proof/key.jpg\",\"cashCollectedAmount\":100.0}"))
+                        .content("{\"status\":\"FAILED_DELIVERY\",\"proofPhotoStorageKey\":\"proof/key.jpg\",\"cashCollectedAmount\":100.0,\"failureReason\":\"CUSTOMER_ABSENT\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("FAILED_DELIVERY"));
 

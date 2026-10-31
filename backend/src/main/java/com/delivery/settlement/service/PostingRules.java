@@ -161,6 +161,48 @@ public final class PostingRules {
         return new Recognition(clean(lines), amount, commissionRate, commission);
     }
 
+    /**
+     * Inputs of a resolved delivery incident (LAC-44). {@code fees}/{@code feesVat} are the order's fees and the VAT they
+     * contain as stored on a VAT-inclusive quote (null feesVat → split by platformVatRate, as for deliveries).
+     */
+    public record IncidentInput(UUID vendorId, BigDecimal retainedFee, BigDecimal merchantCharge, BigDecimal platformCompensation,
+                                BigDecimal fees, BigDecimal feesVat, BigDecimal platformVatRate) {}
+
+    /**
+     * Delivery incident resolved (LAC-44, ADR-0005 "a validar"). The refund itself is posted by RefundApproved
+     * (funds held → refunds payable); this transaction records who bears the cost:
+     * <pre>
+     * Dr CUSTOMER_FUNDS_HELD          retained delivery fee        (customer fault: the fee is not refunded)
+     * Dr MERCHANT_PAYABLE[vendor]     merchant charge              (store fault: platform fees refunded, recovered)
+     * Cr PLATFORM_REVENUE_FEES        net of the two above
+     * Cr PLATFORM_VAT_PAYABLE         VAT contained in them (stored quote fee VAT pro rata, else platform-vat-rate)
+     * Dr PLATFORM_INCIDENT_EXPENSE    platform compensation        (goods lost, merchant not at fault)
+     * Cr MERCHANT_PAYABLE[vendor]     platform compensation
+     * </pre>
+     * Returns no lines when every amount is zero.
+     */
+    public static List<Line> incidentSettled(IncidentInput in) {
+        BigDecimal retained = money(in.retainedFee()).max(BigDecimal.ZERO);
+        BigDecimal charge = money(in.merchantCharge()).max(BigDecimal.ZERO);
+        BigDecimal compensation = money(in.platformCompensation()).max(BigDecimal.ZERO);
+        BigDecimal feeRevenue = retained.add(charge);
+        BigDecimal[] split;
+        BigDecimal fees = money(in.fees());
+        if (in.feesVat() != null && fees.signum() > 0) {
+            BigDecimal vat = money(in.feesVat()).multiply(feeRevenue).divide(fees, SCALE, ROUNDING).min(feeRevenue).max(BigDecimal.ZERO);
+            split = new BigDecimal[] {feeRevenue.subtract(vat), vat};
+        } else {
+            split = vatSplit(feeRevenue, in.platformVatRate());
+        }
+        List<Line> lines = new ArrayList<>();
+        lines.add(new Line(LedgerAccountType.CUSTOMER_FUNDS_HELD, null, retained));
+        lines.add(new Line(LedgerAccountType.PLATFORM_REVENUE_FEES, null, split[0].negate()));
+        lines.add(new Line(LedgerAccountType.PLATFORM_VAT_PAYABLE, null, split[1].negate()));
+        lines.add(new Line(LedgerAccountType.PLATFORM_INCIDENT_EXPENSE, null, compensation));
+        lines.add(new Line(LedgerAccountType.MERCHANT_PAYABLE, in.vendorId(), charge.subtract(compensation)));
+        return clean(lines);
+    }
+
     /** Σ of the signed lines (0 for a balanced transaction). */
     public static BigDecimal sum(List<Line> lines) {
         return lines.stream().map(Line::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
