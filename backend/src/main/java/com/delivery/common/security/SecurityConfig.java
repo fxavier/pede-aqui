@@ -67,8 +67,11 @@ public class SecurityConfig {
                             "/api/v1/catalog/vendors/*",
                             "/api/v1/search/vendors"
                         ).permitAll()
-                        // The only anonymous writes: self-registration of merchants and customers.
+                        // The only anonymous writes: self-registration of merchants and customers, and PSP callbacks.
                         .requestMatchers(HttpMethod.POST, "/api/v1/register", "/api/v1/customers/register").permitAll()
+                        // Payment provider callbacks (LAC-31, W7-A): the PSP has no JWT — each request is authenticated
+                        // by the provider's HMAC signature in PaymentWebhookService (401 invalid_webhook_signature).
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhooks/*").permitAll()
                         // metrics/prometheus/etc. on the public application port: platform ADMIN only (SEC-19).
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/tenants/**").hasRole("ADMIN")
@@ -97,12 +100,14 @@ public class SecurityConfig {
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
-                "Authorization", "Content-Type", "Accept", "X-Tenant-Id", CorrelationIdFilter.CORRELATION_ID_HEADER));
+                "Authorization", "Content-Type", "Accept", "X-Tenant-Id", CorrelationIdFilter.CORRELATION_ID_HEADER,
+                com.delivery.common.idempotency.IdempotencyFilter.IDEMPOTENCY_KEY_HEADER));
         // Browsers can only read the correlation id (to show it in error toasts / support tickets) if exposed;
         // X-Truncated (LAC-14) tells a client that a capped legacy list endpoint returned only the first 200 rows;
         // Retry-After (LAC-11) is not CORS-safelisted, so a 429 would hide it from browser clients otherwise.
         config.setExposedHeaders(List.of(CorrelationIdFilter.CORRELATION_ID_HEADER,
-                com.delivery.common.pagination.CappedList.TRUNCATED_HEADER, "Retry-After"));
+                com.delivery.common.pagination.CappedList.TRUNCATED_HEADER, "Retry-After",
+                com.delivery.common.idempotency.IdempotencyFilter.REPLAYED_HEADER));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

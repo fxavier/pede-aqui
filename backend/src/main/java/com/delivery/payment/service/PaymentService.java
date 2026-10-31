@@ -35,10 +35,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Handles local/mock payment confirmation and the administrative refund workflow (no PSP: refunds are records only).
+ * Handles payment confirmation (provider-verified in production, {@link #confirmFromProvider}; local/mock in dev) and the
+ * administrative refund workflow (no PSP payout yet: refunds are records only).
  * Order-side effects go through {@link PaymentOrderHooks} (implemented by the order module, same transaction —
  * ADR-0002 C1: payment does not depend on order or delivery).
  */
@@ -92,8 +94,8 @@ public class PaymentService {
      * everyone; enabled → only the customer who owns the order, or OPS/ADMIN, may confirm. Duplicate
      * calls return the same confirmed result without a second audit entry.
      *
-     * TODO(FR-030/FR-032): once a PSP is integrated, confirmation must come exclusively from the
-     * authenticated PSP webhook / status query; this manual path must stay disabled in production.
+     * LAC-01 (W7-A): the endpoint is not mapped at all in the prod profile ({@code MockPaymentConfirmationController} is
+     * {@code @Profile("!prod")}); production confirmation comes only from {@link #confirmFromProvider}.
      */
     @Transactional
     public PaymentResponse confirm(UUID paymentId, String idempotencyKey) {
@@ -124,11 +126,55 @@ public class PaymentService {
         PaymentStatus previous = payment.getStatus();
         payment.confirm();
         recordStatusChange(payment, previous, "MOCK_CONFIRMATION");
+        publishConfirmation(tenantId, payment);
+        auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(), "SUCCESS");
+        return mapper.toResponse(payment);
+    }
+
+    /** Result of {@link #confirmFromProvider}. */
+    public enum ProviderConfirmation {
+        /** PENDING_CONFIRMATION → CONFIRMED, order PAYMENT_PENDING → PAYMENT_CONFIRMED, PaymentConfirmed published. */
+        CONFIRMED,
+        /** The payment was already captured (another attempt or the mock path): nothing changed. */
+        ALREADY_CAPTURED,
+        /** The payment/order can no longer be confirmed (expired, cancelled): nothing changed. */
+        NOT_CONFIRMABLE
+    }
+
+    /**
+     * Production confirmation path (LAC-01/LAC-31, W7-A): confirms {@code payment} after a provider-verified success
+     * (signed webhook, status query or synchronous PSP answer). Same effects as the mock confirmation — payment
+     * CONFIRMED (provider recorded), history row {@code PSP_CONFIRMATION} by actor SYSTEM {@code psp:<provider>}, order
+     * PAYMENT_PENDING → PAYMENT_CONFIRMED through {@link PaymentOrderHooks}, {@link PaymentConfirmed} for the ledger and
+     * audit {@code PAYMENT_CONFIRMED}. The caller must already hold the payment row lock in its transaction (lock order:
+     * payment first) — {@code payment} is that locked entity.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ProviderConfirmation confirmFromProvider(Payment payment, String provider) {
+        if (payment.isCaptured()) {
+            return ProviderConfirmation.ALREADY_CAPTURED;
+        }
+        UUID tenantId = payment.getTenantId();
+        PaymentOrderHooks.OrderForPayment order = orderHooks.orderForPayment(tenantId, payment.getOrderId());
+        if (payment.getStatus() != PaymentStatus.PENDING_CONFIRMATION || !order.awaitingPayment()) {
+            return ProviderConfirmation.NOT_CONFIRMABLE;
+        }
+        PaymentStatus previous = payment.getStatus();
+        payment.confirmByProvider(provider.toUpperCase(java.util.Locale.ROOT));
+        StatusChangeActor current = StatusChangeActor.current(tenantContext);
+        recordStatusChange(payment, previous, "PSP_CONFIRMATION",
+                new StatusChangeActor(StatusChangeActor.SYSTEM, "psp:" + provider, current.correlationId()));
+        publishConfirmation(tenantId, payment);
+        auditLogService.logForTenant(tenantId, "PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(),
+                "SUCCESS", java.util.Map.of("provider", provider));
+        return ProviderConfirmation.CONFIRMED;
+    }
+
+    /** Order side + ledger event of a confirmation, shared by the mock and the provider paths. */
+    private void publishConfirmation(UUID tenantId, Payment payment) {
         orderHooks.markPaymentConfirmed(tenantId, payment.getOrderId());
         eventPublisher.publishEvent(new PaymentConfirmed(tenantId, payment.getId(), payment.getOrderId(), payment.getAmount(),
                 CURRENCY, payment.getConfirmedAt()));
-        auditLogService.log("PAYMENT_CONFIRMED", "payment", payment.getId().toString(), order.reference(), "SUCCESS");
-        return mapper.toResponse(payment);
     }
 
     /**
@@ -307,10 +353,13 @@ public class PaymentService {
 
     /** Appends a payment_status_history row in the current transaction when the status actually changed. */
     private void recordStatusChange(Payment payment, PaymentStatus previous, String reason) {
+        recordStatusChange(payment, previous, reason, StatusChangeActor.current(tenantContext));
+    }
+
+    private void recordStatusChange(Payment payment, PaymentStatus previous, String reason, StatusChangeActor actor) {
         if (previous == payment.getStatus()) {
             return;
         }
-        StatusChangeActor actor = StatusChangeActor.current(tenantContext);
         historyRepository.save(new PaymentStatusHistory(payment, previous, actor.actorType(), actor.actorId(), reason,
                 actor.correlationId(), Instant.now()));
     }

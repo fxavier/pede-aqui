@@ -47,6 +47,9 @@ public final class AuditActions {
     public static final String VENDOR_CLOSURE_CREATED = "VENDOR_CLOSURE_CREATED";
     public static final String VENDOR_CLOSURE_DELETED = "VENDOR_CLOSURE_DELETED";
 
+    // Payments (W7-A, LAC-32): OPS/FINANCE closed a payment reconciliation case (business reference = case type).
+    public static final String PAYMENT_RECONCILIATION_CASE_RESOLVED = "PAYMENT_RECONCILIATION_CASE_RESOLVED";
+
     // Order lifecycle timeouts (LAC-25, W4-A) — written by the timeout jobs (system actor)
     public static final String ORDER_CANCELLED_PAYMENT_EXPIRED = "ORDER_CANCELLED_PAYMENT_EXPIRED";
     public static final String ORDER_CANCELLED_VENDOR_TIMEOUT = "ORDER_CANCELLED_VENDOR_TIMEOUT";
