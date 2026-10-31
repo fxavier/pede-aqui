@@ -23,7 +23,9 @@ public enum LedgerAccountType {
     /** Promotion discounts funded by the platform. */
     PLATFORM_PROMOTION_EXPENSE(Kind.EXPENSE, OwnerType.PLATFORM),
     /** VAT on the platform's own revenue (only when app.settlement.platform-vat-rate > 0). */
-    PLATFORM_VAT_PAYABLE(Kind.LIABILITY, OwnerType.PLATFORM);
+    PLATFORM_VAT_PAYABLE(Kind.LIABILITY, OwnerType.PLATFORM),
+    /** Cost of failed deliveries borne by the platform (LAC-44, V070): goods compensated to the merchant. */
+    PLATFORM_INCIDENT_EXPENSE(Kind.EXPENSE, OwnerType.PLATFORM);
 
     /** Accounting nature: ASSET/EXPENSE are debit-normal, LIABILITY/REVENUE credit-normal. */
     public enum Kind { ASSET, LIABILITY, REVENUE, EXPENSE }

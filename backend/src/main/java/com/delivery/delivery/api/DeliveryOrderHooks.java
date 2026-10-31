@@ -29,8 +29,11 @@ public interface DeliveryOrderHooks {
     /** Delivery completed with the customer PIN: order DELIVERED (clears the plain PIN) and stock committed. */
     void onDelivered(UUID tenantId, UUID orderId);
 
-    /** Delivery failed at the customer: order CANCELLED and its reservation released (no-op once committed). */
-    void onDeliveryFailed(UUID tenantId, UUID orderId);
+    /**
+     * Delivery failed (LAC-44): order CANCELLED ({@code DELIVERY_FAILED}), its reservation released (no-op once pickup
+     * committed it) and an OPEN delivery incident recorded with the coded reason and evidence, for OPS to resolve.
+     */
+    void onDeliveryFailed(UUID tenantId, UUID orderId, DeliveryFailure failure);
 
     /** The order's checkout address snapshot; empty when the order was placed without one. */
     Optional<DeliveryAddressResponse> deliveryAddress(UUID tenantId, UUID orderId);

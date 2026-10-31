@@ -38,4 +38,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     List<Payment> findByTenantIdAndStatus(UUID tenantId, PaymentStatus status);
     List<Payment> findByTenantIdAndStatusIn(UUID tenantId, Collection<PaymentStatus> statuses);
     List<Payment> findByTenantId(UUID tenantId);
+    /** Reconciliation (W7-A): payments confirmed by a PSP (provider other than the mock) since {@code since}. */
+    @Query("select p from Payment p where p.provider <> 'LOCAL_MOCK' and p.confirmedAt >= :since order by p.confirmedAt")
+    List<Payment> findProviderConfirmedSince(@Param("since") java.time.Instant since, org.springframework.data.domain.Pageable page);
 }

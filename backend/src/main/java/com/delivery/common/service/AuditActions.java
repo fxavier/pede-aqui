@@ -52,6 +52,9 @@ public final class AuditActions {
     public static final String VENDOR_CLOSURE_CREATED = "VENDOR_CLOSURE_CREATED";
     public static final String VENDOR_CLOSURE_DELETED = "VENDOR_CLOSURE_DELETED";
 
+    // Payments (W7-A, LAC-32): OPS/FINANCE closed a payment reconciliation case (business reference = case type).
+    public static final String PAYMENT_RECONCILIATION_CASE_RESOLVED = "PAYMENT_RECONCILIATION_CASE_RESOLVED";
+
     // Order lifecycle timeouts (LAC-25, W4-A) — written by the timeout jobs (system actor)
     public static final String ORDER_CANCELLED_PAYMENT_EXPIRED = "ORDER_CANCELLED_PAYMENT_EXPIRED";
     public static final String ORDER_CANCELLED_VENDOR_TIMEOUT = "ORDER_CANCELLED_VENDOR_TIMEOUT";
@@ -68,9 +71,36 @@ public final class AuditActions {
     /** A request was closed because the order moved on before a decision (target = the request). */
     public static final String ORDER_CANCELLATION_REQUEST_CLOSED = "ORDER_CANCELLATION_REQUEST_CLOSED";
 
+    // Delivery incidents (LAC-44, W7-B)
+    /** A FAILED_DELIVERY opened an incident (target = the incident; details: reason, reporter role, default decision). */
+    public static final String DELIVERY_INCIDENT_OPENED = "DELIVERY_INCIDENT_OPENED";
+    /**
+     * OPS/ADMIN resolved an incident (target = the incident; result OVERRIDDEN when the decision differs from the policy
+     * default; details: default and final decision, money figures — never the free-text override reason).
+     */
+    public static final String DELIVERY_INCIDENT_RESOLVED = "DELIVERY_INCIDENT_RESOLVED";
+
     // Notifications (LAC-48, W6-C)
     /** OPS/ADMIN created or changed the tenant override of a notification template (details: key, channel, version). */
     public static final String NOTIFICATION_TEMPLATE_UPDATED = "NOTIFICATION_TEMPLATE_UPDATED";
+
+    // Profile and data-subject rights (LAC-19/LAC-63, W7-C) — targets are profile/request ids, never personal data
+    /** Self-service profile change (details: changed field names only, never the values). */
+    public static final String PROFILE_UPDATED = "PROFILE_UPDATED";
+    /** The customer asked for account deletion (target = the request; business reference scheduled_for=<instant>). */
+    public static final String ACCOUNT_DELETION_REQUESTED = "ACCOUNT_DELETION_REQUESTED";
+    /** The customer cancelled a pending deletion request during the reflection period. */
+    public static final String ACCOUNT_DELETION_CANCELLED = "ACCOUNT_DELETION_CANCELLED";
+    /** The account-deletion job pseudonymised the account in the database (details: rows per data kind). */
+    public static final String ACCOUNT_PSEUDONYMISED = "ACCOUNT_PSEUDONYMISED";
+    /** The account-deletion job deleted the Keycloak user; the request is complete. */
+    public static final String ACCOUNT_DELETION_COMPLETED = "ACCOUNT_DELETION_COMPLETED";
+    /** The subject downloaded the export of its personal data. */
+    public static final String PERSONAL_DATA_EXPORTED = "PERSONAL_DATA_EXPORTED";
+    /** The subject granted a consent (business reference purpose:version). */
+    public static final String CONSENT_GRANTED = "CONSENT_GRANTED";
+    /** The subject withdrew a consent (business reference purpose:version). */
+    public static final String CONSENT_WITHDRAWN = "CONSENT_WITHDRAWN";
 
     private AuditActions() {
     }

@@ -138,6 +138,28 @@ public class LedgerPostingService {
         return posted.isPresent();
     }
 
+    /**
+     * Delivery incident resolved (LAC-44): records the cost bearer — retained delivery fee as fee revenue, merchant
+     * charge debited from the merchant payable, platform compensation of lost goods as an expense credited to the
+     * merchant. Needs the order's captured payment (else skipped, WARN). Idempotent by {@code delivery-incident:<id>}.
+     */
+    @Transactional
+    public boolean recordIncidentSettled(UUID tenantId, UUID incidentId, UUID orderId, UUID vendorId, BigDecimal retainedFee,
+                                         BigDecimal merchantCharge, BigDecimal platformCompensation, Instant resolvedAt) {
+        Optional<PaymentFacts> payment = paymentFacts.paymentOfOrder(tenantId, orderId);
+        if (payment.isEmpty() || !payment.get().captured()) {
+            return skip(LedgerTransactionType.INCIDENT_SETTLED, "incident " + incidentId + " on an order without a captured payment");
+        }
+        ensureCaptured(tenantId, payment.get());
+        Optional<OrderFinancials> order = orderFacts.financials(tenantId, orderId);
+        BigDecimal fees = order.map(OrderFinancials::fees).orElse(BigDecimal.ZERO);
+        BigDecimal feesVat = order.filter(OrderFinancials::feesVatRecorded).map(OrderFinancials::quoteFeesVat).orElse(null);
+        List<Line> lines = PostingRules.incidentSettled(new PostingRules.IncidentInput(vendorId, retainedFee, merchantCharge,
+                platformCompensation, fees, feesVat, properties.getPlatformVatRate()));
+        return post(tenantId, LedgerTransactionType.INCIDENT_SETTLED, incidentId, "DELIVERY_INCIDENT", incidentId, orderId, vendorId,
+                resolvedAt != null ? resolvedAt : Instant.now(), "Delivery incident resolved: cost bearer posting", lines).isPresent();
+    }
+
     private boolean ensureCaptured(UUID tenantId, PaymentFacts payment) {
         Instant at = payment.confirmedAt() != null ? payment.confirmedAt() : Instant.now();
         return post(tenantId, LedgerTransactionType.PAYMENT_CAPTURED, payment.paymentId(), "PAYMENT", payment.paymentId(),

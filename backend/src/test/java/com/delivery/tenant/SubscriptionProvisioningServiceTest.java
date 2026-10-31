@@ -72,7 +72,7 @@ class SubscriptionProvisioningServiceTest {
 
         service = new SubscriptionProvisioningService(
                 merchantRegistrationService,
-                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService),
+                new com.delivery.auth.api.UserAccounts(appUserProfileRepository, keycloakAdminService, null),
                 tenantRepository,
                 provisioningRequestRepository,
                 objectMapper,

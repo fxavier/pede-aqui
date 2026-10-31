@@ -126,6 +126,8 @@ logging:
         "[logger_name]": logger
       add:
         app: ${spring.application.name}
+      # W7-C (LAC-63): mascara e-mails, telefones e tokens em todos os campos de texto da linha JSON (rede de segurança).
+      customizer: com.delivery.common.observability.PiiMaskingJsonMembersCustomizer
 
 app:
   api-base-path: /api/v1
@@ -208,6 +210,12 @@ app:
           - /api/v1/ops/cancellation-requests/*/approve
         capacity: 20
         period: 1m
+      # W7-A (LAC-31): callbacks do PSP (anónimos, assinados) — por IP; mais específico que `payments`.
+      payment-webhooks:
+        paths: [/api/v1/payments/webhooks/**]
+        methods: [POST]
+        capacity: 300
+        period: 1m
       provisioning:
         paths: [/api/v1/provisioning/**]
         capacity: 20
@@ -227,6 +235,18 @@ app:
           - /api/v1/couriers/me/**
         capacity: 120
         period: 1m
+      # W7-C (LAC-63): exportação de dados pessoais — documento completo por pedido; poucas por hora por conta.
+      data-export:
+        paths: [/api/v1/me/data-export]
+        methods: [GET]
+        capacity: ${APP_RATE_LIMIT_DATA_EXPORT_CAPACITY:3}
+        period: 1h
+      # W7-C (LAC-19): pedido/cancelamento de eliminação de conta.
+      account-deletion:
+        paths: [/api/v1/me/deletion-request]
+        methods: [POST, DELETE]
+        capacity: 10
+        period: 1h
       # LAC-40: lotes de GPS do estafeta (1 lote a cada ~10 s em entrega; folga para reenvio de buffers).
       courier-location:
         paths: [/api/v1/couriers/me/locations]
@@ -287,7 +307,46 @@ app:
     quote-ttl: ${APP_CHECKOUT_QUOTE_TTL:PT10M}
   payments:
     mock-confirmation:
-      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
+      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Not mapped at all in prod (LAC-01)
+    # W7-A (LAC-31): id of the active PaymentProvider bean. No default on purpose: dev uses `sandbox`
+    # (application-dev.yml); prod must set APP_PAYMENTS_PROVIDER or startup fails (and the sandbox is refused in prod).
+    provider: ${APP_PAYMENTS_PROVIDER:}
+    attempts:
+      max-per-payment: ${APP_PAYMENTS_ATTEMPTS_MAX_PER_PAYMENT:5}
+      # INITIATED/PENDING_CUSTOMER attempts older than this are expired by payment-attempt-expiry (keep < app.orders.payment-timeout).
+      ttl: ${APP_PAYMENTS_ATTEMPT_TTL:PT3M}
+      poll-after: PT60S
+      poll-backoff-base: PT15S
+      poll-max-backoff: PT30M
+      # UNKNOWN longer than this opens an ATTEMPT_UNRESOLVED reconciliation case (manual review).
+      unknown-review-after: PT30M
+      batch-size: 100
+      reconciliation-lookback: P3D
+    # Simulated M-Pesa-like provider (dev/test/staging). No secret here: dev default in application-dev.yml.
+    sandbox:
+      webhook-secret: ${APP_PAYMENTS_SANDBOX_WEBHOOK_SECRET:}
+      signature-tolerance: PT5M
+      default-scenario: ${APP_PAYMENTS_SANDBOX_DEFAULT_SCENARIO:SUCCEEDED}
+      latency: ${APP_PAYMENTS_SANDBOX_LATENCY:PT3S}
+      callback-enabled: false
+      callback-url: ${APP_PAYMENTS_SANDBOX_CALLBACK_URL:http://localhost:8080/api/v1/payments/webhooks/sandbox}
+      allow-in-prod: false
+  # W7-A (LAC-24): optional Idempotency-Key header on money-moving endpoints (common/idempotency). Replays the stored
+  # 2xx response for the same key + request; 409 idempotency_key_reused for another request. Records purged by the
+  # idempotency-cleanup job after `ttl`.
+  idempotency:
+    enabled: ${APP_IDEMPOTENCY_ENABLED:true}
+    ttl: PT24H
+    in-progress-lease: PT2M
+    max-request-bytes: 65536
+    max-response-bytes: 65536
+    endpoints:
+      - POST /api/v1/payments/*/attempts
+      - POST /api/v1/payments/*/refunds
+      - POST /api/v1/sales/orders/*/refund
+      - POST /api/v1/sales/orders/*/cancel
+      - POST /api/v1/me/orders/*/cancel
+      - POST /api/v1/ops/cancellation-requests/*/approve
   # LAC-46: scheduled jobs (JobSchedulingConfig + ShedLock). enabled=false turns the scheduler off (tests); each job
   # also has its own flag. Durations are ISO-8601.
   jobs:
@@ -334,6 +393,35 @@ app:
       enabled: ${APP_JOBS_NOTIFICATION_DELIVERY_ENABLED:true}
       interval: PT15S
       initial-delay: PT30S
+    # W7-A (LAC-32): payment attempts — status poller (query the PSP for due open attempts), attempt expiry and the
+    # daily reconciliation (SUCCEEDED attempts vs captured payments -> payment_reconciliation_cases).
+    payment-status-poller:
+      enabled: ${APP_JOBS_PAYMENT_STATUS_POLLER_ENABLED:true}
+      interval: PT30S
+      initial-delay: PT1M
+    payment-attempt-expiry:
+      enabled: ${APP_JOBS_PAYMENT_ATTEMPT_EXPIRY_ENABLED:true}
+      interval: PT1M
+      initial-delay: PT1M
+    payment-reconciliation:
+      enabled: ${APP_JOBS_PAYMENT_RECONCILIATION_ENABLED:true}
+      cron: "0 0 3 * * *"
+      zone: Africa/Maputo
+    # W7-A (LAC-24): deletes expired idempotency_records.
+    idempotency-cleanup:
+      enabled: ${APP_JOBS_IDEMPOTENCY_CLEANUP_ENABLED:true}
+      cron: "0 15 3 * * *"
+      zone: Africa/Maputo
+    # W7-C (LAC-19): pseudonimiza as contas cujo período de reflexão terminou (ver app.privacy.deletion).
+    account-deletion:
+      enabled: ${APP_JOBS_ACCOUNT_DELETION_ENABLED:true}
+      cron: "0 20 * * * *"
+      zone: Africa/Maputo
+    # W7-C (LAC-63): política de retenção por classe de dados (ver app.privacy.retention).
+    retention-cleaner:
+      enabled: ${APP_JOBS_RETENTION_CLEANER_ENABLED:true}
+      cron: "0 15 5 * * *"
+      zone: Africa/Maputo
     event-publication-retry:
       enabled: true
       interval: PT1M
@@ -352,6 +440,37 @@ app:
     platform-vat-rate: ${APP_SETTLEMENT_PLATFORM_VAT_RATE:0}
     # PLATFORM = desconto de promoção é despesa da plataforma; MERCHANT = reduz o valor devido ao comerciante.
     discount-funded-by: ${APP_SETTLEMENT_DISCOUNT_FUNDED_BY:PLATFORM}
+  # W7-C (LAC-19/LAC-63): direitos do titular e retenção. TODOS os prazos são valores por defeito do registo de
+  # lacunas, configuráveis por ambiente — "a validar com jurista" (a lei moçambicana de proteção de dados é proposta).
+  privacy:
+    deletion:
+      # Período de reflexão entre o pedido de eliminação e a pseudonimização (cancelável durante este período).
+      reflection-period: ${APP_PRIVACY_DELETION_REFLECTION_PERIOD:P30D}
+      batch-size: 50
+    supported-locales: [pt-PT, pt-MZ, en]
+    # Versão atual de cada texto; aceitar outra versão → 409 consent_version_outdated.
+    consent-versions:
+      TERMS_OF_SERVICE: ${APP_PRIVACY_TERMS_VERSION:2026-10}
+      PRIVACY_POLICY: ${APP_PRIVACY_POLICY_VERSION:2026-10}
+      MARKETING: ${APP_PRIVACY_MARKETING_VERSION:2026-10}
+    retention:
+      batch-size: 5000
+      max-batches-per-class: 200
+      classes:
+        audit-logs:
+          retention: ${APP_PRIVACY_RETENTION_AUDIT_LOGS:P730D}
+        notification-deliveries:
+          retention: ${APP_PRIVACY_RETENTION_NOTIFICATION_DELIVERIES:P180D}
+        notifications:
+          retention: ${APP_PRIVACY_RETENTION_NOTIFICATIONS:P180D}
+        order-status-history:
+          retention: ${APP_PRIVACY_RETENTION_ORDER_STATUS_HISTORY:P3650D}
+        payment-status-history:
+          retention: ${APP_PRIVACY_RETENTION_PAYMENT_STATUS_HISTORY:P3650D}
+        provisioning-requests:
+          retention: ${APP_PRIVACY_RETENTION_PROVISIONING_REQUESTS:P1D}
+        data-retention-runs:
+          retention: ${APP_PRIVACY_RETENTION_DATA_RETENTION_RUNS:P365D}
   # W6-C (LAC-48): notificações multi-canal. Fornecedores reais (FCM, gateway SMS, SES) são beans novos com o seu id;
   # só existe o stub "log" (regista destinatário mascarado, nunca o texto).
   notifications:

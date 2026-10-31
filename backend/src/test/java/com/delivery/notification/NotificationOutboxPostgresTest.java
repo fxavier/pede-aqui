@@ -87,6 +87,19 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
         Timestamp now = Timestamp.from(Instant.now());
         jdbc.update("INSERT INTO device_tokens (id, tenant_id, user_profile_id, platform, token, token_hash, created_at, last_seen_at) VALUES (?, ?, ?, 'ANDROID', ?, ?, ?, ?)",
                 UUID.randomUUID(), tenant, customer, token(), "hash-" + customer, now, now);
+        parkForeignDueDeliveries();
+    }
+
+    /**
+     * Isolation from the shared database: other test classes (order flows, sales, timeouts…) leave QUEUED deliveries
+     * behind, and the real claim is global ({@code ORDER BY next_attempt_at} across tenants) — so a batch could be
+     * filled with their older rows and miss this test's ones (order-dependent failures). Their rows are pushed a day
+     * into the future (still QUEUED, nothing deleted) so that every claim here only sees this test's tenant. Called
+     * before each claim too, because async after-commit listeners of earlier tests may still be writing rows.
+     */
+    private void parkForeignDueDeliveries() {
+        jdbc.update("UPDATE notification_deliveries SET next_attempt_at = now() + interval '1 day' "
+                + "WHERE status = 'QUEUED' AND next_attempt_at <= now() + interval '1 hour' AND tenant_id <> ?", tenant);
     }
 
     @AfterEach
@@ -134,6 +147,7 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
                 .thenReturn(SendResult.sent("fcm-1"));
         dispatch("order_accepted", "PA-2", "retry-" + tenant);
 
+        parkForeignDueDeliveries();
         worker.deliverDue();
         Map<String, Object> afterFirst = myPush();
         assertThat(afterFirst).containsEntry("status", "QUEUED").containsEntry("attempts", 1).containsEntry("last_error", "provider_timeout");
@@ -170,6 +184,7 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
         mine.addAll(jdbc.queryForList("SELECT id FROM notification_deliveries WHERE tenant_id = ?", UUID.class, tenant));
         assertThat(mine).hasSize(10);
 
+        parkForeignDueDeliveries();
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch claimedByA = new CountDownLatch(1);
         CountDownLatch releaseA = new CountDownLatch(1);
@@ -211,6 +226,7 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
             dispatch("order_ready_for_pickup", "PA-C" + i + "-" + tenant, "conc-" + i + "-" + tenant);
         }
 
+        parkForeignDueDeliveries();
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
             Future<?> one = pool.submit(worker::deliverDue);
@@ -251,6 +267,7 @@ class NotificationOutboxPostgresTest extends PostgresApiE2ETestBase {
     }
 
     private void makeDue() {
+        parkForeignDueDeliveries();
         jdbc.update("UPDATE notification_deliveries SET next_attempt_at = now() - interval '1 second' WHERE tenant_id = ? AND status = 'QUEUED'", tenant);
     }
 

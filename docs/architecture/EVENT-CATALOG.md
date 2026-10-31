@@ -35,11 +35,11 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 
 | Campo | Valor |
 |---|---|
-| Produtor | módulo `payment` — `PaymentService.confirm` (W6-B, LAC-33), na transação que passa o pagamento `PENDING_CONFIRMATION → CONFIRMED` (hoje só a confirmação *mock*; o PSP, LAC-31, deve publicar o mesmo evento). Uma confirmação repetida (pagamento já `CONFIRMED`) não publica. |
+| Produtor | módulo `payment`, na transação que passa o pagamento `PENDING_CONFIRMATION → CONFIRMED`: `PaymentService.confirm` (confirmação *mock*, só fora de `prod`; W6-B) e, desde W7-A (LAC-31), `PaymentService.confirmFromProvider` — chamado por `PaymentAttemptOutcomes` quando uma tentativa do PSP chega a `SUCCEEDED` (webhook assinado, consulta do *poller* ou resposta síncrona), sob o *lock* da linha do pagamento. Mesmo payload nos dois caminhos. Uma confirmação repetida (pagamento já capturado) não publica; um sucesso do PSP que já não pode confirmar o pagamento (expirado/cancelado, duplicado, valor diferente) também não — abre um caso em `payment_reconciliation_cases`. |
 | Payload | `tenantId`, `paymentId`, `orderId` (UUID), `amount` (BigDecimal), `currency` (`"MZN"`), `confirmedAt` (Instant) |
 | Consumidores | `settlement` — `SettlementEventListener`: lançamento `PAYMENT_CAPTURED` (Dr `PLATFORM_CASH_CLEARING` / Cr `CUSTOMER_FUNDS_HELD`). |
 | Garantia | At-least-once; chave natural `paymentId` (ledger: `payment-captured:<paymentId>`, UNIQUE por tenant). |
-| Testes | `SettlementLedgerPostgresTest.paymentConfirmedThenDeliveredThenPartiallyRefundedPostsThroughEventsAndBalances` |
+| Testes | `SettlementLedgerPostgresTest.paymentConfirmedThenDeliveredThenPartiallyRefundedPostsThroughEventsAndBalances`, `PaymentAttemptsPostgresTest.attemptThenSignedWebhookConfirmsThePaymentAndPostsTheCapture` (W7-A: tentativa → webhook → `PAYMENT_CAPTURED`) |
 
 ### `com.delivery.payment.RefundApproved`
 
@@ -50,6 +50,16 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 | Consumidores | `settlement` — `SettlementEventListener`: aprovado antes da entrega → `REFUND_BEFORE_DELIVERY` (fundos retidos → reembolsos a pagar); depois da entrega → `REFUND_AFTER_DELIVERY` (estorno proporcional de comerciante/comissão/taxas). Ver ADR-0005. |
 | Garantia | At-least-once; chave natural `refundId` (ledger: `refund-approved:<refundId>`). |
 | Testes | `SettlementLedgerPostgresTest` (fluxo completo por eventos, reembolsos concorrentes, reembolso antes da entrega) |
+
+### `com.delivery.order.DeliveryIncidentResolved`
+
+| Campo | Valor |
+|---|---|
+| Produtor | módulo `order` — `DeliveryIncidentService.resolve` (W7-B, LAC-44), na transação em que o OPS/ADMIN resolve um incidente de entrega falhada (`OPEN → RESOLVED`; mesma transação que pede o reembolso e escreve a notificação). Uma repetição com a mesma decisão (idempotente) não publica de novo. |
+| Payload | `tenantId`, `incidentId`, `orderId`, `vendorId` (UUID), `costBearer` (`CUSTOMER`/`MERCHANT`/`PLATFORM`), `outcome` (`REFUND_FULL`/`REFUND_MINUS_DELIVERY_FEE`), `goodsDisposition` (`RETURN_TO_STORE`/`DISCARDED`), `refundAmount`, `retainedFeeAmount`, `merchantChargeAmount`, `platformCompensationAmount` (BigDecimal, MZN), `resolvedAt` (Instant). Sem texto livre (nota do estafeta e motivo do *override* ficam só na tabela). |
+| Consumidores | `settlement` — `SettlementEventListener` → `LedgerPostingService.recordIncidentSettled`: lançamento `INCIDENT_SETTLED` (Dr `CUSTOMER_FUNDS_HELD` taxa retida, Dr `MERCHANT_PAYABLE` cobrança à loja, Cr `PLATFORM_REVENUE_FEES`/`PLATFORM_VAT_PAYABLE`; Dr `PLATFORM_INCIDENT_EXPENSE` / Cr `MERCHANT_PAYABLE` compensação de bens perdidos). Sem linhas (tudo zero) → nada; pagamento não capturado → ignorado (WARN). O reembolso em si continua a ser lançado pelo `RefundApproved` quando o FINANCE o aprova. Ver ADR-0005. |
+| Garantia | At-least-once; chave natural `incidentId` (ledger: `delivery-incident:<incidentId>`, UNIQUE por tenant). |
+| Testes | `DeliveryIncidentPostgresTest` (por motivo: lançamento e saldos; concorrência de dois OPS → um lançamento), `PostingRulesTest` (`incident*`) |
 
 ### `com.delivery.rating.RatingSubmitted`
 
@@ -74,7 +84,7 @@ Do ADR-0002 e do registo de lacunas (LAC-25, LAC-47) — entram aqui quando fore
 | Interface (API) | Implementação | Substitui o evento previsto |
 |---|---|---|
 | `payment.api.PaymentOrderHooks` | `order.service.OrderPaymentHooks` | `PaymentConfirmed`, `RefundCompleted` |
-| `delivery.api.DeliveryOrderHooks` | `order.service.OrderDeliveryHooks` | `DeliveryPickedUp`, `DeliveryCompleted`, `DeliveryFailed` |
+| `delivery.api.DeliveryOrderHooks` | `order.service.OrderDeliveryHooks` | `DeliveryPickedUp`, `DeliveryCompleted`, `DeliveryFailed` (desde W7-B `onDeliveryFailed` recebe `DeliveryFailure` — motivo, prova, evidência — e abre o incidente na mesma transação) |
 | `delivery.api.DeliveryRetirementListener` | `dispatch.service.DispatchJobRetirement` | (cancelamento do *dispatch job* na retirada) |
 
 Não são eventos: correm na transação do chamador, sem registo em `event_publication`. Quando um destes efeitos puder ser eventual (estados intermédios da LAC-25, PSP com *callbacks*), passa a evento e entra nesta tabela.

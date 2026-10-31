@@ -95,4 +95,5 @@ public class Delivery {
     public int getConfirmationAttempts() { return confirmationAttempts; }
     public boolean isConfirmationCodeLegacy() { return confirmationCodeLegacy; }
     public Boolean getProximityNotified() { return proximityNotified; }
+    public String getProofPhotoStorageKey() { return proofPhotoStorageKey; }
 }

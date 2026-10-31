@@ -17,3 +17,7 @@ app:
     # LAC-33: ledger listeners off in the suite (SQL-seeded orders have no payments and cleanups delete orders);
     # the settlement Postgres tests switch it on in their own context.
     enabled: false
+
+# W7-A: tests post the signed sandbox callbacks themselves (SandboxProvider.callbackFor) — no HTTP self-callback.
+# Set through the placeholder application-dev.yml reads, because profile-specific files win over this one.
+APP_PAYMENTS_SANDBOX_CALLBACK_ENABLED: false

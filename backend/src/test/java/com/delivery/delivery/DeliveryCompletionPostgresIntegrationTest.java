@@ -14,6 +14,7 @@ import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenancyProperties;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.api.DeliveryFailureReason;
 import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.entity.DeliveryStatus;
 import com.delivery.delivery.mapper.DeliveryMapper;
@@ -207,7 +208,7 @@ class DeliveryCompletionPostgresIntegrationTest {
 
         assertThatThrownBy(() -> service.complete(deliveryId, CODE))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
-        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null))
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.CUSTOMER_ABSENT, null))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
 
         assertThat(deliveryStatus()).isEqualTo("ARRIVED_AT_CUSTOMER");
@@ -227,7 +228,7 @@ class DeliveryCompletionPostgresIntegrationTest {
     void opsStatusUpdateIsAllowedAndAudited() {
         authenticate("kc-ops-" + tenantId, "OPS");
 
-        assertThat(service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null).status())
+        assertThat(service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.CUSTOMER_ABSENT, null).status())
                 .isEqualTo(DeliveryStatus.FAILED_DELIVERY);
 
         // G: FAILED_DELIVERY keeps cancelling the order (no refund/stock here), and the plain PIN is cleared.
@@ -380,10 +381,10 @@ class DeliveryCompletionPostgresIntegrationTest {
                 assertThat(ex.getCode()).isEqualTo("order_not_deliverable");
             });
         }
-        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null))
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.CUSTOMER_ABSENT, null))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
         authenticate("kc-ops-" + tenantId, "OPS");
-        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null))
+        assertThatThrownBy(() -> service.updateStatus(deliveryId, DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.CUSTOMER_ABSENT, null))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("order_not_deliverable"));
 
         assertThat(deliveryStatus()).isEqualTo("ARRIVED_AT_CUSTOMER");

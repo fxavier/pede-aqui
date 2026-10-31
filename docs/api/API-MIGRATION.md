@@ -962,6 +962,220 @@ Additive only; no existing contract changes. The in-app inbox (`/api/v1/notifica
 - Ops: `APP_COURIER_PRESENCE_ENFORCE_TIMEOUT=true` (no location for 2 min → `OFFLINE`) may be turned on once couriers
   run a build with W6-D; with an older build every online courier would be taken offline after 2 minutes.
 
+## W7-A — PSP integration seam (sandbox), payment attempts, reconciliation, generic Idempotency-Key, mock confirmation unmapped in prod (LAC-31, LAC-32, LAC-24, LAC-01) — 2026-10-31
+
+Additive except for the behaviour notes at the end. Only a **sandbox** provider exists (simulated M-Pesa-like
+behaviour, no money moves); the real M-Pesa provider is a later package.
+
+### `GET /api/v1/me/orders/{orderId}/payment` (new, CUSTOMER, own order else 404)
+
+- → **200** `{ paymentId, orderId, status, amount, currency: "MZN", payable, latestAttempt }`. `payable` = payment
+  `PENDING_CONFIRMATION`, order `PAYMENT_PENDING`, no open attempt and attempts left. `latestAttempt` = newest
+  attempt (shape below) or absent. This is the polling target of the "Confirme no seu telemóvel" screen
+  (rate-limit group `sensitive`).
+
+### `POST /api/v1/payments/{paymentId}/attempts` (new, CUSTOMER, own payment else 404)
+
+- Body `{ "msisdn": "+25884…" }` (E.164 or Mozambican national form) → **202**
+  `{ id, paymentId, orderId, provider, status, amount, currency, msisdnMasked: "*******567", errorCode, createdAt,
+  updatedAt, completedAt }`. `status` ∈ `INITIATED | PENDING_CUSTOMER | SUCCEEDED | FAILED | EXPIRED | UNKNOWN`;
+  normally `PENDING_CUSTOMER` (push sent to the phone) or `UNKNOWN` (the PSP did not answer in time — **not** a
+  failure; keep polling, do not retry).
+- Errors: 400 `invalid_msisdn` / `validation_failed`; 409 `payment_not_payable`, `payment_attempt_in_progress`,
+  `payment_attempts_exhausted`; 403 for non-customers. Optional `Idempotency-Key` header (see below).
+- Outcome: `SUCCEEDED` → payment `CONFIRMED` (`provider` = `SANDBOX`), order `PAYMENT_CONFIRMED`, `PaymentConfirmed`
+  → ledger `PAYMENT_CAPTURED`. `FAILED`/`EXPIRED` → order stays `PAYMENT_PENDING`; the customer may start a new
+  attempt until the `payment-expiry` job (W4-A, 20 min) cancels the order.
+
+### `GET /api/v1/payments/{paymentId}/attempts/{attemptId}` (new, owning CUSTOMER or OPS/FINANCE/ADMIN)
+
+- → 200 attempt (shape above); another customer's / tenant's → 404.
+
+### `POST /api/v1/payments/webhooks/{provider}` (new, **anonymous**, signed)
+
+- Provider callback; today only `{provider}` = `sandbox`. Authenticated by the provider signature (sandbox:
+  `X-Sandbox-Signature: t=<epoch s>,v1=<hex HMAC-SHA256(secret, t + "." + raw body)>`, ±5 min) → 401
+  `invalid_webhook_signature` otherwise; unknown/inactive provider → 404 `payment_provider_not_found`. Verified
+  callbacks always answer **200** `{ result: "processed" | "ignored" | "duplicate" | "unmatched" }` (idempotent by
+  provider event id). Rate-limit group `payment-webhooks` (300/min per IP).
+
+### `GET /api/v1/payments/reconciliation-cases?status=&page=&size=` · `POST …/{caseId}/resolve` (new, OPS/FINANCE/ADMIN)
+
+- List (tenant-scoped, newest first, `{ content, page, size, totalElements }`), `status` ∈ `OPEN|RESOLVED`. Rows
+  `{ id, caseType, status, paymentId, attemptId, orderId, provider, expectedAmount, observedAmount, detailCode,
+  detectedAt, resolvedAt, resolutionNote }`; `caseType` ∈ `SUCCEEDED_NOT_CAPTURED` (PSP took the money, payment
+  could not be confirmed — refund/reverse at the PSP), `DUPLICATE_SUCCESS`, `AMOUNT_MISMATCH`, `ATTEMPT_UNRESOLVED`
+  (UNKNOWN > 30 min), `CONFIRMED_WITHOUT_ATTEMPT`.
+- Resolve: body `{ "note": "…" }` (≤ 500) → 200 case `RESOLVED` (idempotent; audited
+  `PAYMENT_RECONCILIATION_CASE_RESOLVED`). There is no automatic PSP refund (LAC-36).
+
+### Generic `Idempotency-Key` header (LAC-24)
+
+- Optional on: `POST /payments/{id}/attempts`, `POST /payments/{id}/refunds`, `POST /sales/orders/{id}/refund`,
+  `POST /sales/orders/{id}/cancel`, `POST /me/orders/{id}/cancel`, `POST /ops/cancellation-requests/{id}/approve`
+  (`app.idempotency.endpoints`). Key `[A-Za-z0-9_.:-]{8,128}` (else 400 `invalid_idempotency_key`), scoped to tenant
+  + caller. Same key + same request (method, path, query, JSON body with keys sorted) within 24 h → the first **2xx**
+  response is replayed verbatim with `Idempotency-Replayed: true` (CORS-exposed); same key + different request →
+  409 `idempotency_key_reused`; while the first request is still running → 409 `idempotency_request_in_progress`.
+  Non-2xx results are not stored (the key can be retried).
+- Behaviour change (Sales refund): `POST /sales/orders/{id}/refund` already used `Idempotency-Key` as the refund's
+  domain key. Unchanged for a retry of the same request; reusing a key **by the same caller with a different body**
+  now gets 409 `idempotency_key_reused` instead of the existing refund. A key shorter than 8 characters (or with
+  other characters) is now 400 `invalid_idempotency_key` on that endpoint. Checkout (`idempotencyKey` in the body)
+  and the refund body keys are untouched.
+
+### Behaviour change — mock confirmation not mapped in `prod` (LAC-01)
+
+- `POST /api/v1/payments/{id}/confirm` is now `@Profile("!prod")`: under the `prod` profile it does not exist
+  (404 for everyone, whatever `app.payments.mock-confirmation.enabled` says). Dev/test unchanged (flag-gated).
+  Production payments are confirmed only by the provider (webhook / status query / synchronous answer).
+
+### Configuration
+
+- `APP_PAYMENTS_PROVIDER` is **required** outside `dev` (no default; `sandbox` in `application-dev.yml`) — startup
+  fails without it, and the sandbox is refused under `prod` unless `app.payments.sandbox.allow-in-prod=true`
+  (staging only). The sandbox needs `APP_PAYMENTS_SANDBOX_WEBHOOK_SECRET` (≥ 32 chars; dev default only). Until a
+  real provider exists, **the `prod` profile cannot start** without that staging override — intended (there is no
+  way to take real payments yet).
+
+### Clients / consumers to review
+
+- Customer web / Flutter: after checkout, `GET /me/orders/{id}/payment` → `POST /payments/{paymentId}/attempts`
+  with the phone → poll the order payment (≈ 3 s) until `SUCCEEDED`/`FAILED`/`EXPIRED`; show "Confirme no seu
+  telemóvel" while `PENDING_CUSTOMER`/`UNKNOWN`. Not built in the clients by this package.
+- Backoffice `/finance`: reconciliation case list/resolve screen not built (LAC-60).
+
+## W7-B — Failed deliveries and incidents with compensation (LAC-44) — 2026-10-31
+
+Additive in the OpenAPI contract (new optional request fields, new endpoints, one new enum value). One
+**behaviour change**: `FAILED_DELIVERY` now requires a reason.
+
+### `PATCH /api/v1/deliveries/{deliveryId}/status` (changed behaviour, additive fields)
+
+- New optional body fields `failureReason` (`CUSTOMER_ABSENT` | `WRONG_ADDRESS` | `CUSTOMER_REFUSED` | `STORE_FAULT`
+  | `DAMAGED_IN_TRANSIT` | `ACCIDENT` | `OTHER`) and `failureNote` (≤ 500 chars, free text kept on the incident only).
+- `status = FAILED_DELIVERY` **without** `failureReason` → 400 `failure_reason_required` (was accepted). A
+  `failureReason` with any other status → 400 `failure_reason_not_applicable`. Checked after ownership (403/404).
+- `FAILED_DELIVERY` is now accepted from `PICKED_UP`, `ON_ROUTE_TO_CUSTOMER` and `ARRIVED_AT_CUSTOMER` (was only
+  `ARRIVED_AT_CUSTOMER`), and from `ARRIVED_AT_VENDOR` **only with `STORE_FAULT`** (store closed / items missing at
+  pickup — the stock reservation is released because the goods never left). Other combinations → 409
+  `invalid_delivery_transition`. `proofPhotoStorageKey` stays optional (validated by `StoredUploadValidator`).
+- Effect: as before the order becomes `CANCELLED` (stock released only if still reserved), now with
+  `cancellationReason = "DELIVERY_FAILED"`; a delivery incident is opened (`OPEN`) with the reason, reporter
+  (courier or OPS/ADMIN), the courier's last known position (W5-B) and its distance to the address; the customer
+  gets the `delivery_failed` notification (PUSH + in-app). No refund at this point.
+
+### `cancellationReason` (orders, customer orders, sales) — new value
+
+- `DELIVERY_FAILED` joins `SELLER_REJECTED | PAYMENT_EXPIRED | VENDOR_TIMEOUT | CUSTOMER_CANCELLED |
+  CUSTOMER_CANCELLED_WITH_FEE`. Orders cancelled by a failed delivery before W7-B keep `null`. Clients treating the
+  field as a closed enum must accept the new value (backoffice and customer web type it as `string`).
+
+### `GET /api/v1/ops/delivery-incidents?status=&page=&size=` · `GET /api/v1/ops/delivery-incidents/{id}` (new, OPS/ADMIN — the evidence holds the courier's position, kept to the LAC-40 audience)
+
+- Offset page `{ content, page, size, totalElements }` (default `status=OPEN`, newest first, size 1..100) / one
+  incident: `{ id, orderId, orderReference, orderStatus, deliveryId, courierId, reason, note, proofPhotoStorageKey,
+  reportedByRole, failedFromStatus, evidence: { latitude, longitude, accuracyMeters, recordedAt, distanceMeters },
+  status, defaultDecision: { costBearer, outcome, goodsDisposition }, resolution: null | { decision, overridden,
+  overrideReason, refundAmount, retainedFeeAmount, merchantChargeAmount, platformCompensationAmount, decidedBy,
+  resolvedAt }, createdAt }`. Another tenant's incident → 404. Rate-limit group `sensitive` (`/api/v1/ops/**`).
+
+### `POST /api/v1/ops/delivery-incidents/{id}/resolve` (new, OPS/ADMIN)
+
+- Body (all optional; omitted = policy default): `{ costBearer: CUSTOMER|MERCHANT|PLATFORM, outcome:
+  REFUND_FULL|REFUND_MINUS_DELIVERY_FEE, goodsDisposition: RETURN_TO_STORE|DISCARDED, overrideReason (≤ 500) }`.
+  A decision that differs from the default needs `overrideReason` (400 `override_reason_required`).
+- Effect: refund of the remaining refundable amount (minus the delivery fee for `REFUND_MINUS_DELIVERY_FEE`) is
+  **requested** (key `delivery-incident-<incidentId>`; FINANCE approves it as usual), the order stays `CANCELLED`,
+  no stock movement, customer notified (`delivery_incident_refund_full` / `_partial`), audited
+  `DELIVERY_INCIDENT_RESOLVED` (result `OVERRIDDEN` when overridden), ledger posting `INCIDENT_SETTLED` after commit.
+- Idempotent: the same decision again → 200 with the resolved incident (no new refund/audit/notification); a
+  different decision on a resolved incident → 409 `incident_already_resolved`. Concurrent resolutions serialize on
+  the payment lock: one effect.
+- Not offered (later): `REDELIVER` (a failed delivery is terminal and the order is `CANCELLED`, terminal in the order
+  state machine; one delivery per order) and `COMPENSATE` as a credit note (no customer wallet). Courier compensation
+  waits for courier pay (LAC-35).
+
+### Configuration
+
+- Default outcome per reason: `app.delivery-incidents.policy.<REASON>.cost-bearer|outcome|goods-disposition`
+  (unset cells keep the built-in table — see CLAUDE.md, Delivery incidents).
+
+### Clients / consumers to review
+
+- Courier app: does not send `FAILED_DELIVERY` today; when a "failed delivery" action is added it must send
+  `failureReason` (not done in this package).
+- Backoffice: an incidents queue screen is not built (LAC-60); the API is ready.
+
+## W7-C — Profile management, account deletion, data export and consents (LAC-19, LAC-63) — 2026-10-31
+
+Additive only; no existing request/response changes (`GET /api/v1/me` keeps its shape). Retention periods and the
+deletion reflection period are configurable defaults "a validar com jurista" — see `docs/privacy/DATA-PRIVACY.md`.
+
+### `GET /api/v1/me/profile` (new, any authenticated user with a profile in the tenant)
+
+- → **200** `{ id, email, displayName, phoneE164, phoneVerifiedAt, preferredLocale, notificationPreferences: { push, sms,
+  email } }`. No profile in the resolved tenant (or a pseudonymised one) → 404 `not_found`; no tenant → 403
+  `tenant_required`.
+
+### `PATCH /api/v1/me` (new)
+
+- Body (all optional, null = unchanged) `{ displayName? (1..120, not blank, trimmed), preferredLocale? ("pt-PT" | "pt-MZ"
+  | "en", `app.privacy.supported-locales`), notificationPreferences?: { push?, sms?, email? } }` → **200** with the
+  `GET /me/profile` shape. 400 `validation_failed` (blank/too long name), 400 `unsupported_locale`.
+- Display name and locale are mirrored to the Keycloak user (first name = first word, last name = the rest; attribute
+  `locale`) in the same transaction: a Keycloak failure → 500 `keycloak_error` and nothing is saved. Notification
+  preferences write `user_notification_preferences` (this is the endpoint W6-C lacked). Audited `PROFILE_UPDATED`
+  (changed field names only).
+- **E-mail and phone are not editable here.** E-mail changes go through the Keycloak account console (with
+  verification); the verified phone comes from the phone + SMS login (LAC-18, synced on each request). Unknown fields
+  in the body are ignored.
+
+### `POST /api/v1/me/deletion-request` · `DELETE …` · `GET …` (new, CUSTOMER only)
+
+- `POST` → **202** `{ id, status: "PENDING", requestedAt, scheduledFor, cancelledAt: null, completedAt: null }`
+  (`scheduledFor` = `requestedAt` + `app.privacy.deletion.reflection-period`, default P30D); **200** with the same
+  body when a request is already open (idempotent). **409 `active_orders_present`** while the customer has an order in
+  progress (any status except `DELIVERED`, `CANCELLED`, `REFUNDED` and the never-written legacy values). A principal
+  that is not customer-only (e.g. CUSTOMER + COURIER) → 403 `account_deletion_not_supported`; staff → 403.
+  Rate-limit group `account-deletion` (10/h). Audited `ACCOUNT_DELETION_REQUESTED`.
+- `DELETE` → **200** with `status: "CANCELLED"`; 404 `deletion_request_not_found` when nothing is pending; 409
+  `deletion_already_processed` once the job has pseudonymised the account. Audited `ACCOUNT_DELETION_CANCELLED`.
+- `GET` → **200** latest request (any status) or 404 `deletion_request_not_found`.
+- After `scheduledFor`, job `account-deletion` (hourly) pseudonymises the account (field map in
+  `docs/privacy/DATA-PRIVACY.md` §6): profile name/e-mail/phones/NIF/… replaced or cleared, addresses, favourites,
+  push devices, inbox and preferences deleted, order delivery snapshots stripped of identifying fields (amounts,
+  items, reference, city kept), Keycloak user disabled then deleted. Still an order in progress at that time → the
+  request stays `PENDING` and is retried on the next run.
+
+### `GET /api/v1/me/data-export` (new, any authenticated user with a profile)
+
+- → **200** `application/json` with `Content-Disposition: attachment; filename="pede-aqui-dados-YYYY-MM-DD.json"` and
+  `Cache-Control: no-store`: `{ formatVersion: 1, generatedAt, profile, notificationPreferences, registeredPushDevices,
+  addresses[], favouriteVendorIds[], orders[] (summaries), consents[], deletionRequests[] }`. Push tokens are never
+  exported. Rate-limit group `data-export` (3/h per account, `APP_RATE_LIMIT_DATA_EXPORT_CAPACITY`) → 429
+  `rate_limited`. Audited `PERSONAL_DATA_EXPORTED`.
+
+### `GET /api/v1/me/consents` · `PUT /api/v1/me/consents/{purpose}` · `DELETE /api/v1/me/consents/{purpose}` (new)
+
+- `purpose` ∈ `TERMS_OF_SERVICE | PRIVACY_POLICY | MARKETING` (else 400 `invalid_consent_purpose`).
+- `GET` → `[{ purpose, currentVersion, version, grantedAt, withdrawnAt, active }]` (one entry per purpose).
+- `PUT` body `{ version }` must equal `app.privacy.consent-versions.<PURPOSE>` (else 409 `consent_version_outdated`) →
+  200; same version again is idempotent, a newer version closes the previous grant. Audited `CONSENT_GRANTED`.
+- `DELETE` → 204; 404 `consent_not_found` when none is active. Audited `CONSENT_WITHDRAWN`.
+
+### Behaviour (no request/response change)
+
+- New jobs `account-deletion` (hourly at :20) and `retention-cleaner` (daily 05:15 Africa/Maputo) — see CLAUDE.md
+  "Scheduled jobs". Retention deletes `audit_logs` > 24 months, `notification_deliveries` (not QUEUED) and in-app
+  `notifications` > 180 days, order/payment status history > 10 years, finished `provisioning_requests` > 24 h.
+- Structured (JSON) logs mask e-mails, phone numbers and tokens in every string field.
+
+### Clients / consumers to review
+
+- Customer web: `/profile` now edits name/locale/notification preferences, exports the data and requests/cancels the
+  account deletion (W7-C). Flutter customer app and backoffice: not changed by this package.
+
 ## W7-D — Ratings API (LAC-28) — 2026-10-31
 
 ### `GET /api/v1/me/orders/{orderId}/rating` (new, CUSTOMER)
