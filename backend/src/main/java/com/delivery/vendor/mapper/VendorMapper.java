@@ -19,6 +19,7 @@ public class VendorMapper {
                 vendor.getStatus(),
                 vendor.getVerificationStatus(),
                 vendor.getRating(),
+                vendor.getRatingCount(),
                 vendor.getEstimatedDeliveryMinutes(),
                 vendor.isAvailable(),
                 vendor.getLatitude(),

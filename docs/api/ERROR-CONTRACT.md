@@ -179,6 +179,16 @@ W6-A (checkout v2, LAC-22/LAC-20; detalhe em `API-MIGRATION.md`, secção W6-A) 
   `price_changed` (ou `quote_changed` com `quoteId`) → `out_of_service_area` → `address_too_far` → `quote_changed`
   (`amounts_changed`) → stock/promoções.
 
+W7-D acrescenta (detalhe em `API-MIGRATION.md`, secção W7-D):
+- LAC-28 (avaliações): `order_not_delivered` (409 — avaliar uma encomenda que não está `DELIVERED`),
+  `rating_window_closed` (409 — mais de `app.rating.window-days`, 7, depois da entrega), `rating_already_submitted`
+  (409 — segunda avaliação da mesma encomenda, incluindo a perdedora de duas submissões concorrentes),
+  `rating_edit_window_closed` (409 — `PUT` depois de `app.rating.edit-window-hours`, 24), `courier_not_rateable` (400 —
+  `courierStars` numa encomenda sem estafeta), `rating_reply_exists` (409 — segunda resposta da loja),
+  `rating_comment_absent` (409 — ocultar uma avaliação sem comentário). Encomenda/avaliação de outro cliente, outro
+  vendedor ou outro tenant → 404 `not_found`. Ordem em `POST /me/orders/{id}/rating`: validação do corpo (400) → posse
+  (404) → `courier_not_rateable` → `order_not_delivered` → `rating_window_closed` → `rating_already_submitted`.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),

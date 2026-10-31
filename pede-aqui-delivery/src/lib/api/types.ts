@@ -6,7 +6,10 @@ export interface VendorSearchResult {
   distanceKm: number | null
   distanceMeters: number | null
   available: boolean
+  /** LAC-28: real average of the store's ratings (0 without ratings); may lag a new rating by up to 60 s (search cache). */
   rating: number
+  /** LAC-28: number of ratings behind `rating` (absent on older APIs). */
+  ratingCount?: number
   estimatedDeliveryMinutes: number | null
   deliveryFee: number | null
   /** LAC-27: store open right now (hours + closures); closed stores come last in the results. */
@@ -34,6 +37,8 @@ export interface VendorPublicInfo {
   description: string | null
   address: string | null
   rating: number
+  /** LAC-28: number of ratings behind `rating` (absent on older APIs). */
+  ratingCount?: number
   available: boolean
   estimatedDeliveryMinutes: number | null
   logoUrl: string | null
@@ -296,4 +301,41 @@ export interface MeResponse {
   email: string | null
   displayName: string | null
   roles: string[]
+}
+
+// Ratings (LAC-28) — GET/POST/PUT /api/v1/me/orders/{orderId}/rating
+export interface OrderRating {
+  id: string
+  orderId: string
+  vendorId: string | null
+  courierId: string | null
+  vendorStars: number
+  courierStars: number | null
+  comment: string | null
+  /** The comment was hidden by moderation (the author still sees it; the stars still count). */
+  commentHidden: boolean
+  commentHiddenReason: string | null
+  vendorReply: string | null
+  vendorRepliedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type NotRateableReason = 'order_not_delivered' | 'rating_window_closed' | 'rating_already_submitted'
+
+export interface OrderRatingStatus {
+  orderId: string
+  rateable: boolean
+  notRateableReason: NotRateableReason | null
+  rateableUntil: string | null
+  courierRateable: boolean
+  editable: boolean
+  editableUntil: string | null
+  rating: OrderRating | null
+}
+
+export interface SubmitRatingRequest {
+  vendorStars: number
+  courierStars?: number
+  comment?: string
 }

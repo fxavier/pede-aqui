@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { setCartFromResponse, replaceCart } from '@/store/cart-slice'
 import { verticalMeta, VERTICAL_META } from '@/lib/verticals'
 import { formatMZN } from '@/lib/utils'
+import { formatRating } from '@/lib/ratings'
 import type { RootState, AppDispatch } from '@/store'
 import type { Product, VendorSearchResult } from '@/lib/api/types'
 
@@ -179,7 +180,7 @@ export default function CatalogoPage() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1 font-semibold text-amber-600">
                         <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        {vendor.rating > 0 ? vendor.rating.toFixed(1) : 'Novo'}
+                        {formatRating(vendor.rating, vendor.ratingCount)}
                       </span>
                       {vendor.estimatedDeliveryMinutes && (
                         <span className="flex items-center gap-1">

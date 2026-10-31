@@ -27,8 +27,11 @@ public class Vendor {
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false)
     private VendorVerificationStatus verificationStatus;
-    @Column(nullable = false)
+    /** Average stars, maintained by the rating module (LAC-28) through the api port; read-only here. */
+    @Column(nullable = false, insertable = false, updatable = false)
     private double rating;
+    @Column(name = "rating_count", nullable = false, insertable = false, updatable = false)
+    private int ratingCount;
     @Column(name = "estimated_delivery_minutes", nullable = false)
     private int estimatedDeliveryMinutes;
     @Column(nullable = false)
@@ -113,6 +116,7 @@ public class Vendor {
     public String getStatus() { return status; }
     public VendorVerificationStatus getVerificationStatus() { return verificationStatus; }
     public double getRating() { return rating; }
+    public int getRatingCount() { return ratingCount; }
     public int getEstimatedDeliveryMinutes() { return estimatedDeliveryMinutes; }
     public boolean isAvailable() { return available; }
     public Double getLatitude() { return latitude; }

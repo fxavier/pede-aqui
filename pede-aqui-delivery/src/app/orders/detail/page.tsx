@@ -4,6 +4,7 @@ import { statusLabel, isActiveOrder } from '@/lib/orderStatusLabels'
 import { useMyOrder } from '@/lib/orderHistory'
 import { formatMZN } from '@/lib/utils'
 import { OrderCancellationCard } from '@/components/OrderCancellationCard'
+import { OrderRatingCard } from '@/components/OrderRatingCard'
 
 const STATUS_TIMELINE = [
   'PAYMENT_CONFIRMED',
@@ -131,6 +132,7 @@ export default function OrderDetailPage() {
         {/* Right — map placeholder (illustrative, no live GPS available) */}
         <div className="space-y-6">
           <OrderCancellationCard order={order} />
+          <OrderRatingCard orderId={order.id} delivered={currentStatus === 'DELIVERED'} />
 
           {order.deliveryCode && (
             <div className="bg-white rounded-3xl border border-brand-100 p-5 shadow-sm text-left space-y-2">

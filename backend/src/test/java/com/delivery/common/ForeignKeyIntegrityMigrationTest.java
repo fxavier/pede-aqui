@@ -70,7 +70,10 @@ class ForeignKeyIntegrityMigrationTest {
         assertThat(validated(jdbc)).as("every LAC-58 FK exists and is validated").hasSize(20)
                 .allSatisfy((name, valid) -> assertThat(valid).as(name).isTrue());
         assertThat(hasForeignKey(jdbc, "customer_favorite_vendors", "customer_id")).isFalse();
-        assertThat(hasForeignKey(jdbc, "ratings", "rater_user_id")).isFalse();
+        // V072 (LAC-28) decided rater_user_id = profile id and added fk_ratings_rater_user_id; with this pre-V072
+        // dangling row it stays NOT VALID (the row is kept), see RatingsMigrationTest.
+        assertThat(jdbc.queryForObject("SELECT convalidated FROM pg_constraint WHERE conname = 'fk_ratings_rater_user_id'", Boolean.class))
+                .isFalse();
         assertThat(hasForeignKey(jdbc, "orders", "delivery_address_id")).isFalse();
         assertThat(hasForeignKey(jdbc, "orders", "quote_delivery_fee_rule_id")).isFalse();
 

@@ -18,6 +18,7 @@ import type { Product } from '@/lib/api/types'
 import { formatMZN } from '@/lib/utils'
 import { vendorCover, productEmoji } from '@/lib/covers'
 import { cartErrorMessage } from '@/lib/cart-errors'
+import { formatRating } from '@/lib/ratings'
 
 export default function VendorPage() {
   const { vendorId } = useParams<{ vendorId: string }>()
@@ -174,7 +175,7 @@ export default function VendorPage() {
             </div>
             <div className="flex flex-wrap gap-3 text-xs font-bold text-white">
               <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> {vendor && vendor.rating > 0 ? vendor.rating.toFixed(1) : 'Novo'}
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> {vendor ? formatRating(vendor.rating, vendor.ratingCount) : 'Novo'}
               </div>
               {vendor?.estimatedDeliveryMinutes ? (
                 <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl flex items-center gap-1.5">

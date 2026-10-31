@@ -13,6 +13,8 @@ import java.util.UUID;
  * are meaningless placeholders.
  * <p>{@code distanceKm}/{@code distanceMeters} are the PostGIS geodesic distance from the searched point (LAC-39); both
  * are null when the request has no usable {@code lat}/{@code lng} (the radius filter then does not apply).
+ * <p>{@code rating}/{@code ratingCount} (LAC-28) are the vendor's real rating aggregate (average, 0 without ratings);
+ * cached with the result set, so a new rating may take up to the cache TTL (60 s) to show.
  */
 public record SearchVendorResponse(
     UUID vendorId,
@@ -21,6 +23,7 @@ public record SearchVendorResponse(
     Integer distanceMeters,
     boolean available,
     double rating,
+    int ratingCount,
     Integer estimatedDeliveryMinutes,
     BigDecimal deliveryFee,
     String deliveryFeeBasis,
@@ -29,7 +32,7 @@ public record SearchVendorResponse(
 ) {
     /** Copy with the request-time open state (LAC-27). */
     public SearchVendorResponse withOpenState(boolean open, Instant nextOpeningAt) {
-        return new SearchVendorResponse(vendorId, name, distanceKm, distanceMeters, available, rating,
+        return new SearchVendorResponse(vendorId, name, distanceKm, distanceMeters, available, rating, ratingCount,
                 estimatedDeliveryMinutes, deliveryFee, deliveryFeeBasis, open, nextOpeningAt);
     }
 }
