@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -52,13 +54,23 @@ class MinioUploadLimitsIntegrationTest {
      * MinIO RELEASE.2024-10-13T13-34-11Z from Bitnami's frozen public archive: {@code minio/minio} was removed from
      * Docker Hub and {@code quay.io/minio/*} now needs a login. The Bitnami entrypoint starts {@code minio server}
      * itself (data under /bitnami/minio/data), so no command is passed.
+     *
+     * <p>Readiness is deterministic, not "port open": the Bitnami setup first runs MinIO <i>in the background</i>
+     * (to configure {@code mc}), stops it, and only then starts the real server ({@code ** Starting MinIO **}). A
+     * health/live probe can succeed against that throw-away background server, and the next S3 call then hits the
+     * stop/restart window ({@code SocketException: Connection reset}) — seen locally where the amd64 image runs
+     * emulated and the setup takes seconds. So we wait for the final start's log line first, then for
+     * {@code /minio/health/ready} (200 only when the server can serve requests).
      */
     @Container
     private static final GenericContainer<?> MINIO = new GenericContainer<>("bitnamilegacy/minio:2024.10.13-debian-12-r1")
             .withEnv("MINIO_ROOT_USER", USER)
             .withEnv("MINIO_ROOT_PASSWORD", PASSWORD)
             .withExposedPorts(9000)
-            .waitingFor(Wait.forHttp("/minio/health/live").forPort(9000));
+            .waitingFor(new WaitAllStrategy(WaitAllStrategy.Mode.WITH_OUTER_TIMEOUT)
+                    .withStrategy(Wait.forLogMessage(".*\\*\\* Starting MinIO \\*\\*.*", 1))
+                    .withStrategy(Wait.forHttp("/minio/health/ready").forPort(9000).forStatusCode(200))
+                    .withStartupTimeout(Duration.ofMinutes(2)));
 
     private static S3Presigner presigner;
     private static S3Client s3Client;
