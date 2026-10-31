@@ -210,6 +210,12 @@ app:
           - /api/v1/ops/cancellation-requests/*/approve
         capacity: 20
         period: 1m
+      # W7-A (LAC-31): callbacks do PSP (anónimos, assinados) — por IP; mais específico que `payments`.
+      payment-webhooks:
+        paths: [/api/v1/payments/webhooks/**]
+        methods: [POST]
+        capacity: 300
+        period: 1m
       provisioning:
         paths: [/api/v1/provisioning/**]
         capacity: 20
@@ -296,7 +302,46 @@ app:
     quote-ttl: ${APP_CHECKOUT_QUOTE_TTL:PT10M}
   payments:
     mock-confirmation:
-      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Never enable in prod (AS-01)
+      enabled: false  # dev-only manual POST /payments/{id}/confirm; disabled → 404. Not mapped at all in prod (LAC-01)
+    # W7-A (LAC-31): id of the active PaymentProvider bean. No default on purpose: dev uses `sandbox`
+    # (application-dev.yml); prod must set APP_PAYMENTS_PROVIDER or startup fails (and the sandbox is refused in prod).
+    provider: ${APP_PAYMENTS_PROVIDER:}
+    attempts:
+      max-per-payment: ${APP_PAYMENTS_ATTEMPTS_MAX_PER_PAYMENT:5}
+      # INITIATED/PENDING_CUSTOMER attempts older than this are expired by payment-attempt-expiry (keep < app.orders.payment-timeout).
+      ttl: ${APP_PAYMENTS_ATTEMPT_TTL:PT3M}
+      poll-after: PT60S
+      poll-backoff-base: PT15S
+      poll-max-backoff: PT30M
+      # UNKNOWN longer than this opens an ATTEMPT_UNRESOLVED reconciliation case (manual review).
+      unknown-review-after: PT30M
+      batch-size: 100
+      reconciliation-lookback: P3D
+    # Simulated M-Pesa-like provider (dev/test/staging). No secret here: dev default in application-dev.yml.
+    sandbox:
+      webhook-secret: ${APP_PAYMENTS_SANDBOX_WEBHOOK_SECRET:}
+      signature-tolerance: PT5M
+      default-scenario: ${APP_PAYMENTS_SANDBOX_DEFAULT_SCENARIO:SUCCEEDED}
+      latency: ${APP_PAYMENTS_SANDBOX_LATENCY:PT3S}
+      callback-enabled: false
+      callback-url: ${APP_PAYMENTS_SANDBOX_CALLBACK_URL:http://localhost:8080/api/v1/payments/webhooks/sandbox}
+      allow-in-prod: false
+  # W7-A (LAC-24): optional Idempotency-Key header on money-moving endpoints (common/idempotency). Replays the stored
+  # 2xx response for the same key + request; 409 idempotency_key_reused for another request. Records purged by the
+  # idempotency-cleanup job after `ttl`.
+  idempotency:
+    enabled: ${APP_IDEMPOTENCY_ENABLED:true}
+    ttl: PT24H
+    in-progress-lease: PT2M
+    max-request-bytes: 65536
+    max-response-bytes: 65536
+    endpoints:
+      - POST /api/v1/payments/*/attempts
+      - POST /api/v1/payments/*/refunds
+      - POST /api/v1/sales/orders/*/refund
+      - POST /api/v1/sales/orders/*/cancel
+      - POST /api/v1/me/orders/*/cancel
+      - POST /api/v1/ops/cancellation-requests/*/approve
   # LAC-46: scheduled jobs (JobSchedulingConfig + ShedLock). enabled=false turns the scheduler off (tests); each job
   # also has its own flag. Durations are ISO-8601.
   jobs:
@@ -343,6 +388,25 @@ app:
       enabled: ${APP_JOBS_NOTIFICATION_DELIVERY_ENABLED:true}
       interval: PT15S
       initial-delay: PT30S
+    # W7-A (LAC-32): payment attempts — status poller (query the PSP for due open attempts), attempt expiry and the
+    # daily reconciliation (SUCCEEDED attempts vs captured payments -> payment_reconciliation_cases).
+    payment-status-poller:
+      enabled: ${APP_JOBS_PAYMENT_STATUS_POLLER_ENABLED:true}
+      interval: PT30S
+      initial-delay: PT1M
+    payment-attempt-expiry:
+      enabled: ${APP_JOBS_PAYMENT_ATTEMPT_EXPIRY_ENABLED:true}
+      interval: PT1M
+      initial-delay: PT1M
+    payment-reconciliation:
+      enabled: ${APP_JOBS_PAYMENT_RECONCILIATION_ENABLED:true}
+      cron: "0 0 3 * * *"
+      zone: Africa/Maputo
+    # W7-A (LAC-24): deletes expired idempotency_records.
+    idempotency-cleanup:
+      enabled: ${APP_JOBS_IDEMPOTENCY_CLEANUP_ENABLED:true}
+      cron: "0 15 3 * * *"
+      zone: Africa/Maputo
     # W7-C (LAC-19): pseudonimiza as contas cujo período de reflexão terminou (ver app.privacy.deletion).
     account-deletion:
       enabled: ${APP_JOBS_ACCOUNT_DELETION_ENABLED:true}

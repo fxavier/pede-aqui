@@ -159,6 +159,14 @@ class ErrorContractApiTest {
     }
 
     @Test
+    void deadlockVictimIsConcurrentModificationNotInternalError() throws Exception {
+        mockMvc.perform(get("/api/v1/stub/deadlock").with(user()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("concurrent_modification"))
+                .andExpect(jsonPath("$.detail", not(containsString("deadlock"))));
+    }
+
+    @Test
     void accessDeniedInsideMvcIsForbidden() throws Exception {
         mockMvc.perform(get("/api/v1/stub/denied").with(user()))
                 .andExpect(status().isForbidden())
@@ -282,6 +290,11 @@ class ErrorContractApiTest {
         @GetMapping("/api/v1/stub/typed/{id}")
         Map<String, String> typed(@PathVariable("id") UUID id) {
             return Map.of("id", id.toString());
+        }
+
+        @GetMapping("/api/v1/stub/deadlock")
+        Map<String, String> deadlock() {
+            throw new org.springframework.dao.CannotAcquireLockException("ERROR: deadlock detected on relation orders");
         }
 
         @GetMapping("/api/v1/stub/integrity")

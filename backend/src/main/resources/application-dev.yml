@@ -21,6 +21,11 @@ app:
   payments:
     mock-confirmation:
       enabled: true
+    # W7-A (LAC-31): simulated PSP; the callback is POSTed back to the local backend after `latency`.
+    provider: ${APP_PAYMENTS_PROVIDER:sandbox}
+    sandbox:
+      webhook-secret: ${APP_PAYMENTS_SANDBOX_WEBHOOK_SECRET:dev-only-sandbox-webhook-secret-0123456789}
+      callback-enabled: ${APP_PAYMENTS_SANDBOX_CALLBACK_ENABLED:true}
 
 # Password LOCAL do Postgres do docker compose. Em prod DB_PASSWORD é obrigatório (SEC-07).
 spring:

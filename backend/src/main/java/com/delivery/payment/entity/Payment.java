@@ -54,6 +54,10 @@ public class Payment {
     }
 
     public void confirm() { this.status = PaymentStatus.CONFIRMED; this.confirmedAt = Instant.now(); this.updatedAt = confirmedAt; }
+    /** Confirmation from a verified PSP success (W7-A): also records which provider captured the money. */
+    public void confirmByProvider(String providerCode) { confirm(); this.provider = providerCode; }
+    /** Who captured the money: {@code LOCAL_MOCK} (checkout default / mock confirmation) or the PSP code, e.g. {@code SANDBOX}. */
+    public String getProvider() { return provider; }
     /** Financial state after a refund approval: approved refunds cover part of the amount. */
     public void markPartiallyRefunded() { this.status = PaymentStatus.PARTIALLY_REFUNDED; this.updatedAt = Instant.now(); }
     /** Financial state after a refund approval: approved refunds cover the full amount. */

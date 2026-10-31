@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -84,6 +85,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ResponseEntity<ProblemDetail> handleOptimisticLock(OptimisticLockingFailureException exception, HttpServletRequest request) {
         log.warn("Concurrent modification on {} {}", request.getMethod(), request.getRequestURI());
+        return problem(HttpStatus.CONFLICT, "concurrent_modification",
+                "The resource was modified concurrently; reload and try again", request);
+    }
+
+    /**
+     * Lock acquisition failures (deadlock victim 40P01, lock timeout) mean another writer won the race on the same
+     * rows: a neutral 409 the client can retry, never a 500. Paths follow the lock order rule so this is a safety net.
+     */
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    ResponseEntity<ProblemDetail> handlePessimisticLock(PessimisticLockingFailureException exception, HttpServletRequest request) {
+        log.warn("Lock conflict on {} {}: {}", request.getMethod(), request.getRequestURI(), exception.getClass().getSimpleName());
         return problem(HttpStatus.CONFLICT, "concurrent_modification",
                 "The resource was modified concurrently; reload and try again", request);
     }

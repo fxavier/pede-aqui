@@ -16,6 +16,8 @@ import com.delivery.auth.repository.AppUserProfileRepository;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.security.TenantContext;
 import com.delivery.common.service.AuditLogService;
+import com.delivery.delivery.api.DeliveryFailure;
+import com.delivery.delivery.api.DeliveryFailureReason;
 import com.delivery.delivery.config.DeliveryCodeProperties;
 import com.delivery.delivery.entity.Delivery;
 import com.delivery.delivery.entity.DeliveryStatus;
@@ -62,6 +64,7 @@ class DeliveryConfirmationTest {
     private final TenantContext tenantContext = mock(TenantContext.class);
     private final AuditLogService auditLogService = mock(AuditLogService.class);
     private final DeliveryCodeHasher hasher = hasher("unit-test-secret");
+    private final com.delivery.order.service.DeliveryIncidentService incidentService = mock(com.delivery.order.service.DeliveryIncidentService.class);
     private DeliveryService service;
     private Order order;
 
@@ -71,8 +74,10 @@ class DeliveryConfirmationTest {
         when(eventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         DeliveryCodeProperties properties = new DeliveryCodeProperties();
         properties.setMaxCodeAttempts(5);
-        service = new DeliveryService(deliveryRepository, eventRepository,
-                new com.delivery.order.service.OrderDeliveryHooks(orderRepository, orderStockService, com.delivery.order.OrderTestStatus.stateMachine()), new DeliveryMapper(), tenantContext,
+        com.delivery.order.service.OrderDeliveryHooks hooks =
+                new com.delivery.order.service.OrderDeliveryHooks(orderRepository, orderStockService, com.delivery.order.OrderTestStatus.stateMachine());
+        hooks.setIncidentService(incidentService);
+        service = new DeliveryService(deliveryRepository, eventRepository, hooks, new DeliveryMapper(), tenantContext,
                 new DeliveryAccessGuard(new com.delivery.dispatch.service.CourierIdentityResolver(profileRepository, courierRepository, tenantContext)),
                 hasher, properties, auditLogService, mock(StoredUploadValidator.class));
         order = new Order(orderId, tenantId, "PA-2", UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, new BigDecimal("12.00"), "checkout-key", hasher.hash(CODE), CODE);
@@ -266,6 +271,95 @@ class DeliveryConfirmationTest {
         assertThat(hasher.matches(CODE, sha256, false)).isFalse();
         assertThat(hasher.matches(null, sha256, true)).isFalse();
         assertThat(hasher.generateCode()).matches("[0-9]{6}");
+    }
+
+    // --- LAC-44 (W7-B): failure reason and failure transitions ---
+
+    @Test
+    void failedDeliveryWithoutAReasonIsRejectedWithoutEffects() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("failure_reason_required");
+                    assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                });
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_CUSTOMER);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.ASSIGNED_TO_COURIER);
+        verify(incidentService, never()).open(any(), any());
+    }
+
+    @Test
+    void aFailureReasonWithAnotherStatusIsRejected() {
+        Delivery delivery = delivery(DeliveryStatus.PICKED_UP, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.ON_ROUTE_TO_CUSTOMER, null, null,
+                DeliveryFailureReason.ACCIDENT, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("failure_reason_not_applicable"));
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.PICKED_UP);
+    }
+
+    @Test
+    void failureAtCustomerCancelsTheOrderAndOpensAnIncidentWithTheReporterAndEvidence() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.CUSTOMER_ABSENT,
+                "  ninguém atendeu  ");
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.FAILED_DELIVERY);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(order.getCancellationReason()).isEqualTo(com.delivery.order.entity.CancellationReason.DELIVERY_FAILED);
+        verify(orderStockService).release(order);
+        org.mockito.ArgumentCaptor<DeliveryFailure> failure = org.mockito.ArgumentCaptor.forClass(DeliveryFailure.class);
+        verify(incidentService).open(eq(order), failure.capture());
+        assertThat(failure.getValue().reason()).isEqualTo(DeliveryFailureReason.CUSTOMER_ABSENT);
+        assertThat(failure.getValue().note()).isEqualTo("ninguém atendeu");
+        assertThat(failure.getValue().reportedBy()).isEqualTo(COURIER_USER);
+        assertThat(failure.getValue().reportedByRole()).isEqualTo("COURIER");
+        assertThat(failure.getValue().fromStatus()).isEqualTo("ARRIVED_AT_CUSTOMER");
+        assertThat(failure.getValue().courierId()).isEqualTo(courierId);
+        assertThat(failure.getValue().deliveryId()).isEqualTo(delivery.getId());
+    }
+
+    @Test
+    void onTheWayAFailureIsAcceptedForAnyReason() {
+        Delivery delivery = delivery(DeliveryStatus.ON_ROUTE_TO_CUSTOMER, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThat(service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.ACCIDENT, null)
+                .status()).isEqualTo(DeliveryStatus.FAILED_DELIVERY);
+    }
+
+    @Test
+    void atTheStoreOnlyAStoreFaultCanFailTheDelivery() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_VENDOR, courierId);
+        actAs(COURIER_USER, "ROLE_COURIER");
+
+        assertThatThrownBy(() -> service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null,
+                DeliveryFailureReason.CUSTOMER_ABSENT, null))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getCode()).isEqualTo("invalid_delivery_transition"));
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.ARRIVED_AT_VENDOR);
+
+        service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.STORE_FAULT, null);
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.FAILED_DELIVERY);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        verify(orderStockService).release(order); // goods never left the store: the reservation goes back
+    }
+
+    @Test
+    void anOperatorReportIsRecordedWithTheOperatorRole() {
+        Delivery delivery = delivery(DeliveryStatus.ARRIVED_AT_CUSTOMER, courierId);
+        actAs("kc-ops", "ROLE_OPS");
+
+        service.updateStatus(delivery.getId(), DeliveryStatus.FAILED_DELIVERY, null, null, DeliveryFailureReason.OTHER, null);
+
+        org.mockito.ArgumentCaptor<DeliveryFailure> failure = org.mockito.ArgumentCaptor.forClass(DeliveryFailure.class);
+        verify(incidentService).open(eq(order), failure.capture());
+        assertThat(failure.getValue().reportedByRole()).isEqualTo("OPS");
+        assertThat(failure.getValue().evidence()).isNull();
     }
 
     @Test
