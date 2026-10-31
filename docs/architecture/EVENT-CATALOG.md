@@ -35,11 +35,11 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 
 | Campo | Valor |
 |---|---|
-| Produtor | módulo `payment` — `PaymentService.confirm` (W6-B, LAC-33), na transação que passa o pagamento `PENDING_CONFIRMATION → CONFIRMED` (hoje só a confirmação *mock*; o PSP, LAC-31, deve publicar o mesmo evento). Uma confirmação repetida (pagamento já `CONFIRMED`) não publica. |
+| Produtor | módulo `payment`, na transação que passa o pagamento `PENDING_CONFIRMATION → CONFIRMED`: `PaymentService.confirm` (confirmação *mock*, só fora de `prod`; W6-B) e, desde W7-A (LAC-31), `PaymentService.confirmFromProvider` — chamado por `PaymentAttemptOutcomes` quando uma tentativa do PSP chega a `SUCCEEDED` (webhook assinado, consulta do *poller* ou resposta síncrona), sob o *lock* da linha do pagamento. Mesmo payload nos dois caminhos. Uma confirmação repetida (pagamento já capturado) não publica; um sucesso do PSP que já não pode confirmar o pagamento (expirado/cancelado, duplicado, valor diferente) também não — abre um caso em `payment_reconciliation_cases`. |
 | Payload | `tenantId`, `paymentId`, `orderId` (UUID), `amount` (BigDecimal), `currency` (`"MZN"`), `confirmedAt` (Instant) |
 | Consumidores | `settlement` — `SettlementEventListener`: lançamento `PAYMENT_CAPTURED` (Dr `PLATFORM_CASH_CLEARING` / Cr `CUSTOMER_FUNDS_HELD`). |
 | Garantia | At-least-once; chave natural `paymentId` (ledger: `payment-captured:<paymentId>`, UNIQUE por tenant). |
-| Testes | `SettlementLedgerPostgresTest.paymentConfirmedThenDeliveredThenPartiallyRefundedPostsThroughEventsAndBalances` |
+| Testes | `SettlementLedgerPostgresTest.paymentConfirmedThenDeliveredThenPartiallyRefundedPostsThroughEventsAndBalances`, `PaymentAttemptsPostgresTest.attemptThenSignedWebhookConfirmsThePaymentAndPostsTheCapture` (W7-A: tentativa → webhook → `PAYMENT_CAPTURED`) |
 
 ### `com.delivery.payment.RefundApproved`
 

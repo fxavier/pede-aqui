@@ -961,3 +961,86 @@ Additive only; no existing contract changes. The in-app inbox (`/api/v1/notifica
   `status` from `GET /couriers/me`.
 - Ops: `APP_COURIER_PRESENCE_ENFORCE_TIMEOUT=true` (no location for 2 min → `OFFLINE`) may be turned on once couriers
   run a build with W6-D; with an older build every online courier would be taken offline after 2 minutes.
+
+## W7-A — PSP integration seam (sandbox), payment attempts, reconciliation, generic Idempotency-Key, mock confirmation unmapped in prod (LAC-31, LAC-32, LAC-24, LAC-01) — 2026-10-31
+
+Additive except for the behaviour notes at the end. Only a **sandbox** provider exists (simulated M-Pesa-like
+behaviour, no money moves); the real M-Pesa provider is a later package.
+
+### `GET /api/v1/me/orders/{orderId}/payment` (new, CUSTOMER, own order else 404)
+
+- → **200** `{ paymentId, orderId, status, amount, currency: "MZN", payable, latestAttempt }`. `payable` = payment
+  `PENDING_CONFIRMATION`, order `PAYMENT_PENDING`, no open attempt and attempts left. `latestAttempt` = newest
+  attempt (shape below) or absent. This is the polling target of the "Confirme no seu telemóvel" screen
+  (rate-limit group `sensitive`).
+
+### `POST /api/v1/payments/{paymentId}/attempts` (new, CUSTOMER, own payment else 404)
+
+- Body `{ "msisdn": "+25884…" }` (E.164 or Mozambican national form) → **202**
+  `{ id, paymentId, orderId, provider, status, amount, currency, msisdnMasked: "*******567", errorCode, createdAt,
+  updatedAt, completedAt }`. `status` ∈ `INITIATED | PENDING_CUSTOMER | SUCCEEDED | FAILED | EXPIRED | UNKNOWN`;
+  normally `PENDING_CUSTOMER` (push sent to the phone) or `UNKNOWN` (the PSP did not answer in time — **not** a
+  failure; keep polling, do not retry).
+- Errors: 400 `invalid_msisdn` / `validation_failed`; 409 `payment_not_payable`, `payment_attempt_in_progress`,
+  `payment_attempts_exhausted`; 403 for non-customers. Optional `Idempotency-Key` header (see below).
+- Outcome: `SUCCEEDED` → payment `CONFIRMED` (`provider` = `SANDBOX`), order `PAYMENT_CONFIRMED`, `PaymentConfirmed`
+  → ledger `PAYMENT_CAPTURED`. `FAILED`/`EXPIRED` → order stays `PAYMENT_PENDING`; the customer may start a new
+  attempt until the `payment-expiry` job (W4-A, 20 min) cancels the order.
+
+### `GET /api/v1/payments/{paymentId}/attempts/{attemptId}` (new, owning CUSTOMER or OPS/FINANCE/ADMIN)
+
+- → 200 attempt (shape above); another customer's / tenant's → 404.
+
+### `POST /api/v1/payments/webhooks/{provider}` (new, **anonymous**, signed)
+
+- Provider callback; today only `{provider}` = `sandbox`. Authenticated by the provider signature (sandbox:
+  `X-Sandbox-Signature: t=<epoch s>,v1=<hex HMAC-SHA256(secret, t + "." + raw body)>`, ±5 min) → 401
+  `invalid_webhook_signature` otherwise; unknown/inactive provider → 404 `payment_provider_not_found`. Verified
+  callbacks always answer **200** `{ result: "processed" | "ignored" | "duplicate" | "unmatched" }` (idempotent by
+  provider event id). Rate-limit group `payment-webhooks` (300/min per IP).
+
+### `GET /api/v1/payments/reconciliation-cases?status=&page=&size=` · `POST …/{caseId}/resolve` (new, OPS/FINANCE/ADMIN)
+
+- List (tenant-scoped, newest first, `{ content, page, size, totalElements }`), `status` ∈ `OPEN|RESOLVED`. Rows
+  `{ id, caseType, status, paymentId, attemptId, orderId, provider, expectedAmount, observedAmount, detailCode,
+  detectedAt, resolvedAt, resolutionNote }`; `caseType` ∈ `SUCCEEDED_NOT_CAPTURED` (PSP took the money, payment
+  could not be confirmed — refund/reverse at the PSP), `DUPLICATE_SUCCESS`, `AMOUNT_MISMATCH`, `ATTEMPT_UNRESOLVED`
+  (UNKNOWN > 30 min), `CONFIRMED_WITHOUT_ATTEMPT`.
+- Resolve: body `{ "note": "…" }` (≤ 500) → 200 case `RESOLVED` (idempotent; audited
+  `PAYMENT_RECONCILIATION_CASE_RESOLVED`). There is no automatic PSP refund (LAC-36).
+
+### Generic `Idempotency-Key` header (LAC-24)
+
+- Optional on: `POST /payments/{id}/attempts`, `POST /payments/{id}/refunds`, `POST /sales/orders/{id}/refund`,
+  `POST /sales/orders/{id}/cancel`, `POST /me/orders/{id}/cancel`, `POST /ops/cancellation-requests/{id}/approve`
+  (`app.idempotency.endpoints`). Key `[A-Za-z0-9_.:-]{8,128}` (else 400 `invalid_idempotency_key`), scoped to tenant
+  + caller. Same key + same request (method, path, query, JSON body with keys sorted) within 24 h → the first **2xx**
+  response is replayed verbatim with `Idempotency-Replayed: true` (CORS-exposed); same key + different request →
+  409 `idempotency_key_reused`; while the first request is still running → 409 `idempotency_request_in_progress`.
+  Non-2xx results are not stored (the key can be retried).
+- Behaviour change (Sales refund): `POST /sales/orders/{id}/refund` already used `Idempotency-Key` as the refund's
+  domain key. Unchanged for a retry of the same request; reusing a key **by the same caller with a different body**
+  now gets 409 `idempotency_key_reused` instead of the existing refund. A key shorter than 8 characters (or with
+  other characters) is now 400 `invalid_idempotency_key` on that endpoint. Checkout (`idempotencyKey` in the body)
+  and the refund body keys are untouched.
+
+### Behaviour change — mock confirmation not mapped in `prod` (LAC-01)
+
+- `POST /api/v1/payments/{id}/confirm` is now `@Profile("!prod")`: under the `prod` profile it does not exist
+  (404 for everyone, whatever `app.payments.mock-confirmation.enabled` says). Dev/test unchanged (flag-gated).
+  Production payments are confirmed only by the provider (webhook / status query / synchronous answer).
+
+### Configuration
+
+- `APP_PAYMENTS_PROVIDER` is **required** outside `dev` (no default; `sandbox` in `application-dev.yml`) — startup
+  fails without it, and the sandbox is refused under `prod` unless `app.payments.sandbox.allow-in-prod=true`
+  (staging only). The sandbox needs `APP_PAYMENTS_SANDBOX_WEBHOOK_SECRET` (≥ 32 chars; dev default only). Until a
+  real provider exists, **the `prod` profile cannot start** without that staging override — intended (there is no
+  way to take real payments yet).
+
+### Clients / consumers to review
+
+- Customer web / Flutter: after checkout, `GET /me/orders/{id}/payment` → `POST /payments/{paymentId}/attempts`
+  with the phone → poll the order payment (≈ 3 s) until `SUCCEEDED`/`FAILED`/`EXPIRED`; show "Confirme no seu
+  telemóvel" while `PENDING_CUSTOMER`/`UNKNOWN`. Not built in the clients by this package.
+- Backoffice `/finance`: reconciliation case list/resolve screen not built (LAC-60).

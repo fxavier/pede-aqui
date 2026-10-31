@@ -222,15 +222,30 @@ campo com os `status` de recursos (ex.: estado de encomenda).
 - Tracing distribuído (Micrometer Tracing + OTel): **feito em LAC-50/W4-B** — `traceId` passou a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
 
+W7-A (PSP sandbox, LAC-31/32/24; detalhe em `API-MIGRATION.md`, secção W7-A) acrescenta:
+- `invalid_msisdn` (400 — `POST /payments/{id}/attempts` com um telemóvel que não é E.164 válido / móvel moçambicano).
+- `payment_not_payable` (409 — o pagamento já não está `PENDING_CONFIRMATION` ou a encomenda já não está
+  `PAYMENT_PENDING`).
+- `payment_attempt_in_progress` (409 — já existe uma tentativa aberta: `INITIATED`, `PENDING_CUSTOMER` ou `UNKNOWN`;
+  `UNKNOWN` tem de ser resolvida antes de cobrar outra vez).
+- `payment_attempts_exhausted` (409 — limite `app.payments.attempts.max-per-payment`, 5, atingido).
+- `invalid_webhook_signature` (401 — `POST /payments/webhooks/{provider}` sem assinatura, assinatura errada,
+  *timestamp* fora da janela ou *payload* malformado). `payment_provider_not_found` (404 — `{provider}` desconhecido
+  ou não ativo).
+- `idempotency_key_reused` (409 — já existia no checkout; agora também do filtro genérico `Idempotency-Key`: mesma
+  chave com outro pedido), `idempotency_request_in_progress` (409 — o primeiro pedido com a chave ainda corre;
+  repetir mais tarde), `invalid_idempotency_key` (400 — chave fora de `[A-Za-z0-9_.:-]{8,128}`).
+
 ## 7. Cobertura: quem escreve corpos de erro
 
-Só três sítios produzem corpos de erro, todos via `ApiProblems`:
+Só quatro sítios produzem corpos de erro, todos via `ApiProblems`:
 
 | Origem | Como | Teste |
 |---|---|---|
 | `GlobalExceptionHandler` | exceções MVC/aplicação | `ErrorContractApiTest` |
 | `ProblemDetailSecurityHandlers` | 401/403 da cadeia de segurança | `ErrorContractApiTest` |
 | `TenantRequestFilter` | 400/404 de impersonação de tenant (corre **depois** da cadeia de segurança) | `TenantRequestFilterProblemDetailTest`, `CustomerTenantResolutionE2ETest` |
+| `IdempotencyFilter` (W7-A) | 400 `invalid_idempotency_key`, 409 `idempotency_key_reused` / `idempotency_request_in_progress` (corre depois do `TenantRequestFilter`) | `PaymentAttemptsPostgresTest` |
 
 O limitador (`common/ratelimit/RateLimitInterceptor`) lança `RateLimitedException` (subclasse de `BusinessException`), pelo que cai no handler, que acrescenta `Retry-After`. Qualquer novo filtro ou
 interceptor que tenha de responder diretamente deve usar `ApiProblems.create(...)` e
