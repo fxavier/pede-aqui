@@ -22,13 +22,16 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 /**
  * LAC-02 (AS-25, SEC-06): every write endpoint (POST/PUT/PATCH/DELETE) registered in the application answers
  * 401 to an anonymous caller — the endpoints are enumerated from the live handler mapping, so a new controller
- * is covered without editing this test. The only anonymous writes are the two explicit registration POSTs.
+ * is covered without editing this test. The only anonymous writes are the two explicit registration POSTs and the
+ * signed payment-provider webhook (W7-A).
  * Public GET browse endpoints stay open.
  */
 class AnonymousWriteEndpointsApiTest extends PostgresApiE2ETestBase {
     private static final Set<String> PUBLIC_WRITES = Set.of(
             "POST /api/v1/register",
-            "POST /api/v1/customers/register");
+            "POST /api/v1/customers/register",
+            // W7-A (LAC-31): PSP callbacks — authenticated by the provider's HMAC signature, not a JWT.
+            "POST /api/v1/payments/webhooks/{provider}");
     private static final Set<RequestMethod> WRITE_METHODS = Set.of(
             RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE);
 

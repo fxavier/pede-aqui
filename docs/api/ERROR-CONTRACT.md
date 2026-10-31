@@ -79,7 +79,7 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | 405 | `method_not_allowed` | Método HTTP não suportado; header `Allow` presente. Antes 500. |
 | 406 | `not_acceptable` | `Accept` impossível de satisfazer. |
 | 409 | `conflict` | Violação de unicidade/integridade (sem nomes de constraint). |
-| 409 | `concurrent_modification` | Conflito de `@Version` (recarregar e repetir). |
+| 409 | `concurrent_modification` | Conflito de `@Version`, ou falha de aquisição de lock (vítima de deadlock 40P01 / lock timeout — rede de segurança, nunca 500); recarregar e repetir. |
 | 413 | `payload_too_large` | Upload acima do limite. |
 | 415 | `unsupported_media_type` | `Content-Type` não suportado. Antes 500. |
 | 429 | `rate_limited` | Limitador distribuído (LAC-11): header `Retry-After` (segundos) e `details.retryAfterSeconds`. Também usado pelos limites de provisionamento. |
@@ -138,7 +138,9 @@ qualquer transição fora da tabela — ações do comerciante, aprovação de r
 paga — sempre **antes** de qualquer efeito (sem histórico, evento, stock, reembolso nem auditoria). Os códigos
 de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transition_not_allowed` (409, lista do
 *override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
-perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
+perde a corrida com um job de timeout na mesma encomenda recebe 409 `invalid_order_transition` (as ações do
+comerciante bloqueiam primeiro a linha do pagamento, como o job, e relêem a encomenda já cancelada) ou
+`concurrent_modification` (`@Version`).
 
 W5-A (cancelamento pelo cliente, LAC-26; detalhe em `API-MIGRATION.md`, secção W5-A) acrescenta:
 - `order_not_cancellable` (409 — `POST /me/orders/{id}/cancel` com a encomenda em `READY_FOR_PICKUP` ou depois,
@@ -222,15 +224,30 @@ campo com os `status` de recursos (ex.: estado de encomenda).
 - Tracing distribuído (Micrometer Tracing + OTel): **feito em LAC-50/W4-B** — `traceId` passou a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
 
+W7-A (PSP sandbox, LAC-31/32/24; detalhe em `API-MIGRATION.md`, secção W7-A) acrescenta:
+- `invalid_msisdn` (400 — `POST /payments/{id}/attempts` com um telemóvel que não é E.164 válido / móvel moçambicano).
+- `payment_not_payable` (409 — o pagamento já não está `PENDING_CONFIRMATION` ou a encomenda já não está
+  `PAYMENT_PENDING`).
+- `payment_attempt_in_progress` (409 — já existe uma tentativa aberta: `INITIATED`, `PENDING_CUSTOMER` ou `UNKNOWN`;
+  `UNKNOWN` tem de ser resolvida antes de cobrar outra vez).
+- `payment_attempts_exhausted` (409 — limite `app.payments.attempts.max-per-payment`, 5, atingido).
+- `invalid_webhook_signature` (401 — `POST /payments/webhooks/{provider}` sem assinatura, assinatura errada,
+  *timestamp* fora da janela ou *payload* malformado). `payment_provider_not_found` (404 — `{provider}` desconhecido
+  ou não ativo).
+- `idempotency_key_reused` (409 — já existia no checkout; agora também do filtro genérico `Idempotency-Key`: mesma
+  chave com outro pedido), `idempotency_request_in_progress` (409 — o primeiro pedido com a chave ainda corre;
+  repetir mais tarde), `invalid_idempotency_key` (400 — chave fora de `[A-Za-z0-9_.:-]{8,128}`).
+
 ## 7. Cobertura: quem escreve corpos de erro
 
-Só três sítios produzem corpos de erro, todos via `ApiProblems`:
+Só quatro sítios produzem corpos de erro, todos via `ApiProblems`:
 
 | Origem | Como | Teste |
 |---|---|---|
 | `GlobalExceptionHandler` | exceções MVC/aplicação | `ErrorContractApiTest` |
 | `ProblemDetailSecurityHandlers` | 401/403 da cadeia de segurança | `ErrorContractApiTest` |
 | `TenantRequestFilter` | 400/404 de impersonação de tenant (corre **depois** da cadeia de segurança) | `TenantRequestFilterProblemDetailTest`, `CustomerTenantResolutionE2ETest` |
+| `IdempotencyFilter` (W7-A) | 400 `invalid_idempotency_key`, 409 `idempotency_key_reused` / `idempotency_request_in_progress` (corre depois do `TenantRequestFilter`) | `PaymentAttemptsPostgresTest` |
 
 O limitador (`common/ratelimit/RateLimitInterceptor`) lança `RateLimitedException` (subclasse de `BusinessException`), pelo que cai no handler, que acrescenta `Retry-After`. Qualquer novo filtro ou
 interceptor que tenha de responder diretamente deve usar `ApiProblems.create(...)` e

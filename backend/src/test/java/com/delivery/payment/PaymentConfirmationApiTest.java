@@ -21,7 +21,7 @@ import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.repository.OrderRepository;
 import com.delivery.payment.config.PaymentMockConfirmationProperties;
-import com.delivery.payment.controller.PaymentController;
+import com.delivery.payment.controller.MockPaymentConfirmationController;
 import com.delivery.payment.entity.Payment;
 import com.delivery.payment.entity.PaymentStatus;
 import com.delivery.payment.mapper.PaymentMapper;
@@ -54,7 +54,7 @@ class PaymentConfirmationApiTest {
     static final UUID OWNER_PROFILE_ID = UUID.randomUUID();
     static final String KEY = "checkout-key-1";
 
-    @WebMvcTest(PaymentController.class)
+    @WebMvcTest(MockPaymentConfirmationController.class)
     @Import({com.delivery.order.api.OrderStateMachine.class, SecurityConfig.class, PaymentService.class, PaymentMapper.class, TenantContext.class,
             com.delivery.order.service.OrderPaymentHooks.class})
     @EnableConfigurationProperties({PaymentMockConfirmationProperties.class, TenancyProperties.class})
