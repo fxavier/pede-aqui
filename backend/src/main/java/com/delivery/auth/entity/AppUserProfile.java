@@ -106,6 +106,17 @@ public class AppUserProfile {
         this.updatedAt = Instant.now();
     }
 
+    /** Self-service profile change (W7-C): display name and/or preferred locale; null leaves the field unchanged. */
+    public void updateSelfService(String displayName, String preferredLanguage) {
+        if (displayName != null) {
+            this.displayName = displayName;
+        }
+        if (preferredLanguage != null) {
+            this.preferredLanguage = preferredLanguage;
+        }
+        this.updatedAt = Instant.now();
+    }
+
     public void markTutorialCompleted() {
         this.tutorialCompletedAt = Instant.now();
         this.updatedAt = Instant.now();
