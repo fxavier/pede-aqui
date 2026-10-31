@@ -179,6 +179,18 @@ W6-A (checkout v2, LAC-22/LAC-20; detalhe em `API-MIGRATION.md`, secção W6-A) 
   `price_changed` (ou `quote_changed` com `quoteId`) → `out_of_service_area` → `address_too_far` → `quote_changed`
   (`amounts_changed`) → stock/promoções.
 
+W7-B (entregas falhadas e incidentes, LAC-44; detalhe em `API-MIGRATION.md`, secção W7-B) acrescenta:
+- `failure_reason_required` (400 — `PATCH /deliveries/{id}/status` com `FAILED_DELIVERY` sem `failureReason`).
+  Verificado depois da propriedade (403/404) e antes da transição, sem qualquer efeito.
+- `failure_reason_not_applicable` (400 — `failureReason` enviado com outro estado que não `FAILED_DELIVERY`).
+- `invalid_delivery_transition` (409, existente) passa a cobrir também `FAILED_DELIVERY` a partir de
+  `ARRIVED_AT_VENDOR` com um motivo que não seja `STORE_FAULT` (na loja só a falha da loja termina a entrega).
+- `override_reason_required` (400 — `POST /ops/delivery-incidents/{id}/resolve` com uma decisão diferente do
+  resultado por defeito e sem `overrideReason`).
+- `incident_already_resolved` (409 — resolver de novo um incidente já resolvido com **outra** decisão; a mesma
+  decisão devolve 200 com o estado atual).
+- Incidente de outro tenant ou inexistente → 404 `not_found`; COURIER/SUPPORT a resolver → 403.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),

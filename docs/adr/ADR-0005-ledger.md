@@ -7,7 +7,7 @@
 | Decisores | Xavier Francisco (owner técnico); validação contabilística/jurídica pendente |
 | Achados relacionados | LAC-33 (ledger), LAC-34 (comissões), LAC-38 (fluxo de fundos e fiscal), LAC-26 (taxa de cancelamento), LAC-36 (reembolso no PSP), LAC-47 (eventos) em `docs/gaps/REGISTO-LACUNAS.md` |
 | Relacionado | ADR-0002 (módulos/eventos), ADR-0003 (dinheiro: `NUMERIC` + `BigDecimal`; D5: ledger `NUMERIC(14,2)` com moeda explícita) |
-| Pacote de trabalho | W6-B (V065, V066) |
+| Pacote de trabalho | W6-B (V065, V066); W7-B (V070: conta `PLATFORM_INCIDENT_EXPENSE`, lançamento `INCIDENT_SETTLED` — entregas falhadas, LAC-44, "a validar") |
 
 ## Context
 
@@ -17,9 +17,9 @@
 
 ## Decision
 
-1. **Módulo `settlement`** (Spring Modulith, topo do grafo): consome eventos (`PaymentConfirmed`, `RefundApproved`, `OrderStatusChanged`) e as APIs de leitura `payment.api.PaymentSettlementFacts` / `order.api.OrderSettlementFacts`. Nenhum módulo depende dele.
+1. **Módulo `settlement`** (Spring Modulith, topo do grafo): consome eventos (`PaymentConfirmed`, `RefundApproved`, `OrderStatusChanged`; desde W7-B `DeliveryIncidentResolved`) e as APIs de leitura `payment.api.PaymentSettlementFacts` / `order.api.OrderSettlementFacts`. Nenhum módulo depende dele.
 2. **Esquema (V065)**: `ledger_accounts` (tenant, tipo, dono, moeda), `ledger_transactions` (chave de idempotência UNIQUE por tenant, tipo, origem, `occurred_at`, descrição), `ledger_entries` (débito **ou** crédito > 0, `NUMERIC(14,2)`, moeda `'MZN'` por CHECK). Imutável (UPDATE/DELETE/TRUNCATE → 42501; correções só por estorno). Equilíbrio por *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` (Σ débitos = Σ créditos por transação e moeda no COMMIT; transação sem linhas recusada). Saldos derivados (vista `ledger_account_balances`), sem saldo corrente guardado.
-3. **Escrita**: só pelos *listeners* do módulo (`@ApplicationModuleListener`, depois do commit, at-least-once) — cada lançamento tem uma chave fixa (`payment-captured:<paymentId>`, `order-delivered:<orderId>`, `refund-approved:<refundId>`, `cancellation-fee:<orderId>`), por isso uma reentrega não duplica nada. Os lançamentos leem os factos *committed* (não confiam na ordem dos eventos) e garantem primeiro os lançamentos de que dependem (captura → entrega → reembolso/taxa).
+3. **Escrita**: só pelos *listeners* do módulo (`@ApplicationModuleListener`, depois do commit, at-least-once) — cada lançamento tem uma chave fixa (`payment-captured:<paymentId>`, `order-delivered:<orderId>`, `refund-approved:<refundId>`, `cancellation-fee:<orderId>`, `delivery-incident:<incidentId>`), por isso uma reentrega não duplica nada. Os lançamentos leem os factos *committed* (não confiam na ordem dos eventos) e garantem primeiro os lançamentos de que dependem (captura → entrega → reembolso/taxa).
 4. **Comissões (V066)**: `commission_plans` (taxa, vigência, `is_default`) + `vendor_commission_overrides` (plano ou taxa própria, vigência). Resolução no instante DELIVERED: override do comerciante → plano por defeito do tenant → `app.settlement.default-commission-rate` (0.15). V066 semeia um plano "Comissão padrão 15%" por tenant. A comissão bruta é gravada em `commissions` (uma linha por encomenda) no mesmo commit do lançamento.
 
 ### Plano de contas
@@ -35,6 +35,7 @@
 | `PLATFORM_REVENUE_FEES` | Receita | plataforma | taxa de entrega + taxa de serviço |
 | `PLATFORM_PROMOTION_EXPENSE` | Gasto | plataforma | descontos de promoção suportados pela plataforma |
 | `PLATFORM_VAT_PAYABLE` | Passivo | plataforma | IVA sobre a receita própria (só com `platform-vat-rate` > 0) |
+| `PLATFORM_INCIDENT_EXPENSE` | Gasto | plataforma | custo de entregas falhadas suportado pela plataforma (W7-B, V070): bens perdidos compensados ao comerciante |
 
 ### Modelo de lançamentos (a validar — LAC-38)
 
@@ -48,6 +49,7 @@ Notação da encomenda: S = subtotal de bens, T = imposto cobrado sobre os bens 
 | Reembolso aprovado **antes** da entrega (`RefundApproved`) | `CUSTOMER_FUNDS_HELD` R | `CUSTOMER_REFUNDS_PAYABLE` R |
 | Reembolso aprovado **depois** da entrega | estorno proporcional R/base de cada linha de receita/gasto e `MERCHANT_PAYABLE[v]` | `CUSTOMER_REFUNDS_PAYABLE` R (e `PLATFORM_PROMOTION_EXPENSE` proporcional) |
 | Cancelamento pelo cliente com taxa retida (W5-A, `OrderStatusChanged` → CANCELLED + `CUSTOMER_CANCELLED_WITH_FEE`) | `CUSTOMER_FUNDS_HELD` fee | `PLATFORM_REVENUE_COMMISSION` r × fee; `MERCHANT_PAYABLE[v]` fee − r × fee |
+| Incidente de entrega resolvido (W7-B, `DeliveryIncidentResolved`, chave `delivery-incident:<incidentId>`, tipo `INCIDENT_SETTLED`) — **a validar** | `CUSTOMER_FUNDS_HELD` E (taxa de entrega retida, culpa do cliente); `MERCHANT_PAYABLE[v]` M (culpa da loja); `PLATFORM_INCIDENT_EXPENSE` K (bens perdidos, culpa da plataforma) | `PLATFORM_REVENUE_FEES` E + M (líquido de IVA); `PLATFORM_VAT_PAYABLE` IVA contido em E + M (V<sub>F</sub> × (E + M)/F quando a quote o guardou, senão `platform-vat-rate`); `MERCHANT_PAYABLE[v]` K |
 
 Regras de detalhe:
 
@@ -56,7 +58,13 @@ Regras de detalhe:
 - **IVA incluído (W6-A)**: com preços e taxas com IVA incluído, `orders.taxes = 0` e o IVA dos bens está dentro de S — continua no `MERCHANT_PAYABLE` (o comerciante é o vendedor e deve-o; a plataforma só cobra). O IVA das taxas da plataforma (V<sub>F</sub>, guardado na quote e escalado por base/P como F) vai para `PLATFORM_VAT_PAYABLE` em vez de `PLATFORM_REVENUE_FEES`, independentemente de `app.settlement.platform-vat-rate`. Encomendas sem IVA na quote (anteriores à W6-A, ou política `tax_inclusive = false`) mantêm a regra anterior (taxas repartidas por `platform-vat-rate`, 0 por defeito). Os estornos depois da entrega revertem a linha de IVA na mesma proporção.
 - **Estorno proporcional depois da entrega**: cada linha da entrega (exceto fundos retidos e comerciante) × R/base, arredondada HALF_UP a 2 casas; o comerciante absorve o resíduo, para a transação fechar exata. Um reembolso total anula exatamente a entrega; vários parciais podem desviar ±0,01 por componente (vai para o comerciante).
 - **Comissão em `commissions`** = bruta acumulada na entrega (ou sobre a taxa de cancelamento, `source = CANCELLATION_FEE`); os estornos por reembolso só existem no razão. Os leitores atuais (relatórios, dashboard, detalhe de venda) continuam a somar `commission_amount`.
-- Outros cancelamentos (rejeição do vendedor, timeouts, cancelamento gratuito, entrega falhada) não geram lançamento próprio: o dinheiro move-se pelos reembolsos. Uma entrega falhada sem reembolso deixa o valor em `CUSTOMER_FUNDS_HELD` (visível na conta).
+- Outros cancelamentos (rejeição do vendedor, timeouts, cancelamento gratuito) não geram lançamento próprio: o dinheiro move-se pelos reembolsos. Uma entrega falhada (W7-B, LAC-44) também não gera lançamento quando acontece: abre um incidente; enquanto o OPS não o resolve, o valor fica em `CUSTOMER_FUNDS_HELD` (visível na conta).
+- **Entregas falhadas — quem suporta o custo (W7-B, decisão do owner; "a validar")**. Opção escolhida: **evento próprio `order.DeliveryIncidentResolved` + listener do `settlement`**, e não um atributo "quem suporta" no lançamento do reembolso. Motivos: (1) o reembolso é aprovado mais tarde pelo FINANCE (`RefundApproved`) e pode até ser rejeitado, enquanto a imputação do custo é uma decisão do OPS que existe mesmo sem reembolso (ex.: compensação ao comerciante); (2) o `RefundApproved` continua a mover só fundos retidos → reembolsos a pagar, sem conhecer incidentes; (3) a chave `delivery-incident:<id>` torna a imputação idempotente e independente da ordem dos eventos. O incidente guarda os montantes calculados na resolução (`DeliveryIncidentPolicy.amounts`), e o evento leva-os ao razão:
+  - **Cliente** (ausente, morada errada, recusou): reembolso = restante − taxa de entrega (E = `orders.quote_delivery_fee`, ou `orders.fees` sem quote, limitada ao reembolsável); E sai de `CUSTOMER_FUNDS_HELD` para receita de taxas. O resto chega ao cliente pelo `RefundApproved` habitual.
+  - **Comerciante** (artigos errados/em falta, loja fechada na recolha): reembolso total; as taxas da plataforma devolvidas ao cliente (M = F − E, limitado ao reembolso) são cobradas ao comerciante (Dr `MERCHANT_PAYABLE`). O comerciante não recebe nada pelos bens (nunca houve `ORDER_DELIVERED`) e ainda suporta as taxas. O saldo do comerciante pode ficar devedor (passivo com saldo devedor = valor a receber do comerciante; o job `ledger-reconciliation` regista-o como WARN `negative_liability_accounts`).
+  - **Plataforma** (acidente, culpa do estafeta, danos no transporte): reembolso total; se os bens se perderam (`DISCARDED`), a plataforma compensa o comerciante pelo valor dos bens K = S + T (sem comissão, porque não houve venda) como gasto `PLATFORM_INCIDENT_EXPENSE`. Bens devolvidos à loja → K = 0. A mesma compensação aplica-se a bens descartados quando o OPS imputa o custo ao cliente (só o comerciante culpado absorve os seus bens).
+  - O OPS pode alterar o resultado por defeito (quem suporta, reembolso total/menos taxa, destino dos bens) com motivo; os montantes seguem a decisão final.
+  - Encomenda sem pagamento capturado → lançamento ignorado (WARN, `ledger_postings_total{type=INCIDENT_SETTLED,result=skipped}`); todos os montantes a zero → sem lançamento.
 - Uma encomenda entregue sem pagamento capturado (dados antigos/seeds) não gera lançamento (`ledger_postings_total{result=skipped}` + WARN).
 
 ### Itens a validar com o contabilista / parecer jurídico (LAC-38)
@@ -70,6 +78,7 @@ Regras de detalhe:
 7. **Taxa de cancelamento** retida: atribuída ao comerciante menos a comissão à mesma taxa — confirmar se pertence ao comerciante, à plataforma ou é repartida.
 8. **Estorno proporcional** depois da entrega (o comerciante e a plataforma devolvem na proporção do que receberam) vs. reembolso suportado só pelo comerciante ou só pela plataforma conforme a causa.
 9. Faturação (faturas de comissão numeradas), retenções na fonte e momento de reconhecimento (entrega vs. pagamento) — fora do âmbito desta versão.
+10. **Entregas falhadas (W7-B)**: (a) a taxa de entrega retida ao cliente é receita de taxas com IVA à taxa normal; (b) a cobrança ao comerciante das taxas devolvidas é receita de taxas da plataforma (ou deve ser uma conta própria "recuperação de custos"/nota de débito com IVA?); (c) a compensação de bens perdidos ao comerciante pelo valor de venda com IVA (S + T), sem comissão — ou pelo custo, ou líquida de comissão; (d) se o gasto deve ser imputado ao estafeta (`COURIER_PAYABLE`) quando a culpa é dele, quando existir remuneração de estafetas (LAC-35).
 
 ## Consequences
 
