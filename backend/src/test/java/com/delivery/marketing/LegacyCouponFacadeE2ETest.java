@@ -235,11 +235,23 @@ class LegacyCouponFacadeE2ETest extends PostgresApiE2ETestBase {
         assertThat(migrated.get("maxUses").asInt()).isEqualTo(500);
         assertThat(migrated.get("usesCount").asInt()).isEqualTo(3);
         assertThat(migrated.get("validUntil").isNull()).isTrue();
-        assertThat(migrated.get("active").asBoolean()).isTrue();
+        // Owner-safe default (V073): migrated PAUSED even though the legacy row was active — no behaviour change for
+        // customers until OPS/ADMIN reviews and activates it.
+        assertThat(migrated.get("active").asBoolean()).isFalse();
         assertThat(migrated.get("createdAt").asText()).isEqualTo("2026-09-01T10:00:00Z");
+        assertThat(jdbc.queryForObject("SELECT reason FROM legacy_promotion_migration WHERE legacy_table = 'coupons' AND legacy_id = ?",
+                String.class, legacyId)).isEqualTo("paused_for_review");
 
         String ana = customerToken();
-        mockMvc.perform(withBearer(post("/api/v1/cart/{cartId}/coupon", cartId(ana)), ana)
+        UUID anaCart = cartId(ana);
+        mockMvc.perform(withBearer(post("/api/v1/cart/{cartId}/coupon", anaCart), ana)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"" + code.toLowerCase() + "\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("coupon_not_active"));
+
+        mockMvc.perform(withBearer(post("/api/v1/marketing/promotions/{id}/activate", legacyId), ops))
+                .andExpect(status().isOk());
+        mockMvc.perform(withBearer(post("/api/v1/cart/{cartId}/coupon", anaCart), ana)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"" + code.toLowerCase() + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.discountTotal").value(1.80));

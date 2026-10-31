@@ -1248,7 +1248,10 @@ deletion reflection period are configurable defaults "a validar com jurista" —
 ### Data (V073, expand + migrate)
 
 - Every legacy `coupons` row was migrated into `promotion` keeping its id (ids already shown by the backoffice stay
-  valid); `active` → ACTIVE, inactive → PAUSED; open-ended → `2099-12-31T23:59:59Z`. Legacy automatic `promotions`
+  valid); **always PAUSED** (reason `paused_for_review` in the report for the ones that were `active`) — legacy
+  coupons never discounted, so nothing changes for customers until OPS/ADMIN reviews each one and activates it with
+  `POST /marketing/promotions/{id}/activate` (it then shows `active: true` in `/marketing/coupons`); open-ended →
+  `2099-12-31T23:59:59Z`. Legacy automatic `promotions`
   rows (`applies_to = ALL_ORDERS`) became code-less promotions, always **PAUSED** for review. Rows that do not map
   (unknown type, invalid value/window/min order/usage limit, code > 40 or already used, other `applies_to`) are
   reported `SKIPPED` with a reason in `legacy_promotion_migration`. Legacy rows are kept and marked

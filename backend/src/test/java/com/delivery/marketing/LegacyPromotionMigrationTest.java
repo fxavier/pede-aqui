@@ -72,10 +72,11 @@ class LegacyPromotionMigrationTest {
         flyway(url, null).migrate();
 
         try (Connection c = connection(url)) {
-            assertThat(outcome(c, "coupons", activePct)).isEqualTo("MIGRATED:");
+            // Owner-safe default: a legacy coupon never discounted, so even an active one lands PAUSED for review.
+            assertThat(outcome(c, "coupons", activePct)).isEqualTo("MIGRATED:paused_for_review");
             Map<String, Object> pct = promotion(c, activePct);
             assertThat(pct).containsEntry("code", "SUMMER15").containsEntry("name", "Cupão SUMMER15")
-                    .containsEntry("type", "PERCENTAGE").containsEntry("scope", "ORDER").containsEntry("status", "ACTIVE")
+                    .containsEntry("type", "PERCENTAGE").containsEntry("scope", "ORDER").containsEntry("status", "PAUSED")
                     .containsEntry("usage_limit", 100).containsEntry("used_count", 7).containsEntry("vendor_id", vendor)
                     .containsEntry("starts_at", FROM).containsEntry("ends_at", UNTIL);
             assertThat((java.math.BigDecimal) pct.get("value")).isEqualByComparingTo("15");

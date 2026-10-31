@@ -23,8 +23,10 @@
 --   ]0,100] ou fixo ≤ 0 → SKIPPED invalid_value); scope ORDER; min_order_total = min_order_amount (negativo →
 --   SKIPPED invalid_min_order); usage_limit = max_uses (≤ 0 → SKIPPED invalid_usage_limit); used_count = uses_count;
 --   vendor_id igual; starts_at = valid_from; ends_at = valid_until ou 2099-12-31T23:59:59Z (sem fim; a fachada devolve
---   null para este valor) — ends_at ≤ starts_at → SKIPPED invalid_window; status = ACTIVE se active, senão PAUSED.
---   Consequência assumida: um cupão legado ativo passa a dar desconto quando o cliente o introduz (antes não dava).
+--   null para este valor) — ends_at ≤ starts_at → SKIPPED invalid_window; status = PAUSED SEMPRE (motivo
+--   paused_for_review nos que estavam ativos). Default seguro para o dono: o cupão legado nunca deu desconto, por isso
+--   migrá-lo ACTIVE mudaria o comportamento visto pelos clientes (um código antigo passaria a descontar); a ativação
+--   fica para OPS/ADMIN (POST /marketing/promotions/{id}/activate) depois de rever cada cupão.
 -- Mapeamento `promotions` → `promotion` (automática: sem código):
 --   applies_to tem de ser ALL_ORDERS (→ scope ORDER), senão SKIPPED unsupported_applies_to; name = left(name, 140);
 --   type/value/window como acima; description perde-se (sem coluna); status = PAUSED SEMPRE (motivo
@@ -90,7 +92,7 @@ DECLARE
     v_id UUID;
     v_now TIMESTAMPTZ := now();
 BEGIN
-    -- Legacy coupons → coupon promotions.
+    -- Legacy coupons → coupon promotions, always PAUSED (owner-safe: legacy coupons never discounted).
     FOR r IN
         SELECT c.* FROM coupons c
          WHERE NOT EXISTS (SELECT 1 FROM legacy_promotion_migration m WHERE m.legacy_table = 'coupons' AND m.legacy_id = c.id)
@@ -132,9 +134,9 @@ BEGIN
                                starts_at, ends_at, usage_limit, per_customer_limit, used_count, status, created_at, updated_at)
         VALUES (v_id, r.tenant_id, r.vendor_id, 'Cupão ' || v_code, v_code, v_type, r.discount_value, 'ORDER',
                 r.min_order_amount, NULL, r.valid_from, v_ends, r.max_uses, NULL, GREATEST(r.uses_count, 0),
-                CASE WHEN r.active THEN 'ACTIVE' ELSE 'PAUSED' END, r.created_at, r.updated_at);
+                'PAUSED', r.created_at, r.updated_at);
         INSERT INTO legacy_promotion_migration (legacy_table, legacy_id, tenant_id, promotion_id, outcome, reason, migrated_at)
-        VALUES ('coupons', r.id, r.tenant_id, v_id, 'MIGRATED', NULL, v_now);
+        VALUES ('coupons', r.id, r.tenant_id, v_id, 'MIGRATED', CASE WHEN r.active THEN 'paused_for_review' END, v_now);
         UPDATE coupons SET migrated_to_promotion_id = v_id, migrated_at = v_now WHERE id = r.id;
     END LOOP;
 
