@@ -11,9 +11,12 @@ import type {
   CustomerCancellationResult,
   CustomerOrderSummary,
   CursorPage,
+  DeletionRequest,
   MeResponse,
   OrderResponse,
   Product,
+  ProfileSettings,
+  ProfileUpdateRequest,
   TrackingResponse,
   VendorPublicInfo,
   VendorSearchResponse,
@@ -92,4 +95,26 @@ export const orderService = {
     apiClient
       .post<CustomerCancellationResult>(`/me/orders/${orderId}/cancel`, reason ? { reason } : {})
       .then((r) => r.data),
+}
+
+export const profileService = {
+  /** The signed-in customer's editable profile and preferences. */
+  get: () => apiClient.get<ProfileSettings>('/me/profile').then((r) => r.data),
+
+  /** Partial update: send only changed fields (e-mail and phone are not editable here). */
+  update: (req: ProfileUpdateRequest) => apiClient.patch<ProfileSettings>('/me', req).then((r) => r.data),
+}
+
+export const privacyService = {
+  /** Latest account-deletion request (404 deletion_request_not_found when there never was one). */
+  getDeletionRequest: () => apiClient.get<DeletionRequest>('/me/deletion-request').then((r) => r.data),
+
+  /** Starts the 30-day reflection period (202 new, 200 already pending; 409 active_orders_present). */
+  requestDeletion: () => apiClient.post<DeletionRequest>('/me/deletion-request').then((r) => r.data),
+
+  /** Cancels the pending request (404 deletion_request_not_found when nothing is pending). */
+  cancelDeletion: () => apiClient.delete<DeletionRequest>('/me/deletion-request').then((r) => r.data),
+
+  /** The customer's personal data as a JSON document (429 rate_limited when asked too often). */
+  exportData: () => apiClient.get<unknown>('/me/data-export').then((r) => r.data),
 }

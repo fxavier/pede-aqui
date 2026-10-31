@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import type { RootState } from '@/store'
 import { logout } from '@/features/auth/logout'
+import { AccountDeletionCard, DataExportCard, ProfileSettingsCard } from '@/components/AccountSettings'
 
 function initials(name: string | null): string {
   if (!name) return 'PA'
@@ -92,9 +93,19 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      <section id="conta" className="space-y-6 scroll-mt-6">
+        <ProfileSettingsCard />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <DataExportCard />
+          <AccountDeletionCard />
+        </div>
+      </section>
+
       <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-2">
         {([[Settings, 'Configurações da Conta'], [HelpCircle, 'Ajuda & Suporte'], [Gift, 'Convidar amigos']] as const).map(([Icon, label]) => (
-          <button key={label} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors text-slate-700">
+          <button key={label}
+            onClick={label === 'Configurações da Conta' ? () => document.getElementById('conta')?.scrollIntoView({ behavior: 'smooth' }) : undefined}
+            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors text-slate-700">
             <span className="flex items-center gap-2.5 text-xs font-semibold"><Icon className="w-4 h-4 text-slate-400" /> {label}</span>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
