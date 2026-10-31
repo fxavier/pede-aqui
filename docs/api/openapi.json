@@ -1076,6 +1076,19 @@
         ],
         "type": "object"
       },
+      "CreatePaymentAttemptRequest": {
+        "properties": {
+          "msisdn": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "msisdn"
+        ],
+        "type": "object"
+      },
       "CreateProductRequest": {
         "properties": {
           "attributes": {
@@ -2754,6 +2767,34 @@
         },
         "type": "object"
       },
+      "OrderPaymentResponse": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "latestAttempt": {
+            "$ref": "#/components/schemas/PaymentAttemptResponse"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "payable": {
+            "type": "boolean"
+          },
+          "paymentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "OrderResponse": {
         "properties": {
           "cancellationReason": {
@@ -2940,6 +2981,29 @@
         },
         "type": "object"
       },
+      "PageResponseReconciliationCaseResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationCaseResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "PageResponseSupportTicketResponse": {
         "properties": {
           "content": {
@@ -3005,6 +3069,53 @@
           "totalElements": {
             "format": "int64",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PaymentAttemptResponse": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "msisdnMasked": {
+            "type": "string"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "paymentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
           }
         },
         "type": "object"
@@ -3562,6 +3673,56 @@
         ],
         "type": "object"
       },
+      "ReconciliationCaseResponse": {
+        "properties": {
+          "attemptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "caseType": {
+            "type": "string"
+          },
+          "detailCode": {
+            "type": "string"
+          },
+          "detectedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedAmount": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "observedAmount": {
+            "type": "number"
+          },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "paymentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "resolutionNote": {
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "RefundFinanceResponse": {
         "properties": {
           "amount": {
@@ -3700,6 +3861,19 @@
         },
         "required": [
           "reason"
+        ],
+        "type": "object"
+      },
+      "ResolveReconciliationCaseRequest": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
         ],
         "type": "object"
       },
@@ -5082,6 +5256,14 @@
             "type": "string"
           },
           "slug": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebhookAckResponse": {
+        "properties": {
+          "result": {
             "type": "string"
           }
         },
@@ -6975,7 +7157,7 @@
         ]
       },
       "post": {
-        "operationId": "create_7",
+        "operationId": "create_8",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -7225,7 +7407,7 @@
         ]
       },
       "post": {
-        "operationId": "create_6",
+        "operationId": "create_7",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -7954,7 +8136,7 @@
         ]
       },
       "post": {
-        "operationId": "create_5",
+        "operationId": "create_6",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -8642,7 +8824,7 @@
     },
     "/api/v1/dispatch-jobs": {
       "get": {
-        "operationId": "list_9",
+        "operationId": "list_10",
         "parameters": [
           {
             "in": "query",
@@ -9548,7 +9730,7 @@
         ]
       },
       "post": {
-        "operationId": "create_4",
+        "operationId": "create_5",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -9863,7 +10045,7 @@
     },
     "/api/v1/me/orders": {
       "get": {
-        "operationId": "list_8",
+        "operationId": "list_9",
         "parameters": [
           {
             "in": "query",
@@ -9913,7 +10095,7 @@
     },
     "/api/v1/me/orders/{orderId}": {
       "get": {
-        "operationId": "get_2",
+        "operationId": "get_3",
         "parameters": [
           {
             "in": "path",
@@ -9999,6 +10181,48 @@
         },
         "tags": [
           "customer-order-controller"
+        ]
+      }
+    },
+    "/api/v1/me/orders/{orderId}/payment": {
+      "get": {
+        "operationId": "forOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderPaymentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "The caller's order payment: payment id, whether it can be paid now and the latest attempt",
+        "tags": [
+          "payment-attempt-controller"
         ]
       }
     },
@@ -10130,7 +10354,7 @@
     },
     "/api/v1/ops/cancellation-requests": {
       "get": {
-        "operationId": "list_7",
+        "operationId": "list_8",
         "parameters": [
           {
             "in": "query",
@@ -10512,7 +10736,7 @@
     },
     "/api/v1/ops/notification-templates": {
       "get": {
-        "operationId": "list_6",
+        "operationId": "list_7",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -10611,7 +10835,7 @@
     },
     "/api/v1/orders": {
       "get": {
-        "operationId": "list_5",
+        "operationId": "list_6",
         "parameters": [
           {
             "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
@@ -10828,6 +11052,123 @@
         ]
       }
     },
+    "/api/v1/payments/reconciliation-cases": {
+      "get": {
+        "operationId": "list_5",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "OPEN",
+                "RESOLVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseReconciliationCaseResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Payment reconciliation cases of the tenant, newest first (status OPEN|RESOLVED, optional)",
+        "tags": [
+          "payment-reconciliation-controller"
+        ]
+      }
+    },
+    "/api/v1/payments/reconciliation-cases/{caseId}/resolve": {
+      "post": {
+        "operationId": "resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReconciliationCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationCaseResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Resolve a reconciliation case with a note (idempotent; audited)",
+        "tags": [
+          "payment-reconciliation-controller"
+        ]
+      }
+    },
     "/api/v1/payments/refunds/{refundId}/approve": {
       "post": {
         "operationId": "approveRefund",
@@ -10910,6 +11251,165 @@
         ]
       }
     },
+    "/api/v1/payments/webhooks/{provider}": {
+      "post": {
+        "operationId": "receive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "format": "byte",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAckResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Payment provider callback (signed; idempotent by provider event id)",
+        "tags": [
+          "payment-webhook-controller"
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/attempts": {
+      "post": {
+        "operationId": "create_4",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "paymentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional (8-128 chars [A-Za-z0-9_.:-]); a repeat with the same key and body replays the first response",
+            "in": "header",
+            "name": "Idempotency-Key"
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAttemptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAttemptResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "summary": "Start a mobile-money payment attempt for the caller's pending payment (202; poll the attempt)",
+        "tags": [
+          "payment-attempt-controller"
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/attempts/{attemptId}": {
+      "get": {
+        "operationId": "get_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "paymentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Active tenant UUID. Not required when the JWT has a tenant_id claim.",
+            "in": "header",
+            "name": "X-Tenant-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAttemptResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "State of one payment attempt (owning customer, or OPS/FINANCE/ADMIN)",
+        "tags": [
+          "payment-attempt-controller"
+        ]
+      }
+    },
     "/api/v1/payments/{paymentId}/confirm": {
       "post": {
         "operationId": "confirm",
@@ -10957,7 +11457,7 @@
           }
         },
         "tags": [
-          "payment-controller"
+          "mock-payment-confirmation-controller"
         ]
       }
     },
@@ -12442,7 +12942,7 @@
     },
     "/api/v1/support/tickets/{ticketId}/resolve": {
       "patch": {
-        "operationId": "resolve",
+        "operationId": "resolve_1",
         "parameters": [
           {
             "in": "path",
