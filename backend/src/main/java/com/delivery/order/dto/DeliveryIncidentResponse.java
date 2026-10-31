@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * A delivery incident as OPS/ADMIN/SUPPORT see it (LAC-44): the coded reason, reporter, proof and arrival evidence, the
+ * A delivery incident as OPS/ADMIN see it (LAC-44): the coded reason, reporter, proof and arrival evidence, the
  * policy default and — once resolved — the final decision, override and money figures. {@code resolution} is null
  * while OPEN.
  */

@@ -18,11 +18,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Delivery incidents queue (LAC-44, W7-B): list and detail for OPS/ADMIN/SUPPORT, resolution (refund, cost bearer,
- * goods disposition, optional override with reason) for OPS/ADMIN only — tenant-scoped, audited.
+ * Delivery incidents queue (LAC-44, W7-B), OPS/ADMIN only (the evidence holds the courier's position, which LAC-40
+ * keeps to OPS/ADMIN): list, detail and resolution (refund, cost bearer, goods disposition, optional override with
+ * reason) — tenant-scoped, audited.
  */
 @RestController
 @RequestMapping("/api/v1/ops/delivery-incidents")
+@PreAuthorize("hasAnyRole('OPS','ADMIN')")
 public class OperationsDeliveryIncidentController {
     private final DeliveryIncidentService service;
 
@@ -30,7 +32,6 @@ public class OperationsDeliveryIncidentController {
 
     /** Offset page {@code { content, page, size, totalElements }} of incidents in {@code status} (default OPEN), newest first. */
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPS','ADMIN','SUPPORT')")
     public PageResponse<DeliveryIncidentResponse> listDeliveryIncidents(
             @RequestParam(required = false) DeliveryIncidentStatus status,
             @RequestParam(defaultValue = "0") int page,
@@ -40,7 +41,6 @@ public class OperationsDeliveryIncidentController {
 
     /** One incident with its evidence, default decision and resolution; another tenant's → 404. */
     @GetMapping("/{incidentId}")
-    @PreAuthorize("hasAnyRole('OPS','ADMIN','SUPPORT')")
     public DeliveryIncidentResponse getDeliveryIncident(@PathVariable UUID incidentId) {
         return service.get(incidentId);
     }
@@ -50,7 +50,6 @@ public class OperationsDeliveryIncidentController {
      * Same decision again → 200 unchanged; another decision on a resolved incident → 409 incident_already_resolved.
      */
     @PostMapping("/{incidentId}/resolve")
-    @PreAuthorize("hasAnyRole('OPS','ADMIN')")
     public DeliveryIncidentResponse resolveDeliveryIncident(@PathVariable UUID incidentId,
                                             @Valid @RequestBody(required = false) ResolveDeliveryIncidentRequest request) {
         return service.resolve(incidentId, request);

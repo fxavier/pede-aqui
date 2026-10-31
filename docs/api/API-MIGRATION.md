@@ -988,7 +988,7 @@ Additive in the OpenAPI contract (new optional request fields, new endpoints, on
   CUSTOMER_CANCELLED_WITH_FEE`. Orders cancelled by a failed delivery before W7-B keep `null`. Clients treating the
   field as a closed enum must accept the new value (backoffice and customer web type it as `string`).
 
-### `GET /api/v1/ops/delivery-incidents?status=&page=&size=` · `GET /api/v1/ops/delivery-incidents/{id}` (new, OPS/ADMIN/SUPPORT)
+### `GET /api/v1/ops/delivery-incidents?status=&page=&size=` · `GET /api/v1/ops/delivery-incidents/{id}` (new, OPS/ADMIN — the evidence holds the courier's position, kept to the LAC-40 audience)
 
 - Offset page `{ content, page, size, totalElements }` (default `status=OPEN`, newest first, size 1..100) / one
   incident: `{ id, orderId, orderReference, orderStatus, deliveryId, courierId, reason, note, proofPhotoStorageKey,

@@ -189,7 +189,7 @@ W7-B (entregas falhadas e incidentes, LAC-44; detalhe em `API-MIGRATION.md`, sec
   resultado por defeito e sem `overrideReason`).
 - `incident_already_resolved` (409 — resolver de novo um incidente já resolvido com **outra** decisão; a mesma
   decisão devolve 200 com o estado atual).
-- Incidente de outro tenant ou inexistente → 404 `not_found`; COURIER/SUPPORT a resolver → 403.
+- Incidente de outro tenant ou inexistente → 404 `not_found`; qualquer papel além de OPS/ADMIN (listar, ver ou resolver) → 403.
 
 ## 4. Correlação (`X-Correlation-Id`)
 

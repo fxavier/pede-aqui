@@ -264,8 +264,12 @@ class DeliveryIncidentPostgresTest extends PostgresApiE2ETestBase {
 
         resolve(incidentId, "{}", courierToken).andExpect(status().isForbidden());
         resolve(incidentId, "{}", jwt("kc-support-" + UUID.randomUUID(), "SUPPORT")).andExpect(status().isForbidden());
+        // Reads are OPS/ADMIN only: the evidence carries the courier's position (LAC-40 audience).
         mockMvc.perform(get("/api/v1/ops/delivery-incidents/{id}", incidentId)
                         .header("Authorization", "Bearer " + jwt("kc-support-" + UUID.randomUUID(), "SUPPORT")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/ops/delivery-incidents/{id}", incidentId)
+                        .header("Authorization", "Bearer " + jwt("kc-admin-" + UUID.randomUUID(), "ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reason").value("OTHER"));
 
