@@ -51,6 +51,16 @@ Operação: publicações pendentes — `SELECT listener_id, event_type, publica
 | Garantia | At-least-once; chave natural `refundId` (ledger: `refund-approved:<refundId>`). |
 | Testes | `SettlementLedgerPostgresTest` (fluxo completo por eventos, reembolsos concorrentes, reembolso antes da entrega) |
 
+### `com.delivery.order.DeliveryIncidentResolved`
+
+| Campo | Valor |
+|---|---|
+| Produtor | módulo `order` — `DeliveryIncidentService.resolve` (W7-B, LAC-44), na transação em que o OPS/ADMIN resolve um incidente de entrega falhada (`OPEN → RESOLVED`; mesma transação que pede o reembolso e escreve a notificação). Uma repetição com a mesma decisão (idempotente) não publica de novo. |
+| Payload | `tenantId`, `incidentId`, `orderId`, `vendorId` (UUID), `costBearer` (`CUSTOMER`/`MERCHANT`/`PLATFORM`), `outcome` (`REFUND_FULL`/`REFUND_MINUS_DELIVERY_FEE`), `goodsDisposition` (`RETURN_TO_STORE`/`DISCARDED`), `refundAmount`, `retainedFeeAmount`, `merchantChargeAmount`, `platformCompensationAmount` (BigDecimal, MZN), `resolvedAt` (Instant). Sem texto livre (nota do estafeta e motivo do *override* ficam só na tabela). |
+| Consumidores | `settlement` — `SettlementEventListener` → `LedgerPostingService.recordIncidentSettled`: lançamento `INCIDENT_SETTLED` (Dr `CUSTOMER_FUNDS_HELD` taxa retida, Dr `MERCHANT_PAYABLE` cobrança à loja, Cr `PLATFORM_REVENUE_FEES`/`PLATFORM_VAT_PAYABLE`; Dr `PLATFORM_INCIDENT_EXPENSE` / Cr `MERCHANT_PAYABLE` compensação de bens perdidos). Sem linhas (tudo zero) → nada; pagamento não capturado → ignorado (WARN). O reembolso em si continua a ser lançado pelo `RefundApproved` quando o FINANCE o aprova. Ver ADR-0005. |
+| Garantia | At-least-once; chave natural `incidentId` (ledger: `delivery-incident:<incidentId>`, UNIQUE por tenant). |
+| Testes | `DeliveryIncidentPostgresTest` (por motivo: lançamento e saldos; concorrência de dois OPS → um lançamento), `PostingRulesTest` (`incident*`) |
+
 ## Outbox de notificações (não é um evento Modulith)
 
 Desde W6-C (LAC-48) as notificações externas (PUSH/SMS/EMAIL) usam a sua própria tabela *outbox*, `notification_deliveries` (V067), e não `event_publication`: a linha é escrita na transação de negócio (ou no *listener* acima) por `NotificationDispatcher` e enviada pelo job `notification-delivery` (claim `FOR UPDATE SKIP LOCKED` + *lease*, *backoff* exponencial, estado por canal `QUEUED/SENT/FAILED/SKIPPED`). Motivo: precisa de estado por canal, tentativas e registo consultável pelo SUPPORT, que o registo de publicações não guarda. As notificações *in-app* criadas por `NotificationService.create*` fazem *fan-out* para os canais externos na mesma transação (chave `inapp:<notificationId>:<canal>`), só para tipos com modelo ativo.
@@ -64,7 +74,7 @@ Do ADR-0002 e do registo de lacunas (LAC-25, LAC-47) — entram aqui quando fore
 | Interface (API) | Implementação | Substitui o evento previsto |
 |---|---|---|
 | `payment.api.PaymentOrderHooks` | `order.service.OrderPaymentHooks` | `PaymentConfirmed`, `RefundCompleted` |
-| `delivery.api.DeliveryOrderHooks` | `order.service.OrderDeliveryHooks` | `DeliveryPickedUp`, `DeliveryCompleted`, `DeliveryFailed` |
+| `delivery.api.DeliveryOrderHooks` | `order.service.OrderDeliveryHooks` | `DeliveryPickedUp`, `DeliveryCompleted`, `DeliveryFailed` (desde W7-B `onDeliveryFailed` recebe `DeliveryFailure` — motivo, prova, evidência — e abre o incidente na mesma transação) |
 | `delivery.api.DeliveryRetirementListener` | `dispatch.service.DispatchJobRetirement` | (cancelamento do *dispatch job* na retirada) |
 
 Não são eventos: correm na transação do chamador, sem registo em `event_publication`. Quando um destes efeitos puder ser eventual (estados intermédios da LAC-25, PSP com *callbacks*), passa a evento e entra nesta tabela.

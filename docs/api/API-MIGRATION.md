@@ -1044,3 +1044,65 @@ behaviour, no money moves); the real M-Pesa provider is a later package.
   with the phone → poll the order payment (≈ 3 s) until `SUCCEEDED`/`FAILED`/`EXPIRED`; show "Confirme no seu
   telemóvel" while `PENDING_CUSTOMER`/`UNKNOWN`. Not built in the clients by this package.
 - Backoffice `/finance`: reconciliation case list/resolve screen not built (LAC-60).
+
+## W7-B — Failed deliveries and incidents with compensation (LAC-44) — 2026-10-31
+
+Additive in the OpenAPI contract (new optional request fields, new endpoints, one new enum value). One
+**behaviour change**: `FAILED_DELIVERY` now requires a reason.
+
+### `PATCH /api/v1/deliveries/{deliveryId}/status` (changed behaviour, additive fields)
+
+- New optional body fields `failureReason` (`CUSTOMER_ABSENT` | `WRONG_ADDRESS` | `CUSTOMER_REFUSED` | `STORE_FAULT`
+  | `DAMAGED_IN_TRANSIT` | `ACCIDENT` | `OTHER`) and `failureNote` (≤ 500 chars, free text kept on the incident only).
+- `status = FAILED_DELIVERY` **without** `failureReason` → 400 `failure_reason_required` (was accepted). A
+  `failureReason` with any other status → 400 `failure_reason_not_applicable`. Checked after ownership (403/404).
+- `FAILED_DELIVERY` is now accepted from `PICKED_UP`, `ON_ROUTE_TO_CUSTOMER` and `ARRIVED_AT_CUSTOMER` (was only
+  `ARRIVED_AT_CUSTOMER`), and from `ARRIVED_AT_VENDOR` **only with `STORE_FAULT`** (store closed / items missing at
+  pickup — the stock reservation is released because the goods never left). Other combinations → 409
+  `invalid_delivery_transition`. `proofPhotoStorageKey` stays optional (validated by `StoredUploadValidator`).
+- Effect: as before the order becomes `CANCELLED` (stock released only if still reserved), now with
+  `cancellationReason = "DELIVERY_FAILED"`; a delivery incident is opened (`OPEN`) with the reason, reporter
+  (courier or OPS/ADMIN), the courier's last known position (W5-B) and its distance to the address; the customer
+  gets the `delivery_failed` notification (PUSH + in-app). No refund at this point.
+
+### `cancellationReason` (orders, customer orders, sales) — new value
+
+- `DELIVERY_FAILED` joins `SELLER_REJECTED | PAYMENT_EXPIRED | VENDOR_TIMEOUT | CUSTOMER_CANCELLED |
+  CUSTOMER_CANCELLED_WITH_FEE`. Orders cancelled by a failed delivery before W7-B keep `null`. Clients treating the
+  field as a closed enum must accept the new value (backoffice and customer web type it as `string`).
+
+### `GET /api/v1/ops/delivery-incidents?status=&page=&size=` · `GET /api/v1/ops/delivery-incidents/{id}` (new, OPS/ADMIN — the evidence holds the courier's position, kept to the LAC-40 audience)
+
+- Offset page `{ content, page, size, totalElements }` (default `status=OPEN`, newest first, size 1..100) / one
+  incident: `{ id, orderId, orderReference, orderStatus, deliveryId, courierId, reason, note, proofPhotoStorageKey,
+  reportedByRole, failedFromStatus, evidence: { latitude, longitude, accuracyMeters, recordedAt, distanceMeters },
+  status, defaultDecision: { costBearer, outcome, goodsDisposition }, resolution: null | { decision, overridden,
+  overrideReason, refundAmount, retainedFeeAmount, merchantChargeAmount, platformCompensationAmount, decidedBy,
+  resolvedAt }, createdAt }`. Another tenant's incident → 404. Rate-limit group `sensitive` (`/api/v1/ops/**`).
+
+### `POST /api/v1/ops/delivery-incidents/{id}/resolve` (new, OPS/ADMIN)
+
+- Body (all optional; omitted = policy default): `{ costBearer: CUSTOMER|MERCHANT|PLATFORM, outcome:
+  REFUND_FULL|REFUND_MINUS_DELIVERY_FEE, goodsDisposition: RETURN_TO_STORE|DISCARDED, overrideReason (≤ 500) }`.
+  A decision that differs from the default needs `overrideReason` (400 `override_reason_required`).
+- Effect: refund of the remaining refundable amount (minus the delivery fee for `REFUND_MINUS_DELIVERY_FEE`) is
+  **requested** (key `delivery-incident-<incidentId>`; FINANCE approves it as usual), the order stays `CANCELLED`,
+  no stock movement, customer notified (`delivery_incident_refund_full` / `_partial`), audited
+  `DELIVERY_INCIDENT_RESOLVED` (result `OVERRIDDEN` when overridden), ledger posting `INCIDENT_SETTLED` after commit.
+- Idempotent: the same decision again → 200 with the resolved incident (no new refund/audit/notification); a
+  different decision on a resolved incident → 409 `incident_already_resolved`. Concurrent resolutions serialize on
+  the payment lock: one effect.
+- Not offered (later): `REDELIVER` (a failed delivery is terminal and the order is `CANCELLED`, terminal in the order
+  state machine; one delivery per order) and `COMPENSATE` as a credit note (no customer wallet). Courier compensation
+  waits for courier pay (LAC-35).
+
+### Configuration
+
+- Default outcome per reason: `app.delivery-incidents.policy.<REASON>.cost-bearer|outcome|goods-disposition`
+  (unset cells keep the built-in table — see CLAUDE.md, Delivery incidents).
+
+### Clients / consumers to review
+
+- Courier app: does not send `FAILED_DELIVERY` today; when a "failed delivery" action is added it must send
+  `failureReason` (not done in this package).
+- Backoffice: an incidents queue screen is not built (LAC-60); the API is ready.

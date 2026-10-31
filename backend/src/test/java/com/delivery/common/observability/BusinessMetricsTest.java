@@ -97,7 +97,7 @@ class BusinessMetricsTest {
         when(deliveryService.complete(ok, "123456")).thenReturn(null);
         when(deliveryService.complete(wrongPin, "000000"))
                 .thenThrow(new BusinessException("invalid_delivery_code", "bad", HttpStatus.BAD_REQUEST));
-        when(deliveryService.updateStatus(any(), any(), any(), any())).thenReturn(null);
+        when(deliveryService.updateStatus(any(), any(), any(), any(), any(), any())).thenReturn(null);
 
         controller.complete(ok, new CompleteDeliveryRequest("123456"));
         assertThatThrownBy(() -> controller.complete(wrongPin, new CompleteDeliveryRequest("000000"))).isInstanceOf(BusinessException.class);

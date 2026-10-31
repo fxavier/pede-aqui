@@ -2,7 +2,9 @@ package com.delivery.delivery.service;
 
 import com.delivery.common.exception.BusinessException;
 import com.delivery.delivery.api.AssignedCourierResolver;
+import com.delivery.delivery.api.CourierPosition;
 import com.delivery.delivery.entity.Delivery;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -30,6 +32,17 @@ public class DeliveryAccessGuard {
         }
         return auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .anyMatch(authority -> "ROLE_OPS".equals(authority) || "ROLE_ADMIN".equals(authority));
+    }
+
+    /** True when the caller holds ADMIN (used to record the reporter role of a failed delivery). */
+    public boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch("ROLE_ADMIN"::equals);
+    }
+
+    /** The courier's last received position (arrival evidence, LAC-44), resolved by dispatch. */
+    public Optional<CourierPosition> lastKnownPosition(UUID tenantId, UUID courierId) {
+        return courierResolver.lastKnownPosition(tenantId, courierId);
     }
 
     /** Throws 403 unless the caller's courier profile in this tenant is the one assigned to the delivery. */

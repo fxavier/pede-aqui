@@ -52,7 +52,8 @@ public class DeliveryController {
     public DeliveryResponse updateStatus(@PathVariable UUID deliveryId, @Valid @RequestBody UpdateDeliveryStatusRequest request) {
         // LAC-50: deliveries_status_updates_total{status,result,reason}; status=FAILED_DELIVERY counts delivery failures.
         return metrics.recordOutcome(BusinessMetrics.DELIVERY_STATUS_UPDATES,
-                () -> service.updateStatus(deliveryId, request.status(), request.proofPhotoStorageKey(), request.cashCollectedAmount()),
+                () -> service.updateStatus(deliveryId, request.status(), request.proofPhotoStorageKey(), request.cashCollectedAmount(),
+                        request.failureReason(), request.failureNote()),
                 "status", String.valueOf(request.status()));
     }
 }

@@ -181,6 +181,32 @@ W6-A (checkout v2, LAC-22/LAC-20; detalhe em `API-MIGRATION.md`, secção W6-A) 
   `price_changed` (ou `quote_changed` com `quoteId`) → `out_of_service_area` → `address_too_far` → `quote_changed`
   (`amounts_changed`) → stock/promoções.
 
+W7-A (PSP sandbox, LAC-31/32/24; detalhe em `API-MIGRATION.md`, secção W7-A) acrescenta:
+- `invalid_msisdn` (400 — `POST /payments/{id}/attempts` com um telemóvel que não é E.164 válido / móvel moçambicano).
+- `payment_not_payable` (409 — o pagamento já não está `PENDING_CONFIRMATION` ou a encomenda já não está
+  `PAYMENT_PENDING`).
+- `payment_attempt_in_progress` (409 — já existe uma tentativa aberta: `INITIATED`, `PENDING_CUSTOMER` ou `UNKNOWN`;
+  `UNKNOWN` tem de ser resolvida antes de cobrar outra vez).
+- `payment_attempts_exhausted` (409 — limite `app.payments.attempts.max-per-payment`, 5, atingido).
+- `invalid_webhook_signature` (401 — `POST /payments/webhooks/{provider}` sem assinatura, assinatura errada,
+  *timestamp* fora da janela ou *payload* malformado). `payment_provider_not_found` (404 — `{provider}` desconhecido
+  ou não ativo).
+- `idempotency_key_reused` (409 — já existia no checkout; agora também do filtro genérico `Idempotency-Key`: mesma
+  chave com outro pedido), `idempotency_request_in_progress` (409 — o primeiro pedido com a chave ainda corre;
+  repetir mais tarde), `invalid_idempotency_key` (400 — chave fora de `[A-Za-z0-9_.:-]{8,128}`).
+
+W7-B (entregas falhadas e incidentes, LAC-44; detalhe em `API-MIGRATION.md`, secção W7-B) acrescenta:
+- `failure_reason_required` (400 — `PATCH /deliveries/{id}/status` com `FAILED_DELIVERY` sem `failureReason`).
+  Verificado depois da propriedade (403/404) e antes da transição, sem qualquer efeito.
+- `failure_reason_not_applicable` (400 — `failureReason` enviado com outro estado que não `FAILED_DELIVERY`).
+- `invalid_delivery_transition` (409, existente) passa a cobrir também `FAILED_DELIVERY` a partir de
+  `ARRIVED_AT_VENDOR` com um motivo que não seja `STORE_FAULT` (na loja só a falha da loja termina a entrega).
+- `override_reason_required` (400 — `POST /ops/delivery-incidents/{id}/resolve` com uma decisão diferente do
+  resultado por defeito e sem `overrideReason`).
+- `incident_already_resolved` (409 — resolver de novo um incidente já resolvido com **outra** decisão; a mesma
+  decisão devolve 200 com o estado atual).
+- Incidente de outro tenant ou inexistente → 404 `not_found`; qualquer papel além de OPS/ADMIN (listar, ver ou resolver) → 403.
+
 ## 4. Correlação (`X-Correlation-Id`)
 
 - O `CorrelationIdFilter` corre **antes** de qualquer outro filtro (incluindo a cadeia de segurança),
@@ -223,20 +249,6 @@ campo com os `status` de recursos (ex.: estado de encomenda).
   houver onde publicar as páginas.
 - Tracing distribuído (Micrometer Tracing + OTel): **feito em LAC-50/W4-B** — `traceId` passou a ser o id do trace sem mudar o contrato.
 - Remover os campos legados após a janela de compatibilidade.
-
-W7-A (PSP sandbox, LAC-31/32/24; detalhe em `API-MIGRATION.md`, secção W7-A) acrescenta:
-- `invalid_msisdn` (400 — `POST /payments/{id}/attempts` com um telemóvel que não é E.164 válido / móvel moçambicano).
-- `payment_not_payable` (409 — o pagamento já não está `PENDING_CONFIRMATION` ou a encomenda já não está
-  `PAYMENT_PENDING`).
-- `payment_attempt_in_progress` (409 — já existe uma tentativa aberta: `INITIATED`, `PENDING_CUSTOMER` ou `UNKNOWN`;
-  `UNKNOWN` tem de ser resolvida antes de cobrar outra vez).
-- `payment_attempts_exhausted` (409 — limite `app.payments.attempts.max-per-payment`, 5, atingido).
-- `invalid_webhook_signature` (401 — `POST /payments/webhooks/{provider}` sem assinatura, assinatura errada,
-  *timestamp* fora da janela ou *payload* malformado). `payment_provider_not_found` (404 — `{provider}` desconhecido
-  ou não ativo).
-- `idempotency_key_reused` (409 — já existia no checkout; agora também do filtro genérico `Idempotency-Key`: mesma
-  chave com outro pedido), `idempotency_request_in_progress` (409 — o primeiro pedido com a chave ainda corre;
-  repetir mais tarde), `invalid_idempotency_key` (400 — chave fora de `[A-Za-z0-9_.:-]{8,128}`).
 
 ## 7. Cobertura: quem escreve corpos de erro
 

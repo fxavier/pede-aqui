@@ -11,7 +11,12 @@ public enum LedgerTransactionType {
     /** Refund approved after delivery: proportional reversal → refunds payable. Key {@code refund-approved:<refundId>}. */
     REFUND_AFTER_DELIVERY("refund-approved:"),
     /** Customer cancellation fee withheld (LAC-26): funds held → merchant + commission. Key {@code cancellation-fee:<orderId>}. */
-    CANCELLATION_FEE_RETAINED("cancellation-fee:");
+    CANCELLATION_FEE_RETAINED("cancellation-fee:"),
+    /**
+     * Delivery incident resolved (LAC-44, V070): retained delivery fee → fee revenue, merchant charge, platform
+     * compensation of lost goods. Key {@code delivery-incident:<incidentId>}.
+     */
+    INCIDENT_SETTLED("delivery-incident:");
 
     private final String keyPrefix;
 

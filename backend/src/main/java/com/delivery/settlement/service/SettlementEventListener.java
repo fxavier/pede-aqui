@@ -1,5 +1,6 @@
 package com.delivery.settlement.service;
 
+import com.delivery.order.DeliveryIncidentResolved;
 import com.delivery.order.OrderStatusChanged;
 import com.delivery.payment.PaymentConfirmed;
 import com.delivery.payment.RefundApproved;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Feeds the settlement ledger from the transactional events (LAC-33, LAC-47): {@link PaymentConfirmed},
- * {@link RefundApproved} and {@link OrderStatusChanged} (DELIVERED, CANCELLED). {@code @ApplicationModuleListener} =
+ * {@link RefundApproved}, {@link OrderStatusChanged} (DELIVERED, CANCELLED) and {@link DeliveryIncidentResolved} (LAC-44). {@code @ApplicationModuleListener} =
  * after commit, async, own transaction, tracked in {@code event_publication}: a failure leaves the publication
  * incomplete and {@code EventPublicationRetryJob} redelivers it; postings are idempotent by key, so redelivery and
  * duplicates are harmless. Switched off with {@code app.settlement.enabled=false} (the test-suite default).
@@ -38,6 +39,15 @@ public class SettlementEventListener {
         if (properties.isEnabled()) {
             postings.recordRefundApproved(event.tenantId(), event.refundId(), event.paymentId(), event.orderId(), event.amount(),
                     event.approvedAt());
+        }
+    }
+
+    /** Delivery incident resolved (LAC-44) → cost-bearer posting (retained fee, merchant charge, platform compensation). */
+    @ApplicationModuleListener
+    public void on(DeliveryIncidentResolved event) {
+        if (properties.isEnabled()) {
+            postings.recordIncidentSettled(event.tenantId(), event.incidentId(), event.orderId(), event.vendorId(),
+                    event.retainedFeeAmount(), event.merchantChargeAmount(), event.platformCompensationAmount(), event.resolvedAt());
         }
     }
 

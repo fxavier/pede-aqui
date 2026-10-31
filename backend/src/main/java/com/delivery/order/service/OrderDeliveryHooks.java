@@ -3,8 +3,10 @@ package com.delivery.order.service;
 import com.delivery.common.exception.BusinessException;
 import com.delivery.common.exception.NotFoundException;
 import com.delivery.delivery.api.DeliveryAddressResponse;
+import com.delivery.delivery.api.DeliveryFailure;
 import com.delivery.delivery.api.DeliveryOrderHooks;
 import com.delivery.order.api.OrderStateMachine;
+import com.delivery.order.entity.CancellationReason;
 import com.delivery.order.entity.Order;
 import com.delivery.order.entity.OrderStatus;
 import com.delivery.order.mapper.OrderMapper;
@@ -13,6 +15,7 @@ import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +40,7 @@ public class OrderDeliveryHooks implements DeliveryOrderHooks {
     private final OrderRepository orderRepository;
     private final OrderStockService orderStockService;
     private final OrderStateMachine stateMachine;
+    private DeliveryIncidentService incidentService;
 
     public OrderDeliveryHooks(OrderRepository orderRepository, OrderStockService orderStockService, OrderStateMachine stateMachine) {
         this.orderRepository = orderRepository;
@@ -84,12 +88,25 @@ public class OrderDeliveryHooks implements DeliveryOrderHooks {
         orderStockService.commit(order);
     }
 
-    /** Order CANCELLED and its reservation released (INC-07; no-op once pickup committed the stock). */
+    /**
+     * Order CANCELLED with reason DELIVERY_FAILED (LAC-44), its reservation released (INC-07; no-op once pickup committed
+     * the stock; a pre-pickup STORE_FAULT releases it) and the delivery incident opened for OPS. No refund here: the
+     * refund and who bears the cost are decided when OPS resolve the incident.
+     */
     @Override
-    public void onDeliveryFailed(UUID tenantId, UUID orderId) {
+    public void onDeliveryFailed(UUID tenantId, UUID orderId, DeliveryFailure failure) {
         Order order = findOrder(tenantId, orderId);
-        stateMachine.transition(order, OrderStatus.CANCELLED, "DELIVERY_FAILED");
+        stateMachine.cancel(order, CancellationReason.DELIVERY_FAILED, null);
         orderStockService.release(order);
+        if (incidentService != null && failure != null) {
+            incidentService.open(order, failure);
+        }
+    }
+
+    /** LAC-44: opens the delivery incident; optional so slice tests without the incident service keep working. */
+    @Autowired(required = false)
+    public void setIncidentService(DeliveryIncidentService incidentService) {
+        this.incidentService = incidentService;
     }
 
     /** The order's checkout address snapshot mapped to the API shape; empty for orders placed without an address. */
