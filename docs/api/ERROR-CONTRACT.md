@@ -79,7 +79,7 @@ continuam presentes **em paralelo**, pelo que os clientes atuais não precisam d
 | 405 | `method_not_allowed` | Método HTTP não suportado; header `Allow` presente. Antes 500. |
 | 406 | `not_acceptable` | `Accept` impossível de satisfazer. |
 | 409 | `conflict` | Violação de unicidade/integridade (sem nomes de constraint). |
-| 409 | `concurrent_modification` | Conflito de `@Version` (recarregar e repetir). |
+| 409 | `concurrent_modification` | Conflito de `@Version`, ou falha de aquisição de lock (vítima de deadlock 40P01 / lock timeout — rede de segurança, nunca 500); recarregar e repetir. |
 | 413 | `payload_too_large` | Upload acima do limite. |
 | 415 | `unsupported_media_type` | `Content-Type` não suportado. Antes 500. |
 | 429 | `rate_limited` | Limitador distribuído (LAC-11): header `Retry-After` (segundos) e `details.retryAfterSeconds`. Também usado pelos limites de provisionamento. |
@@ -138,7 +138,9 @@ qualquer transição fora da tabela — ações do comerciante, aprovação de r
 paga — sempre **antes** de qualquer efeito (sem histórico, evento, stock, reembolso nem auditoria). Os códigos
 de política mais estreitos mantêm-se: `sale_not_cancellable` (409), `transition_not_allowed` (409, lista do
 *override*), `order_not_ready_for_dispatch` (409), `order_not_deliverable` (409). Uma ação do utilizador que
-perde a corrida com um job de timeout na mesma encomenda recebe 409 `concurrent_modification` (`@Version`).
+perde a corrida com um job de timeout na mesma encomenda recebe 409 `invalid_order_transition` (as ações do
+comerciante bloqueiam primeiro a linha do pagamento, como o job, e relêem a encomenda já cancelada) ou
+`concurrent_modification` (`@Version`).
 
 W5-A (cancelamento pelo cliente, LAC-26; detalhe em `API-MIGRATION.md`, secção W5-A) acrescenta:
 - `order_not_cancellable` (409 — `POST /me/orders/{id}/cancel` com a encomenda em `READY_FOR_PICKUP` ou depois,
