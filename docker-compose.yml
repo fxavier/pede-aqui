@@ -91,7 +91,7 @@ services:
   # MANAGEMENT_OTLP_TRACING_ENDPOINT está definido (ver docs/local-development.md, secção Observabilidade).
   otel-collector:
     profiles: ["observability"]
-    image: otel/opentelemetry-collector:0.164.0
+    image: otel/opentelemetry-collector:0.164.0-386
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
